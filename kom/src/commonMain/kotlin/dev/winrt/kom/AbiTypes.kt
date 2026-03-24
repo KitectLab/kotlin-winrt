@@ -59,3 +59,10 @@ data class Guid(
 }
 
 class KomException(message: String) : RuntimeException(message)
+
+object KnownHResults {
+    val E_POINTER = HResult(0x80004003.toInt())
+    val E_NOINTERFACE = HResult(0x80004002.toInt())
+    val RPC_E_CHANGED_MODE = HResult(0x80010106.toInt())
+    val S_FALSE = HResult(1)
+}
