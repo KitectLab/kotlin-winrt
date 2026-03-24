@@ -8,6 +8,7 @@ interface WinRtTypeMetadata {
 
 interface WinRtInterfaceMetadata : WinRtTypeMetadata {
     val iid: Guid
+    fun <T : WinRtObject> project(pointer: dev.winrt.kom.ComPtr, constructor: (dev.winrt.kom.ComPtr) -> T): T = constructor(pointer)
 }
 
 interface WinRtRuntimeClassMetadata : WinRtTypeMetadata {

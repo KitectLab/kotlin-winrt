@@ -28,9 +28,11 @@ class KotlinBindingGenerator {
         return buildString {
             appendLine("package $packageName")
             appendLine()
+            appendLine("import dev.winrt.core.WinRtInterfaceProjection")
             appendLine("import dev.winrt.core.WinRtInterfaceMetadata")
             appendLine("import dev.winrt.core.WinRtRuntimeClassMetadata")
             appendLine("import dev.winrt.core.Inspectable")
+            appendLine("import dev.winrt.core.projectInterface")
             appendLine("import dev.winrt.core.RuntimeClassId")
             appendLine("import dev.winrt.core.RuntimeProperty")
             appendLine("import dev.winrt.core.WinRtRuntime")
@@ -55,7 +57,7 @@ class KotlinBindingGenerator {
             "    fun ${method.name.replaceFirstChar(Char::lowercase)}(): ${method.returnType}"
         }
         return buildString {
-            appendLine("interface ${type.name} {")
+            appendLine("open class ${type.name}(pointer: ComPtr) : WinRtInterfaceProjection(pointer) {")
             if (methods.isNotBlank()) {
                 appendLine(methods)
             }
@@ -63,6 +65,7 @@ class KotlinBindingGenerator {
             appendLine("    companion object : WinRtInterfaceMetadata {")
             appendLine("        override val qualifiedName: String = \"${type.namespace}.${type.name}\"")
             appendLine("        override val iid = guidOf(\"${type.guid ?: "00000000-0000-0000-0000-000000000000"}\")")
+            appendLine("        fun from(Inspectable: Inspectable): ${type.name} = Inspectable.projectInterface(this, ::${type.name})")
             appendLine("    }")
             append("}")
         }
@@ -98,6 +101,12 @@ class KotlinBindingGenerator {
             appendLine("        override val defaultInterfaceName: String? = ${type.defaultInterface?.let { "\"$it\"" } ?: "null"}")
             appendLine("        fun activate(): ${type.name} = WinRtRuntime.activate(classId, ::${type.name})")
             appendLine("    }")
+            type.defaultInterface?.let { defaultInterface ->
+                val simpleName = defaultInterface.substringAfterLast('.')
+                val accessorName = simpleName.replaceFirstChar(Char::lowercase)
+                appendLine()
+                appendLine("    fun as${simpleName}(): ${simpleName} = ${simpleName}.from(this)")
+            }
             append("}")
         }
     }
