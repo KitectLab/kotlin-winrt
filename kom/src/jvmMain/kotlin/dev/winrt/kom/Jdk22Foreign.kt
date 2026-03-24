@@ -15,13 +15,13 @@ internal object Jdk22Foreign {
     private val intLayout = ValueLayout.JAVA_INT
     private val longLayout = ValueLayout.JAVA_LONG
 
-    val windowsLookup: SymbolLookup? by lazy {
+    val windowsLookups: List<SymbolLookup> by lazy {
         if (!System.getProperty("os.name").contains("Windows", ignoreCase = true)) {
-            null
+            emptyList()
         } else {
             sequenceOf("ole32", "combase")
                 .mapNotNull { library -> runCatching { SymbolLookup.libraryLookup(library, arena) }.getOrNull() }
-                .firstOrNull()
+                .toList()
         }
     }
 
@@ -51,7 +51,12 @@ internal object Jdk22Foreign {
     }
 
     fun downcall(symbolName: String, descriptor: FunctionDescriptor): MethodHandle {
-        val symbol = requireNotNull(windowsLookup?.find(symbolName)?.orElse(null)) {
+        val symbol = windowsLookups
+            .asSequence()
+            .mapNotNull { lookup -> lookup.find(symbolName).orElse(null) }
+            .firstOrNull()
+
+        requireNotNull(symbol) {
             "Windows symbol not found: $symbolName"
         }
         return linker.downcallHandle(symbol, descriptor)
@@ -86,6 +91,47 @@ internal object Jdk22Foreign {
         downcall(
             "CoUninitialize",
             FunctionDescriptor.ofVoid(),
+        )
+    }
+
+    val roInitializeHandle: MethodHandle by lazy {
+        downcall(
+            "RoInitialize",
+            FunctionDescriptor.of(intLayout, intLayout),
+        )
+    }
+
+    val roUninitializeHandle: MethodHandle by lazy {
+        downcall(
+            "RoUninitialize",
+            FunctionDescriptor.ofVoid(),
+        )
+    }
+
+    val windowsCreateStringHandle: MethodHandle by lazy {
+        downcall(
+            "WindowsCreateString",
+            FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
+        )
+    }
+
+    val windowsDeleteStringHandle: MethodHandle by lazy {
+        downcall(
+            "WindowsDeleteString",
+            FunctionDescriptor.of(intLayout, addressLayout),
+        )
+    }
+
+    val roGetActivationFactoryHandle: MethodHandle by lazy {
+        downcall(
+            "RoGetActivationFactory",
+            FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout),
+        )
+    }
+
+    val activateInstanceHandle: MethodHandle by lazy {
+        linker.downcallHandle(
+            FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
         )
     }
 

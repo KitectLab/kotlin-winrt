@@ -3,6 +3,7 @@ package dev.winrt.kom
 import java.lang.foreign.Arena
 import java.lang.foreign.MemorySegment
 import java.lang.foreign.ValueLayout
+import java.nio.charset.StandardCharsets
 
 actual object PlatformRuntime {
     actual val platformName: String = "jvm"
@@ -82,5 +83,97 @@ object JvmComRuntime {
 
     fun uninitialize() {
         Jdk22Foreign.coUninitializeHandle.invokeWithArguments()
+    }
+}
+
+class JvmHStringHandle internal constructor(
+    val segment: MemorySegment,
+) : AutoCloseable {
+    override fun close() {
+        if (segment != MemorySegment.NULL) {
+            Jdk22Foreign.windowsDeleteStringHandle.invokeWithArguments(segment)
+        }
+    }
+}
+
+object JvmWinRtRuntime {
+    private const val roInitMultithreaded = 1
+    val iidIActivationFactory = Guid(
+        data1 = 0x00000035,
+        data2 = 0,
+        data3 = 0,
+        data4 = byteArrayOf(0xC0.toByte(), 0, 0, 0, 0, 0, 0, 0x46),
+    )
+
+    fun initializeMultithreaded(): HResult {
+        val result = Jdk22Foreign.roInitializeHandle.invokeWithArguments(roInitMultithreaded) as Int
+        return HResult(result)
+    }
+
+    fun uninitialize() {
+        Jdk22Foreign.roUninitializeHandle.invokeWithArguments()
+    }
+
+    fun createHString(value: String): JvmHStringHandle {
+        return Arena.ofConfined().use { arena ->
+            val utf16 = value.toByteArray(StandardCharsets.UTF_16LE)
+            val source = arena.allocate(utf16.size.toLong() + 2)
+            utf16.forEachIndexed { index, byte ->
+                source.set(ValueLayout.JAVA_BYTE, index.toLong(), byte)
+            }
+            source.set(ValueLayout.JAVA_SHORT, utf16.size.toLong(), 0)
+
+            val output = arena.allocate(ValueLayout.ADDRESS)
+            val result = HResult(
+                Jdk22Foreign.windowsCreateStringHandle.invokeWithArguments(
+                    source,
+                    value.length,
+                    output,
+                ) as Int,
+            )
+            result.requireSuccess("WindowsCreateString")
+            JvmHStringHandle(output.get(ValueLayout.ADDRESS, 0L))
+        }
+    }
+
+    fun getActivationFactory(classId: String, iid: Guid = iidIActivationFactory): Result<ComPtr> {
+        return runCatching {
+            createHString(classId).use { hString ->
+                Arena.ofConfined().use { arena ->
+                    val iidSegment = Jdk22Foreign.guidSegment(iid, arena)
+                    val resultSegment = arena.allocate(ValueLayout.ADDRESS)
+                    val result = HResult(
+                        Jdk22Foreign.roGetActivationFactoryHandle.invokeWithArguments(
+                            hString.segment,
+                            iidSegment,
+                            resultSegment,
+                        ) as Int,
+                    )
+                    result.requireSuccess("RoGetActivationFactory")
+                    Jdk22Foreign.addressResult(resultSegment.get(ValueLayout.ADDRESS, 0L))
+                }
+            }
+        }
+    }
+
+    fun activateInstance(factory: ComPtr): Result<ComPtr> {
+        if (factory.isNull) {
+            return Result.failure(KomException("IActivationFactory pointer must not be null"))
+        }
+
+        return runCatching {
+            Arena.ofConfined().use { arena ->
+                val resultSegment = arena.allocate(ValueLayout.ADDRESS)
+                val function = Jdk22Foreign.vtableEntry(factory, 6)
+                val result = HResult(
+                    Jdk22Foreign.activateInstanceHandle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(factory),
+                        resultSegment,
+                    ) as Int,
+                )
+                result.requireSuccess("IActivationFactory.ActivateInstance")
+                Jdk22Foreign.addressResult(resultSegment.get(ValueLayout.ADDRESS, 0L))
+            }
+        }
     }
 }

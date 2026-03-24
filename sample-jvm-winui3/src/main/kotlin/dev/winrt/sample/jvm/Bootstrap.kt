@@ -6,17 +6,24 @@ import dev.winrt.core.WinRtObject
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.JvmComRuntime
+import dev.winrt.kom.JvmWinRtRuntime
 import dev.winrt.kom.KnownHResults
+import dev.winrt.kom.PlatformComInterop
 import dev.winrt.kom.PlatformRuntime
 
 object SampleBootstrap {
     private var comInitialized = false
+    private var winRtInitialized = false
 
     fun configure() {
         if (PlatformRuntime.isWindows) {
-            val result = JvmComRuntime.initializeMultithreaded()
-            result.requireSuccessUnlessChangedMode("CoInitializeEx")
-            comInitialized = result.isSuccess
+            val comResult = JvmComRuntime.initializeMultithreaded()
+            comResult.requireSuccessUnlessChangedMode("CoInitializeEx")
+            comInitialized = comResult.isSuccess
+
+            val winRtResult = JvmWinRtRuntime.initializeMultithreaded()
+            winRtResult.requireSuccessUnlessChangedMode("RoInitialize")
+            winRtInitialized = winRtResult.isSuccess
         }
 
         WinRtRuntime.activationFactoryProvider = object : ActivationFactoryProvider {
@@ -25,12 +32,28 @@ object SampleBootstrap {
                     return Result.success(constructor(ComPtr.NULL))
                 }
 
-                return Result.success(constructor(ComPtr.NULL))
+                val qualifiedName = classId.qualifiedName
+                return JvmWinRtRuntime.getActivationFactory(qualifiedName)
+                    .mapCatching { factory ->
+                        try {
+                            val instance = JvmWinRtRuntime.activateInstance(factory).getOrThrow()
+                            constructor(instance)
+                        } finally {
+                            PlatformComInterop.release(factory)
+                        }
+                    }
+                    .recoverCatching {
+                        constructor(ComPtr.NULL)
+                    }
             }
         }
     }
 
     fun shutdown() {
+        if (winRtInitialized) {
+            JvmWinRtRuntime.uninitialize()
+            winRtInitialized = false
+        }
         if (comInitialized) {
             JvmComRuntime.uninitialize()
             comInitialized = false
