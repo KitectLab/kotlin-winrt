@@ -28,10 +28,13 @@ class KotlinBindingGenerator {
         return buildString {
             appendLine("package $packageName")
             appendLine()
+            appendLine("import dev.winrt.core.WinRtInterfaceMetadata")
+            appendLine("import dev.winrt.core.WinRtRuntimeClassMetadata")
             appendLine("import dev.winrt.core.Inspectable")
             appendLine("import dev.winrt.core.RuntimeClassId")
             appendLine("import dev.winrt.core.RuntimeProperty")
             appendLine("import dev.winrt.core.WinRtRuntime")
+            appendLine("import dev.winrt.core.guidOf")
             appendLine("import dev.winrt.kom.ComPtr")
             appendLine()
             appendLine(declarations)
@@ -56,6 +59,11 @@ class KotlinBindingGenerator {
             if (methods.isNotBlank()) {
                 appendLine(methods)
             }
+            appendLine()
+            appendLine("    companion object : WinRtInterfaceMetadata {")
+            appendLine("        override val qualifiedName: String = \"${type.namespace}.${type.name}\"")
+            appendLine("        override val iid = guidOf(\"${type.guid ?: "00000000-0000-0000-0000-000000000000"}\")")
+            appendLine("    }")
             append("}")
         }
     }
@@ -84,8 +92,10 @@ class KotlinBindingGenerator {
             if (methods.isNotBlank()) {
                 appendLine(methods)
             }
-            appendLine("    companion object {")
-            appendLine("        private val classId = RuntimeClassId(\"${type.namespace}\", \"${type.name}\")")
+            appendLine("    companion object : WinRtRuntimeClassMetadata {")
+            appendLine("        override val qualifiedName: String = \"${type.namespace}.${type.name}\"")
+            appendLine("        override val classId = RuntimeClassId(\"${type.namespace}\", \"${type.name}\")")
+            appendLine("        override val defaultInterfaceName: String? = ${type.defaultInterface?.let { "\"$it\"" } ?: "null"}")
             appendLine("        fun activate(): ${type.name} = WinRtRuntime.activate(classId, ::${type.name})")
             appendLine("    }")
             append("}")

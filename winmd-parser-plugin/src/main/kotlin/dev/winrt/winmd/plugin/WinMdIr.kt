@@ -27,6 +27,8 @@ data class WinMdType(
     val namespace: String,
     val name: String,
     val kind: WinMdTypeKind,
+    val guid: String? = null,
+    val defaultInterface: String? = null,
     val methods: List<WinMdMethod> = emptyList(),
     val properties: List<WinMdProperty> = emptyList(),
 )
@@ -80,6 +82,7 @@ object WinMdModelFactory {
                             namespace = "Windows.Foundation",
                             name = "IStringable",
                             kind = WinMdTypeKind.Interface,
+                            guid = "96369f54-8eb6-48f0-abce-c1b211e627c3",
                             methods = listOf(
                                 WinMdMethod(
                                     name = "ToString",
@@ -96,6 +99,7 @@ object WinMdModelFactory {
                             namespace = "Microsoft.UI.Xaml",
                             name = "Application",
                             kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.IStringable",
                             methods = listOf(
                                 WinMdMethod("Start", "Unit"),
                             ),
@@ -104,6 +108,7 @@ object WinMdModelFactory {
                             namespace = "Microsoft.UI.Xaml",
                             name = "Window",
                             kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.IStringable",
                             methods = listOf(
                                 WinMdMethod("Activate", "Unit"),
                             ),
