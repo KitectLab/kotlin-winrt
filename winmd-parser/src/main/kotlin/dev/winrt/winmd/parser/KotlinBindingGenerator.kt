@@ -36,8 +36,10 @@ class KotlinBindingGenerator {
             appendLine("import dev.winrt.core.RuntimeClassId")
             appendLine("import dev.winrt.core.RuntimeProperty")
             appendLine("import dev.winrt.core.WinRtRuntime")
+            appendLine("import dev.winrt.core.WinRtStrings")
             appendLine("import dev.winrt.core.guidOf")
             appendLine("import dev.winrt.kom.ComPtr")
+            appendLine("import dev.winrt.kom.PlatformComInterop")
             appendLine()
             appendLine(declarations)
         }
@@ -54,7 +56,21 @@ class KotlinBindingGenerator {
 
     private fun renderInterface(type: WinMdType): String {
         val methods = type.methods.joinToString("\n") { method ->
-            "    fun ${method.name.replaceFirstChar(Char::lowercase)}(): ${method.returnType}"
+            val functionName = method.name.replaceFirstChar(Char::lowercase)
+            if (method.returnType == "String" && method.parameters.isEmpty() && method.vtableIndex != null) {
+                """
+                    fun $functionName(): String {
+                        val value = PlatformComInterop.invokeHStringMethod(pointer, ${method.vtableIndex}).getOrThrow()
+                        return try {
+                            WinRtStrings.toKotlin(value)
+                        } finally {
+                            WinRtStrings.release(value)
+                        }
+                    }
+                """.trimIndent().prependIndent("    ")
+            } else {
+                "    fun $functionName(): ${method.returnType}"
+            }
         }
         return buildString {
             appendLine("open class ${type.name}(pointer: ComPtr) : WinRtInterfaceProjection(pointer) {")

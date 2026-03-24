@@ -122,6 +122,13 @@ internal object Jdk22Foreign {
         )
     }
 
+    val windowsGetStringRawBufferHandle: MethodHandle by lazy {
+        downcall(
+            "WindowsGetStringRawBuffer",
+            FunctionDescriptor.of(addressLayout, addressLayout, addressLayout),
+        )
+    }
+
     val roGetActivationFactoryHandle: MethodHandle by lazy {
         downcall(
             "RoGetActivationFactory",
@@ -130,6 +137,12 @@ internal object Jdk22Foreign {
     }
 
     val activateInstanceHandle: MethodHandle by lazy {
+        linker.downcallHandle(
+            FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
+        )
+    }
+
+    val hstringMethodHandle: MethodHandle by lazy {
         linker.downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
         )

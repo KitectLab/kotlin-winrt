@@ -27,6 +27,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(xamlBindings.contains("defaultInterfaceName: String? = \"Windows.Foundation.IStringable\""))
         assertTrue(foundationBindings.contains("open class IStringable(pointer: ComPtr) : WinRtInterfaceProjection(pointer)"))
         assertTrue(foundationBindings.contains("fun from(Inspectable: Inspectable): IStringable = Inspectable.projectInterface(this, ::IStringable)"))
+        assertTrue(foundationBindings.contains("PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()"))
         assertTrue(foundationBindings.contains("companion object : WinRtInterfaceMetadata"))
         assertTrue(foundationBindings.contains("guidOf(\"96369f54-8eb6-48f0-abce-c1b211e627c3\")"))
         assertFalse(xamlBindings.contains("Unit as"))

@@ -45,6 +45,7 @@ enum class WinMdTypeKind {
 data class WinMdMethod(
     val name: String,
     val returnType: String,
+    val vtableIndex: Int? = null,
     val parameters: List<WinMdParameter> = emptyList(),
 )
 
@@ -87,6 +88,7 @@ object WinMdModelFactory {
                                 WinMdMethod(
                                     name = "ToString",
                                     returnType = "String",
+                                    vtableIndex = 6,
                                 ),
                             ),
                         ),

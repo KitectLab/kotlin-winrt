@@ -25,4 +25,11 @@ class RuntimePropertyTest {
 
         assertEquals(ComPtr.NULL, projected.pointer)
     }
+
+    @Test
+    fun builtin_scalar_types_wrap_values() {
+        assertEquals(42, Int32(42).value)
+        assertEquals(42u, UInt32(42u).value)
+        assertFalse(WinRtBoolean.FALSE.value)
+    }
 }

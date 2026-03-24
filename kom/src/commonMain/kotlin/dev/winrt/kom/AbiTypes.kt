@@ -1,5 +1,7 @@
 package dev.winrt.kom
 
+import kotlin.jvm.JvmInline
+
 @JvmInline
 value class AbiIntPtr(val rawValue: Long) {
     companion object {
@@ -8,6 +10,16 @@ value class AbiIntPtr(val rawValue: Long) {
 
     val isNull: Boolean
         get() = rawValue == 0L
+}
+
+@JvmInline
+value class NativeBoolean(val rawValue: Int) {
+    fun toBoolean(): Boolean = rawValue != 0
+
+    companion object {
+        val TRUE = NativeBoolean(1)
+        val FALSE = NativeBoolean(0)
+    }
 }
 
 @JvmInline

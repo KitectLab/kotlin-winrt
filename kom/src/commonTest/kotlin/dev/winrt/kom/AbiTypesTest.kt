@@ -23,4 +23,10 @@ class AbiTypesTest {
 
         assertEquals("12345678-1234-5678-1122-33445566777f", guid.toString())
     }
+
+    @Test
+    fun native_boolean_converts_to_kotlin_boolean() {
+        assertTrue(NativeBoolean.TRUE.toBoolean())
+        assertFalse(NativeBoolean.FALSE.toBoolean())
+    }
 }

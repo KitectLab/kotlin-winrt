@@ -8,6 +8,7 @@ interface ComInterop {
     fun queryInterface(instance: ComPtr, iid: Guid): Result<ComPtr>
     fun addRef(instance: ComPtr): UInt
     fun release(instance: ComPtr): UInt
+    fun invokeHStringMethod(instance: ComPtr, vtableIndex: Int): Result<HString>
 }
 
 expect object PlatformComInterop : ComInterop

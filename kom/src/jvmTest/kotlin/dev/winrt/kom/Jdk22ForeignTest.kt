@@ -3,6 +3,7 @@ package dev.winrt.kom
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 
@@ -64,6 +65,19 @@ class Jdk22ForeignTest {
             if (shouldUninitialize) {
                 JvmWinRtRuntime.uninitialize()
             }
+        }
+    }
+
+    @Test
+    fun windows_runtime_hstring_roundtrip_works() {
+        assumeTrue(PlatformRuntime.isWindows)
+
+        val hString = JvmWinRtRuntime.createHString("hello winrt")
+        try {
+            assertEquals("hello winrt", JvmWinRtRuntime.toKotlinString(hString))
+            assertTrue(!hString.isNull)
+        } finally {
+            JvmWinRtRuntime.releaseHString(hString)
         }
     }
 }

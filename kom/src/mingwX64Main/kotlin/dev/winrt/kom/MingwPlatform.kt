@@ -16,10 +16,19 @@ actual object PlatformComInterop : ComInterop {
     override fun addRef(instance: ComPtr): UInt = 1u
 
     override fun release(instance: ComPtr): UInt = 0u
+
+    override fun invokeHStringMethod(instance: ComPtr, vtableIndex: Int): Result<HString> {
+        return Result.failure(
+            UnsupportedOperationException("Native HSTRING invocation is not wired yet"),
+        )
+    }
 }
 
 actual object PlatformHStringBridge : HStringBridge {
-    override fun create(value: String): HString = HString(value)
+    override fun create(value: String): HString = HString.NULL
 
-    override fun toKotlinString(value: HString): String = value.value
+    override fun toKotlinString(value: HString): String = ""
+
+    override fun release(value: HString) {
+    }
 }

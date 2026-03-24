@@ -62,12 +62,37 @@ actual object PlatformComInterop : ComInterop {
         ) as Int
         return Jdk22Foreign.longToUInt(result)
     }
+
+    override fun invokeHStringMethod(instance: ComPtr, vtableIndex: Int): Result<HString> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            Arena.ofConfined().use { arena ->
+                val resultSegment = arena.allocate(ValueLayout.ADDRESS)
+                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                val hresult = HResult(
+                    Jdk22Foreign.hstringMethodHandle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        resultSegment,
+                    ) as Int,
+                )
+                hresult.requireSuccess("invokeHStringMethod($vtableIndex)")
+                HString(resultSegment.get(ValueLayout.ADDRESS, 0L).address())
+            }
+        }
+    }
 }
 
 actual object PlatformHStringBridge : HStringBridge {
-    override fun create(value: String): HString = HString(value)
+    override fun create(value: String): HString = JvmWinRtRuntime.createHString(value)
 
-    override fun toKotlinString(value: HString): String = value.value
+    override fun toKotlinString(value: HString): String = JvmWinRtRuntime.toKotlinString(value)
+
+    override fun release(value: HString) {
+        JvmWinRtRuntime.releaseHString(value)
+    }
 }
 
 object JvmComRuntime {
@@ -83,16 +108,6 @@ object JvmComRuntime {
 
     fun uninitialize() {
         Jdk22Foreign.coUninitializeHandle.invokeWithArguments()
-    }
-}
-
-class JvmHStringHandle internal constructor(
-    val segment: MemorySegment,
-) : AutoCloseable {
-    override fun close() {
-        if (segment != MemorySegment.NULL) {
-            Jdk22Foreign.windowsDeleteStringHandle.invokeWithArguments(segment)
-        }
     }
 }
 
@@ -114,7 +129,7 @@ object JvmWinRtRuntime {
         Jdk22Foreign.roUninitializeHandle.invokeWithArguments()
     }
 
-    fun createHString(value: String): JvmHStringHandle {
+    fun createHString(value: String): HString {
         return Arena.ofConfined().use { arena ->
             val utf16 = value.toByteArray(StandardCharsets.UTF_16LE)
             val source = arena.allocate(utf16.size.toLong() + 2)
@@ -132,19 +147,42 @@ object JvmWinRtRuntime {
                 ) as Int,
             )
             result.requireSuccess("WindowsCreateString")
-            JvmHStringHandle(output.get(ValueLayout.ADDRESS, 0L))
+            HString(output.get(ValueLayout.ADDRESS, 0L).address())
+        }
+    }
+
+    fun toKotlinString(value: HString): String {
+        if (value.isNull) {
+            return ""
+        }
+
+        return Arena.ofConfined().use { arena ->
+            val lengthSegment = arena.allocate(ValueLayout.JAVA_INT)
+            val rawBuffer = Jdk22Foreign.windowsGetStringRawBufferHandle.invokeWithArguments(
+                MemorySegment.ofAddress(value.raw),
+                lengthSegment,
+            ) as MemorySegment
+            val length = lengthSegment.get(ValueLayout.JAVA_INT, 0L)
+            rawBuffer.reinterpret(length.toLong() * 2).getString(0L, StandardCharsets.UTF_16LE)
+        }
+    }
+
+    fun releaseHString(value: HString) {
+        if (!value.isNull) {
+            Jdk22Foreign.windowsDeleteStringHandle.invokeWithArguments(MemorySegment.ofAddress(value.raw))
         }
     }
 
     fun getActivationFactory(classId: String, iid: Guid = iidIActivationFactory): Result<ComPtr> {
         return runCatching {
-            createHString(classId).use { hString ->
+            val hString = createHString(classId)
+            try {
                 Arena.ofConfined().use { arena ->
                     val iidSegment = Jdk22Foreign.guidSegment(iid, arena)
                     val resultSegment = arena.allocate(ValueLayout.ADDRESS)
                     val result = HResult(
                         Jdk22Foreign.roGetActivationFactoryHandle.invokeWithArguments(
-                            hString.segment,
+                            MemorySegment.ofAddress(hString.raw),
                             iidSegment,
                             resultSegment,
                         ) as Int,
@@ -152,6 +190,8 @@ object JvmWinRtRuntime {
                     result.requireSuccess("RoGetActivationFactory")
                     Jdk22Foreign.addressResult(resultSegment.get(ValueLayout.ADDRESS, 0L))
                 }
+            } finally {
+                releaseHString(hString)
             }
         }
     }
