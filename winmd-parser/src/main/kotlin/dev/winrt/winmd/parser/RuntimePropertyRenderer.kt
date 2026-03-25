@@ -10,6 +10,14 @@ import dev.winrt.winmd.plugin.WinMdProperty
 internal class RuntimePropertyRenderer(
     private val typeNameMapper: TypeNameMapper,
 ) {
+    fun canRenderRuntimeProperty(property: WinMdProperty): Boolean {
+        return when (property.type) {
+            "Boolean", "Guid", "DateTime", "TimeSpan", "EventRegistrationToken", "IReference<String>", "String" ->
+                property.getterVtableIndex != null || (property.type == "String" && property.setterVtableIndex != null)
+            else -> false
+        }
+    }
+
     fun renderBackingProperty(property: WinMdProperty, currentNamespace: String): PropertySpec {
         val kotlinType = typeNameMapper.mapTypeName(property.type, currentNamespace)
         return PropertySpec.builder("backing_${property.name}", PoetSymbols.runtimePropertyClass.parameterizedBy(kotlinType))

@@ -6,8 +6,16 @@ import dev.winrt.winmd.plugin.WinMdMethod
 internal class RuntimeMethodRenderer(
     private val typeNameMapper: TypeNameMapper,
 ) {
-    fun renderRuntimeMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
+    fun canRenderRuntimeMethod(method: WinMdMethod): Boolean {
         if (!isKotlinIdentifier(method.name)) {
+            return false
+        }
+        return (method.returnType == "Unit" && method.parameters.isEmpty() && method.vtableIndex != null) ||
+            (method.returnType == "UInt32" && method.parameters.isEmpty() && method.vtableIndex != null)
+    }
+
+    fun renderRuntimeMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
+        if (!canRenderRuntimeMethod(method)) {
             return null
         }
         val functionName = method.name.replaceFirstChar(Char::lowercase)
@@ -33,8 +41,6 @@ internal class RuntimeMethodRenderer(
                 .build()
         }
 
-        return builder
-            .addStatement("return %L", typeNameMapper.defaultValueFor(kotlinType, functionName))
-            .build()
+        return null
     }
 }

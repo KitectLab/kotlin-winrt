@@ -46,6 +46,9 @@ internal class InterfaceTypeRenderer(
         if (!isKotlinIdentifier(method.name)) {
             return null
         }
+        if (!supportsInterfaceMethod(method)) {
+            return null
+        }
         val functionName = kotlinMethodName(method.name)
         val builder = FunSpec.builder(functionName)
             .returns(typeNameMapper.mapTypeName(method.returnType, currentNamespace))
@@ -88,7 +91,7 @@ internal class InterfaceTypeRenderer(
                     .endControlFlow()
                     .build()
             }
-            else -> builder.build()
+            else -> null
         }
     }
 
@@ -97,5 +100,13 @@ internal class InterfaceTypeRenderer(
             "ToString" -> "toStringValue"
             else -> methodName.replaceFirstChar(Char::lowercase)
         }
+    }
+
+    private fun supportsInterfaceMethod(method: WinMdMethod): Boolean {
+        return (method.returnType == "String" && method.parameters.isEmpty() && method.vtableIndex != null) ||
+            (method.returnType == "String" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "String" &&
+                method.vtableIndex != null)
     }
 }

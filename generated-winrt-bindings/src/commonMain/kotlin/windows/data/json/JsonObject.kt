@@ -1,4 +1,4 @@
-package windows.data.json
+package windows.`data`.json
 
 import dev.winrt.core.Inspectable
 import dev.winrt.core.RuntimeClassId
@@ -6,18 +6,22 @@ import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.kom.ComPtr
+import kotlin.String
 
-open class JsonObject(pointer: ComPtr) : Inspectable(pointer) {
-    fun asIJsonObject(): IJsonObject = IJsonObject.from(this)
+public open class JsonObject(
+  pointer: ComPtr,
+) : Inspectable(pointer) {
+  public fun asIJsonObject(): IJsonObject = IJsonObject.from(this)
 
-    fun asIJsonValue(): IJsonValue = IJsonValue.from(this)
+  public companion object : WinRtRuntimeClassMetadata {
+    override val qualifiedName: String = "Windows.Data.Json.JsonObject"
 
-    companion object : WinRtRuntimeClassMetadata {
-        override val qualifiedName: String = "Windows.Data.Json.JsonObject"
-        override val classId = RuntimeClassId("Windows.Data.Json", "JsonObject")
-        override val defaultInterfaceName: String? = "Windows.Data.Json.IJsonObject"
-        override val activationKind = WinRtActivationKind.Factory
+    override val classId: RuntimeClassId = RuntimeClassId("Windows.Data.Json", "JsonObject")
 
-        fun activate(): JsonObject = WinRtRuntime.activate(this, ::JsonObject)
-    }
+    override val defaultInterfaceName: String? = "Windows.Data.Json.IJsonObject"
+
+    override val activationKind: WinRtActivationKind = WinRtActivationKind.Factory
+
+    public fun activate(): JsonObject = WinRtRuntime.activate(this, ::JsonObject)
+  }
 }

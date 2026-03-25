@@ -25,6 +25,12 @@ class CheckedInBindingsParityTest {
         "windows/foundation/IStringable.kt",
         "windows/foundation/Point.kt",
     )
+    private val jsonRelativePaths = listOf(
+        "windows/data/json/IJsonObject.kt",
+        "windows/data/json/IJsonValue.kt",
+        "windows/data/json/JsonObject.kt",
+        "windows/data/json/JsonValueType.kt",
+    )
     private val trackedTypes = mapOf(
         "Windows.Foundation" to setOf("AsyncStatus", "IStringable", "Point"),
         "Windows.Data.Json" to setOf("IJsonObject", "IJsonValue", "JsonObject", "JsonValueType"),
@@ -103,6 +109,46 @@ class CheckedInBindingsParityTest {
         assertTrue(
             buildString {
                 appendLine("Foundation checked-in bindings are out of date.")
+                mismatches.forEach { appendLine(it) }
+            },
+            mismatches.isEmpty(),
+        )
+    }
+
+    @Test
+    fun generated_json_subset_matches_checked_in_content() {
+        val inputs = WinMdParserInputResolver.resolve(
+            arrayOf(
+                "build/generated/checkedInBindings",
+                "--contract=Windows.Foundation.UniversalApiContract",
+                "--contract=Windows.Foundation.FoundationContract",
+            ),
+        )
+        val model = WinMdModelFactory.merge(
+            primary = WinMdModelFactory.metadataModel(inputs.sources),
+            supplemental = WinMdModelFactory.sampleSupplementalModel(),
+        )
+        val trackedModel = model.copy(
+            namespaces = model.namespaces.mapNotNull { namespace ->
+                val allowedTypes = trackedTypes[namespace.name] ?: return@mapNotNull null
+                val types = namespace.types.filter { it.name in allowedTypes }
+                if (types.isEmpty()) null else WinMdNamespace(namespace.name, types)
+            },
+        )
+        val generatedFiles = KotlinBindingGenerator().generate(trackedModel)
+            .associateBy { it.relativePath.lowercase() }
+        val checkedInRoot = Path.of("../generated-winrt-bindings/src/commonMain/kotlin")
+
+        val mismatches = jsonRelativePaths.mapNotNull { relativePath ->
+            val generated = generatedFiles[relativePath.lowercase()]
+                ?: return@mapNotNull "Missing generated file: $relativePath"
+            val checkedIn = checkedInRoot.resolve(relativePath).readText()
+            if (checkedIn != generated.content) "Generated file differs: $relativePath" else null
+        }
+
+        assertTrue(
+            buildString {
+                appendLine("JSON checked-in bindings are out of date.")
                 mismatches.forEach { appendLine(it) }
             },
             mismatches.isEmpty(),

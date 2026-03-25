@@ -24,11 +24,12 @@ internal class RuntimeTypeRenderer(
             .superclass(PoetSymbols.inspectableClass)
             .addSuperclassConstructorParameter("pointer")
 
-        type.properties.forEach { property ->
+        type.properties.filter(runtimePropertyRenderer::canRenderRuntimeProperty).forEach { property ->
             builder.addProperty(runtimePropertyRenderer.renderBackingProperty(property, type.namespace))
             builder.addProperty(runtimePropertyRenderer.renderRuntimeProperty(property, type.namespace))
         }
-        type.methods.mapNotNull { runtimeMethodRenderer.renderRuntimeMethod(it, type.namespace) }
+        type.methods.filter(runtimeMethodRenderer::canRenderRuntimeMethod)
+            .mapNotNull { runtimeMethodRenderer.renderRuntimeMethod(it, type.namespace) }
             .forEach(builder::addFunction)
         builder.addType(runtimeCompanionRenderer.render(type))
         type.defaultInterface?.let { defaultInterface ->
