@@ -12,5 +12,9 @@ allprojects {
     tasks.withType<Test>().configureEach {
         maxParallelForks = 1
         maxHeapSize = "256m"
+        systemProperty(
+            "dev.winrt.enableProbe",
+            providers.gradleProperty("dev.winrt.enableProbe").orNull ?: "false",
+        )
     }
 }

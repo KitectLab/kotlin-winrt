@@ -97,10 +97,10 @@ class JsonObjectRealMetadataProbeTest {
         }
     }
 
-    @Ignore("Experimental probe for diagnosing whether real metadata slots fail by HRESULT or by wrong values")
     @Test
     fun classify_real_metadata_slot_outcomes_for_json_object() {
         assumeTrue(PlatformRuntime.isWindows)
+        assumeTrue(System.getProperty("dev.winrt.enableProbe") == "true")
 
         val comResult = JvmComRuntime.initializeMultithreaded()
         val roResult = JvmWinRtRuntime.initializeMultithreaded()
