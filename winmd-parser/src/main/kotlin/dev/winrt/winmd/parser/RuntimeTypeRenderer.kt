@@ -13,6 +13,7 @@ import dev.winrt.winmd.plugin.WinMdType
 internal class RuntimeTypeRenderer(
     private val typeNameMapper: TypeNameMapper,
     private val runtimePropertyRenderer: RuntimePropertyRenderer,
+    private val runtimeMethodRenderer: RuntimeMethodRenderer,
 ) {
     fun render(type: WinMdType): TypeSpec {
         return when (type.kind) {
@@ -34,7 +35,7 @@ internal class RuntimeTypeRenderer(
             builder.addProperty(runtimePropertyRenderer.renderBackingProperty(property, type.namespace))
             builder.addProperty(runtimePropertyRenderer.renderRuntimeProperty(property, type.namespace))
         }
-        type.methods.forEach { builder.addFunction(renderRuntimeMethod(it, type.namespace)) }
+        type.methods.forEach { builder.addFunction(runtimeMethodRenderer.renderRuntimeMethod(it, type.namespace)) }
         builder.addType(renderRuntimeClassCompanion(type))
         type.defaultInterface?.let { defaultInterface ->
             val simpleName = defaultInterface.substringAfterLast('.')
@@ -77,35 +78,6 @@ internal class RuntimeTypeRenderer(
                     .addStatement("return %T.activate(this, ::%L)", PoetSymbols.winRtRuntimeClass, type.name)
                     .build(),
             )
-            .build()
-    }
-
-    private fun renderRuntimeMethod(method: dev.winrt.winmd.plugin.WinMdMethod, currentNamespace: String): FunSpec {
-        val functionName = method.name.replaceFirstChar(Char::lowercase)
-        val kotlinType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
-        val builder = FunSpec.builder(functionName).returns(kotlinType)
-
-        if (method.returnType == "Unit" && method.parameters.isEmpty() && method.vtableIndex != null) {
-            val vtableIndex = method.vtableIndex!!
-            return builder
-                .beginControlFlow("if (pointer.isNull)")
-                .addStatement("return")
-                .endControlFlow()
-                .addStatement("%T.invokeUnitMethod(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
-                .build()
-        }
-        if (method.returnType == "UInt32" && method.parameters.isEmpty() && method.vtableIndex != null) {
-            val vtableIndex = method.vtableIndex!!
-            return builder
-                .beginControlFlow("if (pointer.isNull)")
-                .addStatement("return %T(0u)", PoetSymbols.uint32Class)
-                .endControlFlow()
-                .addStatement("return %T(%T.invokeUInt32Method(pointer, %L).getOrThrow())", PoetSymbols.uint32Class, PoetSymbols.platformComInteropClass, vtableIndex)
-                .build()
-        }
-
-        return builder
-            .addStatement("return %L", typeNameMapper.defaultValueFor(kotlinType, functionName))
             .build()
     }
 

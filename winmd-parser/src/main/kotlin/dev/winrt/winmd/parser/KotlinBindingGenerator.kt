@@ -10,7 +10,8 @@ class KotlinBindingGenerator {
     private val typeNameMapper = TypeNameMapper()
     private val interfaceTypeRenderer = InterfaceTypeRenderer(typeNameMapper)
     private val runtimePropertyRenderer = RuntimePropertyRenderer(typeNameMapper)
-    private val runtimeTypeRenderer = RuntimeTypeRenderer(typeNameMapper, runtimePropertyRenderer)
+    private val runtimeMethodRenderer = RuntimeMethodRenderer(typeNameMapper)
+    private val runtimeTypeRenderer = RuntimeTypeRenderer(typeNameMapper, runtimePropertyRenderer, runtimeMethodRenderer)
 
     fun generate(model: WinMdModel): List<GeneratedFile> {
         return model.namespaces.flatMap { namespace ->
