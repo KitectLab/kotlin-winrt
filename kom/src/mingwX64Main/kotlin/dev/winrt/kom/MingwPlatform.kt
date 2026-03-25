@@ -40,6 +40,12 @@ actual object PlatformComInterop : ComInterop {
             UnsupportedOperationException("Native Boolean getter invocation is not wired yet"),
         )
     }
+
+    override fun invokeGuidGetter(instance: ComPtr, vtableIndex: Int): Result<Guid> {
+        return Result.failure(
+            UnsupportedOperationException("Native GUID getter invocation is not wired yet"),
+        )
+    }
 }
 
 actual object PlatformHStringBridge : HStringBridge {

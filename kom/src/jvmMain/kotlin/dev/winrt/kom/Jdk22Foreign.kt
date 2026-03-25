@@ -166,6 +166,24 @@ internal object Jdk22Foreign {
         )
     }
 
+    val guidGetterHandle: MethodHandle by lazy {
+        linker.downcallHandle(
+            FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
+        )
+    }
+
+    fun guidFromSegment(segment: MemorySegment): Guid {
+        val data4 = ByteArray(8) { index ->
+            segment.get(ValueLayout.JAVA_BYTE, 8L + index)
+        }
+        return Guid(
+            data1 = segment.get(intLayout, 0L),
+            data2 = segment.get(ValueLayout.JAVA_SHORT, 4L),
+            data3 = segment.get(ValueLayout.JAVA_SHORT, 6L),
+            data4 = data4,
+        )
+    }
+
     fun addressResult(segment: MemorySegment): ComPtr = ComPtr(AbiIntPtr(segment.address()))
 
     fun longToUInt(value: Int): UInt = value.toUInt()

@@ -147,6 +147,27 @@ actual object PlatformComInterop : ComInterop {
             }
         }
     }
+
+    override fun invokeGuidGetter(instance: ComPtr, vtableIndex: Int): Result<Guid> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            Arena.ofConfined().use { arena ->
+                val resultSegment = arena.allocate(16)
+                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                val hresult = HResult(
+                    Jdk22Foreign.guidGetterHandle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        resultSegment,
+                    ) as Int,
+                )
+                hresult.requireSuccess("invokeGuidGetter($vtableIndex)")
+                Jdk22Foreign.guidFromSegment(resultSegment)
+            }
+        }
+    }
 }
 
 actual object PlatformHStringBridge : HStringBridge {

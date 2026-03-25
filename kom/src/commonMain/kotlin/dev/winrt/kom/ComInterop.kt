@@ -12,6 +12,7 @@ interface ComInterop {
     fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit>
     fun invokeUInt32Method(instance: ComPtr, vtableIndex: Int): Result<UInt>
     fun invokeBooleanGetter(instance: ComPtr, vtableIndex: Int): Result<Boolean>
+    fun invokeGuidGetter(instance: ComPtr, vtableIndex: Int): Result<Guid>
 }
 
 expect object PlatformComInterop : ComInterop

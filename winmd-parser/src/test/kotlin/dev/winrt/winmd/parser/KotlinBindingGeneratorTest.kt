@@ -46,6 +46,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(windowBinding.contains("val lifetime: TimeSpan"))
         assertTrue(windowBinding.contains("val lastToken: EventRegistrationToken"))
         assertTrue(windowBinding.contains("val stableId: GuidValue"))
+        assertTrue(windowBinding.contains("return GuidValue(PlatformComInterop.invokeGuidGetter(pointer, 9).getOrThrow().toString())"))
         assertTrue(windowBinding.contains("val optionalTitle: IReference<String>"))
         assertTrue(windowBinding.contains("companion object : WinRtRuntimeClassMetadata"))
         assertTrue(windowBinding.contains("defaultInterfaceName: String? = \"Windows.Foundation.IStringable\""))

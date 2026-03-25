@@ -59,7 +59,10 @@ open class Window(pointer: ComPtr) : Inspectable(pointer) {
         get() = backingLastToken.get()
 
     val stableId: GuidValue
-        get() = backingStableId.get()
+        get() {
+            if (pointer.isNull) return backingStableId.get()
+            return GuidValue(PlatformComInterop.invokeGuidGetter(pointer, 9).getOrThrow().toString())
+        }
 
     val optionalTitle: IReference<String>
         get() = backingOptionalTitle.get()
