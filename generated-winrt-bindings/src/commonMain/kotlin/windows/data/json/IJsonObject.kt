@@ -25,6 +25,9 @@ public open class IJsonObject(
     }
   }
 
+  public fun getNamedObject(name: String): JsonObject = JsonObject(
+      PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 8, name).getOrThrow())
+
   public fun getNamedNumber(name: String): Float64 =
       Float64(PlatformComInterop.invokeFloat64MethodWithStringArg(pointer, 11, name).getOrThrow())
 

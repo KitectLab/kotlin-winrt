@@ -31,7 +31,7 @@ class JsonObjectProjectionTest {
                 val instance = PlatformComInterop.invokeObjectMethodWithStringArg(
                     factory,
                     6,
-                    """{"name":"codex","kind":"winrt","pi":3.5,"flag":true}""",
+                    """{"name":"codex","kind":"winrt","pi":3.5,"flag":true,"nested":{"child":"value"}}""",
                 ).getOrThrow()
                 try {
                     val jsonObject = JsonObject(Inspectable(instance).pointer)
@@ -40,6 +40,17 @@ class JsonObjectProjectionTest {
                         assertEquals("codex", projected.getNamedString("name"))
                         assertEquals(3.5, projected.getNamedNumber("pi").value, 0.0)
                         assertTrue(projected.getNamedBoolean("flag").value)
+                        val nested = projected.getNamedObject("nested")
+                        try {
+                            val nestedProjected = nested.asIJsonObject()
+                            try {
+                                assertEquals("value", nestedProjected.getNamedString("child"))
+                            } finally {
+                                PlatformComInterop.release(nestedProjected.pointer)
+                            }
+                        } finally {
+                            PlatformComInterop.release(nested.pointer)
+                        }
                     } finally {
                         PlatformComInterop.release(projected.pointer)
                     }

@@ -154,6 +154,27 @@ actual object PlatformComInterop : ComInterop {
         }
     }
 
+    override fun invokeObjectMethod(instance: ComPtr, vtableIndex: Int): Result<ComPtr> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            Arena.ofConfined().use { arena ->
+                val resultSegment = arena.allocate(ValueLayout.ADDRESS)
+                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                val hresult = HResult(
+                    Jdk22Foreign.objectMethodHandle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        resultSegment,
+                    ) as Int,
+                )
+                hresult.requireSuccess("invokeObjectMethod($vtableIndex)")
+                Jdk22Foreign.addressResult(resultSegment.get(ValueLayout.ADDRESS, 0L))
+            }
+        }
+    }
+
     override fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit> {
         if (instance.isNull) {
             return Result.failure(KomException("Method invocation requires a non-null COM pointer"))

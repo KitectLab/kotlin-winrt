@@ -242,6 +242,11 @@ object WinMdModelFactory {
                                     returnType = "Boolean",
                                     vtableIndex = 10,
                                 ),
+                                WinMdMethod(
+                                    name = "GetObject",
+                                    returnType = "Windows.Data.Json.JsonObject",
+                                    vtableIndex = 12,
+                                ),
                             ),
                         ),
                         WinMdType(
@@ -254,6 +259,14 @@ object WinMdModelFactory {
                                     name = "GetNamedString",
                                     returnType = "String",
                                     vtableIndex = 10,
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                    ),
+                                ),
+                                WinMdMethod(
+                                    name = "GetNamedObject",
+                                    returnType = "Windows.Data.Json.JsonObject",
+                                    vtableIndex = 8,
                                     parameters = listOf(
                                         WinMdParameter("name", "String"),
                                     ),

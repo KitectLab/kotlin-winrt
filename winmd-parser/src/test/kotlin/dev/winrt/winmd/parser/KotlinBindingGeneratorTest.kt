@@ -161,6 +161,8 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(jsonInterfaceBinding.contains("fun getNamedString(name: String): String"))
         assertTrue(jsonInterfaceBinding.contains("PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 10, name).getOrThrow()"))
+        assertTrue(jsonInterfaceBinding.contains("fun getNamedObject(name: String): JsonObject"))
+        assertTrue(jsonInterfaceBinding.contains("PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 8, name).getOrThrow()"))
         assertTrue(jsonInterfaceBinding.contains("fun getNamedNumber(name: String): Float64"))
         assertTrue(jsonInterfaceBinding.contains("invokeFloat64MethodWithStringArg(pointer, 11, name).getOrThrow()"))
         assertTrue(jsonInterfaceBinding.contains("fun getNamedBoolean(name: String): WinRtBoolean"))
@@ -171,6 +173,9 @@ class KotlinBindingGeneratorTest {
         assertTrue(jsonValueBinding.contains("9).getOrThrow()"))
         assertTrue(jsonValueBinding.contains("fun getBoolean(): WinRtBoolean"))
         assertTrue(jsonValueBinding.contains("PlatformComInterop.invokeBooleanGetter(pointer, 10).getOrThrow()"))
+        assertTrue(jsonValueBinding.contains("fun getObject(): JsonObject"))
+        assertTrue(jsonValueBinding.contains("PlatformComInterop.invokeObjectMethod(pointer,"))
+        assertTrue(jsonValueBinding.contains("12).getOrThrow()"))
         assertTrue(jsonEnumBinding.contains("enum class JsonValueType"))
         assertTrue(jsonEnumBinding.contains("Object"))
     }

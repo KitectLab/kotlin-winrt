@@ -21,6 +21,9 @@ public open class IJsonValue(
   public fun getBoolean(): WinRtBoolean =
       WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 10).getOrThrow())
 
+  public fun getObject(): JsonObject = JsonObject(PlatformComInterop.invokeObjectMethod(pointer,
+      12).getOrThrow())
+
   public companion object : WinRtInterfaceMetadata {
     override val qualifiedName: String = "Windows.Data.Json.IJsonValue"
 

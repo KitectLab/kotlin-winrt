@@ -166,6 +166,12 @@ internal object Jdk22Foreign {
         )
     }
 
+    val objectMethodHandle: MethodHandle by lazy {
+        linker.downcallHandle(
+            FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
+        )
+    }
+
     val hstringSetterHandle: MethodHandle by lazy {
         linker.downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
