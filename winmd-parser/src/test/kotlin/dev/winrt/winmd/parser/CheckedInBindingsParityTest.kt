@@ -18,6 +18,9 @@ class CheckedInBindingsParityTest {
         "windows/data/json/IJsonValue.kt",
         "windows/data/json/JsonObject.kt",
         "windows/data/json/JsonValueType.kt",
+        "windows/globalization/Calendar.kt",
+        "windows/globalization/DayOfWeek.kt",
+        "windows/globalization/ICalendar.kt",
         "microsoft/ui/xaml/Application.kt",
         "microsoft/ui/xaml/Window.kt",
     )
@@ -36,6 +39,7 @@ class CheckedInBindingsParityTest {
     private val trackedTypes = mapOf(
         "Windows.Foundation" to setOf("AsyncStatus", "IStringable", "Point"),
         "Windows.Data.Json" to setOf("IJsonArray", "IJsonObject", "IJsonValue", "JsonObject", "JsonValueType"),
+        "Windows.Globalization" to setOf("Calendar", "DayOfWeek", "ICalendar"),
         "Microsoft.UI.Xaml" to setOf("Application", "Window"),
     )
 
@@ -174,6 +178,28 @@ class CheckedInBindingsParityTest {
         assertTrue(checkedIn.contains("invokeFloat64MethodWithUInt32Arg(pointer, 9,"))
         assertTrue(checkedIn.contains("fun getBooleanAt(index: UInt32): WinRtBoolean"))
         assertTrue(checkedIn.contains("invokeBooleanMethodWithUInt32Arg(pointer, 10,"))
+    }
+
+    @Test
+    fun checked_in_calendar_keeps_verified_runtime_surface() {
+        val checkedIn = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/ICalendar.kt").readText()
+
+        assertTrue(checkedIn.contains("fun clone(): Calendar"))
+        assertTrue(checkedIn.contains("invokeObjectMethod(pointer, 6).getOrThrow()"))
+        assertTrue(checkedIn.contains("var month: Int32"))
+        assertTrue(checkedIn.contains("invokeInt32Setter(pointer, 40, value.value).getOrThrow()"))
+        assertTrue(checkedIn.contains("var day: Int32"))
+        assertTrue(checkedIn.contains("invokeInt32Setter(pointer, 53, value.value).getOrThrow()"))
+        assertTrue(checkedIn.contains("fun get_Year(): Int32"))
+        assertTrue(checkedIn.contains("invokeInt32Method(pointer, 30).getOrThrow()"))
+        assertTrue(checkedIn.contains("fun yearAsString(): String"))
+        assertTrue(checkedIn.contains("invokeHStringMethod(pointer, 33).getOrThrow()"))
+        assertTrue(checkedIn.contains("fun yearAsPaddedString(minDigits: Int32): String"))
+        assertTrue(checkedIn.contains("invokeHStringMethodWithInt32Arg(pointer, 35,"))
+        assertTrue(checkedIn.contains("fun get_DayOfWeek(): DayOfWeek"))
+        assertTrue(checkedIn.contains("invokeUInt32Method(pointer, 57).getOrThrow().toInt()"))
+        assertTrue(checkedIn.contains("fun get_IsDaylightSavingTime(): WinRtBoolean"))
+        assertTrue(checkedIn.contains("invokeBooleanGetter(pointer, 103).getOrThrow()"))
     }
 
 }
