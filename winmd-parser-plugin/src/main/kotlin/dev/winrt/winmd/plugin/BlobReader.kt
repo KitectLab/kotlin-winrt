@@ -5,6 +5,8 @@ internal class BlobReader(private val bytes: ByteArray) {
 
     fun readByte(): Int = bytes[cursor++].toInt() and 0xFF
 
+    fun hasRemaining(): Boolean = cursor < bytes.size
+
     fun readCompressedUInt(): Int {
         val first = readByte()
         return when {

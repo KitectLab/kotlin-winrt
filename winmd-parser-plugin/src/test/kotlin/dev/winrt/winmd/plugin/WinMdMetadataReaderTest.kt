@@ -105,6 +105,7 @@ class WinMdMetadataReaderTest {
                     method.parameters.singleOrNull()?.type == "UInt32"
             },
         )
+        assertEquals(13, InterfaceVtableResolver.inferMethodSlot(jsonArrayInterface, model, "GetObjectAt"))
 
         val calendar = model.namespaces
             .first { it.name == "Windows.Globalization" }
