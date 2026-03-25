@@ -22,5 +22,9 @@ allprojects {
             "dev.winrt.probeTarget",
             providers.gradleProperty("dev.winrt.probeTarget").orNull ?: "",
         )
+        systemProperty(
+            "dev.winrt.probeMode",
+            providers.gradleProperty("dev.winrt.probeMode").orNull ?: "",
+        )
     }
 }
