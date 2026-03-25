@@ -18,8 +18,6 @@ open class Inspectable(pointer: ComPtr) : WinRtObject(pointer) {
     }
 }
 
-data class EventRegistrationToken(val value: Long)
-
 data class RuntimeClassId(
     val namespace: String,
     val name: String,

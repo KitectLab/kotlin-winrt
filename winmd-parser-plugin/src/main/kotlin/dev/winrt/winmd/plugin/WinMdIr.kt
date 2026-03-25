@@ -104,6 +104,7 @@ object WinMdModelFactory {
                             defaultInterface = "Windows.Foundation.IStringable",
                             methods = listOf(
                                 WinMdMethod("Start", "Unit"),
+                                WinMdMethod("GetLaunchCount", "UInt32"),
                             ),
                         ),
                         WinMdType(
@@ -116,6 +117,12 @@ object WinMdModelFactory {
                             ),
                             properties = listOf(
                                 WinMdProperty("Title", "String", mutable = true),
+                                WinMdProperty("IsVisible", "Boolean", mutable = false),
+                                WinMdProperty("CreatedAt", "DateTime", mutable = false),
+                                WinMdProperty("Lifetime", "TimeSpan", mutable = false),
+                                WinMdProperty("LastToken", "EventRegistrationToken", mutable = false),
+                                WinMdProperty("StableId", "Guid", mutable = false),
+                                WinMdProperty("OptionalTitle", "IReference<String>", mutable = false),
                             ),
                         ),
                     ),

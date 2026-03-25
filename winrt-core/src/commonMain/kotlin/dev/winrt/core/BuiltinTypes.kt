@@ -25,3 +25,12 @@ value class Float32(val value: Float)
 
 @JvmInline
 value class Float64(val value: Double)
+
+@JvmInline
+value class DateTime(val universalTime: Long)
+
+@JvmInline
+value class TimeSpan(val duration: Long)
+
+@JvmInline
+value class GuidValue(val value: String)

@@ -28,15 +28,23 @@ class KotlinBindingGenerator {
         return buildString {
             appendLine("package $packageName")
             appendLine()
+            appendLine("import dev.winrt.core.DateTime")
+            appendLine("import dev.winrt.core.EventRegistrationToken")
             appendLine("import dev.winrt.core.WinRtInterfaceProjection")
             appendLine("import dev.winrt.core.WinRtInterfaceMetadata")
             appendLine("import dev.winrt.core.WinRtRuntimeClassMetadata")
+            appendLine("import dev.winrt.core.GuidValue")
             appendLine("import dev.winrt.core.Inspectable")
+            appendLine("import dev.winrt.core.IReference")
+            appendLine("import dev.winrt.core.Int32")
             appendLine("import dev.winrt.core.projectInterface")
             appendLine("import dev.winrt.core.RuntimeClassId")
             appendLine("import dev.winrt.core.RuntimeProperty")
+            appendLine("import dev.winrt.core.TimeSpan")
+            appendLine("import dev.winrt.core.UInt32")
             appendLine("import dev.winrt.core.WinRtRuntime")
             appendLine("import dev.winrt.core.WinRtStrings")
+            appendLine("import dev.winrt.core.WinRtBoolean")
             appendLine("import dev.winrt.core.guidOf")
             appendLine("import dev.winrt.kom.ComPtr")
             appendLine("import dev.winrt.kom.PlatformComInterop")
@@ -93,14 +101,22 @@ class KotlinBindingGenerator {
         }
         val methods = type.methods.joinToString("\n") { method ->
             val functionName = method.name.replaceFirstChar(Char::lowercase)
-            val returnExpression = when (method.returnType) {
+            val kotlinType = mapType(method.returnType)
+            val returnExpression = when (kotlinType) {
                 "Unit" -> "Unit"
                 "String" -> "\"\""
                 "Int" -> "0"
                 "Boolean" -> "false"
+                "Int32" -> "Int32(0)"
+                "UInt32" -> "UInt32(0u)"
+                "WinRtBoolean" -> "WinRtBoolean.FALSE"
+                "DateTime" -> "DateTime(0)"
+                "TimeSpan" -> "TimeSpan(0)"
+                "EventRegistrationToken" -> "EventRegistrationToken(0)"
+                "GuidValue" -> "GuidValue(\"\")"
                 else -> "error(\"Stub method not implemented: $functionName\")"
             }
-            "    fun $functionName(): ${method.returnType} = $returnExpression"
+            "    fun $functionName(): $kotlinType = $returnExpression"
         }
 
         return buildString {
@@ -129,6 +145,7 @@ class KotlinBindingGenerator {
 
     private fun renderProperty(property: WinMdProperty): String {
         val keyword = if (property.mutable) "var" else "val"
+        val kotlinType = mapType(property.type)
         val setter = if (property.mutable) {
             """
                 set(value) {
@@ -140,12 +157,49 @@ class KotlinBindingGenerator {
         }
 
         return buildString {
-            appendLine("    private val backing_${property.name} = RuntimeProperty<${property.type}>(\"\" as ${property.type})")
-            appendLine("    $keyword ${property.name.replaceFirstChar(Char::lowercase)}: ${property.type}")
+            appendLine("    private val backing_${property.name} = RuntimeProperty<$kotlinType>(${defaultValueFor(kotlinType)})")
+            appendLine("    $keyword ${property.name.replaceFirstChar(Char::lowercase)}: $kotlinType")
             appendLine("        get() = backing_${property.name}.get()")
             if (setter.isNotBlank()) {
                 appendLine("        $setter")
             }
+        }
+    }
+
+    private fun mapType(typeName: String): String {
+        return when {
+            typeName == "String" -> "String"
+            typeName == "Unit" -> "Unit"
+            typeName == "Boolean" -> "WinRtBoolean"
+            typeName == "Int" -> "Int"
+            typeName == "Int32" -> "Int32"
+            typeName == "UInt32" -> "UInt32"
+            typeName == "Guid" -> "GuidValue"
+            typeName == "DateTime" -> "DateTime"
+            typeName == "TimeSpan" -> "TimeSpan"
+            typeName == "EventRegistrationToken" -> "EventRegistrationToken"
+            typeName.startsWith("IReference<") -> {
+                val inner = typeName.removePrefix("IReference<").removeSuffix(">")
+                "IReference<${mapType(inner)}>"
+            }
+            else -> typeName.substringAfterLast('.')
+        }
+    }
+
+    private fun defaultValueFor(typeName: String): String {
+        return when {
+            typeName == "String" -> "\"\""
+            typeName == "Int" -> "0"
+            typeName == "Unit" -> "Unit"
+            typeName == "WinRtBoolean" -> "WinRtBoolean.FALSE"
+            typeName == "Int32" -> "Int32(0)"
+            typeName == "UInt32" -> "UInt32(0u)"
+            typeName == "DateTime" -> "DateTime(0)"
+            typeName == "TimeSpan" -> "TimeSpan(0)"
+            typeName == "EventRegistrationToken" -> "EventRegistrationToken(0)"
+            typeName == "GuidValue" -> "GuidValue(\"\")"
+            typeName.startsWith("IReference<") -> "IReference(${defaultValueFor(typeName.removePrefix("IReference<").removeSuffix(">"))})"
+            else -> "error(\"No default value for $typeName\")"
         }
     }
 }
