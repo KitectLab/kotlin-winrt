@@ -57,7 +57,16 @@ data class WinMdMethod(
     val returnType: String,
     val vtableIndex: Int? = null,
     val parameters: List<WinMdParameter> = emptyList(),
-)
+) {
+    val signatureKey: String
+        get() = buildString {
+            append(name)
+            append('(')
+            append(parameters.joinToString(",") { it.type })
+            append("):")
+            append(returnType)
+        }
+}
 
 @Serializable
 data class WinMdParameter(
@@ -419,7 +428,7 @@ object WinMdModelFactory {
                                         method
                                     } else {
                                         method.copy(
-                                            vtableIndex = InterfaceVtableResolver.inferMethodSlot(type, model, method.name),
+                                            vtableIndex = InterfaceVtableResolver.inferMethodSlot(type, model, method),
                                         )
                                     }
                                 },
@@ -427,10 +436,10 @@ object WinMdModelFactory {
                                     property.copy(
                                         getterVtableIndex = property.getterVtableIndex ?: type.methods
                                             .firstOrNull { it.name == "get_${property.name}" }
-                                            ?.let { method -> InterfaceVtableResolver.inferMethodSlot(type, model, method.name) },
+                                            ?.let { method -> InterfaceVtableResolver.inferMethodSlot(type, model, method) },
                                         setterVtableIndex = property.setterVtableIndex ?: type.methods
                                             .firstOrNull { it.name == "put_${property.name}" }
-                                            ?.let { method -> InterfaceVtableResolver.inferMethodSlot(type, model, method.name) },
+                                            ?.let { method -> InterfaceVtableResolver.inferMethodSlot(type, model, method) },
                                     )
                                 },
                             )
@@ -466,12 +475,12 @@ object WinMdModelFactory {
     private fun mergeMethods(primary: List<WinMdMethod>, supplemental: List<WinMdMethod>): List<WinMdMethod> {
         if (primary.isEmpty()) return supplemental
         if (supplemental.isEmpty()) return primary
-        val supplementalByName = supplemental.associateBy(WinMdMethod::name)
+        val supplementalBySignature = supplemental.associateBy(WinMdMethod::signatureKey)
         val mergedPrimary = primary.map { method ->
-            supplementalByName[method.name]?.let { mergeMethod(method, it) } ?: method
+            supplementalBySignature[method.signatureKey]?.let { mergeMethod(method, it) } ?: method
         }
-        val existingNames = primary.mapTo(linkedSetOf(), WinMdMethod::name)
-        val appended = supplemental.filterNot { it.name in existingNames }
+        val existingSignatures = primary.mapTo(linkedSetOf(), WinMdMethod::signatureKey)
+        val appended = supplemental.filterNot { it.signatureKey in existingSignatures }
         return mergedPrimary + appended
     }
 

@@ -147,4 +147,82 @@ class WinMdModelFactoryTest {
             jsonObjectInterface.methods.map { it.name to it.vtableIndex },
         )
     }
+
+    @Test
+    fun merges_overloaded_methods_by_signature_instead_of_name() {
+        val primary = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Data.Json",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonObject",
+                            kind = WinMdTypeKind.Interface,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetNamedString",
+                                    returnType = "String",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetNamedString",
+                                    returnType = "String",
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                        WinMdParameter("defaultValue", "String"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val supplemental = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Data.Json",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonObject",
+                            kind = WinMdTypeKind.Interface,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetNamedString",
+                                    returnType = "String",
+                                    vtableIndex = 10,
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetNamedString",
+                                    returnType = "String",
+                                    vtableIndex = 17,
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                        WinMdParameter("defaultValue", "String"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val merged = WinMdModelFactory.merge(primary = primary, supplemental = supplemental)
+        val methods = merged.namespaces
+            .first { it.name == "Windows.Data.Json" }
+            .types.first { it.name == "IJsonObject" }
+            .methods
+
+        assertEquals(2, methods.size)
+        assertEquals(
+            listOf(10, 17),
+            methods.map { it.vtableIndex },
+        )
+    }
 }
