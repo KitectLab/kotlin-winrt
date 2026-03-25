@@ -14,6 +14,7 @@ object WinMdMetadataReader {
     private const val tableTypeDef = 2
     private const val tableField = 4
     private const val tableMethodDef = 6
+    private const val tableParam = 8
     private const val tableTypeSpec = 27
 
     fun readModel(sourceFiles: List<Path>): WinMdModel {
@@ -48,14 +49,62 @@ object WinMdMetadataReader {
         val tables = reader.readMetadataTables()
 
         return tables.typeDefs
-            .filterNot { it.name == "<Module>" }
-            .map { typeDef ->
+            .mapIndexedNotNull { index, typeDef ->
+                if (typeDef.name == "<Module>") {
+                    return@mapIndexedNotNull null
+                }
                 WinMdType(
                     namespace = typeDef.namespace,
                     name = typeDef.name,
                     kind = classifyType(typeDef, tables),
+                    methods = readMethods(index + 1, tables),
                 )
             }
+    }
+
+    private fun readMethods(typeDefIndex: Int, tables: MetadataTables): List<WinMdMethod> {
+        val typeDef = tables.typeDefs[typeDefIndex - 1]
+        val methodStart = typeDef.methodListIndex
+        if (methodStart == 0) {
+            return emptyList()
+        }
+        val methodEnd = tables.typeDefs.getOrNull(typeDefIndex)?.methodListIndex ?: (tables.methodDefs.size + 1)
+        return (methodStart until methodEnd).mapNotNull { methodIndex ->
+            val method = tables.methodDefs.getOrNull(methodIndex - 1) ?: return@mapNotNull null
+            val signature = parseMethodSignature(method.signature, tables)
+            val params = readMethodParameters(methodIndex, method, tables, signature.parameterTypes.size)
+            WinMdMethod(
+                name = method.name,
+                returnType = signature.returnType,
+                parameters = params,
+            )
+        }
+    }
+
+    private fun readMethodParameters(
+        methodIndex: Int,
+        method: MethodDefRow,
+        tables: MetadataTables,
+        expectedParameterCount: Int,
+    ): List<WinMdParameter> {
+        val paramStart = method.paramListIndex
+        if (paramStart == 0 || expectedParameterCount == 0) {
+            return emptyList()
+        }
+        val paramEnd = tables.methodDefs.getOrNull(methodIndex)?.paramListIndex ?: (tables.paramRows.size + 1)
+        val paramsBySequence = (paramStart until paramEnd)
+            .mapNotNull { paramIndex -> tables.paramRows.getOrNull(paramIndex - 1) }
+            .filter { it.sequence > 0 }
+            .associateBy(ParamRow::sequence)
+
+        val signature = parseMethodSignature(method.signature, tables)
+        return signature.parameterTypes.mapIndexed { index, parameterType ->
+            val paramRow = paramsBySequence[index + 1]
+            WinMdParameter(
+                name = paramRow?.name?.takeIf(String::isNotBlank) ?: "p${index + 1}",
+                type = parameterType,
+            )
+        }
     }
 
     private fun classifyType(typeDef: TypeDefRow, tables: MetadataTables): WinMdTypeKind {
@@ -83,6 +132,58 @@ object WinMdMetadataReader {
             0, 2 -> null
             else -> null
         }
+    }
+
+    private fun parseMethodSignature(signature: ByteArray, tables: MetadataTables): ParsedMethodSignature {
+        val reader = BlobReader(signature)
+        reader.readByte()
+        val parameterCount = reader.readCompressedUInt()
+        val returnType = parseElementType(reader, tables)
+        val parameters = buildList {
+            repeat(parameterCount) {
+                add(parseElementType(reader, tables))
+            }
+        }
+        return ParsedMethodSignature(
+            returnType = returnType,
+            parameterTypes = parameters,
+        )
+    }
+
+    private fun parseElementType(reader: BlobReader, tables: MetadataTables): String {
+        return when (val elementType = reader.readByte()) {
+            0x01 -> "Unit"
+            0x02 -> "Boolean"
+            0x03 -> "Char16"
+            0x04 -> "Int8"
+            0x05 -> "UInt8"
+            0x06 -> "Int16"
+            0x07 -> "UInt16"
+            0x08 -> "Int32"
+            0x09 -> "UInt32"
+            0x0A -> "Int64"
+            0x0B -> "UInt64"
+            0x0C -> "Float32"
+            0x0D -> "Float64"
+            0x0E -> "String"
+            0x11, 0x12 -> resolveTypeDefOrRefName(reader.readCompressedUInt(), tables)
+            0x1C -> "Object"
+            else -> "ElementType0x${elementType.toString(16)}"
+        }
+    }
+
+    private fun resolveTypeDefOrRefName(codedIndex: Int, tables: MetadataTables): String {
+        val tag = codedIndex and 0x3
+        val index = codedIndex ushr 2
+        return when (tag) {
+            0 -> tables.typeDefs.getOrNull(index - 1)?.let { qualify(it.namespace, it.name) }
+            1 -> tables.typeRefs.getOrNull(index - 1)?.let { qualify(it.namespace, it.name) }
+            else -> null
+        } ?: "UnknownType"
+    }
+
+    private fun qualify(namespace: String, name: String): String {
+        return if (namespace.isBlank()) name else "$namespace.$name"
     }
 
     private class WinMdBinaryReader(private val bytes: ByteArray) {
@@ -129,6 +230,7 @@ object WinMdMetadataReader {
 
             var stringHeap: ByteBuffer? = null
             var tablesHeap: ByteBuffer? = null
+            var blobHeap: ByteBuffer? = null
             repeat(streamCount) {
                 val offset = readInt32(cursor)
                 val size = readInt32(cursor + 4)
@@ -137,6 +239,7 @@ object WinMdMetadataReader {
                 when (name) {
                     "#Strings" -> stringHeap = slice(metadataOffset + offset, size)
                     "#~" -> tablesHeap = slice(metadataOffset + offset, size)
+                    "#Blob" -> blobHeap = slice(metadataOffset + offset, size)
                 }
                 cursor += headerSize
             }
@@ -144,13 +247,19 @@ object WinMdMetadataReader {
             return readTables(
                 tablesHeap ?: error("Missing #~ stream"),
                 stringHeap ?: error("Missing #Strings stream"),
+                blobHeap ?: error("Missing #Blob stream"),
             )
         }
 
-        private fun readTables(tablesHeap: ByteBuffer, stringHeap: ByteBuffer): MetadataTables {
+        private fun readTables(
+            tablesHeap: ByteBuffer,
+            stringHeap: ByteBuffer,
+            blobHeap: ByteBuffer,
+        ): MetadataTables {
             tablesHeap.order(ByteOrder.LITTLE_ENDIAN)
             val heapSizes = tablesHeap.get(6).toInt() and 0xFF
             val stringIndexSize = if ((heapSizes and 0x01) != 0) 4 else 2
+            val blobIndexSize = if ((heapSizes and 0x04) != 0) 4 else 2
             val validMask = tablesHeap.getLong(8)
             var cursor = 24
             val rowCounts = IntArray(64)
@@ -163,8 +272,11 @@ object WinMdMetadataReader {
 
             val typeRefRows = mutableListOf<TypeReferenceRow>()
             val typeDefRows = mutableListOf<TypeDefRow>()
+            val methodDefRows = mutableListOf<MethodDefRow>()
+            val paramRows = mutableListOf<ParamRow>()
             val fieldIndexSize = tableIndexSize(rowCounts[tableField])
             val methodIndexSize = tableIndexSize(rowCounts[tableMethodDef])
+            val paramIndexSize = tableIndexSize(rowCounts[tableParam])
             val typeDefOrRefIndexSize = codedIndexSize(
                 rowCounts[tableTypeDef],
                 rowCounts[tableTypeRef],
@@ -204,14 +316,46 @@ object WinMdMetadataReader {
                             cursor += stringIndexSize
                             val extendsIndex = readIndex(tablesHeap, cursor, typeDefOrRefIndexSize)
                             cursor += typeDefOrRefIndexSize
+                            val fieldListIndex = readIndex(tablesHeap, cursor, fieldIndexSize)
                             cursor += fieldIndexSize
+                            val methodListIndex = readIndex(tablesHeap, cursor, methodIndexSize)
                             cursor += methodIndexSize
                             typeDefRows += TypeDefRow(
                                 namespace = namespace,
                                 name = name,
                                 flags = flags,
                                 extendsCodedIndex = extendsIndex,
+                                fieldListIndex = fieldListIndex,
+                                methodListIndex = methodListIndex,
                             )
+                        }
+                    }
+                    tableMethodDef -> {
+                        repeat(rowCount) {
+                            cursor += 4
+                            cursor += 2
+                            cursor += 2
+                            val name = readStringIndex(tablesHeap, stringHeap, cursor, stringIndexSize)
+                            cursor += stringIndexSize
+                            val signature = readBlobIndex(tablesHeap, blobHeap, cursor, blobIndexSize)
+                            cursor += blobIndexSize
+                            val paramListIndex = readIndex(tablesHeap, cursor, paramIndexSize)
+                            cursor += paramIndexSize
+                            methodDefRows += MethodDefRow(
+                                name = name,
+                                signature = signature,
+                                paramListIndex = paramListIndex,
+                            )
+                        }
+                    }
+                    tableParam -> {
+                        repeat(rowCount) {
+                            cursor += 2
+                            val sequence = readUInt16(tablesHeap, cursor)
+                            cursor += 2
+                            val name = readStringIndex(tablesHeap, stringHeap, cursor, stringIndexSize)
+                            cursor += stringIndexSize
+                            paramRows += ParamRow(sequence = sequence, name = name)
                         }
                     }
                     else -> {
@@ -223,6 +367,8 @@ object WinMdMetadataReader {
             return MetadataTables(
                 typeRefs = typeRefRows,
                 typeDefs = typeDefRows,
+                methodDefs = methodDefRows,
+                paramRows = paramRows,
             )
         }
 
@@ -235,9 +381,10 @@ object WinMdMetadataReader {
                 0 -> 2 + stringIndexSize + guidIndexSize * 3
                 3 -> fieldIndexSize
                 4 -> 2 + stringIndexSize + blobIndexSize
-                5 -> 8 + stringIndexSize + blobIndexSize + tableIndexSize(rowCounts[8])
+                5 -> methodIndexSize
                 6 -> tableIndexSize(rowCounts[6]) + codedIndexSize(rowCounts[20], rowCounts[23]) + blobIndexSize
-                8 -> 2
+                7 -> tableIndexSize(rowCounts[8])
+                8 -> 2 + 2 + stringIndexSize
                 9 -> tableIndexSize(rowCounts[2]) + codedIndexSize(
                     rowCounts[2],
                     rowCounts[1],
@@ -252,8 +399,10 @@ object WinMdMetadataReader {
                 16 -> 4 + tableIndexSize(rowCounts[4])
                 17 -> blobIndexSize
                 18 -> tableIndexSize(rowCounts[2]) + tableIndexSize(rowCounts[20])
+                19 -> tableIndexSize(rowCounts[20])
                 20 -> 2 + stringIndexSize + codedIndexSize(rowCounts[2], rowCounts[1], rowCounts[27])
                 21 -> tableIndexSize(rowCounts[2]) + tableIndexSize(rowCounts[23])
+                22 -> tableIndexSize(rowCounts[23])
                 23 -> 2 + stringIndexSize + blobIndexSize
                 24 -> 2 + tableIndexSize(rowCounts[6]) + codedIndexSize(rowCounts[20], rowCounts[23])
                 25 -> tableIndexSize(rowCounts[20])
@@ -311,6 +460,38 @@ object WinMdMetadataReader {
             return bytes.toString(StandardCharsets.UTF_8)
         }
 
+        private fun readBlobIndex(
+            tablesHeap: ByteBuffer,
+            blobHeap: ByteBuffer,
+            offset: Int,
+            size: Int,
+        ): ByteArray {
+            val index = readIndex(tablesHeap, offset, size)
+            if (index == 0) {
+                return byteArrayOf()
+            }
+            val reader = BlobReader(readRemainingBytes(blobHeap, index))
+            val length = reader.readCompressedUInt()
+            return readRemainingBytes(blobHeap, index + blobLengthPrefixSize(blobHeap, index), length)
+        }
+
+        private fun blobLengthPrefixSize(blobHeap: ByteBuffer, index: Int): Int {
+            val first = blobHeap.get(index).toInt() and 0xFF
+            return when {
+                first and 0x80 == 0 -> 1
+                first and 0xC0 == 0x80 -> 2
+                else -> 4
+            }
+        }
+
+        private fun readRemainingBytes(blobHeap: ByteBuffer, offset: Int, length: Int = blobHeap.limit() - offset): ByteArray {
+            val bytes = ByteArray(length)
+            val duplicate = blobHeap.duplicate()
+            duplicate.position(offset)
+            duplicate.get(bytes)
+            return bytes
+        }
+
         private fun readIndex(buffer: ByteBuffer, offset: Int, size: Int): Int {
             return if (size == 2) {
                 buffer.getShort(offset).toInt() and 0xFFFF
@@ -345,6 +526,13 @@ object WinMdMetadataReader {
 
         private fun readUInt16(offset: Int): Int = buffer.getShort(offset).toInt() and 0xFFFF
 
+        private fun readUInt16(buffer: ByteBuffer, offset: Int): Int = buffer.getShort(offset).toInt() and 0xFFFF
+
         private fun align4(value: Int): Int = (value + 3) and -4
     }
 }
+
+private data class ParsedMethodSignature(
+    val returnType: String,
+    val parameterTypes: List<String>,
+)

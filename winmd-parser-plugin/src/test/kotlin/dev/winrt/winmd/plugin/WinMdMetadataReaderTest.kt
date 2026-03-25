@@ -1,5 +1,6 @@
 package dev.winrt.winmd.plugin
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -29,5 +30,12 @@ class WinMdMetadataReaderTest {
         assertTrue("Missing Windows.Foundation.IStringable.\n$sample", allTypes.contains("Windows.Foundation.IStringable"))
         assertTrue("Missing Windows.Data.Json.JsonObject.\n$sample", allTypes.contains("Windows.Data.Json.JsonObject"))
         assertTrue("Missing Windows.Globalization.Calendar.\n$sample", allTypes.contains("Windows.Globalization.Calendar"))
+
+        val stringable = model.namespaces
+            .first { it.name == "Windows.Foundation" }
+            .types.first { it.name == "IStringable" }
+        assertEquals(1, stringable.methods.size)
+        assertEquals(stringable.methods.toString(), "ToString", stringable.methods.single().name)
+        assertEquals(stringable.methods.toString(), "String", stringable.methods.single().returnType)
     }
 }

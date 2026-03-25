@@ -5,4 +5,6 @@ internal data class TypeDefRow(
     val name: String,
     val flags: Int,
     val extendsCodedIndex: Int,
+    val fieldListIndex: Int,
+    val methodListIndex: Int,
 )
