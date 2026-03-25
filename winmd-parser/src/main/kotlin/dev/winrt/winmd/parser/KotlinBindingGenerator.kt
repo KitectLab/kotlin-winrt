@@ -38,6 +38,7 @@ class KotlinBindingGenerator {
             appendLine("import dev.winrt.core.WinRtInterfaceProjection")
             appendLine("import dev.winrt.core.WinRtInterfaceMetadata")
             appendLine("import dev.winrt.core.WinRtRuntimeClassMetadata")
+            appendLine("import dev.winrt.core.WinRtActivationKind")
             appendLine("import dev.winrt.core.GuidValue")
             appendLine("import dev.winrt.core.Inspectable")
             appendLine("import dev.winrt.core.IReference")
@@ -152,6 +153,7 @@ class KotlinBindingGenerator {
             appendLine("        override val qualifiedName: String = \"${type.namespace}.${type.name}\"")
             appendLine("        override val classId = RuntimeClassId(\"${type.namespace}\", \"${type.name}\")")
             appendLine("        override val defaultInterfaceName: String? = ${type.defaultInterface?.let { "\"$it\"" } ?: "null"}")
+            appendLine("        override val activationKind = WinRtActivationKind.${type.activationKind.name}")
             appendLine("        fun ${type.activationFunctionName}(): ${type.name} = WinRtRuntime.activate(this, ::${type.name})")
             appendLine("    }")
             type.defaultInterface?.let { defaultInterface ->

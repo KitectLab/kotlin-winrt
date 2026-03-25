@@ -8,6 +8,7 @@ import dev.winrt.core.Inspectable
 import dev.winrt.core.RuntimeClassId
 import dev.winrt.core.RuntimeProperty
 import dev.winrt.core.TimeSpan
+import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
@@ -95,6 +96,7 @@ open class Window(pointer: ComPtr) : Inspectable(pointer) {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Window"
         override val classId = RuntimeClassId("Microsoft.UI.Xaml", "Window")
         override val defaultInterfaceName: String? = "Windows.Foundation.IStringable"
+        override val activationKind = WinRtActivationKind.Factory
 
         fun activateInstance(): Window = WinRtRuntime.activate(this, ::Window)
     }

@@ -29,12 +29,18 @@ data class WinMdType(
     val kind: WinMdTypeKind,
     val guid: String? = null,
     val defaultInterface: String? = null,
+    val activationKind: WinMdActivationKind = WinMdActivationKind.Factory,
     val activationFunctionName: String = "activate",
     val fields: List<WinMdField> = emptyList(),
     val enumMembers: List<WinMdEnumMember> = emptyList(),
     val methods: List<WinMdMethod> = emptyList(),
     val properties: List<WinMdProperty> = emptyList(),
 )
+
+@Serializable
+enum class WinMdActivationKind {
+    Factory,
+}
 
 @Serializable
 enum class WinMdTypeKind {
@@ -139,6 +145,7 @@ object WinMdModelFactory {
                             name = "Application",
                             kind = WinMdTypeKind.RuntimeClass,
                             defaultInterface = "Windows.Foundation.IStringable",
+                            activationKind = WinMdActivationKind.Factory,
                             methods = listOf(
                                 WinMdMethod("Start", "Unit", vtableIndex = 6),
                                 WinMdMethod("GetLaunchCount", "UInt32", vtableIndex = 7),
@@ -149,6 +156,7 @@ object WinMdModelFactory {
                             name = "Window",
                             kind = WinMdTypeKind.RuntimeClass,
                             defaultInterface = "Windows.Foundation.IStringable",
+                            activationKind = WinMdActivationKind.Factory,
                             activationFunctionName = "activateInstance",
                             methods = listOf(
                                 WinMdMethod("Activate", "Unit", vtableIndex = 13),
