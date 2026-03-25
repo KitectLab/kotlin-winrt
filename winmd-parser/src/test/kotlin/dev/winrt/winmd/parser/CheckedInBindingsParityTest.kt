@@ -138,12 +138,18 @@ class CheckedInBindingsParityTest {
     }
 
     @Test
-    fun checked_in_json_value_keeps_only_verified_runtime_surface() {
+    fun checked_in_json_value_keeps_verified_runtime_surface() {
         val checkedIn = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/data/json/IJsonValue.kt").readText()
 
+        assertTrue(checkedIn.contains("val valueType: JsonValueType"))
+        assertTrue(checkedIn.contains("fun get_ValueType(): JsonValueType"))
+        assertTrue(checkedIn.contains("invokeUInt32Method(pointer, 6).getOrThrow().toInt()"))
+        assertTrue(checkedIn.contains("fun stringify(): String"))
+        assertTrue(checkedIn.contains("invokeHStringMethod(pointer, 7).getOrThrow()"))
         assertTrue(checkedIn.contains("fun getObject(): JsonObject"))
         assertTrue(checkedIn.contains("invokeObjectMethod(pointer,"))
         assertTrue(checkedIn.contains("12).getOrThrow()"))
+        assertTrue(!checkedIn.contains("invokeHStringMethod(pointer, 8).getOrThrow()"))
         assertTrue(!checkedIn.contains("invokeFloat64Method(pointer,\n      9).getOrThrow()"))
         assertTrue(!checkedIn.contains("invokeBooleanGetter(pointer, 10).getOrThrow()"))
         assertTrue(!checkedIn.contains("invokeObjectMethod(pointer,\n      11).getOrThrow()"))

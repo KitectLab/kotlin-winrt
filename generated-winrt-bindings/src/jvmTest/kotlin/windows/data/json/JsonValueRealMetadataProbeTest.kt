@@ -1,6 +1,7 @@
 package windows.data.json
 
 import dev.winrt.core.Inspectable
+import dev.winrt.core.WinRtStrings
 import dev.winrt.core.guidOf
 import dev.winrt.kom.JvmComRuntime
 import dev.winrt.kom.JvmWinRtRuntime
@@ -28,10 +29,16 @@ class JsonValueRealMetadataProbeTest {
             try {
                 val projected = IJsonValue.from(Inspectable(valuePointer))
                 val outcomes = linkedMapOf(
+                    "slot 6 (valueType projected)" to classifyResult(PlatformComInterop.invokeUInt32Method(projected.pointer, 6)),
+                    "slot 7 (stringify projected)" to classifyHStringResult(PlatformComInterop.invokeHStringMethod(projected.pointer, 7)),
+                    "slot 8 (getString projected)" to classifyHStringResult(PlatformComInterop.invokeHStringMethod(projected.pointer, 8)),
                     "slot 9 (number projected)" to classifyResult(PlatformComInterop.invokeFloat64Method(projected.pointer, 9)),
                     "slot 10 (boolean projected)" to classifyResult(PlatformComInterop.invokeBooleanGetter(projected.pointer, 10)),
                     "slot 11 (array projected)" to classifyResult(PlatformComInterop.invokeObjectMethod(projected.pointer, 11)),
                     "slot 12 (object projected)" to classifyResult(PlatformComInterop.invokeObjectMethod(projected.pointer, 12)),
+                    "slot 6 (valueType raw)" to classifyResult(PlatformComInterop.invokeUInt32Method(valuePointer, 6)),
+                    "slot 7 (stringify raw)" to classifyHStringResult(PlatformComInterop.invokeHStringMethod(valuePointer, 7)),
+                    "slot 8 (getString raw)" to classifyHStringResult(PlatformComInterop.invokeHStringMethod(valuePointer, 8)),
                     "slot 9 (number raw)" to classifyResult(PlatformComInterop.invokeFloat64Method(valuePointer, 9)),
                     "slot 10 (boolean raw)" to classifyResult(PlatformComInterop.invokeBooleanGetter(valuePointer, 10)),
                     "slot 11 (array raw)" to classifyResult(PlatformComInterop.invokeObjectMethod(valuePointer, 11)),
@@ -100,6 +107,18 @@ class JsonValueRealMetadataProbeTest {
         return when (value) {
             is dev.winrt.kom.ComPtr -> "success(pointer=${value.value.rawValue})"
             else -> "success($value)"
+        }
+    }
+
+    private fun classifyHStringResult(result: Result<dev.winrt.kom.HString>): String {
+        if (result.isFailure) {
+            return "failure(${result.exceptionOrNull()?.message})"
+        }
+        val value = result.getOrThrow()
+        return try {
+            "success(${WinRtStrings.toKotlin(value)})"
+        } finally {
+            WinRtStrings.release(value)
         }
     }
 }

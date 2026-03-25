@@ -42,6 +42,19 @@ class JsonObjectProjectionTest {
                         assertTrue(projected.getNamedBoolean("flag").value)
                         val nested = projected.getNamedObject("nested")
                         try {
+                            val nestedValue = IJsonValue.from(Inspectable(nested.pointer))
+                            try {
+                                assertEquals(JsonValueType.Object, nestedValue.valueType)
+                                assertEquals("""{"child":"value"}""", nestedValue.stringify())
+                                val nestedObject = nestedValue.getObject()
+                                try {
+                                    assertTrue(!nestedObject.pointer.isNull)
+                                } finally {
+                                    PlatformComInterop.release(nestedObject.pointer)
+                                }
+                            } finally {
+                                PlatformComInterop.release(nestedValue.pointer)
+                            }
                             val nestedProjected = nested.asIJsonObject()
                             try {
                                 assertEquals("value", nestedProjected.getNamedString("child"))
