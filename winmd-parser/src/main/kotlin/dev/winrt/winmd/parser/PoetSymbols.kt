@@ -1,0 +1,27 @@
+package dev.winrt.winmd.parser
+
+import com.squareup.kotlinpoet.ClassName
+
+internal object PoetSymbols {
+    val dateTimeClass = ClassName("dev.winrt.core", "DateTime")
+    val eventRegistrationTokenClass = ClassName("dev.winrt.core", "EventRegistrationToken")
+    val float32Class = ClassName("dev.winrt.core", "Float32")
+    val float64Class = ClassName("dev.winrt.core", "Float64")
+    val guidValueClass = ClassName("dev.winrt.core", "GuidValue")
+    val inspectableClass = ClassName("dev.winrt.core", "Inspectable")
+    val int32Class = ClassName("dev.winrt.core", "Int32")
+    val iReferenceClass = ClassName("dev.winrt.core", "IReference")
+    val runtimeClassIdClass = ClassName("dev.winrt.core", "RuntimeClassId")
+    val runtimePropertyClass = ClassName("dev.winrt.core", "RuntimeProperty")
+    val timeSpanClass = ClassName("dev.winrt.core", "TimeSpan")
+    val uint32Class = ClassName("dev.winrt.core", "UInt32")
+    val winRtActivationKindClass = ClassName("dev.winrt.core", "WinRtActivationKind")
+    val winRtBooleanClass = ClassName("dev.winrt.core", "WinRtBoolean")
+    val winRtInterfaceMetadataClass = ClassName("dev.winrt.core", "WinRtInterfaceMetadata")
+    val winRtInterfaceProjectionClass = ClassName("dev.winrt.core", "WinRtInterfaceProjection")
+    val winRtRuntimeClassMetadataClass = ClassName("dev.winrt.core", "WinRtRuntimeClassMetadata")
+    val winRtRuntimeClass = ClassName("dev.winrt.core", "WinRtRuntime")
+    val winRtStringsClass = ClassName("dev.winrt.core", "WinRtStrings")
+    val comPtrClass = ClassName("dev.winrt.kom", "ComPtr")
+    val platformComInteropClass = ClassName("dev.winrt.kom", "PlatformComInterop")
+}

@@ -9,6 +9,7 @@ kotlin {
 
 dependencies {
     implementation(projects.winmdParserPlugin)
+    implementation(libs.kotlinpoet)
     testImplementation(libs.junit)
 }
 
