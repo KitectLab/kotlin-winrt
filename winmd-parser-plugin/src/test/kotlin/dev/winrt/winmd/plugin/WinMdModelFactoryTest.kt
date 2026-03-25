@@ -69,4 +69,82 @@ class WinMdModelFactoryTest {
         assertFalse(jsonValueType.enumMembers.isEmpty())
         assertEquals(listOf("Null", "Boolean", "Number", "String", "Array", "Object"), jsonValueType.enumMembers.map { it.name })
     }
+
+    @Test
+    fun prefers_verified_json_interface_surface_over_primary_metadata_slots() {
+        val primary = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Data.Json",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonObject",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "064e24dd-29c2-4f83-9ac1-9ee11578beb3",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetNamedValue",
+                                    returnType = "Windows.Data.Json.JsonValue",
+                                    vtableIndex = 13,
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetNamedObject",
+                                    returnType = "Windows.Data.Json.JsonObject",
+                                    vtableIndex = 15,
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetNamedArray",
+                                    returnType = "Windows.Data.Json.JsonArray",
+                                    vtableIndex = 16,
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetNamedString",
+                                    returnType = "String",
+                                    vtableIndex = 17,
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetNamedNumber",
+                                    returnType = "Float64",
+                                    vtableIndex = 18,
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetNamedBoolean",
+                                    returnType = "Boolean",
+                                    vtableIndex = 19,
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val merged = WinMdModelFactory.merge(
+            primary = primary,
+            supplemental = WinMdModelFactory.sampleSupplementalModel(),
+        )
+
+        val jsonObjectInterface = merged.namespaces
+            .first { it.name == "Windows.Data.Json" }
+            .types.first { it.name == "IJsonObject" }
+
+        assertEquals(
+            listOf(
+                "GetNamedString" to 10,
+                "GetNamedObject" to 8,
+                "GetNamedArray" to 9,
+                "GetNamedNumber" to 11,
+                "GetNamedBoolean" to 12,
+            ),
+            jsonObjectInterface.methods.map { it.name to it.vtableIndex },
+        )
+    }
 }
