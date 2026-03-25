@@ -6,13 +6,17 @@ import dev.winrt.core.UInt32
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.kom.ComPtr
+import dev.winrt.kom.PlatformComInterop
 import windows.foundation.IStringable
 
 open class Application(pointer: ComPtr) : Inspectable(pointer) {
     fun start() {
     }
 
-    fun getLaunchCount(): UInt32 = UInt32(0u)
+    fun getLaunchCount(): UInt32 {
+        if (pointer.isNull) return UInt32(0u)
+        return UInt32(PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow())
+    }
 
     fun asIStringable(): IStringable = IStringable.from(this)
 

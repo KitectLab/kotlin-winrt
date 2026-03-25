@@ -44,7 +44,10 @@ open class Window(pointer: ComPtr) : Inspectable(pointer) {
         }
 
     val isVisible: WinRtBoolean
-        get() = backingIsVisible.get()
+        get() {
+            if (pointer.isNull) return backingIsVisible.get()
+            return WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 8).getOrThrow())
+        }
 
     val createdAt: DateTime
         get() = backingCreatedAt.get()

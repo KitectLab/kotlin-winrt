@@ -28,6 +28,18 @@ actual object PlatformComInterop : ComInterop {
             UnsupportedOperationException("Native HSTRING setter invocation is not wired yet"),
         )
     }
+
+    override fun invokeUInt32Method(instance: ComPtr, vtableIndex: Int): Result<UInt> {
+        return Result.failure(
+            UnsupportedOperationException("Native UInt32 method invocation is not wired yet"),
+        )
+    }
+
+    override fun invokeBooleanGetter(instance: ComPtr, vtableIndex: Int): Result<Boolean> {
+        return Result.failure(
+            UnsupportedOperationException("Native Boolean getter invocation is not wired yet"),
+        )
+    }
 }
 
 actual object PlatformHStringBridge : HStringBridge {

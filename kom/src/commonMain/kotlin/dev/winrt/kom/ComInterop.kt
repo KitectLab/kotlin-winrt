@@ -10,6 +10,8 @@ interface ComInterop {
     fun release(instance: ComPtr): UInt
     fun invokeHStringMethod(instance: ComPtr, vtableIndex: Int): Result<HString>
     fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit>
+    fun invokeUInt32Method(instance: ComPtr, vtableIndex: Int): Result<UInt>
+    fun invokeBooleanGetter(instance: ComPtr, vtableIndex: Int): Result<Boolean>
 }
 
 expect object PlatformComInterop : ComInterop

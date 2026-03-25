@@ -154,6 +154,18 @@ internal object Jdk22Foreign {
         )
     }
 
+    val uint32MethodHandle: MethodHandle by lazy {
+        linker.downcallHandle(
+            FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
+        )
+    }
+
+    val booleanGetterHandle: MethodHandle by lazy {
+        linker.downcallHandle(
+            FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
+        )
+    }
+
     fun addressResult(segment: MemorySegment): ComPtr = ComPtr(AbiIntPtr(segment.address()))
 
     fun longToUInt(value: Int): UInt = value.toUInt()

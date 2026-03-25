@@ -105,6 +105,48 @@ actual object PlatformComInterop : ComInterop {
             }
         }
     }
+
+    override fun invokeUInt32Method(instance: ComPtr, vtableIndex: Int): Result<UInt> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            Arena.ofConfined().use { arena ->
+                val resultSegment = arena.allocate(ValueLayout.JAVA_INT)
+                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                val hresult = HResult(
+                    Jdk22Foreign.uint32MethodHandle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        resultSegment,
+                    ) as Int,
+                )
+                hresult.requireSuccess("invokeUInt32Method($vtableIndex)")
+                resultSegment.get(ValueLayout.JAVA_INT, 0L).toUInt()
+            }
+        }
+    }
+
+    override fun invokeBooleanGetter(instance: ComPtr, vtableIndex: Int): Result<Boolean> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            Arena.ofConfined().use { arena ->
+                val resultSegment = arena.allocate(ValueLayout.JAVA_INT)
+                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                val hresult = HResult(
+                    Jdk22Foreign.booleanGetterHandle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        resultSegment,
+                    ) as Int,
+                )
+                hresult.requireSuccess("invokeBooleanGetter($vtableIndex)")
+                resultSegment.get(ValueLayout.JAVA_INT, 0L) != 0
+            }
+        }
+    }
 }
 
 actual object PlatformHStringBridge : HStringBridge {

@@ -107,6 +107,14 @@ class KotlinBindingGenerator {
         val methods = type.methods.joinToString("\n") { method ->
             val functionName = method.name.replaceFirstChar(Char::lowercase)
             val kotlinType = mapType(method.returnType)
+            if (method.returnType == "UInt32" && method.parameters.isEmpty() && method.vtableIndex != null) {
+                return@joinToString buildString {
+                    appendLine("    fun $functionName(): $kotlinType {")
+                    appendLine("        if (pointer.isNull) return UInt32(0u)")
+                    appendLine("        return UInt32(PlatformComInterop.invokeUInt32Method(pointer, ${method.vtableIndex}).getOrThrow())")
+                    append("    }")
+                }
+            }
             val returnExpression = when (kotlinType) {
                 "Unit" -> "Unit"
                 "String" -> "\"\""
@@ -152,6 +160,16 @@ class KotlinBindingGenerator {
         val propertyName = property.name.replaceFirstChar(Char::lowercase)
         val keyword = if (property.mutable) "var" else "val"
         val kotlinType = mapType(property.type)
+        if (property.type == "Boolean" && property.getterVtableIndex != null) {
+            return buildString {
+                appendLine("    private val backing_${property.name} = RuntimeProperty<$kotlinType>(${defaultValueFor(kotlinType)})")
+                appendLine("    $keyword $propertyName: $kotlinType")
+                appendLine("        get() {")
+                appendLine("            if (pointer.isNull) return backing_${property.name}.get()")
+                appendLine("            return WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, ${property.getterVtableIndex}).getOrThrow())")
+                appendLine("        }")
+            }
+        }
         if (property.type == "String" && property.getterVtableIndex != null) {
             return buildString {
                 appendLine("    private val backing_${property.name} = RuntimeProperty<$kotlinType>(${defaultValueFor(kotlinType)})")
