@@ -6,11 +6,13 @@ import dev.winrt.core.guidOf
 import dev.winrt.kom.JvmComRuntime
 import dev.winrt.kom.JvmWinRtRuntime
 import dev.winrt.kom.KnownHResults
+import dev.winrt.kom.KomException
 import dev.winrt.kom.PlatformComInterop
 import dev.winrt.kom.PlatformRuntime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Assume.assumeTrue
 import org.junit.Ignore
 import org.junit.Test
@@ -95,6 +97,55 @@ class JsonObjectRealMetadataProbeTest {
         }
     }
 
+    @Ignore("Experimental probe for diagnosing whether real metadata slots fail by HRESULT or by wrong values")
+    @Test
+    fun classify_real_metadata_slot_outcomes_for_json_object() {
+        assumeTrue(PlatformRuntime.isWindows)
+
+        val comResult = JvmComRuntime.initializeMultithreaded()
+        val roResult = JvmWinRtRuntime.initializeMultithreaded()
+        val shouldUninitializeCom = comResult.isSuccess
+        val shouldUninitializeRo = roResult.isSuccess
+
+        try {
+            val instance = parseJsonObject(
+                """{"name":"codex","pi":3.5,"flag":true,"nested":{"child":"value"},"items":[{"child":"a"},{"child":"b"}]}""",
+            )
+            try {
+                val nameOutcome = readNamedStringOutcome(instance, 17, "name")
+                val numberOutcome = classifyResult(PlatformComInterop.invokeFloat64MethodWithStringArg(instance, 18, "pi"))
+                val booleanOutcome = classifyResult(PlatformComInterop.invokeBooleanMethodWithStringArg(instance, 19, "flag"))
+                val objectOutcome = classifyResult(PlatformComInterop.invokeObjectMethodWithStringArg(instance, 15, "nested"))
+                val arrayOutcome = classifyResult(PlatformComInterop.invokeObjectMethodWithStringArg(instance, 16, "items"))
+
+                assertTrue(nameOutcome.isNotBlank())
+                assertTrue(numberOutcome.isNotBlank())
+                assertTrue(booleanOutcome.isNotBlank())
+                assertTrue(objectOutcome.isNotBlank())
+                assertTrue(arrayOutcome.isNotBlank())
+                fail(
+                    buildString {
+                        appendLine("Real metadata slot outcomes:")
+                        appendLine("slot 17 (String): $nameOutcome")
+                        appendLine("slot 18 (Float64): $numberOutcome")
+                        appendLine("slot 19 (Boolean): $booleanOutcome")
+                        appendLine("slot 15 (Object): $objectOutcome")
+                        append("slot 16 (Array): $arrayOutcome")
+                    },
+                )
+            } finally {
+                PlatformComInterop.release(instance)
+            }
+        } finally {
+            if (shouldUninitializeRo) {
+                JvmWinRtRuntime.uninitialize()
+            }
+            if (shouldUninitializeCom && roResult != KnownHResults.RPC_E_CHANGED_MODE) {
+                JvmComRuntime.uninitialize()
+            }
+        }
+    }
+
     private fun parseJsonObject(json: String) : dev.winrt.kom.ComPtr {
         val factory = JvmWinRtRuntime.getActivationFactory(
             "Windows.Data.Json.JsonObject",
@@ -115,5 +166,41 @@ class JsonObjectRealMetadataProbeTest {
         } finally {
             WinRtStrings.release(nameValue)
         }
+    }
+
+    private fun readNamedStringOutcome(instance: dev.winrt.kom.ComPtr, slot: Int, name: String): String {
+        val inspectable = Inspectable(instance)
+        val result = PlatformComInterop.invokeHStringMethodWithStringArg(inspectable.pointer, slot, name)
+        if (result.isFailure) {
+            return classifyFailure(result.exceptionOrNull())
+        }
+
+        val hString = result.getOrThrow()
+        return try {
+            """success("${WinRtStrings.toKotlin(hString)}")"""
+        } finally {
+            WinRtStrings.release(hString)
+        }
+    }
+
+    private fun <T> classifyResult(result: Result<T>): String {
+        if (result.isFailure) {
+            return classifyFailure(result.exceptionOrNull())
+        }
+        val value = result.getOrThrow()
+        return when (value) {
+            is dev.winrt.kom.ComPtr -> "success(pointer=${value.value.rawValue})"
+            else -> "success($value)"
+        }
+    }
+
+    private fun classifyFailure(throwable: Throwable?): String {
+        if (throwable == null) {
+            return "failure(unknown)"
+        }
+        if (throwable is KomException) {
+            return "failure(${throwable.message})"
+        }
+        return "failure(${throwable::class.simpleName}: ${throwable.message})"
     }
 }
