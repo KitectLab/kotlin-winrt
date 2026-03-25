@@ -67,6 +67,54 @@ class JsonValueRealMetadataProbeTest {
         }
     }
 
+    @Test
+    fun classify_type_specific_json_value_slots() {
+        assumeTrue(PlatformRuntime.isWindows)
+        assumeTrue(System.getProperty("dev.winrt.enableProbe") == "true")
+
+        val comResult = JvmComRuntime.initializeMultithreaded()
+        val roResult = JvmWinRtRuntime.initializeMultithreaded()
+        val shouldUninitializeCom = comResult.isSuccess
+        val shouldUninitializeRo = roResult.isSuccess
+
+        try {
+            val valuePointers = parseTypedJsonValues()
+            try {
+                val outcomes = linkedMapOf<String, String>()
+                valuePointers.forEach { (label, pointer) ->
+                    val projected = IJsonValue.from(Inspectable(pointer))
+                    outcomes["$label valueType"] = classifyResult(PlatformComInterop.invokeUInt32Method(projected.pointer, 6))
+                    outcomes["$label stringify"] = classifyHStringResult(PlatformComInterop.invokeHStringMethod(projected.pointer, 7))
+                    outcomes["$label getString"] = classifyHStringResult(PlatformComInterop.invokeHStringMethod(projected.pointer, 8))
+                    outcomes["$label getNumber"] = classifyResult(PlatformComInterop.invokeFloat64Method(projected.pointer, 9))
+                    outcomes["$label getBoolean"] = classifyResult(PlatformComInterop.invokeBooleanGetter(projected.pointer, 10))
+                    outcomes["$label getArray"] = classifyResult(PlatformComInterop.invokeObjectMethod(projected.pointer, 11))
+                    outcomes["$label getObject"] = classifyResult(PlatformComInterop.invokeObjectMethod(projected.pointer, 12))
+                    PlatformComInterop.release(projected.pointer)
+                }
+                outcomes.values.forEach { outcome -> assertTrue(outcome.isNotBlank()) }
+                fail(
+                    buildString {
+                        appendLine("Typed JsonValue slot outcomes:")
+                        outcomes.entries.forEachIndexed { index, entry ->
+                            if (index > 0) appendLine()
+                            append("${entry.key}: ${entry.value}")
+                        }
+                    },
+                )
+            } finally {
+                valuePointers.values.forEach(PlatformComInterop::release)
+            }
+        } finally {
+            if (shouldUninitializeRo) {
+                JvmWinRtRuntime.uninitialize()
+            }
+            if (shouldUninitializeCom && roResult != KnownHResults.RPC_E_CHANGED_MODE) {
+                JvmComRuntime.uninitialize()
+            }
+        }
+    }
+
     private fun parseJsonValue(): dev.winrt.kom.ComPtr {
         val factory = JvmWinRtRuntime.getActivationFactory(
             "Windows.Data.Json.JsonObject",
@@ -88,6 +136,39 @@ class JsonValueRealMetadataProbeTest {
                     } finally {
                         PlatformComInterop.release(nested.pointer)
                     }
+                } finally {
+                    PlatformComInterop.release(projected.pointer)
+                }
+            } finally {
+                PlatformComInterop.release(instance)
+            }
+        } finally {
+            PlatformComInterop.release(factory)
+        }
+    }
+
+    private fun parseTypedJsonValues(): Map<String, dev.winrt.kom.ComPtr> {
+        val factory = JvmWinRtRuntime.getActivationFactory(
+            "Windows.Data.Json.JsonObject",
+            guidOf("2289f159-54de-45d8-abcc-22603fa066a0"),
+        ).getOrThrow()
+        try {
+            val instance = PlatformComInterop.invokeObjectMethodWithStringArg(
+                factory,
+                6,
+                """{"text":"codex","num":3.5,"flag":true,"arr":[1,2],"obj":{"child":"value"}}""",
+            ).getOrThrow()
+            try {
+                val jsonObject = JsonObject(Inspectable(instance).pointer)
+                val projected = jsonObject.asIJsonObject()
+                try {
+                    return linkedMapOf(
+                        "text" to PlatformComInterop.invokeObjectMethodWithStringArg(projected.pointer, 6, "text").getOrThrow(),
+                        "num" to PlatformComInterop.invokeObjectMethodWithStringArg(projected.pointer, 6, "num").getOrThrow(),
+                        "flag" to PlatformComInterop.invokeObjectMethodWithStringArg(projected.pointer, 6, "flag").getOrThrow(),
+                        "arr" to PlatformComInterop.invokeObjectMethodWithStringArg(projected.pointer, 6, "arr").getOrThrow(),
+                        "obj" to PlatformComInterop.invokeObjectMethodWithStringArg(projected.pointer, 6, "obj").getOrThrow(),
+                    )
                 } finally {
                     PlatformComInterop.release(projected.pointer)
                 }

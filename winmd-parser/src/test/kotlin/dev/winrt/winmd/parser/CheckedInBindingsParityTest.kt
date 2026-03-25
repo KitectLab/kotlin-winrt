@@ -146,13 +146,17 @@ class CheckedInBindingsParityTest {
         assertTrue(checkedIn.contains("invokeUInt32Method(pointer, 6).getOrThrow().toInt()"))
         assertTrue(checkedIn.contains("fun stringify(): String"))
         assertTrue(checkedIn.contains("invokeHStringMethod(pointer, 7).getOrThrow()"))
+        assertTrue(checkedIn.contains("fun getString(): String"))
+        assertTrue(checkedIn.contains("invokeHStringMethod(pointer, 8).getOrThrow()"))
+        assertTrue(checkedIn.contains("fun getNumber(): Float64"))
+        assertTrue(checkedIn.contains("invokeFloat64Method(pointer, 9).getOrThrow()"))
+        assertTrue(checkedIn.contains("fun getBoolean(): WinRtBoolean"))
+        assertTrue(checkedIn.contains("invokeBooleanGetter(pointer, 10).getOrThrow()"))
+        assertTrue(checkedIn.contains("fun getArray(): JsonArray"))
+        assertTrue(checkedIn.contains("invokeObjectMethod(pointer, 11)"))
         assertTrue(checkedIn.contains("fun getObject(): JsonObject"))
         assertTrue(checkedIn.contains("invokeObjectMethod(pointer,"))
         assertTrue(checkedIn.contains("12).getOrThrow()"))
-        assertTrue(!checkedIn.contains("invokeHStringMethod(pointer, 8).getOrThrow()"))
-        assertTrue(!checkedIn.contains("invokeFloat64Method(pointer,\n      9).getOrThrow()"))
-        assertTrue(!checkedIn.contains("invokeBooleanGetter(pointer, 10).getOrThrow()"))
-        assertTrue(!checkedIn.contains("invokeObjectMethod(pointer,\n      11).getOrThrow()"))
     }
 
 }

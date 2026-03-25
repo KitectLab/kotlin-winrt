@@ -1,6 +1,8 @@
 package windows.`data`.json
 
 import dev.winrt.core.Inspectable
+import dev.winrt.core.Float64
+import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtStrings
 import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.WinRtInterfaceProjection
@@ -28,6 +30,24 @@ public open class IJsonValue(
       WinRtStrings.release(value)
     }
   }
+
+  public fun getString(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun getNumber(): Float64 =
+      Float64(PlatformComInterop.invokeFloat64Method(pointer, 9).getOrThrow())
+
+  public fun getBoolean(): WinRtBoolean =
+      WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 10).getOrThrow())
+
+  public fun getArray(): JsonArray = JsonArray(PlatformComInterop.invokeObjectMethod(pointer, 11)
+      .getOrThrow())
 
   public fun getObject(): JsonObject = JsonObject(PlatformComInterop.invokeObjectMethod(pointer,
       12).getOrThrow())
