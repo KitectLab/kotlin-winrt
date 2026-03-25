@@ -2,17 +2,13 @@ package dev.winrt.winmd.parser
 
 import dev.winrt.winmd.plugin.WinMdModelFactory
 import java.nio.file.Files
-import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.writeText
 
 fun main(args: Array<String>) {
-    require(args.size >= 2) {
-        "Usage: winmd-parser <outputDir> <winmdFile> [<winmdFile> ...]"
-    }
-
-    val outputDir = Path.of(args.first())
-    val sources = args.drop(1).map(Path::of)
+    val inputs = WinMdParserInputResolver.resolve(args)
+    val outputDir = inputs.outputDir
+    val sources = inputs.sources
 
     val model = WinMdModelFactory.minimalModel(sources)
     val generatedFiles = KotlinBindingGenerator().generate(model)
@@ -27,6 +23,9 @@ fun main(args: Array<String>) {
     manifest.writeText(
         buildString {
             appendLine("Generated ${generatedFiles.size} binding files")
+            appendLine("Source WinMD files:")
+            sources.forEach { appendLine(it.toString()) }
+            appendLine("Generated files:")
             generatedFiles.forEach { appendLine(it.relativePath) }
         },
     )
