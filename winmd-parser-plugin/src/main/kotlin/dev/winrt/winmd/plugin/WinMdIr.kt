@@ -179,7 +179,7 @@ object WinMdModelFactory {
     }
 
     fun metadataModel(sourceFiles: List<Path>): WinMdModel {
-        return WinMdMetadataReader.readModel(sourceFiles)
+        return inferInterfaceMethodSlots(WinMdMetadataReader.readModel(sourceFiles))
     }
 
     fun sampleSupplementalModel(): WinMdModel {
@@ -402,6 +402,32 @@ object WinMdModelFactory {
         return WinMdModel(
             files = mergedFiles,
             namespaces = mergedNamespaces,
+        )
+    }
+
+    private fun inferInterfaceMethodSlots(model: WinMdModel): WinMdModel {
+        return model.copy(
+            namespaces = model.namespaces.map { namespace ->
+                namespace.copy(
+                    types = namespace.types.map { type ->
+                        if (type.kind != WinMdTypeKind.Interface) {
+                            type
+                        } else {
+                            type.copy(
+                                methods = type.methods.map { method ->
+                                    if (method.vtableIndex != null) {
+                                        method
+                                    } else {
+                                        method.copy(
+                                            vtableIndex = InterfaceVtableResolver.inferMethodSlot(type, model, method.name),
+                                        )
+                                    }
+                                },
+                            )
+                        }
+                    },
+                )
+            },
         )
     }
 

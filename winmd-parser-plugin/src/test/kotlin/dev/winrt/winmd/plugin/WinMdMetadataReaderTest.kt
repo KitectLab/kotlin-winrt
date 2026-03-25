@@ -112,4 +112,29 @@ class WinMdMetadataReaderTest {
             .types.first { it.name == "Calendar" }
         assertEquals("Windows.Globalization.ICalendar", calendar.defaultInterface)
     }
+
+    @Test
+    fun infers_vtable_slots_for_interface_methods_from_metadata_model() {
+        val universalContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.UniversalApiContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val foundationContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.FoundationContract",
+            sdkVersion = "10.0.22621.0",
+        )
+
+        val model = WinMdModelFactory.metadataModel(
+            listOf(
+                universalContract.winmdPath,
+                foundationContract.winmdPath,
+            ),
+        )
+        val jsonArrayInterface = model.namespaces
+            .first { it.name == "Windows.Data.Json" }
+            .types.first { it.name == "IJsonArray" }
+        val getObjectAt = jsonArrayInterface.methods.first { it.name == "GetObjectAt" }
+
+        assertEquals(13, getObjectAt.vtableIndex)
+    }
 }
