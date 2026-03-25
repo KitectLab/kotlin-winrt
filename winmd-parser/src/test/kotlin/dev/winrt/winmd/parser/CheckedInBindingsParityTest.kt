@@ -118,4 +118,24 @@ class CheckedInBindingsParityTest {
         )
     }
 
+    @Test
+    fun checked_in_json_object_retains_verified_runtime_surface() {
+        val checkedIn = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/data/json/IJsonObject.kt").readText()
+
+        assertTrue(checkedIn.contains("fun getNamedString(name: String): String"))
+        assertTrue(checkedIn.contains("invokeHStringMethodWithStringArg(pointer, 10, name).getOrThrow()"))
+        assertTrue(checkedIn.contains("fun getNamedObject(name: String): JsonObject"))
+        assertTrue(checkedIn.contains("invokeObjectMethodWithStringArg(pointer, 8, name).getOrThrow()"))
+        assertTrue(checkedIn.contains("fun getNamedArray(name: String): JsonArray"))
+        assertTrue(checkedIn.contains("invokeObjectMethodWithStringArg(pointer, 9, name).getOrThrow()"))
+        assertTrue(checkedIn.contains("fun getNamedNumber(name: String): Float64"))
+        assertTrue(checkedIn.contains("invokeFloat64MethodWithStringArg(pointer, 11, name).getOrThrow()"))
+        assertTrue(checkedIn.contains("fun getNamedBoolean(name: String): WinRtBoolean"))
+        assertTrue(checkedIn.contains("invokeBooleanMethodWithStringArg(pointer, 12,"))
+        assertTrue(!checkedIn.contains("fun getNamedValue(name: String): JsonValue"))
+        assertTrue(!checkedIn.contains("invokeObjectMethodWithStringArg(pointer, 15, name).getOrThrow()"))
+        assertTrue(!checkedIn.contains("invokeObjectMethodWithStringArg(pointer, 16, name).getOrThrow()"))
+        assertTrue(!checkedIn.contains("invokeHStringMethodWithStringArg(pointer, 17, name).getOrThrow()"))
+    }
+
 }
