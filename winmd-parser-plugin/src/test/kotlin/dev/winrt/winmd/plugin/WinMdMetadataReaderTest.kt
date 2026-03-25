@@ -46,6 +46,62 @@ class WinMdMetadataReaderTest {
         assertTrue(jsonObject.properties.toString(), jsonObject.properties.any { it.name == "ValueType" && it.type == "Windows.Data.Json.JsonValueType" })
         assertTrue(jsonObject.properties.toString(), jsonObject.properties.any { it.name == "Size" && it.type == "UInt32" })
 
+        val jsonObjectInterface = model.namespaces
+            .first { it.name == "Windows.Data.Json" }
+            .types.first { it.name == "IJsonObject" }
+        assertTrue(
+            jsonObjectInterface.methods.toString(),
+            jsonObjectInterface.methods.any { method ->
+                method.name == "GetNamedObject" &&
+                    method.returnType == "Windows.Data.Json.JsonObject" &&
+                    method.parameters.singleOrNull()?.type == "String"
+            },
+        )
+        assertTrue(
+            jsonObjectInterface.methods.toString(),
+            jsonObjectInterface.methods.any { method ->
+                method.name == "GetNamedArray" &&
+                    method.returnType == "Windows.Data.Json.JsonArray" &&
+                    method.parameters.singleOrNull()?.type == "String"
+            },
+        )
+
+        val jsonValueInterface = model.namespaces
+            .first { it.name == "Windows.Data.Json" }
+            .types.first { it.name == "IJsonValue" }
+        assertTrue(
+            jsonValueInterface.methods.toString(),
+            jsonValueInterface.methods.any { method ->
+                method.name == "GetObject" &&
+                    method.returnType == "Windows.Data.Json.JsonObject"
+            },
+        )
+        assertTrue(
+            jsonValueInterface.methods.toString(),
+            jsonValueInterface.methods.any { method ->
+                method.name == "GetArray" &&
+                    method.returnType == "Windows.Data.Json.JsonArray"
+            },
+        )
+
+        val jsonArray = model.namespaces
+            .first { it.name == "Windows.Data.Json" }
+            .types.first { it.name == "JsonArray" }
+        assertEquals("Windows.Data.Json.IJsonArray", jsonArray.defaultInterface)
+
+        val jsonArrayInterface = model.namespaces
+            .first { it.name == "Windows.Data.Json" }
+            .types.first { it.name == "IJsonArray" }
+        assertEquals("08c1ddb6-0cbd-4a9a-b5d3-2f852dc37e81", jsonArrayInterface.guid)
+        assertTrue(
+            jsonArrayInterface.methods.toString(),
+            jsonArrayInterface.methods.any { method ->
+                method.name == "GetObjectAt" &&
+                    method.returnType == "Windows.Data.Json.JsonObject" &&
+                    method.parameters.singleOrNull()?.type == "UInt32"
+            },
+        )
+
         val calendar = model.namespaces
             .first { it.name == "Windows.Globalization" }
             .types.first { it.name == "Calendar" }
