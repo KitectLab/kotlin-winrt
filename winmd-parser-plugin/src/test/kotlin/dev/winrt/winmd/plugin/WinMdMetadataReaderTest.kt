@@ -94,6 +94,10 @@ class WinMdMetadataReaderTest {
             .types.first { it.name == "IJsonArray" }
         assertEquals("08c1ddb6-0cbd-4a9a-b5d3-2f852dc37e81", jsonArrayInterface.guid)
         assertTrue(
+            jsonArrayInterface.baseInterfaces.toString(),
+            jsonArrayInterface.baseInterfaces.contains("Windows.Data.Json.IJsonValue"),
+        )
+        assertTrue(
             jsonArrayInterface.methods.toString(),
             jsonArrayInterface.methods.any { method ->
                 method.name == "GetObjectAt" &&

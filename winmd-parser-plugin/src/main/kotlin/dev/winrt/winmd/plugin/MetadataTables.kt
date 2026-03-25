@@ -3,6 +3,7 @@ package dev.winrt.winmd.plugin
 internal data class MetadataTables(
     val typeRefs: List<TypeReferenceRow>,
     val typeDefs: List<TypeDefRow>,
+    val typeSpecRows: List<TypeSpecRow>,
     val interfaceImplRows: List<InterfaceImplRow>,
     val memberRefRows: List<MemberRefRow>,
     val customAttributeRows: List<CustomAttributeRow>,

@@ -64,6 +64,7 @@ object WinMdMetadataReader {
                     kind = classifyType(typeDef, tables),
                     guid = readGuid(index + 1, tables),
                     defaultInterface = readDefaultInterface(index + 1, tables),
+                    baseInterfaces = readBaseInterfaces(index + 1, tables),
                     methods = readMethods(index + 1, tables),
                     properties = readProperties(index + 1, tables),
                 )
@@ -84,7 +85,19 @@ object WinMdMetadataReader {
         }
 
         val interfaceImpl = tables.interfaceImplRows.firstOrNull { it.classTypeDefIndex == typeDefIndex } ?: return null
-        return resolveTypeDefOrRefName(interfaceImpl.interfaceCodedIndex, tables)
+        return resolveTypeDefOrRefOrSpecName(interfaceImpl.interfaceCodedIndex, tables)
+    }
+
+    private fun readBaseInterfaces(typeDefIndex: Int, tables: MetadataTables): List<String> {
+        val typeKind = classifyType(tables.typeDefs[typeDefIndex - 1], tables)
+        if (typeKind != WinMdTypeKind.Interface) {
+            return emptyList()
+        }
+        return tables.interfaceImplRows
+            .asSequence()
+            .filter { it.classTypeDefIndex == typeDefIndex }
+            .mapNotNull { resolveTypeDefOrRefOrSpecName(it.interfaceCodedIndex, tables) }
+            .toList()
     }
 
     private fun decodeHasCustomAttributeTypeDefIndex(codedIndex: Int): Int? {
@@ -287,13 +300,13 @@ object WinMdMetadataReader {
             0x0C -> "Float32"
             0x0D -> "Float64"
             0x0E -> "String"
-            0x11, 0x12 -> resolveTypeDefOrRefName(reader.readCompressedUInt(), tables)
+            0x11, 0x12 -> resolveTypeDefOrRefOrSpecName(reader.readCompressedUInt(), tables)
             0x1C -> "Object"
             else -> "ElementType0x${elementType.toString(16)}"
         }
     }
 
-    private fun resolveTypeDefOrRefName(codedIndex: Int, tables: MetadataTables): String {
+    private fun resolveTypeDefOrRefOrSpecName(codedIndex: Int, tables: MetadataTables): String {
         val tag = codedIndex and 0x3
         val index = codedIndex ushr 2
         return when (tag) {
@@ -393,6 +406,7 @@ object WinMdMetadataReader {
 
             val typeRefRows = mutableListOf<TypeReferenceRow>()
             val typeDefRows = mutableListOf<TypeDefRow>()
+            val typeSpecRows = mutableListOf<TypeSpecRow>()
             val interfaceImplRows = mutableListOf<InterfaceImplRow>()
             val memberRefRows = mutableListOf<MemberRefRow>()
             val customAttributeRows = mutableListOf<CustomAttributeRow>()
@@ -610,6 +624,7 @@ object WinMdMetadataReader {
             return MetadataTables(
                 typeRefs = typeRefRows,
                 typeDefs = typeDefRows,
+                typeSpecRows = emptyList(),
                 interfaceImplRows = interfaceImplRows,
                 memberRefRows = memberRefRows,
                 customAttributeRows = customAttributeRows,
@@ -753,7 +768,11 @@ object WinMdMetadataReader {
             return if (size == 2) {
                 buffer.getShort(offset).toInt() and 0xFFFF
             } else {
-                buffer.getInt(offset)
+                val value = buffer.getInt(offset).toLong() and 0xFFFF_FFFFL
+                require(value <= Int.MAX_VALUE.toLong()) {
+                    "Metadata index exceeds Int range: $value"
+                }
+                value.toInt()
             }
         }
 
