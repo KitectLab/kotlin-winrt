@@ -158,7 +158,7 @@ object WinMdModelFactory {
                                 WinMdProperty("Lifetime", "TimeSpan", mutable = false, getterVtableIndex = 11),
                                 WinMdProperty("LastToken", "EventRegistrationToken", mutable = false, getterVtableIndex = 12),
                                 WinMdProperty("StableId", "Guid", mutable = false, getterVtableIndex = 9),
-                                WinMdProperty("OptionalTitle", "IReference<String>", mutable = false),
+                                WinMdProperty("OptionalTitle", "IReference<String>", mutable = false, getterVtableIndex = 14),
                             ),
                         ),
                     ),

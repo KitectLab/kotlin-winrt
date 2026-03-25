@@ -74,7 +74,15 @@ open class Window(pointer: ComPtr) : Inspectable(pointer) {
         }
 
     val optionalTitle: IReference<String>
-        get() = backingOptionalTitle.get()
+        get() {
+            if (pointer.isNull) return backingOptionalTitle.get()
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 14).getOrThrow()
+            return try {
+                IReference(WinRtStrings.toKotlin(value))
+            } finally {
+                WinRtStrings.release(value)
+            }
+        }
 
     fun activate() {
         if (pointer.isNull) return

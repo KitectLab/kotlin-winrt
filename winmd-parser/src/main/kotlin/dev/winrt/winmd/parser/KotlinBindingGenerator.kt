@@ -218,6 +218,21 @@ class KotlinBindingGenerator {
                 appendLine("        }")
             }
         }
+        if (property.type == "IReference<String>" && property.getterVtableIndex != null) {
+            return buildString {
+                appendLine("    private val backing_${property.name} = RuntimeProperty<$kotlinType>(${defaultValueFor(kotlinType)})")
+                appendLine("    $keyword $propertyName: $kotlinType")
+                appendLine("        get() {")
+                appendLine("            if (pointer.isNull) return backing_${property.name}.get()")
+                appendLine("            val value = PlatformComInterop.invokeHStringMethod(pointer, ${property.getterVtableIndex}).getOrThrow()")
+                appendLine("            return try {")
+                appendLine("                IReference(WinRtStrings.toKotlin(value))")
+                appendLine("            } finally {")
+                appendLine("                WinRtStrings.release(value)")
+                appendLine("            }")
+                appendLine("        }")
+            }
+        }
         if (property.type == "String" && property.getterVtableIndex != null) {
             return buildString {
                 appendLine("    private val backing_${property.name} = RuntimeProperty<$kotlinType>(${defaultValueFor(kotlinType)})")
