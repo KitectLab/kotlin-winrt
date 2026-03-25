@@ -1,7 +1,9 @@
 package dev.winrt.winmd.parser
 
 import dev.winrt.winmd.plugin.WinMdModel
+import dev.winrt.winmd.plugin.WinMdField
 import dev.winrt.winmd.plugin.WinMdNamespace
+import dev.winrt.winmd.plugin.WinMdEnumMember
 import dev.winrt.winmd.plugin.WinMdProperty
 import dev.winrt.winmd.plugin.WinMdType
 import dev.winrt.winmd.plugin.WinMdTypeKind
@@ -30,6 +32,8 @@ class KotlinBindingGenerator {
             appendLine()
             appendLine("import dev.winrt.core.DateTime")
             appendLine("import dev.winrt.core.EventRegistrationToken")
+            appendLine("import dev.winrt.core.Float32")
+            appendLine("import dev.winrt.core.Float64")
             appendLine("import dev.winrt.core.WinRtInterfaceProjection")
             appendLine("import dev.winrt.core.WinRtInterfaceMetadata")
             appendLine("import dev.winrt.core.WinRtRuntimeClassMetadata")
@@ -57,8 +61,8 @@ class KotlinBindingGenerator {
         return when (type.kind) {
             WinMdTypeKind.Interface -> renderInterface(type)
             WinMdTypeKind.RuntimeClass -> renderRuntimeClass(type)
-            WinMdTypeKind.Struct -> "data class ${type.name}(val raw: String = \"\")"
-            WinMdTypeKind.Enum -> "enum class ${type.name} { Value }"
+            WinMdTypeKind.Struct -> renderStruct(type)
+            WinMdTypeKind.Enum -> renderEnum(type)
         }
     }
 
@@ -166,6 +170,34 @@ class KotlinBindingGenerator {
         }
     }
 
+    private fun renderStruct(type: WinMdType): String {
+        val fields = type.fields.joinToString(",\n") { field ->
+            "    val ${field.name.replaceFirstChar(Char::lowercase)}: ${mapType(field.type)}"
+        }
+
+        return buildString {
+            appendLine("data class ${type.name}(")
+            if (fields.isNotBlank()) {
+                appendLine(fields)
+            }
+            append(")")
+        }
+    }
+
+    private fun renderEnum(type: WinMdType): String {
+        val members = type.enumMembers.joinToString(",\n") { member ->
+            "    ${member.name}(${member.value})"
+        }
+
+        return buildString {
+            appendLine("enum class ${type.name}(val value: Int) {")
+            if (members.isNotBlank()) {
+                appendLine(members)
+            }
+            append("}")
+        }
+    }
+
     private fun mapType(typeName: String): String {
         return when {
             typeName == "String" -> "String"
@@ -174,6 +206,8 @@ class KotlinBindingGenerator {
             typeName == "Int" -> "Int"
             typeName == "Int32" -> "Int32"
             typeName == "UInt32" -> "UInt32"
+            typeName == "Float32" -> "Float32"
+            typeName == "Float64" -> "Float64"
             typeName == "Guid" -> "GuidValue"
             typeName == "DateTime" -> "DateTime"
             typeName == "TimeSpan" -> "TimeSpan"
@@ -194,6 +228,8 @@ class KotlinBindingGenerator {
             typeName == "WinRtBoolean" -> "WinRtBoolean.FALSE"
             typeName == "Int32" -> "Int32(0)"
             typeName == "UInt32" -> "UInt32(0u)"
+            typeName == "Float32" -> "Float32(0f)"
+            typeName == "Float64" -> "Float64(0.0)"
             typeName == "DateTime" -> "DateTime(0)"
             typeName == "TimeSpan" -> "TimeSpan(0)"
             typeName == "EventRegistrationToken" -> "EventRegistrationToken(0)"

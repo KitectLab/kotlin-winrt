@@ -20,6 +20,12 @@ class KotlinBindingGeneratorTest {
 
         val xamlBindings = files.first { it.relativePath == "Microsoft/UI/Xaml/Bindings.kt" }.content
         val foundationBindings = files.first { it.relativePath == "Windows/Foundation/Bindings.kt" }.content
+        assertTrue(foundationBindings.contains("data class Point("))
+        assertTrue(foundationBindings.contains("val x: Float64"))
+        assertTrue(foundationBindings.contains("val y: Float64"))
+        assertTrue(foundationBindings.contains("enum class AsyncStatus(val value: Int)"))
+        assertTrue(foundationBindings.contains("Started(0)"))
+        assertTrue(foundationBindings.contains("Completed(1)"))
         assertTrue(xamlBindings.contains("open class Window"))
         assertTrue(xamlBindings.contains("fun asIStringable(): IStringable = IStringable.from(this)"))
         assertTrue(xamlBindings.contains("var title: String"))

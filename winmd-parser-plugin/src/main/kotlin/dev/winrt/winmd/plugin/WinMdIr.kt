@@ -29,6 +29,8 @@ data class WinMdType(
     val kind: WinMdTypeKind,
     val guid: String? = null,
     val defaultInterface: String? = null,
+    val fields: List<WinMdField> = emptyList(),
+    val enumMembers: List<WinMdEnumMember> = emptyList(),
     val methods: List<WinMdMethod> = emptyList(),
     val properties: List<WinMdProperty> = emptyList(),
 )
@@ -62,6 +64,18 @@ data class WinMdProperty(
     val mutable: Boolean,
 )
 
+@Serializable
+data class WinMdField(
+    val name: String,
+    val type: String,
+)
+
+@Serializable
+data class WinMdEnumMember(
+    val name: String,
+    val value: Int,
+)
+
 object WinMdModelFactory {
     fun minimalModel(sourceFiles: List<Path>): WinMdModel {
         val fileInfo = sourceFiles.map { path ->
@@ -90,6 +104,26 @@ object WinMdModelFactory {
                                     returnType = "String",
                                     vtableIndex = 6,
                                 ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Point",
+                            kind = WinMdTypeKind.Struct,
+                            fields = listOf(
+                                WinMdField("X", "Float64"),
+                                WinMdField("Y", "Float64"),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "AsyncStatus",
+                            kind = WinMdTypeKind.Enum,
+                            enumMembers = listOf(
+                                WinMdEnumMember("Started", 0),
+                                WinMdEnumMember("Completed", 1),
+                                WinMdEnumMember("Canceled", 2),
+                                WinMdEnumMember("Error", 3),
                             ),
                         ),
                     ),
