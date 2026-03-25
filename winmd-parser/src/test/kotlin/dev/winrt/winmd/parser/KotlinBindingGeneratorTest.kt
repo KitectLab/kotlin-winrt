@@ -219,7 +219,7 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
-    fun real_metadata_json_object_generation_exposes_unverified_surface() {
+    fun merged_json_object_generation_keeps_verified_surface() {
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",
             sdkVersion = "10.0.22621.0",
@@ -241,18 +241,23 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val jsonObjectBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonObject.kt" }.content
 
-        assertTrue(jsonObjectBinding.contains("fun getNamedValue(name: String): JsonValue"))
-        assertTrue(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 13, name).getOrThrow()"))
         assertTrue(jsonObjectBinding.contains("fun getNamedObject(name: String): JsonObject"))
-        assertTrue(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 15, name).getOrThrow()"))
+        assertTrue(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 8, name).getOrThrow()"))
         assertTrue(jsonObjectBinding.contains("fun getNamedArray(name: String): JsonArray"))
-        assertTrue(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 16, name).getOrThrow()"))
+        assertTrue(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 9, name).getOrThrow()"))
         assertTrue(jsonObjectBinding.contains("fun getNamedString(name: String): String"))
-        assertTrue(jsonObjectBinding.contains("invokeHStringMethodWithStringArg(pointer, 17, name).getOrThrow()"))
+        assertTrue(jsonObjectBinding.contains("invokeHStringMethodWithStringArg(pointer, 10, name).getOrThrow()"))
         assertTrue(jsonObjectBinding.contains("fun getNamedNumber(name: String): Float64"))
-        assertTrue(jsonObjectBinding.contains("invokeFloat64MethodWithStringArg(pointer, 18, name).getOrThrow()"))
+        assertTrue(jsonObjectBinding.contains("invokeFloat64MethodWithStringArg(pointer, 11, name).getOrThrow()"))
         assertTrue(jsonObjectBinding.contains("fun getNamedBoolean(name: String): WinRtBoolean"))
-        assertTrue(jsonObjectBinding.contains("invokeBooleanMethodWithStringArg(pointer, 19,"))
+        assertTrue(jsonObjectBinding.contains("invokeBooleanMethodWithStringArg(pointer, 12,"))
+        assertFalse(jsonObjectBinding.contains("fun getNamedValue(name: String): JsonValue"))
+        assertFalse(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 13, name).getOrThrow()"))
+        assertFalse(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 15, name).getOrThrow()"))
+        assertFalse(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 16, name).getOrThrow()"))
+        assertFalse(jsonObjectBinding.contains("invokeHStringMethodWithStringArg(pointer, 17, name).getOrThrow()"))
+        assertFalse(jsonObjectBinding.contains("invokeFloat64MethodWithStringArg(pointer, 18, name).getOrThrow()"))
+        assertFalse(jsonObjectBinding.contains("invokeBooleanMethodWithStringArg(pointer, 19,"))
     }
 
     @Test

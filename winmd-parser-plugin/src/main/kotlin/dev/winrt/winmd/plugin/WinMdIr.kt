@@ -446,6 +446,10 @@ object WinMdModelFactory {
             "Cannot merge different types: ${primary.namespace}.${primary.name} vs ${supplemental.namespace}.${supplemental.name}"
         }
 
+        val preferSupplementalJsonInterfaceSurface = supplemental.namespace == "Windows.Data.Json" &&
+            supplemental.kind == WinMdTypeKind.Interface &&
+            supplemental.methods.isNotEmpty()
+
         return primary.copy(
             guid = primary.guid ?: supplemental.guid,
             defaultInterface = primary.defaultInterface ?: supplemental.defaultInterface,
@@ -454,8 +458,8 @@ object WinMdModelFactory {
             activationFunctionName = primary.activationFunctionName.takeIf { it != "activate" } ?: supplemental.activationFunctionName,
             fields = if (primary.fields.isNotEmpty()) primary.fields else supplemental.fields,
             enumMembers = if (primary.enumMembers.isNotEmpty()) primary.enumMembers else supplemental.enumMembers,
-            methods = mergeMethods(primary.methods, supplemental.methods),
-            properties = mergeProperties(primary.properties, supplemental.properties),
+            methods = if (preferSupplementalJsonInterfaceSurface) supplemental.methods else mergeMethods(primary.methods, supplemental.methods),
+            properties = if (preferSupplementalJsonInterfaceSurface) supplemental.properties else mergeProperties(primary.properties, supplemental.properties),
         )
     }
 
