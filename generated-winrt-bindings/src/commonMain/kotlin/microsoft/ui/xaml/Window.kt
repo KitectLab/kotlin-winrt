@@ -96,6 +96,6 @@ open class Window(pointer: ComPtr) : Inspectable(pointer) {
         override val classId = RuntimeClassId("Microsoft.UI.Xaml", "Window")
         override val defaultInterfaceName: String? = "Windows.Foundation.IStringable"
 
-        fun activateInstance(): Window = WinRtRuntime.activate(classId, ::Window)
+        fun activateInstance(): Window = WinRtRuntime.activate(this, ::Window)
     }
 }

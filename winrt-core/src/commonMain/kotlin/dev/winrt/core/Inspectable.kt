@@ -29,20 +29,20 @@ data class RuntimeClassId(
 class ActivationException(message: String) : RuntimeException(message)
 
 interface ActivationFactoryProvider {
-    fun <T : WinRtObject> activate(classId: RuntimeClassId, constructor: (ComPtr) -> T): Result<T>
+    fun <T : WinRtObject> activate(metadata: WinRtRuntimeClassMetadata, constructor: (ComPtr) -> T): Result<T>
 }
 
 object NullActivationFactoryProvider : ActivationFactoryProvider {
-    override fun <T : WinRtObject> activate(classId: RuntimeClassId, constructor: (ComPtr) -> T): Result<T> {
-        return Result.failure(ActivationException("Activation is not configured for ${classId.qualifiedName}"))
+    override fun <T : WinRtObject> activate(metadata: WinRtRuntimeClassMetadata, constructor: (ComPtr) -> T): Result<T> {
+        return Result.failure(ActivationException("Activation is not configured for ${metadata.classId.qualifiedName}"))
     }
 }
 
 object WinRtRuntime {
     var activationFactoryProvider: ActivationFactoryProvider = NullActivationFactoryProvider
 
-    fun <T : WinRtObject> activate(classId: RuntimeClassId, constructor: (ComPtr) -> T): T {
-        return activationFactoryProvider.activate(classId, constructor).getOrElse { throw it }
+    fun <T : WinRtObject> activate(metadata: WinRtRuntimeClassMetadata, constructor: (ComPtr) -> T): T {
+        return activationFactoryProvider.activate(metadata, constructor).getOrElse { throw it }
     }
 
     fun check(result: HResult, operation: String) {

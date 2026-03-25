@@ -29,6 +29,7 @@ data class WinMdType(
     val kind: WinMdTypeKind,
     val guid: String? = null,
     val defaultInterface: String? = null,
+    val activationFunctionName: String = "activate",
     val fields: List<WinMdField> = emptyList(),
     val enumMembers: List<WinMdEnumMember> = emptyList(),
     val methods: List<WinMdMethod> = emptyList(),
@@ -148,6 +149,7 @@ object WinMdModelFactory {
                             name = "Window",
                             kind = WinMdTypeKind.RuntimeClass,
                             defaultInterface = "Windows.Foundation.IStringable",
+                            activationFunctionName = "activateInstance",
                             methods = listOf(
                                 WinMdMethod("Activate", "Unit", vtableIndex = 13),
                             ),

@@ -152,7 +152,7 @@ class KotlinBindingGenerator {
             appendLine("        override val qualifiedName: String = \"${type.namespace}.${type.name}\"")
             appendLine("        override val classId = RuntimeClassId(\"${type.namespace}\", \"${type.name}\")")
             appendLine("        override val defaultInterfaceName: String? = ${type.defaultInterface?.let { "\"$it\"" } ?: "null"}")
-            appendLine("        fun activate(): ${type.name} = WinRtRuntime.activate(classId, ::${type.name})")
+            appendLine("        fun ${type.activationFunctionName}(): ${type.name} = WinRtRuntime.activate(this, ::${type.name})")
             appendLine("    }")
             type.defaultInterface?.let { defaultInterface ->
                 val simpleName = defaultInterface.substringAfterLast('.')

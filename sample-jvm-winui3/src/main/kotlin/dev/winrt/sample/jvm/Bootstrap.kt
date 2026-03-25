@@ -2,6 +2,7 @@ package dev.winrt.sample.jvm
 
 import dev.winrt.core.ActivationFactoryProvider
 import dev.winrt.core.RuntimeClassId
+import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.core.WinRtObject
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.kom.ComPtr
@@ -27,12 +28,12 @@ object SampleBootstrap {
         }
 
         WinRtRuntime.activationFactoryProvider = object : ActivationFactoryProvider {
-            override fun <T : WinRtObject> activate(classId: RuntimeClassId, constructor: (ComPtr) -> T): Result<T> {
+            override fun <T : WinRtObject> activate(metadata: WinRtRuntimeClassMetadata, constructor: (ComPtr) -> T): Result<T> {
                 if (!PlatformRuntime.isWindows) {
                     return Result.success(constructor(ComPtr.NULL))
                 }
 
-                val qualifiedName = classId.qualifiedName
+                val qualifiedName = metadata.classId.qualifiedName
                 return JvmWinRtRuntime.getActivationFactory(qualifiedName)
                     .mapCatching { factory ->
                         try {

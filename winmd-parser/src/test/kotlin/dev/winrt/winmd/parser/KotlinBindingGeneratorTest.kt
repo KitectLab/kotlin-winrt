@@ -56,6 +56,8 @@ class KotlinBindingGeneratorTest {
         assertTrue(windowBinding.contains("val value = PlatformComInterop.invokeHStringMethod(pointer, 14).getOrThrow()"))
         assertTrue(windowBinding.contains("IReference(WinRtStrings.toKotlin(value))"))
         assertTrue(windowBinding.contains("companion object : WinRtRuntimeClassMetadata"))
+        assertTrue(applicationBinding.contains("fun activate(): Application = WinRtRuntime.activate(this, ::Application)"))
+        assertTrue(windowBinding.contains("fun activateInstance(): Window = WinRtRuntime.activate(this, ::Window)"))
         assertTrue(windowBinding.contains("defaultInterfaceName: String? = \"Windows.Foundation.IStringable\""))
         assertTrue(iStringableBinding.contains("open class IStringable(pointer: ComPtr) : WinRtInterfaceProjection(pointer)"))
         assertTrue(iStringableBinding.contains("fun from(Inspectable: Inspectable): IStringable = Inspectable.projectInterface(this, ::IStringable)"))

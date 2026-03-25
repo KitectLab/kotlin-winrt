@@ -14,6 +14,12 @@ interface WinRtInterfaceMetadata : WinRtTypeMetadata {
 interface WinRtRuntimeClassMetadata : WinRtTypeMetadata {
     val classId: RuntimeClassId
     val defaultInterfaceName: String?
+    val activationKind: WinRtActivationKind
+        get() = WinRtActivationKind.Factory
+}
+
+enum class WinRtActivationKind {
+    Factory,
 }
 
 fun guidOf(value: String): Guid {
