@@ -1,20 +1,19 @@
-package windows.foundation
+package windows.data.json
 
 import dev.winrt.core.Inspectable
-import dev.winrt.core.ProjectionException
+import dev.winrt.core.guidOf
 import dev.winrt.kom.JvmComRuntime
 import dev.winrt.kom.JvmWinRtRuntime
 import dev.winrt.kom.KnownHResults
 import dev.winrt.kom.PlatformComInterop
 import dev.winrt.kom.PlatformRuntime
-import org.junit.Assert.assertFalse
-import org.junit.Assume.assumeNoException
+import org.junit.Assert.assertEquals
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 
-class IStringableProjectionTest {
+class JsonObjectProjectionTest {
     @Test
-    fun can_project_iStringable_and_call_toString() {
+    fun can_parse_json_and_read_named_string_through_binding() {
         assumeTrue(PlatformRuntime.isWindows)
 
         val comResult = JvmComRuntime.initializeMultithreaded()
@@ -23,19 +22,21 @@ class IStringableProjectionTest {
         val shouldUninitializeRo = roResult.isSuccess
 
         try {
-            val factory = JvmWinRtRuntime.getActivationFactory("Windows.Globalization.Calendar").getOrThrow()
+            val factory = JvmWinRtRuntime.getActivationFactory(
+                "Windows.Data.Json.JsonObject",
+                guidOf("2289f159-54de-45d8-abcc-22603fa066a0"),
+            ).getOrThrow()
             try {
-                val instance = JvmWinRtRuntime.activateInstance(factory).getOrThrow()
+                val instance = PlatformComInterop.invokeObjectMethodWithStringArg(
+                    factory,
+                    6,
+                    """{"name":"codex","kind":"winrt"}""",
+                ).getOrThrow()
                 try {
-                    val projected = try {
-                        IStringable.from(Inspectable(instance))
-                    } catch (error: ProjectionException) {
-                        assumeNoException("Windows.Globalization.Calendar did not expose IStringable on this runtime", error)
-                        return
-                    }
+                    val jsonObject = JsonObject(Inspectable(instance).pointer)
+                    val projected = jsonObject.asIJsonObject()
                     try {
-                        val value = projected.toStringValue()
-                        assertFalse(value.isBlank())
+                        assertEquals("codex", projected.getNamedString("name"))
                     } finally {
                         PlatformComInterop.release(projected.pointer)
                     }
