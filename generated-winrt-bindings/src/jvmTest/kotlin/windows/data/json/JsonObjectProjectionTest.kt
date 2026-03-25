@@ -8,6 +8,7 @@ import dev.winrt.kom.KnownHResults
 import dev.winrt.kom.PlatformComInterop
 import dev.winrt.kom.PlatformRuntime
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 
@@ -30,13 +31,15 @@ class JsonObjectProjectionTest {
                 val instance = PlatformComInterop.invokeObjectMethodWithStringArg(
                     factory,
                     6,
-                    """{"name":"codex","kind":"winrt"}""",
+                    """{"name":"codex","kind":"winrt","pi":3.5,"flag":true}""",
                 ).getOrThrow()
                 try {
                     val jsonObject = JsonObject(Inspectable(instance).pointer)
                     val projected = jsonObject.asIJsonObject()
                     try {
                         assertEquals("codex", projected.getNamedString("name"))
+                        assertEquals(3.5, projected.getNamedNumber("pi").value, 0.0)
+                        assertTrue(projected.getNamedBoolean("flag").value)
                     } finally {
                         PlatformComInterop.release(projected.pointer)
                     }

@@ -1,6 +1,8 @@
 package windows.`data`.json
 
+import dev.winrt.core.Float64
 import dev.winrt.core.Inspectable
+import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.WinRtInterfaceProjection
 import dev.winrt.core.WinRtStrings
@@ -22,6 +24,13 @@ public open class IJsonObject(
       WinRtStrings.release(value)
     }
   }
+
+  public fun getNamedNumber(name: String): Float64 =
+      Float64(PlatformComInterop.invokeFloat64MethodWithStringArg(pointer, 11, name).getOrThrow())
+
+  public fun getNamedBoolean(name: String): WinRtBoolean =
+      WinRtBoolean(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 12,
+      name).getOrThrow())
 
   public companion object : WinRtInterfaceMetadata {
     override val qualifiedName: String = "Windows.Data.Json.IJsonObject"

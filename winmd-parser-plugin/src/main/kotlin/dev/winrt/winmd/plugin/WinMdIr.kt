@@ -231,6 +231,18 @@ object WinMdModelFactory {
                             name = "IJsonValue",
                             kind = WinMdTypeKind.Interface,
                             guid = "a3219a91-eccd-42e5-b553-261d0aefde37",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetNumber",
+                                    returnType = "Float64",
+                                    vtableIndex = 9,
+                                ),
+                                WinMdMethod(
+                                    name = "GetBoolean",
+                                    returnType = "Boolean",
+                                    vtableIndex = 10,
+                                ),
+                            ),
                         ),
                         WinMdType(
                             namespace = "Windows.Data.Json",
@@ -242,6 +254,22 @@ object WinMdModelFactory {
                                     name = "GetNamedString",
                                     returnType = "String",
                                     vtableIndex = 10,
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                    ),
+                                ),
+                                WinMdMethod(
+                                    name = "GetNamedNumber",
+                                    returnType = "Float64",
+                                    vtableIndex = 11,
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                    ),
+                                ),
+                                WinMdMethod(
+                                    name = "GetNamedBoolean",
+                                    returnType = "Boolean",
+                                    vtableIndex = 12,
                                     parameters = listOf(
                                         WinMdParameter("name", "String"),
                                     ),

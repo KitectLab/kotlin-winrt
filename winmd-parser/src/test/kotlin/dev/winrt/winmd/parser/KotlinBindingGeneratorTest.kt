@@ -156,10 +156,21 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val jsonInterfaceBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonObject.kt" }.content
+        val jsonValueBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonValue.kt" }.content
         val jsonEnumBinding = files.first { it.relativePath == "Windows/Data/Json/JsonValueType.kt" }.content
 
         assertTrue(jsonInterfaceBinding.contains("fun getNamedString(name: String): String"))
         assertTrue(jsonInterfaceBinding.contains("PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 10, name).getOrThrow()"))
+        assertTrue(jsonInterfaceBinding.contains("fun getNamedNumber(name: String): Float64"))
+        assertTrue(jsonInterfaceBinding.contains("invokeFloat64MethodWithStringArg(pointer, 11, name).getOrThrow()"))
+        assertTrue(jsonInterfaceBinding.contains("fun getNamedBoolean(name: String): WinRtBoolean"))
+        assertTrue(jsonInterfaceBinding.contains("invokeBooleanMethodWithStringArg(pointer, 12,"))
+        assertTrue(jsonInterfaceBinding.contains("name).getOrThrow()"))
+        assertTrue(jsonValueBinding.contains("fun getNumber(): Float64"))
+        assertTrue(jsonValueBinding.contains("PlatformComInterop.invokeFloat64Method(pointer,"))
+        assertTrue(jsonValueBinding.contains("9).getOrThrow()"))
+        assertTrue(jsonValueBinding.contains("fun getBoolean(): WinRtBoolean"))
+        assertTrue(jsonValueBinding.contains("PlatformComInterop.invokeBooleanGetter(pointer, 10).getOrThrow()"))
         assertTrue(jsonEnumBinding.contains("enum class JsonValueType"))
         assertTrue(jsonEnumBinding.contains("Object"))
     }

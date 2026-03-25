@@ -91,6 +91,60 @@ internal class InterfaceTypeRenderer(
                     .endControlFlow()
                     .build()
             }
+            method.returnType == "Float64" && method.parameters.isEmpty() && method.vtableIndex != null -> {
+                val vtableIndex = method.vtableIndex!!
+                builder
+                    .addStatement(
+                        "return %T(%T.invokeFloat64Method(pointer, %L).getOrThrow())",
+                        PoetSymbols.float64Class,
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                    )
+                    .build()
+            }
+            method.returnType == "Float64" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "String" &&
+                method.vtableIndex != null -> {
+                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                val vtableIndex = method.vtableIndex!!
+                builder
+                    .addStatement(
+                        "return %T(%T.invokeFloat64MethodWithStringArg(pointer, %L, %N).getOrThrow())",
+                        PoetSymbols.float64Class,
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                        argumentName,
+                    )
+                    .build()
+            }
+            method.returnType == "Boolean" && method.parameters.isEmpty() && method.vtableIndex != null -> {
+                val vtableIndex = method.vtableIndex!!
+                builder
+                    .addStatement(
+                        "return %T(%T.invokeBooleanGetter(pointer, %L).getOrThrow())",
+                        PoetSymbols.winRtBooleanClass,
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                    )
+                    .build()
+            }
+            method.returnType == "Boolean" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "String" &&
+                method.vtableIndex != null -> {
+                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                val vtableIndex = method.vtableIndex!!
+                builder
+                    .addStatement(
+                        "return %T(%T.invokeBooleanMethodWithStringArg(pointer, %L, %N).getOrThrow())",
+                        PoetSymbols.winRtBooleanClass,
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                        argumentName,
+                    )
+                    .build()
+            }
             else -> null
         }
     }
@@ -105,6 +159,16 @@ internal class InterfaceTypeRenderer(
     private fun supportsInterfaceMethod(method: WinMdMethod): Boolean {
         return (method.returnType == "String" && method.parameters.isEmpty() && method.vtableIndex != null) ||
             (method.returnType == "String" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "String" &&
+                method.vtableIndex != null) ||
+            (method.returnType == "Float64" && method.parameters.isEmpty() && method.vtableIndex != null) ||
+            (method.returnType == "Float64" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "String" &&
+                method.vtableIndex != null) ||
+            (method.returnType == "Boolean" && method.parameters.isEmpty() && method.vtableIndex != null) ||
+            (method.returnType == "Boolean" &&
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "String" &&
                 method.vtableIndex != null)

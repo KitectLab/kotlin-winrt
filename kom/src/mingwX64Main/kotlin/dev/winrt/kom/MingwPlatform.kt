@@ -59,6 +59,24 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeBooleanMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Boolean> {
+        return Result.failure(
+            UnsupportedOperationException("Native Boolean method invocation with input is not wired yet"),
+        )
+    }
+
+    override fun invokeFloat64Method(instance: ComPtr, vtableIndex: Int): Result<Double> {
+        return Result.failure(
+            UnsupportedOperationException("Native Float64 method invocation is not wired yet"),
+        )
+    }
+
+    override fun invokeFloat64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Double> {
+        return Result.failure(
+            UnsupportedOperationException("Native Float64 method invocation with input is not wired yet"),
+        )
+    }
+
     override fun invokeGuidGetter(instance: ComPtr, vtableIndex: Int): Result<Guid> {
         return Result.failure(
             UnsupportedOperationException("Native GUID getter invocation is not wired yet"),

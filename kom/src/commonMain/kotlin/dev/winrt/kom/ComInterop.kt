@@ -15,6 +15,9 @@ interface ComInterop {
     fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit>
     fun invokeUInt32Method(instance: ComPtr, vtableIndex: Int): Result<UInt>
     fun invokeBooleanGetter(instance: ComPtr, vtableIndex: Int): Result<Boolean>
+    fun invokeBooleanMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Boolean>
+    fun invokeFloat64Method(instance: ComPtr, vtableIndex: Int): Result<Double>
+    fun invokeFloat64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Double>
     fun invokeGuidGetter(instance: ComPtr, vtableIndex: Int): Result<Guid>
     fun invokeInt64Getter(instance: ComPtr, vtableIndex: Int): Result<Long>
 }

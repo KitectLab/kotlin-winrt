@@ -218,6 +218,81 @@ actual object PlatformComInterop : ComInterop {
         }
     }
 
+    override fun invokeBooleanMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Boolean> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            val hString = JvmWinRtRuntime.createHString(value)
+            try {
+                Arena.ofConfined().use { arena ->
+                    val resultSegment = arena.allocate(ValueLayout.JAVA_INT)
+                    val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                    val hresult = HResult(
+                        Jdk22Foreign.booleanMethodWithInputHandle.bindTo(function).invokeWithArguments(
+                            Jdk22Foreign.pointerOf(instance),
+                            MemorySegment.ofAddress(hString.raw),
+                            resultSegment,
+                        ) as Int,
+                    )
+                    hresult.requireSuccess("invokeBooleanMethodWithStringArg($vtableIndex)")
+                    resultSegment.get(ValueLayout.JAVA_INT, 0L) != 0
+                }
+            } finally {
+                JvmWinRtRuntime.releaseHString(hString)
+            }
+        }
+    }
+
+    override fun invokeFloat64Method(instance: ComPtr, vtableIndex: Int): Result<Double> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            Arena.ofConfined().use { arena ->
+                val resultSegment = arena.allocate(ValueLayout.JAVA_DOUBLE)
+                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                val hresult = HResult(
+                    Jdk22Foreign.float64MethodHandle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        resultSegment,
+                    ) as Int,
+                )
+                hresult.requireSuccess("invokeFloat64Method($vtableIndex)")
+                resultSegment.get(ValueLayout.JAVA_DOUBLE, 0L)
+            }
+        }
+    }
+
+    override fun invokeFloat64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Double> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            val hString = JvmWinRtRuntime.createHString(value)
+            try {
+                Arena.ofConfined().use { arena ->
+                    val resultSegment = arena.allocate(ValueLayout.JAVA_DOUBLE)
+                    val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                    val hresult = HResult(
+                        Jdk22Foreign.float64MethodWithInputHandle.bindTo(function).invokeWithArguments(
+                            Jdk22Foreign.pointerOf(instance),
+                            MemorySegment.ofAddress(hString.raw),
+                            resultSegment,
+                        ) as Int,
+                    )
+                    hresult.requireSuccess("invokeFloat64MethodWithStringArg($vtableIndex)")
+                    resultSegment.get(ValueLayout.JAVA_DOUBLE, 0L)
+                }
+            } finally {
+                JvmWinRtRuntime.releaseHString(hString)
+            }
+        }
+    }
+
     override fun invokeGuidGetter(instance: ComPtr, vtableIndex: Int): Result<Guid> {
         if (instance.isNull) {
             return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
