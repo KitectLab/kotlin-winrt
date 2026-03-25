@@ -15,6 +15,7 @@ import dev.winrt.kom.PlatformRuntime
 object SampleBootstrap {
     private var comInitialized = false
     private var winRtInitialized = false
+    var launcher: WinUiApplicationLauncher = DefaultWinUiApplicationLauncher
 
     fun configure() {
         if (PlatformRuntime.isWindows) {
@@ -66,4 +67,6 @@ object SampleBootstrap {
             requireSuccess(operation)
         }
     }
+
+    fun launch(): SampleLaunchResult = launcher.launch()
 }
