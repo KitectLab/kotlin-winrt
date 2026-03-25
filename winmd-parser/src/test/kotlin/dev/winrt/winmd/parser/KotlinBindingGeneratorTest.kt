@@ -161,6 +161,8 @@ class KotlinBindingGeneratorTest {
         val jsonArrayBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonArray.kt" }.content
         val jsonEnumBinding = files.first { it.relativePath == "Windows/Data/Json/JsonValueType.kt" }.content
 
+        assertTrue(jsonInterfaceBinding.contains("fun getNamedValue(name: String): IJsonValue"))
+        assertTrue(jsonInterfaceBinding.contains("PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 6, name).getOrThrow()"))
         assertTrue(jsonInterfaceBinding.contains("fun getNamedString(name: String): String"))
         assertTrue(jsonInterfaceBinding.contains("PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 10, name).getOrThrow()"))
         assertTrue(jsonInterfaceBinding.contains("fun getNamedObject(name: String): JsonObject"))
@@ -234,6 +236,8 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val jsonObjectBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonObject.kt" }.content
 
+        assertTrue(jsonObjectBinding.contains("fun getNamedValue(name: String): IJsonValue"))
+        assertTrue(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 6, name).getOrThrow()"))
         assertTrue(jsonObjectBinding.contains("fun getNamedObject(name: String): JsonObject"))
         assertTrue(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 8, name).getOrThrow()"))
         assertTrue(jsonObjectBinding.contains("fun getNamedArray(name: String): JsonArray"))
@@ -244,7 +248,6 @@ class KotlinBindingGeneratorTest {
         assertTrue(jsonObjectBinding.contains("invokeFloat64MethodWithStringArg(pointer, 11, name).getOrThrow()"))
         assertTrue(jsonObjectBinding.contains("fun getNamedBoolean(name: String): WinRtBoolean"))
         assertTrue(jsonObjectBinding.contains("invokeBooleanMethodWithStringArg(pointer, 12,"))
-        assertFalse(jsonObjectBinding.contains("fun getNamedValue(name: String): JsonValue"))
         assertFalse(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 13, name).getOrThrow()"))
         assertFalse(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 15, name).getOrThrow()"))
         assertFalse(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 16, name).getOrThrow()"))

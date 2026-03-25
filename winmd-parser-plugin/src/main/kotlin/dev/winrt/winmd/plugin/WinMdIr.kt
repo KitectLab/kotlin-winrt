@@ -295,6 +295,14 @@ object WinMdModelFactory {
                             guid = "064e24dd-29c2-4f83-9ac1-9ee11578beb3",
                             methods = listOf(
                                 WinMdMethod(
+                                    name = "GetNamedValue",
+                                    returnType = "Windows.Data.Json.IJsonValue",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                    ),
+                                ),
+                                WinMdMethod(
                                     name = "GetNamedString",
                                     returnType = "String",
                                     vtableIndex = 10,

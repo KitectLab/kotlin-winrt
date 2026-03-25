@@ -16,6 +16,9 @@ import kotlin.String
 public open class IJsonObject(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
+  public fun getNamedValue(name: String): IJsonValue = IJsonValue(
+      PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 6, name).getOrThrow())
+
   public fun getNamedString(name: String): String {
     val value = PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 10, name).getOrThrow()
     return try {

@@ -40,7 +40,7 @@ class JsonObjectProjectionTest {
                         assertEquals("codex", projected.getNamedString("name"))
                         assertEquals(3.5, projected.getNamedNumber("pi").value, 0.0)
                         assertTrue(projected.getNamedBoolean("flag").value)
-                        val textValue = IJsonValue.from(Inspectable(PlatformComInterop.invokeObjectMethodWithStringArg(projected.pointer, 6, "name").getOrThrow()))
+                        val textValue = projected.getNamedValue("name")
                         try {
                             assertEquals(JsonValueType.String, textValue.valueType)
                             assertEquals("\"codex\"", textValue.stringify())
@@ -48,7 +48,7 @@ class JsonObjectProjectionTest {
                         } finally {
                             PlatformComInterop.release(textValue.pointer)
                         }
-                        val numberValue = IJsonValue.from(Inspectable(PlatformComInterop.invokeObjectMethodWithStringArg(projected.pointer, 6, "pi").getOrThrow()))
+                        val numberValue = projected.getNamedValue("pi")
                         try {
                             assertEquals(JsonValueType.Number, numberValue.valueType)
                             assertEquals("3.5", numberValue.stringify())
@@ -56,7 +56,7 @@ class JsonObjectProjectionTest {
                         } finally {
                             PlatformComInterop.release(numberValue.pointer)
                         }
-                        val booleanValue = IJsonValue.from(Inspectable(PlatformComInterop.invokeObjectMethodWithStringArg(projected.pointer, 6, "flag").getOrThrow()))
+                        val booleanValue = projected.getNamedValue("flag")
                         try {
                             assertEquals(JsonValueType.Boolean, booleanValue.valueType)
                             assertEquals("true", booleanValue.stringify())
@@ -90,7 +90,7 @@ class JsonObjectProjectionTest {
                         }
                         val items = projected.getNamedArray("items")
                         try {
-                            val arrayValue = IJsonValue.from(Inspectable(items.pointer))
+                            val arrayValue = projected.getNamedValue("items")
                             try {
                                 assertEquals(JsonValueType.Array, arrayValue.valueType)
                                 assertEquals("[{\"child\":\"a\"},{\"child\":\"b\"}]", arrayValue.stringify())
