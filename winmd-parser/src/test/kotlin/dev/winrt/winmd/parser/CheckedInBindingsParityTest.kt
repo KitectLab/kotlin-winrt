@@ -31,7 +31,6 @@ class CheckedInBindingsParityTest {
         "windows/foundation/IStringable.kt",
         "windows/foundation/Point.kt",
         "windows/data/json/IJsonArray.kt",
-        "windows/data/json/IJsonValue.kt",
         "windows/data/json/JsonValueType.kt",
     )
     private val trackedTypes = mapOf(
@@ -136,6 +135,18 @@ class CheckedInBindingsParityTest {
         assertTrue(!checkedIn.contains("invokeObjectMethodWithStringArg(pointer, 15, name).getOrThrow()"))
         assertTrue(!checkedIn.contains("invokeObjectMethodWithStringArg(pointer, 16, name).getOrThrow()"))
         assertTrue(!checkedIn.contains("invokeHStringMethodWithStringArg(pointer, 17, name).getOrThrow()"))
+    }
+
+    @Test
+    fun checked_in_json_value_keeps_only_verified_runtime_surface() {
+        val checkedIn = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/data/json/IJsonValue.kt").readText()
+
+        assertTrue(checkedIn.contains("fun getObject(): JsonObject"))
+        assertTrue(checkedIn.contains("invokeObjectMethod(pointer,"))
+        assertTrue(checkedIn.contains("12).getOrThrow()"))
+        assertTrue(!checkedIn.contains("invokeFloat64Method(pointer,\n      9).getOrThrow()"))
+        assertTrue(!checkedIn.contains("invokeBooleanGetter(pointer, 10).getOrThrow()"))
+        assertTrue(!checkedIn.contains("invokeObjectMethod(pointer,\n      11).getOrThrow()"))
     }
 
 }

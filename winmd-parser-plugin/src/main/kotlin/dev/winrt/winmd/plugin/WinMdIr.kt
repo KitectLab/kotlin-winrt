@@ -273,7 +273,15 @@ object WinMdModelFactory {
                                 WinMdMethod(
                                     name = "GetObjectAt",
                                     returnType = "Windows.Data.Json.JsonObject",
-                                    vtableIndex = 13,
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter("index", "UInt32"),
+                                    ),
+                                ),
+                                WinMdMethod(
+                                    name = "GetArrayAt",
+                                    returnType = "Windows.Data.Json.JsonArray",
+                                    vtableIndex = 7,
                                     parameters = listOf(
                                         WinMdParameter("index", "UInt32"),
                                     ),
