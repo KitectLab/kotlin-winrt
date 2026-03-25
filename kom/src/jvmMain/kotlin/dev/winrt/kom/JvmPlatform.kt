@@ -79,6 +79,23 @@ actual object PlatformComInterop : ComInterop {
         }
     }
 
+    override fun invokeUnitMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            val hresult = HResult(
+                Jdk22Foreign.unitMethodWithInt32Handle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    value,
+                ) as Int,
+            )
+            hresult.requireSuccess("invokeUnitMethodWithInt32Arg($vtableIndex)")
+        }
+    }
+
     override fun invokeHStringMethod(instance: ComPtr, vtableIndex: Int): Result<HString> {
         if (instance.isNull) {
             return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
@@ -123,6 +140,28 @@ actual object PlatformComInterop : ComInterop {
                 }
             } finally {
                 JvmWinRtRuntime.releaseHString(hString)
+            }
+        }
+    }
+
+    override fun invokeHStringMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<HString> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            Arena.ofConfined().use { arena ->
+                val resultSegment = arena.allocate(ValueLayout.ADDRESS)
+                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                val hresult = HResult(
+                    Jdk22Foreign.hstringMethodWithInt32Handle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        value,
+                        resultSegment,
+                    ) as Int,
+                )
+                hresult.requireSuccess("invokeHStringMethodWithInt32Arg($vtableIndex)")
+                HString(resultSegment.get(ValueLayout.ADDRESS, 0L).address())
             }
         }
     }
@@ -237,6 +276,44 @@ actual object PlatformComInterop : ComInterop {
                 hresult.requireSuccess("invokeStringSetter($vtableIndex)")
             } finally {
                 JvmWinRtRuntime.releaseHString(hString)
+            }
+        }
+    }
+
+    override fun invokeInt32Setter(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            val hresult = HResult(
+                Jdk22Foreign.int32SetterHandle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    value,
+                ) as Int,
+            )
+            hresult.requireSuccess("invokeInt32Setter($vtableIndex)")
+        }
+    }
+
+    override fun invokeInt32Method(instance: ComPtr, vtableIndex: Int): Result<Int> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            Arena.ofConfined().use { arena ->
+                val resultSegment = arena.allocate(ValueLayout.JAVA_INT)
+                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                val hresult = HResult(
+                    Jdk22Foreign.int32MethodHandle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        resultSegment,
+                    ) as Int,
+                )
+                hresult.requireSuccess("invokeInt32Method($vtableIndex)")
+                resultSegment.get(ValueLayout.JAVA_INT, 0L)
             }
         }
     }

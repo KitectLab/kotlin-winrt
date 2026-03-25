@@ -12,8 +12,8 @@ internal class RuntimePropertyRenderer(
 ) {
     fun canRenderRuntimeProperty(property: WinMdProperty): Boolean {
         return when (property.type) {
-            "Boolean", "Guid", "DateTime", "TimeSpan", "EventRegistrationToken", "IReference<String>", "String" ->
-                property.getterVtableIndex != null || (property.type == "String" && property.setterVtableIndex != null)
+            "Boolean", "Guid", "DateTime", "TimeSpan", "EventRegistrationToken", "IReference<String>", "String", "Int32" ->
+                property.getterVtableIndex != null || ((property.type == "String" || property.type == "Int32") && property.setterVtableIndex != null)
             else -> false
         }
     }
@@ -117,6 +117,15 @@ internal class RuntimePropertyRenderer(
                     .endControlFlow()
                     .build()
             }
+            property.type == "Int32" && property.getterVtableIndex != null -> {
+                val getterVtableIndex = property.getterVtableIndex!!
+                builder
+                    .beginControlFlow("if (pointer.isNull)")
+                    .addStatement("return %N.get()", backingName)
+                    .endControlFlow()
+                    .addStatement("return %T(%T.invokeInt32Method(pointer, %L).getOrThrow())", PoetSymbols.int32Class, PoetSymbols.platformComInteropClass, getterVtableIndex)
+                    .build()
+            }
             else -> builder
                 .addStatement("return %N.get()", backingName)
                 .build()
@@ -135,6 +144,15 @@ internal class RuntimePropertyRenderer(
                 .addStatement("return")
                 .endControlFlow()
                 .addStatement("%T.invokeStringSetter(pointer, %L, value).getOrThrow()", PoetSymbols.platformComInteropClass, setterVtableIndex)
+                .build()
+        } else if (property.type == "Int32" && property.setterVtableIndex != null) {
+            val setterVtableIndex = property.setterVtableIndex!!
+            builder
+                .beginControlFlow("if (pointer.isNull)")
+                .addStatement("%N.set(value)", backingName)
+                .addStatement("return")
+                .endControlFlow()
+                .addStatement("%T.invokeInt32Setter(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, setterVtableIndex)
                 .build()
         } else {
             builder

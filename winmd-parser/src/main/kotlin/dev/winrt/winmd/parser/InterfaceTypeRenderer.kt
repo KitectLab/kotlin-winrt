@@ -52,18 +52,41 @@ internal class InterfaceTypeRenderer(
         val propertyName = property.name.replaceFirstChar(Char::lowercase)
         val propertyType = typeNameMapper.mapTypeName(property.type, currentNamespace)
         val getterVtableIndex = property.getterVtableIndex!!
-        return PropertySpec.builder(propertyName, propertyType)
-            .getter(
-                FunSpec.getterBuilder()
+        val getterBuilder = FunSpec.getterBuilder()
+        when {
+            typeRegistry.isEnumType(property.type, currentNamespace) ->
+                getterBuilder.addStatement(
+                    "return %T.fromValue(%T.invokeUInt32Method(pointer, %L).getOrThrow().toInt())",
+                    propertyType,
+                    PoetSymbols.platformComInteropClass,
+                    getterVtableIndex,
+                )
+            property.type == "Int32" ->
+                getterBuilder.addStatement(
+                    "return %T(%T.invokeInt32Method(pointer, %L).getOrThrow())",
+                    PoetSymbols.int32Class,
+                    PoetSymbols.platformComInteropClass,
+                    getterVtableIndex,
+                )
+            else -> return null
+        }
+        val propertyBuilder = PropertySpec.builder(propertyName, propertyType)
+            .getter(getterBuilder.build())
+        if (property.mutable && property.type == "Int32" && property.setterVtableIndex != null) {
+            val setterVtableIndex = property.setterVtableIndex!!
+            propertyBuilder.mutable()
+            propertyBuilder.setter(
+                FunSpec.setterBuilder()
+                    .addParameter("value", propertyType)
                     .addStatement(
-                        "return %T.fromValue(%T.invokeUInt32Method(pointer, %L).getOrThrow().toInt())",
-                        propertyType,
+                        "%T.invokeInt32Setter(pointer, %L, value.value).getOrThrow()",
                         PoetSymbols.platformComInteropClass,
-                        getterVtableIndex,
+                        setterVtableIndex,
                     )
                     .build(),
             )
-            .build()
+        }
+        return propertyBuilder.build()
     }
 
     private fun renderMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
@@ -104,6 +127,26 @@ internal class InterfaceTypeRenderer(
                 builder
                     .addStatement(
                         "val value = %T.invokeHStringMethodWithStringArg(pointer, %L, %N).getOrThrow()",
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                        argumentName,
+                    )
+                    .beginControlFlow("return try")
+                    .addStatement("%T.toKotlin(value)", PoetSymbols.winRtStringsClass)
+                    .nextControlFlow("finally")
+                    .addStatement("%T.release(value)", PoetSymbols.winRtStringsClass)
+                    .endControlFlow()
+                    .build()
+            }
+            method.returnType == "String" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "Int32" &&
+                method.vtableIndex != null -> {
+                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                val vtableIndex = method.vtableIndex!!
+                builder
+                    .addStatement(
+                        "val value = %T.invokeHStringMethodWithInt32Arg(pointer, %L, %N.value).getOrThrow()",
                         PoetSymbols.platformComInteropClass,
                         vtableIndex,
                         argumentName,
@@ -221,6 +264,17 @@ internal class InterfaceTypeRenderer(
                     )
                     .build()
             }
+            method.returnType == "Int32" && method.parameters.isEmpty() && method.vtableIndex != null -> {
+                val vtableIndex = method.vtableIndex!!
+                builder
+                    .addStatement(
+                        "return %T(%T.invokeInt32Method(pointer, %L).getOrThrow())",
+                        PoetSymbols.int32Class,
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                    )
+                    .build()
+            }
             typeRegistry.isEnumType(method.returnType, currentNamespace) &&
                 method.parameters.isEmpty() &&
                 method.vtableIndex != null -> {
@@ -281,6 +335,21 @@ internal class InterfaceTypeRenderer(
                     )
                     .build()
             }
+            method.returnType == "Unit" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "Int32" &&
+                method.vtableIndex != null -> {
+                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                val vtableIndex = method.vtableIndex!!
+                builder
+                    .addStatement(
+                        "%T.invokeUnitMethodWithInt32Arg(pointer, %L, %N.value).getOrThrow()",
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                        argumentName,
+                    )
+                    .build()
+            }
             else -> null
         }
     }
@@ -297,6 +366,10 @@ internal class InterfaceTypeRenderer(
             (method.returnType == "String" &&
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "String" &&
+                method.vtableIndex != null) ||
+            (method.returnType == "String" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "Int32" &&
                 method.vtableIndex != null) ||
             (method.returnType == "String" &&
                 method.parameters.size == 1 &&
@@ -320,6 +393,7 @@ internal class InterfaceTypeRenderer(
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "UInt32" &&
                 method.vtableIndex != null) ||
+            (method.returnType == "Int32" && method.parameters.isEmpty() && method.vtableIndex != null) ||
             (typeRegistry.isEnumType(method.returnType, currentNamespace) &&
                 method.parameters.isEmpty() &&
                 method.vtableIndex != null) ||
@@ -333,12 +407,18 @@ internal class InterfaceTypeRenderer(
             (method.returnType.contains('.') &&
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "UInt32" &&
+                method.vtableIndex != null) ||
+            (method.returnType == "Unit" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "Int32" &&
                 method.vtableIndex != null)
     }
 
     private fun supportsInterfaceProperty(property: WinMdProperty, currentNamespace: String): Boolean {
-        return !property.mutable &&
-            property.getterVtableIndex != null &&
-            typeRegistry.isEnumType(property.type, currentNamespace)
+        return property.getterVtableIndex != null &&
+            (
+                typeRegistry.isEnumType(property.type, currentNamespace) ||
+                    property.type == "Int32"
+                )
     }
 }

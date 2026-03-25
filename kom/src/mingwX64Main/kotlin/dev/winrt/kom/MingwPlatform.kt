@@ -19,6 +19,12 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeUnitMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with Int32 input is not wired yet"),
+        )
+    }
+
     override fun addRef(instance: ComPtr): UInt = 1u
 
     override fun release(instance: ComPtr): UInt = 0u
@@ -32,6 +38,12 @@ actual object PlatformComInterop : ComInterop {
     override fun invokeHStringMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<HString> {
         return Result.failure(
             UnsupportedOperationException("Native HSTRING invocation with input is not wired yet"),
+        )
+    }
+
+    override fun invokeHStringMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<HString> {
+        return Result.failure(
+            UnsupportedOperationException("Native HSTRING invocation with Int32 input is not wired yet"),
         )
     }
 
@@ -62,6 +74,18 @@ actual object PlatformComInterop : ComInterop {
     override fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit> {
         return Result.failure(
             UnsupportedOperationException("Native HSTRING setter invocation is not wired yet"),
+        )
+    }
+
+    override fun invokeInt32Setter(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Int32 setter invocation is not wired yet"),
+        )
+    }
+
+    override fun invokeInt32Method(instance: ComPtr, vtableIndex: Int): Result<Int> {
+        return Result.failure(
+            UnsupportedOperationException("Native Int32 method invocation is not wired yet"),
         )
     }
 
