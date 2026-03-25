@@ -126,13 +126,16 @@ class WinMdMetadataReaderTest {
             },
         )
         assertEquals(
-            13,
+            6,
             InterfaceVtableResolver.inferMethodSlot(
                 jsonArrayInterface,
                 model,
                 jsonArrayInterface.methods.first { it.name == "GetObjectAt" },
             ),
         )
+
+        val jsonObjectGetNamedString = jsonObjectInterface.methods.first { it.name == "GetNamedString" }
+        assertEquals(10, InterfaceVtableResolver.inferMethodSlot(jsonObjectInterface, model, jsonObjectGetNamedString))
 
         val calendar = model.namespaces
             .first { it.name == "Windows.Globalization" }
@@ -166,7 +169,7 @@ class WinMdMetadataReaderTest {
             .types.first { it.name == "IJsonValue" }
         val valueTypeProperty = jsonValueInterface.properties.first { it.name == "ValueType" }
 
-        assertEquals(13, getObjectAt.vtableIndex)
+        assertEquals(6, getObjectAt.vtableIndex)
         assertEquals(6, valueTypeProperty.getterVtableIndex)
     }
 }
