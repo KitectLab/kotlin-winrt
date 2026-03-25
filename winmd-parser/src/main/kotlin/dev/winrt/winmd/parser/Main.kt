@@ -18,7 +18,7 @@ fun main(args: Array<String>) {
     val generatedFiles = KotlinBindingGenerator().generate(model)
 
     generatedFiles.forEach { file ->
-        val target = outputDir.resolve(file.relativePath.lowercase())
+        val target = outputDir.resolve(file.relativePath)
         target.parent.createDirectories()
         target.writeText(file.content)
     }
@@ -27,7 +27,7 @@ fun main(args: Array<String>) {
     manifest.writeText(
         buildString {
             appendLine("Generated ${generatedFiles.size} binding files")
-            generatedFiles.forEach { appendLine(it.relativePath.lowercase()) }
+            generatedFiles.forEach { appendLine(it.relativePath) }
         },
     )
 

@@ -15,17 +15,18 @@ data class GeneratedFile(
 
 class KotlinBindingGenerator {
     fun generate(model: WinMdModel): List<GeneratedFile> {
-        return model.namespaces.map { namespace ->
-            GeneratedFile(
-                relativePath = namespace.name.replace('.', '/') + "/Bindings.kt",
-                content = renderNamespace(namespace),
-            )
+        return model.namespaces.flatMap { namespace ->
+            namespace.types.map { type ->
+                GeneratedFile(
+                    relativePath = namespace.name.replace('.', '/') + "/${type.name}.kt",
+                    content = renderTypeFile(namespace, type),
+                )
+            }
         }
     }
 
-    private fun renderNamespace(namespace: WinMdNamespace): String {
+    private fun renderTypeFile(namespace: WinMdNamespace, type: WinMdType): String {
         val packageName = namespace.name.lowercase()
-        val declarations = namespace.types.joinToString("\n\n") { renderType(it) }
 
         return buildString {
             appendLine("package $packageName")
@@ -53,7 +54,7 @@ class KotlinBindingGenerator {
             appendLine("import dev.winrt.kom.ComPtr")
             appendLine("import dev.winrt.kom.PlatformComInterop")
             appendLine()
-            appendLine(declarations)
+            appendLine(renderType(type))
         }
     }
 
