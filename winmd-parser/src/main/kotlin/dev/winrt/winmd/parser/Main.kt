@@ -10,7 +10,10 @@ fun main(args: Array<String>) {
     val outputDir = inputs.outputDir
     val sources = inputs.sources
 
-    val model = WinMdModelFactory.metadataModel(sources)
+    val model = WinMdModelFactory.merge(
+        primary = WinMdModelFactory.metadataModel(sources),
+        supplemental = WinMdModelFactory.sampleSupplementalModel(),
+    )
     val generatedFiles = KotlinBindingGenerator().generate(model)
 
     generatedFiles.forEach { file ->

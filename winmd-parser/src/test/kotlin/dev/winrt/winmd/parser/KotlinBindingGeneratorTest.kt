@@ -12,7 +12,10 @@ class KotlinBindingGeneratorTest {
         val tempFile = Files.createTempFile("sample", ".winmd")
         Files.write(tempFile, byteArrayOf('M'.code.toByte(), 'Z'.code.toByte()))
 
-        val model = WinMdModelFactory.minimalModel(listOf(tempFile))
+        val model = WinMdModelFactory.merge(
+            primary = WinMdModelFactory.minimalModel(listOf(tempFile)),
+            supplemental = WinMdModelFactory.sampleSupplementalModel(),
+        )
         val files = KotlinBindingGenerator().generate(model)
 
         assertTrue(files.any { it.relativePath == "Windows/Foundation/IStringable.kt" })

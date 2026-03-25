@@ -180,4 +180,71 @@ object WinMdModelFactory {
     fun metadataModel(sourceFiles: List<Path>): WinMdModel {
         return WinMdMetadataReader.readModel(sourceFiles)
     }
+
+    fun sampleSupplementalModel(): WinMdModel {
+        return WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "Application",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.IStringable",
+                            activationKind = WinMdActivationKind.Factory,
+                            methods = listOf(
+                                WinMdMethod("Start", "Unit", vtableIndex = 6),
+                                WinMdMethod("GetLaunchCount", "UInt32", vtableIndex = 7),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "Window",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.IStringable",
+                            activationKind = WinMdActivationKind.Factory,
+                            activationFunctionName = "activateInstance",
+                            methods = listOf(
+                                WinMdMethod("Activate", "Unit", vtableIndex = 13),
+                            ),
+                            properties = listOf(
+                                WinMdProperty("Title", "String", mutable = true, getterVtableIndex = 6, setterVtableIndex = 7),
+                                WinMdProperty("IsVisible", "Boolean", mutable = false, getterVtableIndex = 8),
+                                WinMdProperty("CreatedAt", "DateTime", mutable = false, getterVtableIndex = 10),
+                                WinMdProperty("Lifetime", "TimeSpan", mutable = false, getterVtableIndex = 11),
+                                WinMdProperty("LastToken", "EventRegistrationToken", mutable = false, getterVtableIndex = 12),
+                                WinMdProperty("StableId", "Guid", mutable = false, getterVtableIndex = 9),
+                                WinMdProperty("OptionalTitle", "IReference<String>", mutable = false, getterVtableIndex = 14),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fun merge(primary: WinMdModel, supplemental: WinMdModel): WinMdModel {
+        val mergedFiles = primary.files + supplemental.files
+        val mergedNamespaces = (primary.namespaces + supplemental.namespaces)
+            .groupBy(WinMdNamespace::name)
+            .toSortedMap()
+            .map { (namespaceName, namespaceGroup) ->
+                val mergedTypes = namespaceGroup
+                    .flatMap(WinMdNamespace::types)
+                    .groupBy { "${it.namespace}.${it.name}" }
+                    .map { (_, types) -> types.first() }
+                    .sortedBy(WinMdType::name)
+                WinMdNamespace(
+                    name = namespaceName,
+                    types = mergedTypes,
+                )
+            }
+
+        return WinMdModel(
+            files = mergedFiles,
+            namespaces = mergedNamespaces,
+        )
+    }
 }
