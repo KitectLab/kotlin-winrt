@@ -172,4 +172,47 @@ class WinMdMetadataReaderTest {
         assertEquals(6, getObjectAt.vtableIndex)
         assertEquals(6, valueTypeProperty.getterVtableIndex)
     }
+
+    @Test
+    fun reads_real_calendar_metadata_from_windows_sdk_winmd() {
+        val universalContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.UniversalApiContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val foundationContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.FoundationContract",
+            sdkVersion = "10.0.22621.0",
+        )
+
+        val model = WinMdModelFactory.metadataModel(
+            listOf(
+                universalContract.winmdPath,
+                foundationContract.winmdPath,
+            ),
+        )
+        val globalization = model.namespaces.first { it.name == "Windows.Globalization" }
+        val calendar = globalization.types.first { it.name == "Calendar" }
+        val iCalendar = globalization.types.first { it.name == "ICalendar" }
+
+        assertEquals("Windows.Globalization.ICalendar", calendar.defaultInterface)
+        assertEquals("ca30221d-86d9-40fb-a26b-d44eb7cf08ea", iCalendar.guid)
+        assertTrue(iCalendar.methods.any { it.name == "Clone" && it.returnType == "Windows.Globalization.Calendar" && it.vtableIndex == 6 })
+        assertTrue(iCalendar.methods.any { it.name == "GetDateTime" && it.returnType == "Windows.Foundation.DateTime" && it.vtableIndex == 16 })
+        assertTrue(iCalendar.methods.any { it.name == "get_Year" && it.returnType == "Int32" && it.vtableIndex == 30 })
+        assertTrue(iCalendar.methods.any { it.name == "YearAsString" && it.returnType == "String" && it.vtableIndex == 33 })
+        assertTrue(iCalendar.methods.any { it.name == "get_Month" && it.returnType == "Int32" && it.vtableIndex == 39 })
+        assertTrue(iCalendar.methods.any { it.name == "MonthAsString" && it.returnType == "String" && it.vtableIndex == 42 })
+        assertTrue(iCalendar.methods.any { it.name == "get_DayOfWeek" && it.returnType == "Windows.Globalization.DayOfWeek" && it.vtableIndex == 57 })
+        assertTrue(iCalendar.methods.any { it.name == "get_IsDaylightSavingTime" && it.returnType == "Boolean" && it.vtableIndex == 103 })
+        assertTrue(iCalendar.properties.any { it.name == "Year" && it.type == "Int32" && it.getterVtableIndex == 30 && it.setterVtableIndex == 31 && it.mutable })
+        assertTrue(iCalendar.properties.any { it.name == "Month" && it.type == "Int32" && it.getterVtableIndex == 39 && it.setterVtableIndex == 40 && it.mutable })
+        assertTrue(iCalendar.properties.any { it.name == "NumeralSystem" && it.type == "String" && it.getterVtableIndex == 10 && it.setterVtableIndex == 11 && it.mutable })
+        assertTrue(iCalendar.properties.any { it.name == "DayOfWeek" && it.type == "Windows.Globalization.DayOfWeek" && it.getterVtableIndex == 57 && !it.mutable })
+        assertTrue(iCalendar.properties.any { it.name == "IsDaylightSavingTime" && it.type == "Boolean" && it.getterVtableIndex == 103 && !it.mutable })
+        assertTrue(iCalendar.properties.any { it.name == "ResolvedLanguage" && it.type == "String" && it.getterVtableIndex == 102 && !it.mutable })
+        assertTrue(
+            "Expected a large real ICalendar surface, got ${iCalendar.methods.size}",
+            iCalendar.methods.size >= 90,
+        )
+    }
 }
