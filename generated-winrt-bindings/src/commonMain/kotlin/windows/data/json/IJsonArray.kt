@@ -1,9 +1,12 @@
 package windows.`data`.json
 
+import dev.winrt.core.Float64
 import dev.winrt.core.Inspectable
 import dev.winrt.core.UInt32
+import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.WinRtInterfaceProjection
+import dev.winrt.core.WinRtStrings
 import dev.winrt.core.guidOf
 import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
@@ -20,6 +23,24 @@ public open class IJsonArray(
 
   public fun getArrayAt(index: UInt32): JsonArray =
       JsonArray(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 7,
+      index.value).getOrThrow())
+
+  public fun getStringAt(index: UInt32): String {
+    val value = PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 8,
+        index.value).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun getNumberAt(index: UInt32): Float64 =
+      Float64(PlatformComInterop.invokeFloat64MethodWithUInt32Arg(pointer, 9,
+      index.value).getOrThrow())
+
+  public fun getBooleanAt(index: UInt32): WinRtBoolean =
+      WinRtBoolean(PlatformComInterop.invokeBooleanMethodWithUInt32Arg(pointer, 10,
       index.value).getOrThrow())
 
   public companion object : WinRtInterfaceMetadata {

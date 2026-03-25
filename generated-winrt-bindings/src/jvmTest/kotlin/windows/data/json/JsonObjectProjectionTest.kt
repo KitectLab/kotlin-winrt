@@ -1,6 +1,7 @@
 package windows.data.json
 
 import dev.winrt.core.Inspectable
+import dev.winrt.core.UInt32
 import dev.winrt.core.guidOf
 import dev.winrt.kom.JvmComRuntime
 import dev.winrt.kom.JvmWinRtRuntime
@@ -31,7 +32,7 @@ class JsonObjectProjectionTest {
                 val instance = PlatformComInterop.invokeObjectMethodWithStringArg(
                     factory,
                     6,
-                    """{"name":"codex","kind":"winrt","pi":3.5,"flag":true,"nested":{"child":"value"},"items":[{"child":"a"},{"child":"b"}]}""",
+                    """{"name":"codex","kind":"winrt","pi":3.5,"flag":true,"nested":{"child":"value"},"items":[{"child":"a"},{"child":"b"}],"scalarItems":["alpha",3.5,true]}""",
                 ).getOrThrow()
                 try {
                     val jsonObject = JsonObject(Inspectable(instance).pointer)
@@ -107,11 +108,35 @@ class JsonObjectProjectionTest {
                             try {
                                 assertTrue(!items.pointer.isNull)
                                 assertTrue(!itemsProjected.pointer.isNull)
+                                val firstItem = itemsProjected.getObjectAt(UInt32(0u))
+                                try {
+                                    val firstItemProjected = firstItem.asIJsonObject()
+                                    try {
+                                        assertEquals("a", firstItemProjected.getNamedString("child"))
+                                    } finally {
+                                        PlatformComInterop.release(firstItemProjected.pointer)
+                                    }
+                                } finally {
+                                    PlatformComInterop.release(firstItem.pointer)
+                                }
                             } finally {
                                 PlatformComInterop.release(itemsProjected.pointer)
                             }
                         } finally {
                             PlatformComInterop.release(items.pointer)
+                        }
+                        val scalarItems = projected.getNamedArray("scalarItems")
+                        try {
+                            val scalarItemsProjected = scalarItems.asIJsonArray()
+                            try {
+                                assertEquals("alpha", scalarItemsProjected.getStringAt(UInt32(0u)))
+                                assertEquals(3.5, scalarItemsProjected.getNumberAt(UInt32(1u)).value, 0.0)
+                                assertTrue(scalarItemsProjected.getBooleanAt(UInt32(2u)).value)
+                            } finally {
+                                PlatformComInterop.release(scalarItemsProjected.pointer)
+                            }
+                        } finally {
+                            PlatformComInterop.release(scalarItems.pointer)
                         }
                     } finally {
                         PlatformComInterop.release(projected.pointer)

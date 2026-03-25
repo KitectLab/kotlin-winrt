@@ -286,6 +286,30 @@ object WinMdModelFactory {
                                         WinMdParameter("index", "UInt32"),
                                     ),
                                 ),
+                                WinMdMethod(
+                                    name = "GetStringAt",
+                                    returnType = "String",
+                                    vtableIndex = 8,
+                                    parameters = listOf(
+                                        WinMdParameter("index", "UInt32"),
+                                    ),
+                                ),
+                                WinMdMethod(
+                                    name = "GetNumberAt",
+                                    returnType = "Float64",
+                                    vtableIndex = 9,
+                                    parameters = listOf(
+                                        WinMdParameter("index", "UInt32"),
+                                    ),
+                                ),
+                                WinMdMethod(
+                                    name = "GetBooleanAt",
+                                    returnType = "Boolean",
+                                    vtableIndex = 10,
+                                    parameters = listOf(
+                                        WinMdParameter("index", "UInt32"),
+                                    ),
+                                ),
                             ),
                         ),
                         WinMdType(

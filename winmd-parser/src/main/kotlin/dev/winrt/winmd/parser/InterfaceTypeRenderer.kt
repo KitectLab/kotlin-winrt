@@ -115,6 +115,26 @@ internal class InterfaceTypeRenderer(
                     .endControlFlow()
                     .build()
             }
+            method.returnType == "String" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "UInt32" &&
+                method.vtableIndex != null -> {
+                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                val vtableIndex = method.vtableIndex!!
+                builder
+                    .addStatement(
+                        "val value = %T.invokeHStringMethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow()",
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                        argumentName,
+                    )
+                    .beginControlFlow("return try")
+                    .addStatement("%T.toKotlin(value)", PoetSymbols.winRtStringsClass)
+                    .nextControlFlow("finally")
+                    .addStatement("%T.release(value)", PoetSymbols.winRtStringsClass)
+                    .endControlFlow()
+                    .build()
+            }
             method.returnType == "Float64" && method.parameters.isEmpty() && method.vtableIndex != null -> {
                 val vtableIndex = method.vtableIndex!!
                 builder
@@ -142,6 +162,22 @@ internal class InterfaceTypeRenderer(
                     )
                     .build()
             }
+            method.returnType == "Float64" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "UInt32" &&
+                method.vtableIndex != null -> {
+                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                val vtableIndex = method.vtableIndex!!
+                builder
+                    .addStatement(
+                        "return %T(%T.invokeFloat64MethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow())",
+                        PoetSymbols.float64Class,
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                        argumentName,
+                    )
+                    .build()
+            }
             method.returnType == "Boolean" && method.parameters.isEmpty() && method.vtableIndex != null -> {
                 val vtableIndex = method.vtableIndex!!
                 builder
@@ -150,6 +186,22 @@ internal class InterfaceTypeRenderer(
                         PoetSymbols.winRtBooleanClass,
                         PoetSymbols.platformComInteropClass,
                         vtableIndex,
+                    )
+                    .build()
+            }
+            method.returnType == "Boolean" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "UInt32" &&
+                method.vtableIndex != null -> {
+                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                val vtableIndex = method.vtableIndex!!
+                builder
+                    .addStatement(
+                        "return %T(%T.invokeBooleanMethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow())",
+                        PoetSymbols.winRtBooleanClass,
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                        argumentName,
                     )
                     .build()
             }
@@ -246,15 +298,27 @@ internal class InterfaceTypeRenderer(
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "String" &&
                 method.vtableIndex != null) ||
+            (method.returnType == "String" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "UInt32" &&
+                method.vtableIndex != null) ||
             (method.returnType == "Float64" && method.parameters.isEmpty() && method.vtableIndex != null) ||
             (method.returnType == "Float64" &&
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "String" &&
                 method.vtableIndex != null) ||
+            (method.returnType == "Float64" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "UInt32" &&
+                method.vtableIndex != null) ||
             (method.returnType == "Boolean" && method.parameters.isEmpty() && method.vtableIndex != null) ||
             (method.returnType == "Boolean" &&
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "String" &&
+                method.vtableIndex != null) ||
+            (method.returnType == "Boolean" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "UInt32" &&
                 method.vtableIndex != null) ||
             (typeRegistry.isEnumType(method.returnType, currentNamespace) &&
                 method.parameters.isEmpty() &&
