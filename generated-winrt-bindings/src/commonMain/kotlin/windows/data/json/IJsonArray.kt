@@ -1,16 +1,22 @@
 package windows.`data`.json
 
 import dev.winrt.core.Inspectable
+import dev.winrt.core.UInt32
 import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.WinRtInterfaceProjection
 import dev.winrt.core.guidOf
 import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
+import dev.winrt.kom.PlatformComInterop
 
 public open class IJsonArray(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
+  public fun getObjectAt(index: UInt32): JsonObject = JsonObject(
+      PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 13,
+      index.value).getOrThrow())
+
   public companion object : WinRtInterfaceMetadata {
     override val qualifiedName: String = "Windows.Data.Json.IJsonArray"
 
