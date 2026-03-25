@@ -1,7 +1,5 @@
 package dev.winrt.winmd.parser
 
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.TypeSpec
 import dev.winrt.winmd.plugin.WinMdType
@@ -10,6 +8,7 @@ internal class RuntimeTypeRenderer(
     private val runtimePropertyRenderer: RuntimePropertyRenderer,
     private val runtimeMethodRenderer: RuntimeMethodRenderer,
     private val runtimeCompanionRenderer: RuntimeCompanionRenderer,
+    private val runtimeProjectionRenderer: RuntimeProjectionRenderer,
 ) {
     fun render(type: WinMdType): TypeSpec {
         require(type.kind == dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass) {
@@ -32,13 +31,7 @@ internal class RuntimeTypeRenderer(
         type.methods.forEach { builder.addFunction(runtimeMethodRenderer.renderRuntimeMethod(it, type.namespace)) }
         builder.addType(runtimeCompanionRenderer.render(type))
         type.defaultInterface?.let { defaultInterface ->
-            val simpleName = defaultInterface.substringAfterLast('.')
-            builder.addFunction(
-                FunSpec.builder("as$simpleName")
-                    .returns(ClassName(defaultInterface.substringBeforeLast('.').lowercase(), simpleName))
-                    .addStatement("return %L.from(this)", simpleName)
-                    .build(),
-            )
+            builder.addFunction(runtimeProjectionRenderer.renderDefaultInterfaceProjection(defaultInterface))
         }
         return builder.build()
     }
