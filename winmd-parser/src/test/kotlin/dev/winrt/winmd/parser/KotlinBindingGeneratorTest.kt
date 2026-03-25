@@ -71,4 +71,78 @@ class KotlinBindingGeneratorTest {
         assertTrue(iStringableBinding.contains("guidOf(\"96369f54-8eb6-48f0-abce-c1b211e627c3\")"))
         assertFalse(windowBinding.contains("Unit as"))
     }
+
+    @Test
+    fun normalizes_real_metadata_type_names_to_kotlin_references() {
+        val model = WinMdModelFactory.sampleSupplementalModel().copy(
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Windows.Data.Json",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonValue",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "JsonValueType",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Enum,
+                            enumMembers = listOf(
+                                dev.winrt.winmd.plugin.WinMdEnumMember("Null", 0),
+                            ),
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "JsonObject",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Data.Json.IJsonObject",
+                            methods = listOf(
+                                dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "GetValueType",
+                                    returnType = "Windows.Data.Json.JsonValueType",
+                                ),
+                            ),
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "ValueType",
+                                    type = "Windows.Data.Json.JsonValueType",
+                                    mutable = false,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Nested",
+                                    type = "Windows.Data.Json.IJsonValue",
+                                    mutable = false,
+                                ),
+                            ),
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonObject",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "GetObject",
+                                    returnType = "Windows.Data.Json.JsonObject",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val jsonObjectBinding = files.first { it.relativePath == "Windows/Data/Json/JsonObject.kt" }.content
+        val jsonInterfaceBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonObject.kt" }.content
+
+        assertTrue(jsonObjectBinding.contains("val valueType: JsonValueType"))
+        assertTrue(jsonObjectBinding.contains("val nested: IJsonValue"))
+        assertTrue(jsonObjectBinding.contains("fun getValueType(): JsonValueType"))
+        assertTrue(jsonObjectBinding.contains("fun asIJsonObject(): IJsonObject = IJsonObject.from(this)"))
+        assertTrue(jsonInterfaceBinding.contains("fun getObject(): JsonObject"))
+        assertFalse(jsonObjectBinding.contains("Windows.Data.Json.JsonValueType"))
+    }
 }

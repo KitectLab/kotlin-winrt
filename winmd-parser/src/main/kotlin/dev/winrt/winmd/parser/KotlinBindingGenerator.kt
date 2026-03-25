@@ -83,7 +83,7 @@ class KotlinBindingGenerator {
                     }
                 """.trimIndent().prependIndent("    ")
             } else {
-                "    fun $functionName(): ${method.returnType}"
+                "    fun $functionName(): ${mapType(method.returnType, type.namespace)}"
             }
         }
         return buildString {
@@ -103,11 +103,11 @@ class KotlinBindingGenerator {
 
     private fun renderRuntimeClass(type: WinMdType): String {
         val propertyDeclarations = type.properties.joinToString("\n") { property ->
-            renderProperty(property)
+            renderProperty(property, type.namespace)
         }
         val methods = type.methods.joinToString("\n") { method ->
             val functionName = method.name.replaceFirstChar(Char::lowercase)
-            val kotlinType = mapType(method.returnType)
+            val kotlinType = mapType(method.returnType, type.namespace)
             if (method.returnType == "Unit" && method.parameters.isEmpty() && method.vtableIndex != null) {
                 return@joinToString buildString {
                     appendLine("    fun $functionName() {")
@@ -166,10 +166,10 @@ class KotlinBindingGenerator {
         }
     }
 
-    private fun renderProperty(property: WinMdProperty): String {
+    private fun renderProperty(property: WinMdProperty, currentNamespace: String): String {
         val propertyName = property.name.replaceFirstChar(Char::lowercase)
         val keyword = if (property.mutable) "var" else "val"
-        val kotlinType = mapType(property.type)
+        val kotlinType = mapType(property.type, currentNamespace)
         if (property.type == "Boolean" && property.getterVtableIndex != null) {
             return buildString {
                 appendLine("    private val backing_${property.name} = RuntimeProperty<$kotlinType>(${defaultValueFor(kotlinType)})")
@@ -282,7 +282,7 @@ class KotlinBindingGenerator {
 
     private fun renderStruct(type: WinMdType): String {
         val fields = type.fields.joinToString(",\n") { field ->
-            "    val ${field.name.replaceFirstChar(Char::lowercase)}: ${mapType(field.type)}"
+            "    val ${field.name.replaceFirstChar(Char::lowercase)}: ${mapType(field.type, type.namespace)}"
         }
 
         return buildString {
@@ -308,7 +308,7 @@ class KotlinBindingGenerator {
         }
     }
 
-    private fun mapType(typeName: String): String {
+    private fun mapType(typeName: String, currentNamespace: String): String {
         return when {
             typeName == "String" -> "String"
             typeName == "Unit" -> "Unit"
@@ -324,9 +324,24 @@ class KotlinBindingGenerator {
             typeName == "EventRegistrationToken" -> "EventRegistrationToken"
             typeName.startsWith("IReference<") -> {
                 val inner = typeName.removePrefix("IReference<").removeSuffix(">")
-                "IReference<${mapType(inner)}>"
+                "IReference<${mapType(inner, currentNamespace)}>"
             }
-            else -> typeName.substringAfterLast('.')
+            '.' in typeName -> normalizeQualifiedType(typeName, currentNamespace)
+            else -> typeName
+        }
+    }
+
+    private fun normalizeQualifiedType(typeName: String, currentNamespace: String): String {
+        val simpleName = typeName.substringAfterLast('.')
+        val namespace = typeName.substringBeforeLast('.', missingDelimiterValue = "")
+        if (namespace == currentNamespace) {
+            return simpleName
+        }
+
+        return buildString {
+            append(namespace.lowercase())
+            append('.')
+            append(simpleName)
         }
     }
 
