@@ -60,10 +60,21 @@ object WinMdMetadataReader {
                     namespace = typeDef.namespace,
                     name = typeDef.name,
                     kind = classifyType(typeDef, tables),
+                    defaultInterface = readDefaultInterface(index + 1, tables),
                     methods = readMethods(index + 1, tables),
                     properties = readProperties(index + 1, tables),
                 )
             }
+    }
+
+    private fun readDefaultInterface(typeDefIndex: Int, tables: MetadataTables): String? {
+        val typeKind = classifyType(tables.typeDefs[typeDefIndex - 1], tables)
+        if (typeKind != WinMdTypeKind.RuntimeClass) {
+            return null
+        }
+
+        val interfaceImpl = tables.interfaceImplRows.firstOrNull { it.classTypeDefIndex == typeDefIndex } ?: return null
+        return resolveTypeDefOrRefName(interfaceImpl.interfaceCodedIndex, tables)
     }
 
     private fun readMethods(typeDefIndex: Int, tables: MetadataTables): List<WinMdMethod> {
@@ -314,6 +325,7 @@ object WinMdMetadataReader {
 
             val typeRefRows = mutableListOf<TypeReferenceRow>()
             val typeDefRows = mutableListOf<TypeDefRow>()
+            val interfaceImplRows = mutableListOf<InterfaceImplRow>()
             val methodDefRows = mutableListOf<MethodDefRow>()
             val paramRows = mutableListOf<ParamRow>()
             val propertyMapRows = mutableListOf<PropertyMapRow>()
@@ -373,6 +385,23 @@ object WinMdMetadataReader {
                                 extendsCodedIndex = extendsIndex,
                                 fieldListIndex = fieldListIndex,
                                 methodListIndex = methodListIndex,
+                            )
+                        }
+                    }
+                    9 -> {
+                        val typeDefIndexSize = tableIndexSize(rowCounts[tableTypeDef])
+                        repeat(rowCount) {
+                            val classTypeDefIndex = readIndex(tablesHeap, cursor, typeDefIndexSize)
+                            cursor += typeDefIndexSize
+                            val interfaceCodedIndex = readIndex(
+                                tablesHeap,
+                                cursor,
+                                codedIndexSize(rowCounts[tableTypeDef], rowCounts[tableTypeRef], rowCounts[tableTypeSpec]),
+                            )
+                            cursor += codedIndexSize(rowCounts[tableTypeDef], rowCounts[tableTypeRef], rowCounts[tableTypeSpec])
+                            interfaceImplRows += InterfaceImplRow(
+                                classTypeDefIndex = classTypeDefIndex,
+                                interfaceCodedIndex = interfaceCodedIndex,
                             )
                         }
                     }
@@ -452,6 +481,7 @@ object WinMdMetadataReader {
             return MetadataTables(
                 typeRefs = typeRefRows,
                 typeDefs = typeDefRows,
+                interfaceImplRows = interfaceImplRows,
                 methodDefs = methodDefRows,
                 paramRows = paramRows,
                 propertyMapRows = propertyMapRows,

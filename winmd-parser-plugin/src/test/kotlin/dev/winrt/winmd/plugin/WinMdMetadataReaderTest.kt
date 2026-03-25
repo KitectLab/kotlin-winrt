@@ -41,7 +41,13 @@ class WinMdMetadataReaderTest {
         val jsonObject = model.namespaces
             .first { it.name == "Windows.Data.Json" }
             .types.first { it.name == "JsonObject" }
+        assertEquals("Windows.Data.Json.IJsonObject", jsonObject.defaultInterface)
         assertTrue(jsonObject.properties.toString(), jsonObject.properties.any { it.name == "ValueType" && it.type == "Windows.Data.Json.JsonValueType" })
         assertTrue(jsonObject.properties.toString(), jsonObject.properties.any { it.name == "Size" && it.type == "UInt32" })
+
+        val calendar = model.namespaces
+            .first { it.name == "Windows.Globalization" }
+            .types.first { it.name == "Calendar" }
+        assertEquals("Windows.Globalization.ICalendar", calendar.defaultInterface)
     }
 }
