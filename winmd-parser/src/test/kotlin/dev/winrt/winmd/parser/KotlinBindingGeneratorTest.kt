@@ -157,12 +157,15 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val jsonInterfaceBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonObject.kt" }.content
         val jsonValueBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonValue.kt" }.content
+        val jsonArrayBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonArray.kt" }.content
         val jsonEnumBinding = files.first { it.relativePath == "Windows/Data/Json/JsonValueType.kt" }.content
 
         assertTrue(jsonInterfaceBinding.contains("fun getNamedString(name: String): String"))
         assertTrue(jsonInterfaceBinding.contains("PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 10, name).getOrThrow()"))
         assertTrue(jsonInterfaceBinding.contains("fun getNamedObject(name: String): JsonObject"))
         assertTrue(jsonInterfaceBinding.contains("PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 8, name).getOrThrow()"))
+        assertTrue(jsonInterfaceBinding.contains("fun getNamedArray(name: String): JsonArray"))
+        assertTrue(jsonInterfaceBinding.contains("PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 9, name).getOrThrow()"))
         assertTrue(jsonInterfaceBinding.contains("fun getNamedNumber(name: String): Float64"))
         assertTrue(jsonInterfaceBinding.contains("invokeFloat64MethodWithStringArg(pointer, 11, name).getOrThrow()"))
         assertTrue(jsonInterfaceBinding.contains("fun getNamedBoolean(name: String): WinRtBoolean"))
@@ -173,9 +176,12 @@ class KotlinBindingGeneratorTest {
         assertTrue(jsonValueBinding.contains("9).getOrThrow()"))
         assertTrue(jsonValueBinding.contains("fun getBoolean(): WinRtBoolean"))
         assertTrue(jsonValueBinding.contains("PlatformComInterop.invokeBooleanGetter(pointer, 10).getOrThrow()"))
+        assertTrue(jsonValueBinding.contains("fun getArray(): JsonArray"))
+        assertTrue(jsonValueBinding.contains("11).getOrThrow()"))
         assertTrue(jsonValueBinding.contains("fun getObject(): JsonObject"))
         assertTrue(jsonValueBinding.contains("PlatformComInterop.invokeObjectMethod(pointer,"))
         assertTrue(jsonValueBinding.contains("12).getOrThrow()"))
+        assertFalse(jsonArrayBinding.contains("Stub method not implemented"))
         assertTrue(jsonEnumBinding.contains("enum class JsonValueType"))
         assertTrue(jsonEnumBinding.contains("Object"))
     }

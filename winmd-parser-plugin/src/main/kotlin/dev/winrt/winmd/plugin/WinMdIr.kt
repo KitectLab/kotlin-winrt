@@ -247,6 +247,27 @@ object WinMdModelFactory {
                                     returnType = "Windows.Data.Json.JsonObject",
                                     vtableIndex = 12,
                                 ),
+                                WinMdMethod(
+                                    name = "GetArray",
+                                    returnType = "Windows.Data.Json.JsonArray",
+                                    vtableIndex = 11,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonArray",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "08c1ddb6-0cbd-4a9a-b5d3-2f852dc37e81",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetObjectAt",
+                                    returnType = "Windows.Data.Json.JsonObject",
+                                    vtableIndex = 10,
+                                    parameters = listOf(
+                                        WinMdParameter("index", "UInt32"),
+                                    ),
+                                ),
                             ),
                         ),
                         WinMdType(
@@ -267,6 +288,14 @@ object WinMdModelFactory {
                                     name = "GetNamedObject",
                                     returnType = "Windows.Data.Json.JsonObject",
                                     vtableIndex = 8,
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                    ),
+                                ),
+                                WinMdMethod(
+                                    name = "GetNamedArray",
+                                    returnType = "Windows.Data.Json.JsonArray",
+                                    vtableIndex = 9,
                                     parameters = listOf(
                                         WinMdParameter("name", "String"),
                                     ),
@@ -301,6 +330,12 @@ object WinMdModelFactory {
                                 WinMdEnumMember("Array", 4),
                                 WinMdEnumMember("Object", 5),
                             ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "JsonArray",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Data.Json.IJsonArray",
                         ),
                     ),
                 ),

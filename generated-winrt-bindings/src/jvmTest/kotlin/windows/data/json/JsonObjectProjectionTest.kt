@@ -31,7 +31,7 @@ class JsonObjectProjectionTest {
                 val instance = PlatformComInterop.invokeObjectMethodWithStringArg(
                     factory,
                     6,
-                    """{"name":"codex","kind":"winrt","pi":3.5,"flag":true,"nested":{"child":"value"}}""",
+                    """{"name":"codex","kind":"winrt","pi":3.5,"flag":true,"nested":{"child":"value"},"items":[{"child":"a"},{"child":"b"}]}""",
                 ).getOrThrow()
                 try {
                     val jsonObject = JsonObject(Inspectable(instance).pointer)
@@ -50,6 +50,18 @@ class JsonObjectProjectionTest {
                             }
                         } finally {
                             PlatformComInterop.release(nested.pointer)
+                        }
+                        val items = projected.getNamedArray("items")
+                        try {
+                            val itemsProjected = items.asIJsonArray()
+                            try {
+                                assertTrue(!items.pointer.isNull)
+                                assertTrue(!itemsProjected.pointer.isNull)
+                            } finally {
+                                PlatformComInterop.release(itemsProjected.pointer)
+                            }
+                        } finally {
+                            PlatformComInterop.release(items.pointer)
                         }
                     } finally {
                         PlatformComInterop.release(projected.pointer)

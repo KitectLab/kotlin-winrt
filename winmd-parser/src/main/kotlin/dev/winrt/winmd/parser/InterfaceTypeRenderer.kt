@@ -174,6 +174,23 @@ internal class InterfaceTypeRenderer(
                     )
                     .build()
             }
+            method.returnType.contains('.') &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "UInt32" &&
+                method.vtableIndex != null -> {
+                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                val vtableIndex = method.vtableIndex!!
+                val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
+                builder
+                    .addStatement(
+                        "return %T(%T.invokeObjectMethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow())",
+                        returnType,
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                        argumentName,
+                    )
+                    .build()
+            }
             else -> null
         }
     }
@@ -207,6 +224,10 @@ internal class InterfaceTypeRenderer(
             (method.returnType.contains('.') &&
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "String" &&
+                method.vtableIndex != null) ||
+            (method.returnType.contains('.') &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "UInt32" &&
                 method.vtableIndex != null)
     }
 }
