@@ -5,6 +5,7 @@ import dev.winrt.core.Inspectable
 import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.WinRtInterfaceProjection
+import dev.winrt.core.WinRtStrings
 import dev.winrt.core.guidOf
 import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
@@ -15,6 +16,32 @@ import kotlin.String
 public open class IJsonValue(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
+  public val valueType: JsonValueType
+    get() = JsonValueType.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
+        6).getOrThrow().toInt())
+
+  public fun get_ValueType(): JsonValueType =
+      JsonValueType.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
+      6).getOrThrow().toInt())
+
+  public fun stringify(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun getString(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
   public fun getNumber(): Float64 = Float64(PlatformComInterop.invokeFloat64Method(pointer,
       9).getOrThrow())
 

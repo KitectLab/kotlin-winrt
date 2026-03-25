@@ -12,6 +12,6 @@ public enum class AsyncStatus(
   ;
 
   public companion object {
-    public fun fromValue(value: Int): AsyncStatus = entries.first { it.value == value }
+    public fun fromValue(`value`: Int): AsyncStatus = entries.first { it.value == value }
   }
 }

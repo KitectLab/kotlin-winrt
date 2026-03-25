@@ -12,4 +12,8 @@ public enum class JsonValueType(
   Array(4),
   Object(5),
   ;
+
+  public companion object {
+    public fun fromValue(`value`: Int): JsonValueType = entries.first { it.value == value }
+  }
 }

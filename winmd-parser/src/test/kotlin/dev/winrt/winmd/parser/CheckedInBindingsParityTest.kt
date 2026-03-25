@@ -27,6 +27,7 @@ class CheckedInBindingsParityTest {
         "windows/foundation/Point.kt",
     )
     private val exactParityRelativePaths = listOf(
+        "windows/foundation/AsyncStatus.kt",
         "windows/foundation/IStringable.kt",
         "windows/foundation/Point.kt",
         "windows/data/json/IJsonArray.kt",
