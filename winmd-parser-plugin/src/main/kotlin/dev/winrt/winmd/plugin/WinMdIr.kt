@@ -176,4 +176,8 @@ object WinMdModelFactory {
             ),
         )
     }
+
+    fun metadataModel(sourceFiles: List<Path>): WinMdModel {
+        return WinMdMetadataReader.readModel(sourceFiles)
+    }
 }

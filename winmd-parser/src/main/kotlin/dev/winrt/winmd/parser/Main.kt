@@ -10,7 +10,7 @@ fun main(args: Array<String>) {
     val outputDir = inputs.outputDir
     val sources = inputs.sources
 
-    val model = WinMdModelFactory.minimalModel(sources)
+    val model = WinMdModelFactory.metadataModel(sources)
     val generatedFiles = KotlinBindingGenerator().generate(model)
 
     generatedFiles.forEach { file ->
