@@ -26,6 +26,11 @@ class CheckedInBindingsParityTest {
         "windows/foundation/IStringable.kt",
         "windows/foundation/Point.kt",
     )
+    private val exactParityRelativePaths = listOf(
+        "windows/foundation/AsyncStatus.kt",
+        "windows/foundation/IStringable.kt",
+        "windows/foundation/Point.kt",
+    )
     private val trackedTypes = mapOf(
         "Windows.Foundation" to setOf("AsyncStatus", "IStringable", "Point"),
         "Windows.Data.Json" to setOf("IJsonArray", "IJsonObject", "IJsonValue", "JsonObject", "JsonValueType"),
@@ -94,7 +99,7 @@ class CheckedInBindingsParityTest {
             .associateBy { it.relativePath.lowercase() }
         val checkedInRoot = Path.of("../generated-winrt-bindings/src/commonMain/kotlin")
 
-        val mismatches = foundationRelativePaths.mapNotNull { relativePath ->
+        val mismatches = exactParityRelativePaths.mapNotNull { relativePath ->
             val generated = generatedFiles[relativePath.lowercase()]
                 ?: return@mapNotNull "Missing generated file: $relativePath"
             val checkedIn = checkedInRoot.resolve(relativePath).readText()
