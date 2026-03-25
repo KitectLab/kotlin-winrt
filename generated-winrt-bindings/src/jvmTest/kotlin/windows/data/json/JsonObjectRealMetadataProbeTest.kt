@@ -101,6 +101,7 @@ class JsonObjectRealMetadataProbeTest {
     fun classify_real_metadata_slot_outcomes_for_json_object() {
         assumeTrue(PlatformRuntime.isWindows)
         assumeTrue(System.getProperty("dev.winrt.enableProbe") == "true")
+        val target = System.getProperty("dev.winrt.probeTarget").ifBlank { "all" }
 
         val comResult = JvmComRuntime.initializeMultithreaded()
         val roResult = JvmWinRtRuntime.initializeMultithreaded()
@@ -112,25 +113,40 @@ class JsonObjectRealMetadataProbeTest {
                 """{"name":"codex","pi":3.5,"flag":true,"nested":{"child":"value"},"items":[{"child":"a"},{"child":"b"}]}""",
             )
             try {
-                val nameOutcome = readNamedStringOutcome(instance, 17, "name")
-                val numberOutcome = classifyResult(PlatformComInterop.invokeFloat64MethodWithStringArg(instance, 18, "pi"))
-                val booleanOutcome = classifyResult(PlatformComInterop.invokeBooleanMethodWithStringArg(instance, 19, "flag"))
-                val objectOutcome = classifyResult(PlatformComInterop.invokeObjectMethodWithStringArg(instance, 15, "nested"))
-                val arrayOutcome = classifyResult(PlatformComInterop.invokeObjectMethodWithStringArg(instance, 16, "items"))
+                val outcomes = linkedMapOf<String, String>()
+                if (target == "all" || target == "string") {
+                    outcomes["slot 17 (String)"] = readNamedStringOutcome(instance, 17, "name")
+                }
+                if (target == "all" || target == "number") {
+                    outcomes["slot 18 (Float64)"] = classifyResult(
+                        PlatformComInterop.invokeFloat64MethodWithStringArg(instance, 18, "pi"),
+                    )
+                }
+                if (target == "all" || target == "boolean") {
+                    outcomes["slot 19 (Boolean)"] = classifyResult(
+                        PlatformComInterop.invokeBooleanMethodWithStringArg(instance, 19, "flag"),
+                    )
+                }
+                if (target == "all" || target == "object") {
+                    outcomes["slot 15 (Object)"] = classifyResult(
+                        PlatformComInterop.invokeObjectMethodWithStringArg(instance, 15, "nested"),
+                    )
+                }
+                if (target == "all" || target == "array") {
+                    outcomes["slot 16 (Array)"] = classifyResult(
+                        PlatformComInterop.invokeObjectMethodWithStringArg(instance, 16, "items"),
+                    )
+                }
 
-                assertTrue(nameOutcome.isNotBlank())
-                assertTrue(numberOutcome.isNotBlank())
-                assertTrue(booleanOutcome.isNotBlank())
-                assertTrue(objectOutcome.isNotBlank())
-                assertTrue(arrayOutcome.isNotBlank())
+                assertTrue(outcomes.isNotEmpty())
+                outcomes.values.forEach { outcome -> assertTrue(outcome.isNotBlank()) }
                 fail(
                     buildString {
-                        appendLine("Real metadata slot outcomes:")
-                        appendLine("slot 17 (String): $nameOutcome")
-                        appendLine("slot 18 (Float64): $numberOutcome")
-                        appendLine("slot 19 (Boolean): $booleanOutcome")
-                        appendLine("slot 15 (Object): $objectOutcome")
-                        append("slot 16 (Array): $arrayOutcome")
+                        appendLine("Real metadata slot outcomes for target=$target:")
+                        outcomes.entries.forEachIndexed { index, entry ->
+                            if (index > 0) appendLine()
+                            append("${entry.key}: ${entry.value}")
+                        }
                     },
                 )
             } finally {

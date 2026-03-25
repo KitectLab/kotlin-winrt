@@ -16,5 +16,9 @@ allprojects {
             "dev.winrt.enableProbe",
             providers.gradleProperty("dev.winrt.enableProbe").orNull ?: "false",
         )
+        systemProperty(
+            "dev.winrt.probeTarget",
+            providers.gradleProperty("dev.winrt.probeTarget").orNull ?: "",
+        )
     }
 }
