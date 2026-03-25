@@ -8,29 +8,11 @@ import dev.winrt.core.Inspectable
 import dev.winrt.core.RuntimeClassId
 import dev.winrt.core.RuntimeProperty
 import dev.winrt.core.TimeSpan
-import dev.winrt.core.UInt32
 import dev.winrt.core.WinRtBoolean
-import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.core.WinRtRuntime
-import windows.foundation.IStringable
+import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.kom.ComPtr
-
-open class Application(pointer: ComPtr) : Inspectable(pointer) {
-    fun start() {
-    }
-
-    fun getLaunchCount(): UInt32 = UInt32(0u)
-
-    fun asIStringable(): IStringable = IStringable.from(this)
-
-    companion object : WinRtRuntimeClassMetadata {
-        override val qualifiedName: String = "Microsoft.UI.Xaml.Application"
-        override val classId = RuntimeClassId("Microsoft.UI.Xaml", "Application")
-        override val defaultInterfaceName: String? = "Windows.Foundation.IStringable"
-
-        fun activate(): Application = WinRtRuntime.activate(classId, ::Application)
-    }
-}
+import windows.foundation.IStringable
 
 open class Window(pointer: ComPtr) : Inspectable(pointer) {
     private val backingTitle = RuntimeProperty("")
