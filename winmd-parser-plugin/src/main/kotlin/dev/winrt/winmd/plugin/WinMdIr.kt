@@ -179,7 +179,7 @@ object WinMdModelFactory {
     }
 
     fun metadataModel(sourceFiles: List<Path>): WinMdModel {
-        return inferInterfaceMethodSlots(WinMdMetadataReader.readModel(sourceFiles))
+        return inferInterfaceSlots(WinMdMetadataReader.readModel(sourceFiles))
     }
 
     fun sampleSupplementalModel(): WinMdModel {
@@ -405,7 +405,7 @@ object WinMdModelFactory {
         )
     }
 
-    private fun inferInterfaceMethodSlots(model: WinMdModel): WinMdModel {
+    private fun inferInterfaceSlots(model: WinMdModel): WinMdModel {
         return model.copy(
             namespaces = model.namespaces.map { namespace ->
                 namespace.copy(
@@ -422,6 +422,16 @@ object WinMdModelFactory {
                                             vtableIndex = InterfaceVtableResolver.inferMethodSlot(type, model, method.name),
                                         )
                                     }
+                                },
+                                properties = type.properties.map { property ->
+                                    property.copy(
+                                        getterVtableIndex = property.getterVtableIndex ?: type.methods
+                                            .firstOrNull { it.name == "get_${property.name}" }
+                                            ?.let { method -> InterfaceVtableResolver.inferMethodSlot(type, model, method.name) },
+                                        setterVtableIndex = property.setterVtableIndex ?: type.methods
+                                            .firstOrNull { it.name == "put_${property.name}" }
+                                            ?.let { method -> InterfaceVtableResolver.inferMethodSlot(type, model, method.name) },
+                                    )
                                 },
                             )
                         }

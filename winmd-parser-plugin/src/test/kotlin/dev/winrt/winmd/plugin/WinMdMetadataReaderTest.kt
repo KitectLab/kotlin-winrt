@@ -134,7 +134,12 @@ class WinMdMetadataReaderTest {
             .first { it.name == "Windows.Data.Json" }
             .types.first { it.name == "IJsonArray" }
         val getObjectAt = jsonArrayInterface.methods.first { it.name == "GetObjectAt" }
+        val jsonValueInterface = model.namespaces
+            .first { it.name == "Windows.Data.Json" }
+            .types.first { it.name == "IJsonValue" }
+        val valueTypeProperty = jsonValueInterface.properties.first { it.name == "ValueType" }
 
         assertEquals(13, getObjectAt.vtableIndex)
+        assertEquals(6, valueTypeProperty.getterVtableIndex)
     }
 }
