@@ -183,7 +183,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(jsonValueBinding.contains("PlatformComInterop.invokeObjectMethod(pointer,"))
         assertTrue(jsonValueBinding.contains("12).getOrThrow()"))
         assertTrue(jsonArrayBinding.contains("fun getObjectAt(index: UInt32): JsonObject"))
-        assertTrue(jsonArrayBinding.contains("invokeObjectMethodWithUInt32Arg(pointer, 13,"))
+        assertTrue(jsonArrayBinding.contains("invokeObjectMethodWithUInt32Arg(pointer, 6,"))
         assertTrue(jsonArrayBinding.contains("index.value).getOrThrow()"))
         assertFalse(jsonArrayBinding.contains("Stub method not implemented"))
         assertTrue(jsonEnumBinding.contains("enum class JsonValueType"))
@@ -214,7 +214,7 @@ class KotlinBindingGeneratorTest {
         val jsonArrayBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonArray.kt" }.content
 
         assertTrue(jsonArrayBinding.contains("fun getObjectAt(index: UInt32): JsonObject"))
-        assertTrue(jsonArrayBinding.contains("invokeObjectMethodWithUInt32Arg(pointer, 13,"))
+        assertTrue(jsonArrayBinding.contains("invokeObjectMethodWithUInt32Arg(pointer, 6,"))
         assertTrue(jsonArrayBinding.contains("index.value).getOrThrow()"))
     }
 

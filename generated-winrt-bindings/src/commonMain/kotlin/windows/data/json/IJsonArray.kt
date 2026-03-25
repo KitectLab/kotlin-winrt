@@ -15,11 +15,11 @@ public open class IJsonArray(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
   public fun getObjectAt(index: UInt32): JsonObject =
-      JsonObject(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 13,
+      JsonObject(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 6,
       index.value).getOrThrow())
 
   public fun getArrayAt(index: UInt32): JsonArray =
-      JsonArray(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 14,
+      JsonArray(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 7,
       index.value).getOrThrow())
 
   public companion object : WinRtInterfaceMetadata {
