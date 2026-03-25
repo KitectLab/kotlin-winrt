@@ -197,6 +197,28 @@ actual object PlatformComInterop : ComInterop {
         }
     }
 
+    override fun invokeHStringMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<HString> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            Arena.ofConfined().use { arena ->
+                val resultSegment = arena.allocate(ValueLayout.ADDRESS)
+                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                val hresult = HResult(
+                    Jdk22Foreign.hstringMethodWithUInt32Handle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        value.toInt(),
+                        resultSegment,
+                    ) as Int,
+                )
+                hresult.requireSuccess("invokeHStringMethodWithUInt32Arg($vtableIndex)")
+                HString(resultSegment.get(ValueLayout.ADDRESS, 0L).address())
+            }
+        }
+    }
+
     override fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit> {
         if (instance.isNull) {
             return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
@@ -288,6 +310,28 @@ actual object PlatformComInterop : ComInterop {
         }
     }
 
+    override fun invokeBooleanMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Boolean> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            Arena.ofConfined().use { arena ->
+                val resultSegment = arena.allocate(ValueLayout.JAVA_INT)
+                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                val hresult = HResult(
+                    Jdk22Foreign.booleanMethodWithUInt32Handle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        value.toInt(),
+                        resultSegment,
+                    ) as Int,
+                )
+                hresult.requireSuccess("invokeBooleanMethodWithUInt32Arg($vtableIndex)")
+                resultSegment.get(ValueLayout.JAVA_INT, 0L) != 0
+            }
+        }
+    }
+
     override fun invokeFloat64Method(instance: ComPtr, vtableIndex: Int): Result<Double> {
         if (instance.isNull) {
             return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
@@ -332,6 +376,28 @@ actual object PlatformComInterop : ComInterop {
                 }
             } finally {
                 JvmWinRtRuntime.releaseHString(hString)
+            }
+        }
+    }
+
+    override fun invokeFloat64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Double> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            Arena.ofConfined().use { arena ->
+                val resultSegment = arena.allocate(ValueLayout.JAVA_DOUBLE)
+                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                val hresult = HResult(
+                    Jdk22Foreign.float64MethodWithUInt32Handle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        value.toInt(),
+                        resultSegment,
+                    ) as Int,
+                )
+                hresult.requireSuccess("invokeFloat64MethodWithUInt32Arg($vtableIndex)")
+                resultSegment.get(ValueLayout.JAVA_DOUBLE, 0L)
             }
         }
     }

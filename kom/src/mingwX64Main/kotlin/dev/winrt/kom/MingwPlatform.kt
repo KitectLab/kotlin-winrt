@@ -35,6 +35,12 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeHStringMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<HString> {
+        return Result.failure(
+            UnsupportedOperationException("Native HSTRING invocation with UInt32 input is not wired yet"),
+        )
+    }
+
     override fun invokeObjectMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ComPtr> {
         return Result.failure(
             UnsupportedOperationException("Native object invocation with HSTRING input is not wired yet"),
@@ -77,6 +83,12 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeBooleanMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Boolean> {
+        return Result.failure(
+            UnsupportedOperationException("Native Boolean method invocation with UInt32 input is not wired yet"),
+        )
+    }
+
     override fun invokeFloat64Method(instance: ComPtr, vtableIndex: Int): Result<Double> {
         return Result.failure(
             UnsupportedOperationException("Native Float64 method invocation is not wired yet"),
@@ -86,6 +98,12 @@ actual object PlatformComInterop : ComInterop {
     override fun invokeFloat64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Double> {
         return Result.failure(
             UnsupportedOperationException("Native Float64 method invocation with input is not wired yet"),
+        )
+    }
+
+    override fun invokeFloat64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Double> {
+        return Result.failure(
+            UnsupportedOperationException("Native Float64 method invocation with UInt32 input is not wired yet"),
         )
     }
 
