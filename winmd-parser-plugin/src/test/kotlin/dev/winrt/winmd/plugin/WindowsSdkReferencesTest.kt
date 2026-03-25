@@ -1,6 +1,7 @@
 package dev.winrt.winmd.plugin
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Path
@@ -35,5 +36,23 @@ class WindowsSdkReferencesTest {
         assertEquals("4.0.0.0", reference.contractVersion)
         assertTrue(reference.winmdPath.exists())
         assertTrue(reference.winmdPath.toString().contains("Windows.Foundation.FoundationContract"))
+    }
+
+    @Test
+    fun discovers_references_root_from_registry_or_fallbacks() {
+        val referencesRoot = WindowsSdkReferences.discoverReferencesRoot()
+
+        assertTrue(referencesRoot.exists())
+        assertTrue(referencesRoot.toString().endsWith("References"))
+    }
+
+    @Test
+    fun registry_query_returns_plain_kits_root_when_available() {
+        val kitsRoot = WindowsSdkReferences.readRegistryKitsRoot()
+
+        if (kitsRoot != null) {
+            assertFalse(kitsRoot.endsWith("References"))
+            assertTrue(kitsRoot.contains("Windows Kits"))
+        }
     }
 }
