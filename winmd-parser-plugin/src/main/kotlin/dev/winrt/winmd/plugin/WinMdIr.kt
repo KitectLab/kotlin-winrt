@@ -186,6 +186,44 @@ object WinMdModelFactory {
             files = emptyList(),
             namespaces = listOf(
                 WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IStringable",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "96369f54-8eb6-48f0-abce-c1b211e627c3",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "ToString",
+                                    returnType = "String",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Point",
+                            kind = WinMdTypeKind.Struct,
+                            fields = listOf(
+                                WinMdField("X", "Float64"),
+                                WinMdField("Y", "Float64"),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "AsyncStatus",
+                            kind = WinMdTypeKind.Enum,
+                            enumMembers = listOf(
+                                WinMdEnumMember("Started", 0),
+                                WinMdEnumMember("Completed", 1),
+                                WinMdEnumMember("Canceled", 2),
+                                WinMdEnumMember("Error", 3),
+                            ),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
                     name = "Windows.Data.Json",
                     types = listOf(
                         WinMdType(

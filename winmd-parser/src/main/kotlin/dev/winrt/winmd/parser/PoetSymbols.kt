@@ -1,12 +1,14 @@
 package dev.winrt.winmd.parser
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.MemberName
 
 internal object PoetSymbols {
     val dateTimeClass = ClassName("dev.winrt.core", "DateTime")
     val eventRegistrationTokenClass = ClassName("dev.winrt.core", "EventRegistrationToken")
     val float32Class = ClassName("dev.winrt.core", "Float32")
     val float64Class = ClassName("dev.winrt.core", "Float64")
+    val guidClass = ClassName("dev.winrt.kom", "Guid")
     val guidValueClass = ClassName("dev.winrt.core", "GuidValue")
     val inspectableClass = ClassName("dev.winrt.core", "Inspectable")
     val int32Class = ClassName("dev.winrt.core", "Int32")
@@ -22,6 +24,8 @@ internal object PoetSymbols {
     val winRtRuntimeClassMetadataClass = ClassName("dev.winrt.core", "WinRtRuntimeClassMetadata")
     val winRtRuntimeClass = ClassName("dev.winrt.core", "WinRtRuntime")
     val winRtStringsClass = ClassName("dev.winrt.core", "WinRtStrings")
+    val guidOfMember = MemberName("dev.winrt.core", "guidOf")
+    val projectInterfaceMember = MemberName("dev.winrt.core", "projectInterface")
     val comPtrClass = ClassName("dev.winrt.kom", "ComPtr")
     val platformComInteropClass = ClassName("dev.winrt.kom", "PlatformComInterop")
 }

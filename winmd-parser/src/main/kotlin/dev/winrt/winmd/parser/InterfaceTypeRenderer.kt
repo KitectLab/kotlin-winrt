@@ -25,16 +25,16 @@ internal class InterfaceTypeRenderer(
                     .addSuperinterface(PoetSymbols.winRtInterfaceMetadataClass)
                     .addProperty(overrideStringProperty("qualifiedName", "${type.namespace}.${type.name}"))
                     .addProperty(
-                        PropertySpec.builder("iid", PoetSymbols.guidValueClass)
+                        PropertySpec.builder("iid", PoetSymbols.guidClass)
                             .addModifiers(KModifier.OVERRIDE)
-                            .initializer("guidOf(%S)", type.guid ?: "00000000-0000-0000-0000-000000000000")
+                            .initializer("%M(%S)", PoetSymbols.guidOfMember, type.guid ?: "00000000-0000-0000-0000-000000000000")
                             .build(),
                     )
                     .addFunction(
                         FunSpec.builder("from")
                             .returns(typeClass)
                             .addParameter("inspectable", PoetSymbols.inspectableClass)
-                            .addStatement("return inspectable.projectInterface(this, ::%L)", type.name)
+                            .addStatement("return inspectable.%M(this, ::%L)", PoetSymbols.projectInterfaceMember, type.name)
                             .build(),
                     )
                     .build(),
@@ -46,7 +46,7 @@ internal class InterfaceTypeRenderer(
         if (!isKotlinIdentifier(method.name)) {
             return null
         }
-        val functionName = method.name.replaceFirstChar(Char::lowercase)
+        val functionName = kotlinMethodName(method.name)
         val builder = FunSpec.builder(functionName)
             .returns(typeNameMapper.mapTypeName(method.returnType, currentNamespace))
             .addParameters(method.parameters.map { parameter ->
@@ -89,6 +89,13 @@ internal class InterfaceTypeRenderer(
                     .build()
             }
             else -> builder.build()
+        }
+    }
+
+    private fun kotlinMethodName(methodName: String): String {
+        return when (methodName) {
+            "ToString" -> "toStringValue"
+            else -> methodName.replaceFirstChar(Char::lowercase)
         }
     }
 }

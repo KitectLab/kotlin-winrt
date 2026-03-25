@@ -2,7 +2,7 @@ package windows.foundation
 
 import dev.winrt.core.Float64
 
-data class Point(
-    val x: Float64,
-    val y: Float64,
+public data class Point(
+  public val x: Float64,
+  public val y: Float64,
 )
