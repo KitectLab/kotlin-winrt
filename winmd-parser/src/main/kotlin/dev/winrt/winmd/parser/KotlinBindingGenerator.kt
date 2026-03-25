@@ -9,7 +9,8 @@ import dev.winrt.winmd.plugin.WinMdTypeKind
 class KotlinBindingGenerator {
     private val typeNameMapper = TypeNameMapper()
     private val interfaceTypeRenderer = InterfaceTypeRenderer(typeNameMapper)
-    private val runtimeTypeRenderer = RuntimeTypeRenderer(typeNameMapper)
+    private val runtimePropertyRenderer = RuntimePropertyRenderer(typeNameMapper)
+    private val runtimeTypeRenderer = RuntimeTypeRenderer(typeNameMapper, runtimePropertyRenderer)
 
     fun generate(model: WinMdModel): List<GeneratedFile> {
         return model.namespaces.flatMap { namespace ->
