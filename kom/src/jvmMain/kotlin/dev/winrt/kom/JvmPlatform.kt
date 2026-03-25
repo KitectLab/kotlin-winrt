@@ -83,6 +83,28 @@ actual object PlatformComInterop : ComInterop {
             }
         }
     }
+
+    override fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            val hString = JvmWinRtRuntime.createHString(value)
+            try {
+                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                val hresult = HResult(
+                    Jdk22Foreign.hstringSetterHandle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        MemorySegment.ofAddress(hString.raw),
+                    ) as Int,
+                )
+                hresult.requireSuccess("invokeStringSetter($vtableIndex)")
+            } finally {
+                JvmWinRtRuntime.releaseHString(hString)
+            }
+        }
+    }
 }
 
 actual object PlatformHStringBridge : HStringBridge {

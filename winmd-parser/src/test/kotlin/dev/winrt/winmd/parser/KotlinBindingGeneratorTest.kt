@@ -37,6 +37,8 @@ class KotlinBindingGeneratorTest {
         assertTrue(windowBinding.contains("open class Window"))
         assertTrue(windowBinding.contains("fun asIStringable(): IStringable = IStringable.from(this)"))
         assertTrue(windowBinding.contains("var title: String"))
+        assertTrue(windowBinding.contains("PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()"))
+        assertTrue(windowBinding.contains("PlatformComInterop.invokeStringSetter(pointer, 7, value).getOrThrow()"))
         assertTrue(windowBinding.contains("val isVisible: WinRtBoolean"))
         assertTrue(windowBinding.contains("val createdAt: DateTime"))
         assertTrue(windowBinding.contains("val lifetime: TimeSpan"))

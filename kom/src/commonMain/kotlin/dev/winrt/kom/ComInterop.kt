@@ -9,6 +9,7 @@ interface ComInterop {
     fun addRef(instance: ComPtr): UInt
     fun release(instance: ComPtr): UInt
     fun invokeHStringMethod(instance: ComPtr, vtableIndex: Int): Result<HString>
+    fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit>
 }
 
 expect object PlatformComInterop : ComInterop

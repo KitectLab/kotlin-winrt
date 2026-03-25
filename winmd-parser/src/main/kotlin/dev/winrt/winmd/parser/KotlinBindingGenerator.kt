@@ -149,8 +149,34 @@ class KotlinBindingGenerator {
     }
 
     private fun renderProperty(property: WinMdProperty): String {
+        val propertyName = property.name.replaceFirstChar(Char::lowercase)
         val keyword = if (property.mutable) "var" else "val"
         val kotlinType = mapType(property.type)
+        if (property.type == "String" && property.getterVtableIndex != null) {
+            return buildString {
+                appendLine("    private val backing_${property.name} = RuntimeProperty<$kotlinType>(${defaultValueFor(kotlinType)})")
+                appendLine("    $keyword $propertyName: $kotlinType")
+                appendLine("        get() {")
+                appendLine("            if (pointer.isNull) return backing_${property.name}.get()")
+                appendLine("            val value = PlatformComInterop.invokeHStringMethod(pointer, ${property.getterVtableIndex}).getOrThrow()")
+                appendLine("            return try {")
+                appendLine("                WinRtStrings.toKotlin(value)")
+                appendLine("            } finally {")
+                appendLine("                WinRtStrings.release(value)")
+                appendLine("            }")
+                appendLine("        }")
+                if (property.mutable && property.setterVtableIndex != null) {
+                    appendLine("        set(value) {")
+                    appendLine("            if (pointer.isNull) {")
+                    appendLine("                backing_${property.name}.set(value)")
+                    appendLine("                return")
+                    appendLine("            }")
+                    appendLine("            PlatformComInterop.invokeStringSetter(pointer, ${property.setterVtableIndex}, value).getOrThrow()")
+                    appendLine("        }")
+                }
+            }
+        }
+
         val setter = if (property.mutable) {
             """
                 set(value) {
@@ -163,7 +189,7 @@ class KotlinBindingGenerator {
 
         return buildString {
             appendLine("    private val backing_${property.name} = RuntimeProperty<$kotlinType>(${defaultValueFor(kotlinType)})")
-            appendLine("    $keyword ${property.name.replaceFirstChar(Char::lowercase)}: $kotlinType")
+            appendLine("    $keyword $propertyName: $kotlinType")
             appendLine("        get() = backing_${property.name}.get()")
             if (setter.isNotBlank()) {
                 appendLine("        $setter")

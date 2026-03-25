@@ -11,7 +11,9 @@ import dev.winrt.core.TimeSpan
 import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
+import dev.winrt.core.WinRtStrings
 import dev.winrt.kom.ComPtr
+import dev.winrt.kom.PlatformComInterop
 import windows.foundation.IStringable
 
 open class Window(pointer: ComPtr) : Inspectable(pointer) {
@@ -24,9 +26,21 @@ open class Window(pointer: ComPtr) : Inspectable(pointer) {
     private val backingOptionalTitle = RuntimeProperty(IReference(""))
 
     var title: String
-        get() = backingTitle.get()
+        get() {
+            if (pointer.isNull) return backingTitle.get()
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()
+            return try {
+                WinRtStrings.toKotlin(value)
+            } finally {
+                WinRtStrings.release(value)
+            }
+        }
         set(value) {
-            backingTitle.set(value)
+            if (pointer.isNull) {
+                backingTitle.set(value)
+                return
+            }
+            PlatformComInterop.invokeStringSetter(pointer, 7, value).getOrThrow()
         }
 
     val isVisible: WinRtBoolean

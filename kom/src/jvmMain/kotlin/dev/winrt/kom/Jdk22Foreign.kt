@@ -148,6 +148,12 @@ internal object Jdk22Foreign {
         )
     }
 
+    val hstringSetterHandle: MethodHandle by lazy {
+        linker.downcallHandle(
+            FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
+        )
+    }
+
     fun addressResult(segment: MemorySegment): ComPtr = ComPtr(AbiIntPtr(segment.address()))
 
     fun longToUInt(value: Int): UInt = value.toUInt()

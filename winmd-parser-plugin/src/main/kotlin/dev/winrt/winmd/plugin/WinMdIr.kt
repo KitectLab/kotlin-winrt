@@ -62,6 +62,8 @@ data class WinMdProperty(
     val name: String,
     val type: String,
     val mutable: Boolean,
+    val getterVtableIndex: Int? = null,
+    val setterVtableIndex: Int? = null,
 )
 
 @Serializable
@@ -150,7 +152,7 @@ object WinMdModelFactory {
                                 WinMdMethod("Activate", "Unit"),
                             ),
                             properties = listOf(
-                                WinMdProperty("Title", "String", mutable = true),
+                                WinMdProperty("Title", "String", mutable = true, getterVtableIndex = 6, setterVtableIndex = 7),
                                 WinMdProperty("IsVisible", "Boolean", mutable = false),
                                 WinMdProperty("CreatedAt", "DateTime", mutable = false),
                                 WinMdProperty("Lifetime", "TimeSpan", mutable = false),

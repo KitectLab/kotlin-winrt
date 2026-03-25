@@ -22,6 +22,12 @@ actual object PlatformComInterop : ComInterop {
             UnsupportedOperationException("Native HSTRING invocation is not wired yet"),
         )
     }
+
+    override fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native HSTRING setter invocation is not wired yet"),
+        )
+    }
 }
 
 actual object PlatformHStringBridge : HStringBridge {
