@@ -1,5 +1,6 @@
 package dev.winrt.winmd.parser
 
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.PropertySpec
@@ -62,6 +63,17 @@ internal class ValueTypeRenderer(
                     )
                 }
             }
+            .addType(
+                TypeSpec.companionObjectBuilder()
+                    .addFunction(
+                        FunSpec.builder("fromValue")
+                            .addParameter("value", Int::class)
+                            .returns(ClassName.bestGuess(type.name))
+                            .addStatement("return entries.first { it.value == value }")
+                            .build(),
+                    )
+                    .build(),
+            )
             .build()
     }
 }

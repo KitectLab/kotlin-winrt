@@ -5,9 +5,11 @@ import dev.winrt.winmd.plugin.WinMdNamespace
 import dev.winrt.winmd.plugin.WinMdType
 import dev.winrt.winmd.plugin.WinMdTypeKind
 
-internal class TypeFileEmitter {
+internal class TypeFileEmitter(
+    typeRegistry: TypeRegistry,
+) {
     private val typeNameMapper = TypeNameMapper()
-    private val interfaceTypeRenderer = InterfaceTypeRenderer(typeNameMapper)
+    private val interfaceTypeRenderer = InterfaceTypeRenderer(typeNameMapper, typeRegistry)
     private val runtimePropertyRenderer = RuntimePropertyRenderer(typeNameMapper)
     private val runtimeMethodRenderer = RuntimeMethodRenderer(typeNameMapper)
     private val runtimeCompanionRenderer = RuntimeCompanionRenderer()

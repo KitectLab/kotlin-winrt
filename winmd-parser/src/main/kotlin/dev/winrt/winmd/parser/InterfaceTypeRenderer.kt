@@ -11,6 +11,7 @@ import dev.winrt.winmd.plugin.WinMdType
 
 internal class InterfaceTypeRenderer(
     private val typeNameMapper: TypeNameMapper,
+    private val typeRegistry: TypeRegistry,
 ) {
     fun render(type: WinMdType): TypeSpec {
         val typeClass = ClassName(type.namespace.lowercase(), type.name)
@@ -46,7 +47,7 @@ internal class InterfaceTypeRenderer(
         if (!isKotlinIdentifier(method.name)) {
             return null
         }
-        if (!supportsInterfaceMethod(method)) {
+        if (!supportsInterfaceMethod(method, currentNamespace)) {
             return null
         }
         val functionName = kotlinMethodName(method.name)
@@ -145,6 +146,20 @@ internal class InterfaceTypeRenderer(
                     )
                     .build()
             }
+            typeRegistry.isEnumType(method.returnType, currentNamespace) &&
+                method.parameters.isEmpty() &&
+                method.vtableIndex != null -> {
+                val vtableIndex = method.vtableIndex!!
+                val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
+                builder
+                    .addStatement(
+                        "return %T.fromValue(%T.invokeUInt32Method(pointer, %L).getOrThrow().toInt())",
+                        returnType,
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                    )
+                    .build()
+            }
             method.returnType.contains('.') && method.parameters.isEmpty() && method.vtableIndex != null -> {
                 val vtableIndex = method.vtableIndex!!
                 val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
@@ -202,7 +217,7 @@ internal class InterfaceTypeRenderer(
         }
     }
 
-    private fun supportsInterfaceMethod(method: WinMdMethod): Boolean {
+    private fun supportsInterfaceMethod(method: WinMdMethod, currentNamespace: String): Boolean {
         return (method.returnType == "String" && method.parameters.isEmpty() && method.vtableIndex != null) ||
             (method.returnType == "String" &&
                 method.parameters.size == 1 &&
@@ -217,6 +232,9 @@ internal class InterfaceTypeRenderer(
             (method.returnType == "Boolean" &&
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "String" &&
+                method.vtableIndex != null) ||
+            (typeRegistry.isEnumType(method.returnType, currentNamespace) &&
+                method.parameters.isEmpty() &&
                 method.vtableIndex != null) ||
             (method.returnType.contains('.') &&
                 method.parameters.isEmpty() &&

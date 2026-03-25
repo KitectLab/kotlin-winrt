@@ -217,4 +217,49 @@ class KotlinBindingGeneratorTest {
         assertTrue(jsonArrayBinding.contains("invokeObjectMethodWithUInt32Arg(pointer, 13,"))
         assertTrue(jsonArrayBinding.contains("index.value).getOrThrow()"))
     }
+
+    @Test
+    fun generates_enum_return_calls_from_interface_methods() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Windows.Data.Json",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "JsonValueType",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Enum,
+                            enumMembers = listOf(
+                                dev.winrt.winmd.plugin.WinMdEnumMember("Null", 0),
+                                dev.winrt.winmd.plugin.WinMdEnumMember("String", 3),
+                            ),
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonValue",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "a3219ecb-f0b3-4dcd-beee-19d48cd3ed1e",
+                            methods = listOf(
+                                dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "Get_ValueType",
+                                    returnType = "Windows.Data.Json.JsonValueType",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val jsonValueBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonValue.kt" }.content
+        val jsonValueTypeBinding = files.first { it.relativePath == "Windows/Data/Json/JsonValueType.kt" }.content
+
+        assertTrue(jsonValueBinding.contains("fun get_ValueType(): JsonValueType"))
+        assertTrue(jsonValueBinding.contains("JsonValueType.fromValue("))
+        assertTrue(jsonValueBinding.contains("PlatformComInterop.invokeUInt32Method(pointer, 6).getOrThrow().toInt()"))
+        assertTrue(jsonValueTypeBinding.contains("fun fromValue(value: Int): JsonValueType"))
+    }
 }
