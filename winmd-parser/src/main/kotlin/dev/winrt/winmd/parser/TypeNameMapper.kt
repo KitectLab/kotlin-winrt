@@ -21,6 +21,9 @@ internal class TypeNameMapper {
             typeName == "DateTime" -> PoetSymbols.dateTimeClass
             typeName == "TimeSpan" -> PoetSymbols.timeSpanClass
             typeName == "EventRegistrationToken" -> PoetSymbols.eventRegistrationTokenClass
+            typeName.endsWith("[]") -> arrayClass.parameterizedBy(
+                mapTypeName(typeName.removeSuffix("[]"), currentNamespace),
+            )
             '<' in typeName && typeName.endsWith(">") -> mapGenericTypeName(typeName, currentNamespace)
             '.' in typeName -> normalizeQualifiedType(typeName)
             else -> ClassName(currentNamespace.lowercase(), typeName)
@@ -42,6 +45,7 @@ internal class TypeNameMapper {
             rendered.endsWith(".TimeSpan") -> CodeBlock.of("%T(0)", PoetSymbols.timeSpanClass)
             rendered.endsWith(".EventRegistrationToken") -> CodeBlock.of("%T(0)", PoetSymbols.eventRegistrationTokenClass)
             rendered.endsWith(".GuidValue") -> CodeBlock.of("%T(%S)", PoetSymbols.guidValueClass, "")
+            rendered.startsWith("kotlin.Array<") -> CodeBlock.of("emptyArray()")
             rendered.startsWith("dev.winrt.core.IReference<") -> {
                 CodeBlock.of(
                     "%T(%L)",
@@ -96,5 +100,9 @@ internal class TypeNameMapper {
 
     private fun normalizeSimpleName(simpleName: String): String {
         return simpleName.substringBefore('`')
+    }
+
+    private companion object {
+        val arrayClass = ClassName("kotlin", "Array")
     }
 }

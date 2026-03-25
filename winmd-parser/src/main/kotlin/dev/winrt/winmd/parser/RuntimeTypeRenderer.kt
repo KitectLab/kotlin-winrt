@@ -33,7 +33,8 @@ internal class RuntimeTypeRenderer(
             .forEach(builder::addFunction)
         builder.addType(runtimeCompanionRenderer.render(type))
         type.defaultInterface?.let { defaultInterface ->
-            builder.addFunction(runtimeProjectionRenderer.renderDefaultInterfaceProjection(defaultInterface))
+            runtimeProjectionRenderer.renderDefaultInterfaceProjection(defaultInterface)
+                ?.let(builder::addFunction)
         }
         return builder.build()
     }

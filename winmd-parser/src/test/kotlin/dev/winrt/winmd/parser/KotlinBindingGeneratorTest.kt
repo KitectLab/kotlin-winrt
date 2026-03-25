@@ -1,6 +1,7 @@
 package dev.winrt.winmd.parser
 
 import dev.winrt.winmd.plugin.WinMdModelFactory
+import dev.winrt.winmd.plugin.WindowsSdkReferences
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -187,5 +188,33 @@ class KotlinBindingGeneratorTest {
         assertFalse(jsonArrayBinding.contains("Stub method not implemented"))
         assertTrue(jsonEnumBinding.contains("enum class JsonValueType"))
         assertTrue(jsonEnumBinding.contains("Object"))
+    }
+
+    @Test
+    fun generates_json_array_uint32_object_call_from_real_metadata_model() {
+        val universalContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.UniversalApiContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val foundationContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.FoundationContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val model = WinMdModelFactory.merge(
+            primary = WinMdModelFactory.metadataModel(
+                listOf(
+                    universalContract.winmdPath,
+                    foundationContract.winmdPath,
+                ),
+            ),
+            supplemental = WinMdModelFactory.sampleSupplementalModel(),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val jsonArrayBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonArray.kt" }.content
+
+        assertTrue(jsonArrayBinding.contains("fun getObjectAt(index: UInt32): JsonObject"))
+        assertTrue(jsonArrayBinding.contains("invokeObjectMethodWithUInt32Arg(pointer, 13,"))
+        assertTrue(jsonArrayBinding.contains("index.value).getOrThrow()"))
     }
 }
