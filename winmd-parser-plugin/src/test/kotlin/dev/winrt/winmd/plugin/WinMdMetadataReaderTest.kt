@@ -69,6 +69,10 @@ class WinMdMetadataReaderTest {
         val jsonValueInterface = model.namespaces
             .first { it.name == "Windows.Data.Json" }
             .types.first { it.name == "IJsonValue" }
+        assertEquals(
+            listOf("get_ValueType", "Stringify", "GetString", "GetNumber", "GetBoolean", "GetArray", "GetObject"),
+            jsonValueInterface.methods.map { it.name },
+        )
         assertTrue(
             jsonValueInterface.methods.toString(),
             jsonValueInterface.methods.any { method ->
@@ -96,6 +100,10 @@ class WinMdMetadataReaderTest {
         assertTrue(
             jsonArrayInterface.baseInterfaces.toString(),
             jsonArrayInterface.baseInterfaces.contains("Windows.Data.Json.IJsonValue"),
+        )
+        assertEquals(
+            listOf("GetObjectAt", "GetArrayAt", "GetStringAt", "GetNumberAt", "GetBooleanAt"),
+            jsonArrayInterface.methods.map { it.name },
         )
         assertTrue(
             jsonArrayInterface.methods.toString(),
