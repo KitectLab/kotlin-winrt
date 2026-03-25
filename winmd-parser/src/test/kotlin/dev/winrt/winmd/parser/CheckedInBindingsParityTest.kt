@@ -30,6 +30,7 @@ class CheckedInBindingsParityTest {
         "windows/foundation/AsyncStatus.kt",
         "windows/foundation/IStringable.kt",
         "windows/foundation/Point.kt",
+        "windows/data/json/IJsonArray.kt",
     )
     private val trackedTypes = mapOf(
         "Windows.Foundation" to setOf("AsyncStatus", "IStringable", "Point"),

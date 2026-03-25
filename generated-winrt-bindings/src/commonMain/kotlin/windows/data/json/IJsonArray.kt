@@ -9,12 +9,17 @@ import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
+import kotlin.String
 
 public open class IJsonArray(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
-  public fun getObjectAt(index: UInt32): JsonObject = JsonObject(
-      PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 13,
+  public fun getObjectAt(index: UInt32): JsonObject =
+      JsonObject(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 13,
+      index.value).getOrThrow())
+
+  public fun getArrayAt(index: UInt32): JsonArray =
+      JsonArray(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 14,
       index.value).getOrThrow())
 
   public companion object : WinRtInterfaceMetadata {
