@@ -12,7 +12,7 @@ allprojects {
     tasks.withType<Test>().configureEach {
         maxParallelForks = 1
         minHeapSize = "64m"
-        maxHeapSize = "192m"
+        maxHeapSize = "128m"
         jvmArgs("-XX:+UseSerialGC")
         systemProperty(
             "dev.winrt.enableProbe",
