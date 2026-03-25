@@ -11,17 +11,14 @@ import dev.winrt.winmd.plugin.WinMdActivationKind
 import dev.winrt.winmd.plugin.WinMdType
 
 internal class RuntimeTypeRenderer(
-    private val typeNameMapper: TypeNameMapper,
     private val runtimePropertyRenderer: RuntimePropertyRenderer,
     private val runtimeMethodRenderer: RuntimeMethodRenderer,
 ) {
     fun render(type: WinMdType): TypeSpec {
-        return when (type.kind) {
-            dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass -> renderRuntimeClass(type)
-            dev.winrt.winmd.plugin.WinMdTypeKind.Struct -> renderStruct(type)
-            dev.winrt.winmd.plugin.WinMdTypeKind.Enum -> renderEnum(type)
-            else -> error("Unsupported type kind for runtime renderer: ${type.kind}")
+        require(type.kind == dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass) {
+            "Unsupported type kind for runtime renderer: ${type.kind}"
         }
+        return renderRuntimeClass(type)
     }
 
     private fun renderRuntimeClass(type: WinMdType): TypeSpec {
@@ -80,54 +77,6 @@ internal class RuntimeTypeRenderer(
             )
             .build()
     }
-
-    private fun renderStruct(type: WinMdType): TypeSpec {
-        return TypeSpec.classBuilder(type.name)
-            .addModifiers(KModifier.DATA)
-            .primaryConstructor(
-                FunSpec.constructorBuilder().apply {
-                    type.fields.forEach { field ->
-                        addParameter(field.name.replaceFirstChar(Char::lowercase), typeNameMapper.mapTypeName(field.type, type.namespace))
-                    }
-                }.build(),
-            )
-            .apply {
-                type.fields.forEach { field ->
-                    addProperty(
-                        PropertySpec.builder(field.name.replaceFirstChar(Char::lowercase), typeNameMapper.mapTypeName(field.type, type.namespace))
-                            .initializer(field.name.replaceFirstChar(Char::lowercase))
-                            .build(),
-                    )
-                }
-            }
-            .build()
-    }
-
-    private fun renderEnum(type: WinMdType): TypeSpec {
-        return TypeSpec.enumBuilder(type.name)
-            .primaryConstructor(
-                FunSpec.constructorBuilder()
-                    .addParameter("value", Int::class)
-                    .build(),
-            )
-            .addProperty(
-                PropertySpec.builder("value", Int::class)
-                    .initializer("value")
-                    .build(),
-            )
-            .apply {
-                type.enumMembers.forEach { member ->
-                    addEnumConstant(
-                        member.name,
-                        TypeSpec.anonymousClassBuilder()
-                            .addSuperclassConstructorParameter("%L", member.value)
-                            .build(),
-                    )
-                }
-            }
-            .build()
-    }
-
     private fun activationKindLiteral(kind: WinMdActivationKind): String {
         return when (kind) {
             WinMdActivationKind.Factory -> "Factory"
