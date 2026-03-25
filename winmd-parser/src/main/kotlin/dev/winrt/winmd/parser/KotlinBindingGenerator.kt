@@ -107,6 +107,14 @@ class KotlinBindingGenerator {
         val methods = type.methods.joinToString("\n") { method ->
             val functionName = method.name.replaceFirstChar(Char::lowercase)
             val kotlinType = mapType(method.returnType)
+            if (method.returnType == "Unit" && method.parameters.isEmpty() && method.vtableIndex != null) {
+                return@joinToString buildString {
+                    appendLine("    fun $functionName() {")
+                    appendLine("        if (pointer.isNull) return")
+                    appendLine("        PlatformComInterop.invokeUnitMethod(pointer, ${method.vtableIndex}).getOrThrow()")
+                    append("    }")
+                }
+            }
             if (method.returnType == "UInt32" && method.parameters.isEmpty() && method.vtableIndex != null) {
                 return@joinToString buildString {
                     appendLine("    fun $functionName(): $kotlinType {")

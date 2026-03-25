@@ -8,6 +8,7 @@ interface ComInterop {
     fun queryInterface(instance: ComPtr, iid: Guid): Result<ComPtr>
     fun addRef(instance: ComPtr): UInt
     fun release(instance: ComPtr): UInt
+    fun invokeUnitMethod(instance: ComPtr, vtableIndex: Int): Result<Unit>
     fun invokeHStringMethod(instance: ComPtr, vtableIndex: Int): Result<HString>
     fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit>
     fun invokeUInt32Method(instance: ComPtr, vtableIndex: Int): Result<UInt>

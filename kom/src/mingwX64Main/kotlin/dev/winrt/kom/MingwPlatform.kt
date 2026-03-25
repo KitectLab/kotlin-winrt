@@ -13,6 +13,12 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeUnitMethod(instance: ComPtr, vtableIndex: Int): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation is not wired yet"),
+        )
+    }
+
     override fun addRef(instance: ComPtr): UInt = 1u
 
     override fun release(instance: ComPtr): UInt = 0u

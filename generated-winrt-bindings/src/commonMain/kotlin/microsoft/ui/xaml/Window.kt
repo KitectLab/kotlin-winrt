@@ -77,6 +77,8 @@ open class Window(pointer: ComPtr) : Inspectable(pointer) {
         get() = backingOptionalTitle.get()
 
     fun activate() {
+        if (pointer.isNull) return
+        PlatformComInterop.invokeUnitMethod(pointer, 13).getOrThrow()
     }
 
     fun asIStringable(): IStringable = IStringable.from(this)

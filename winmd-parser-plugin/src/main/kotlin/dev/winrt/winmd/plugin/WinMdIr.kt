@@ -139,7 +139,7 @@ object WinMdModelFactory {
                             kind = WinMdTypeKind.RuntimeClass,
                             defaultInterface = "Windows.Foundation.IStringable",
                             methods = listOf(
-                                WinMdMethod("Start", "Unit"),
+                                WinMdMethod("Start", "Unit", vtableIndex = 6),
                                 WinMdMethod("GetLaunchCount", "UInt32", vtableIndex = 7),
                             ),
                         ),
@@ -149,7 +149,7 @@ object WinMdModelFactory {
                             kind = WinMdTypeKind.RuntimeClass,
                             defaultInterface = "Windows.Foundation.IStringable",
                             methods = listOf(
-                                WinMdMethod("Activate", "Unit"),
+                                WinMdMethod("Activate", "Unit", vtableIndex = 13),
                             ),
                             properties = listOf(
                                 WinMdProperty("Title", "String", mutable = true, getterVtableIndex = 6, setterVtableIndex = 7),

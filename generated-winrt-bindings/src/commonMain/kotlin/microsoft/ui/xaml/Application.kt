@@ -11,6 +11,8 @@ import windows.foundation.IStringable
 
 open class Application(pointer: ComPtr) : Inspectable(pointer) {
     fun start() {
+        if (pointer.isNull) return
+        PlatformComInterop.invokeUnitMethod(pointer, 6).getOrThrow()
     }
 
     fun getLaunchCount(): UInt32 {

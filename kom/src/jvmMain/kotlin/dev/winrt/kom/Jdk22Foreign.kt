@@ -80,6 +80,12 @@ internal object Jdk22Foreign {
         )
     }
 
+    val unitMethodHandle: MethodHandle by lazy {
+        linker.downcallHandle(
+            FunctionDescriptor.of(intLayout, addressLayout),
+        )
+    }
+
     val coInitializeExHandle: MethodHandle by lazy {
         downcall(
             "CoInitializeEx",
