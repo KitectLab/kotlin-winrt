@@ -10,4 +10,8 @@ public enum class AsyncStatus(
   Canceled(2),
   Error(3),
   ;
+
+  public companion object {
+    public fun fromValue(value: Int): AsyncStatus = entries.first { it.value == value }
+  }
 }

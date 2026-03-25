@@ -7,6 +7,7 @@ import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import dev.winrt.winmd.plugin.WinMdMethod
+import dev.winrt.winmd.plugin.WinMdProperty
 import dev.winrt.winmd.plugin.WinMdType
 
 internal class InterfaceTypeRenderer(
@@ -20,6 +21,7 @@ internal class InterfaceTypeRenderer(
             .primaryConstructor(pointerConstructor())
             .superclass(PoetSymbols.winRtInterfaceProjectionClass)
             .addSuperclassConstructorParameter("pointer")
+            .addProperties(type.properties.mapNotNull { renderProperty(it, type.namespace) })
             .addFunctions(type.methods.mapNotNull { renderMethod(it, type.namespace) })
             .addType(
                 TypeSpec.companionObjectBuilder()
@@ -37,6 +39,27 @@ internal class InterfaceTypeRenderer(
                             .addParameter("inspectable", PoetSymbols.inspectableClass)
                             .addStatement("return inspectable.%M(this, ::%L)", PoetSymbols.projectInterfaceMember, type.name)
                             .build(),
+                    )
+                    .build(),
+            )
+            .build()
+    }
+
+    private fun renderProperty(property: WinMdProperty, currentNamespace: String): PropertySpec? {
+        if (!supportsInterfaceProperty(property, currentNamespace)) {
+            return null
+        }
+        val propertyName = property.name.replaceFirstChar(Char::lowercase)
+        val propertyType = typeNameMapper.mapTypeName(property.type, currentNamespace)
+        val getterVtableIndex = property.getterVtableIndex!!
+        return PropertySpec.builder(propertyName, propertyType)
+            .getter(
+                FunSpec.getterBuilder()
+                    .addStatement(
+                        "return %T.fromValue(%T.invokeUInt32Method(pointer, %L).getOrThrow().toInt())",
+                        propertyType,
+                        PoetSymbols.platformComInteropClass,
+                        getterVtableIndex,
                     )
                     .build(),
             )
@@ -247,5 +270,11 @@ internal class InterfaceTypeRenderer(
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "UInt32" &&
                 method.vtableIndex != null)
+    }
+
+    private fun supportsInterfaceProperty(property: WinMdProperty, currentNamespace: String): Boolean {
+        return !property.mutable &&
+            property.getterVtableIndex != null &&
+            typeRegistry.isEnumType(property.type, currentNamespace)
     }
 }

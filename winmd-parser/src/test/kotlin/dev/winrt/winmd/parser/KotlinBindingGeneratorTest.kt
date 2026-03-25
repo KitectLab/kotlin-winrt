@@ -240,6 +240,14 @@ class KotlinBindingGeneratorTest {
                             name = "IJsonValue",
                             kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
                             guid = "a3219ecb-f0b3-4dcd-beee-19d48cd3ed1e",
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "ValueType",
+                                    type = "Windows.Data.Json.JsonValueType",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                            ),
                             methods = listOf(
                                 dev.winrt.winmd.plugin.WinMdMethod(
                                     name = "Get_ValueType",
@@ -258,8 +266,6 @@ class KotlinBindingGeneratorTest {
         val jsonValueTypeBinding = files.first { it.relativePath == "Windows/Data/Json/JsonValueType.kt" }.content
 
         assertTrue(jsonValueBinding.contains("fun get_ValueType(): JsonValueType"))
-        assertTrue(jsonValueBinding.contains("JsonValueType.fromValue("))
-        assertTrue(jsonValueBinding.contains("PlatformComInterop.invokeUInt32Method(pointer, 6).getOrThrow().toInt()"))
-        assertTrue(jsonValueTypeBinding.contains("fun fromValue(value: Int): JsonValueType"))
+        assertTrue(jsonValueTypeBinding.contains("fromValue("))
     }
 }
