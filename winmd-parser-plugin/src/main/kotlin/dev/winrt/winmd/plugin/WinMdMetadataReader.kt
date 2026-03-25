@@ -15,6 +15,9 @@ object WinMdMetadataReader {
     private const val tableField = 4
     private const val tableMethodDef = 6
     private const val tableParam = 8
+    private const val tablePropertyMap = 21
+    private const val tableProperty = 23
+    private const val tableMethodSemantics = 24
     private const val tableTypeSpec = 27
 
     fun readModel(sourceFiles: List<Path>): WinMdModel {
@@ -58,6 +61,7 @@ object WinMdMetadataReader {
                     name = typeDef.name,
                     kind = classifyType(typeDef, tables),
                     methods = readMethods(index + 1, tables),
+                    properties = readProperties(index + 1, tables),
                 )
             }
     }
@@ -107,6 +111,31 @@ object WinMdMetadataReader {
         }
     }
 
+    private fun readProperties(typeDefIndex: Int, tables: MetadataTables): List<WinMdProperty> {
+        val propertyMap = tables.propertyMapRows.firstOrNull { it.parentTypeDefIndex == typeDefIndex } ?: return emptyList()
+        val propertyEnd = tables.propertyMapRows.firstOrNull { it.parentTypeDefIndex > typeDefIndex }?.propertyListIndex
+            ?: (tables.propertyRows.size + 1)
+
+        val semanticsByProperty = tables.methodSemanticsRows
+            .mapNotNull { semantics ->
+                decodeHasSemanticsPropertyIndex(semantics.associationCodedIndex)?.let { propertyIndex ->
+                    propertyIndex to semantics.semantics
+                }
+            }
+            .groupBy({ it.first }, { it.second })
+
+        return (propertyMap.propertyListIndex until propertyEnd).mapNotNull { propertyIndex ->
+            val property = tables.propertyRows.getOrNull(propertyIndex - 1) ?: return@mapNotNull null
+            val propertyType = parsePropertySignature(property.signature, tables)
+            val semantics = semanticsByProperty[propertyIndex].orEmpty()
+            WinMdProperty(
+                name = property.name,
+                type = propertyType,
+                mutable = semantics.any { it and 0x0001 != 0 },
+            )
+        }
+    }
+
     private fun classifyType(typeDef: TypeDefRow, tables: MetadataTables): WinMdTypeKind {
         if ((typeDef.flags and 0x20) != 0) {
             return WinMdTypeKind.Interface
@@ -134,6 +163,12 @@ object WinMdMetadataReader {
         }
     }
 
+    private fun decodeHasSemanticsPropertyIndex(codedIndex: Int): Int? {
+        val tag = codedIndex and 0x1
+        val index = codedIndex ushr 1
+        return if (tag == 1) index else null
+    }
+
     private fun parseMethodSignature(signature: ByteArray, tables: MetadataTables): ParsedMethodSignature {
         val reader = BlobReader(signature)
         reader.readByte()
@@ -148,6 +183,13 @@ object WinMdMetadataReader {
             returnType = returnType,
             parameterTypes = parameters,
         )
+    }
+
+    private fun parsePropertySignature(signature: ByteArray, tables: MetadataTables): String {
+        val reader = BlobReader(signature)
+        reader.readByte()
+        reader.readCompressedUInt()
+        return parseElementType(reader, tables)
     }
 
     private fun parseElementType(reader: BlobReader, tables: MetadataTables): String {
@@ -274,9 +316,13 @@ object WinMdMetadataReader {
             val typeDefRows = mutableListOf<TypeDefRow>()
             val methodDefRows = mutableListOf<MethodDefRow>()
             val paramRows = mutableListOf<ParamRow>()
+            val propertyMapRows = mutableListOf<PropertyMapRow>()
+            val propertyRows = mutableListOf<PropertyRow>()
+            val methodSemanticsRows = mutableListOf<MethodSemanticsRow>()
             val fieldIndexSize = tableIndexSize(rowCounts[tableField])
             val methodIndexSize = tableIndexSize(rowCounts[tableMethodDef])
             val paramIndexSize = tableIndexSize(rowCounts[tableParam])
+            val propertyIndexSize = tableIndexSize(rowCounts[tableProperty])
             val typeDefOrRefIndexSize = codedIndexSize(
                 rowCounts[tableTypeDef],
                 rowCounts[tableTypeRef],
@@ -358,6 +404,45 @@ object WinMdMetadataReader {
                             paramRows += ParamRow(sequence = sequence, name = name)
                         }
                     }
+                    tablePropertyMap -> {
+                        val typeDefIndexSize = tableIndexSize(rowCounts[tableTypeDef])
+                        repeat(rowCount) {
+                            val parentTypeDefIndex = readIndex(tablesHeap, cursor, typeDefIndexSize)
+                            cursor += typeDefIndexSize
+                            val propertyListIndex = readIndex(tablesHeap, cursor, propertyIndexSize)
+                            cursor += propertyIndexSize
+                            propertyMapRows += PropertyMapRow(
+                                parentTypeDefIndex = parentTypeDefIndex,
+                                propertyListIndex = propertyListIndex,
+                            )
+                        }
+                    }
+                    tableProperty -> {
+                        repeat(rowCount) {
+                            cursor += 2
+                            val name = readStringIndex(tablesHeap, stringHeap, cursor, stringIndexSize)
+                            cursor += stringIndexSize
+                            val signature = readBlobIndex(tablesHeap, blobHeap, cursor, blobIndexSize)
+                            cursor += blobIndexSize
+                            propertyRows += PropertyRow(name = name, signature = signature)
+                        }
+                    }
+                    tableMethodSemantics -> {
+                        val associationSize = codedIndexSize(rowCounts[20], rowCounts[23])
+                        repeat(rowCount) {
+                            val semantics = readUInt16(tablesHeap, cursor)
+                            cursor += 2
+                            val methodIndex = readIndex(tablesHeap, cursor, methodIndexSize)
+                            cursor += methodIndexSize
+                            val associationCodedIndex = readIndex(tablesHeap, cursor, associationSize)
+                            cursor += associationSize
+                            methodSemanticsRows += MethodSemanticsRow(
+                                semantics = semantics,
+                                methodIndex = methodIndex,
+                                associationCodedIndex = associationCodedIndex,
+                            )
+                        }
+                    }
                     else -> {
                         cursor += rowCount * rowSize(tableId, rowCounts, stringIndexSize, heapSizes)
                     }
@@ -369,6 +454,9 @@ object WinMdMetadataReader {
                 typeDefs = typeDefRows,
                 methodDefs = methodDefRows,
                 paramRows = paramRows,
+                propertyMapRows = propertyMapRows,
+                propertyRows = propertyRows,
+                methodSemanticsRows = methodSemanticsRows,
             )
         }
 
@@ -390,10 +478,14 @@ object WinMdMetadataReader {
                     rowCounts[1],
                     rowCounts[27],
                 )
-                10 -> codedIndexSize(rowCounts[2], rowCounts[1], rowCounts[27]) + stringIndexSize + blobIndexSize
-                11 -> 2 + 2 + codedIndexSize(rowCounts[4], rowCounts[8], rowCounts[23]) + stringIndexSize
-                12 -> codedIndexSize(rowCounts[6], rowCounts[10]) + codedIndexSize(rowCounts[4], rowCounts[8], rowCounts[23])
-                13 -> codedIndexSize(rowCounts[4], rowCounts[8], rowCounts[23]) + blobIndexSize
+                10 -> codedIndexSize(rowCounts[2], rowCounts[1], rowCounts[26], rowCounts[6], rowCounts[27]) + stringIndexSize + blobIndexSize
+                11 -> 2 + codedIndexSize(rowCounts[4], rowCounts[8], rowCounts[23]) + blobIndexSize
+                12 -> codedIndexSize(
+                    rowCounts[6], rowCounts[4], rowCounts[1], rowCounts[2], rowCounts[8], rowCounts[9], rowCounts[10],
+                    rowCounts[0], rowCounts[14], rowCounts[23], rowCounts[20], rowCounts[17], rowCounts[26], rowCounts[27],
+                    rowCounts[32], rowCounts[35], rowCounts[38], rowCounts[39], rowCounts[40], rowCounts[42], rowCounts[44], rowCounts[43],
+                ) + codedIndexSize(rowCounts[6], rowCounts[10], rowCounts[0], rowCounts[26], rowCounts[27]) + blobIndexSize
+                13 -> codedIndexSize(rowCounts[4], rowCounts[8]) + blobIndexSize
                 14 -> 2 + codedIndexSize(rowCounts[2], rowCounts[6], rowCounts[32]) + blobIndexSize
                 15 -> 2 + 4 + tableIndexSize(rowCounts[2])
                 16 -> 4 + tableIndexSize(rowCounts[4])
@@ -426,16 +518,20 @@ object WinMdMetadataReader {
         private fun tableIndexSize(rowCount: Int): Int = if (rowCount < 0x10000) 2 else 4
 
         private fun codedIndexSize(vararg rowCounts: Int): Int {
-            val tagBits = when (rowCounts.size) {
-                2 -> 1
-                3 -> 2
-                4 -> 2
-                5 -> 3
-                16 -> 4
-                else -> error("Unsupported coded index width for ${rowCounts.size} tables")
-            }
+            require(rowCounts.isNotEmpty()) { "codedIndexSize requires at least one table" }
+            val tagBits = ceilLog2(rowCounts.size)
             val maxRowCount = rowCounts.maxOrNull() ?: 0
             return if (maxRowCount < (1 shl (16 - tagBits))) 2 else 4
+        }
+
+        private fun ceilLog2(value: Int): Int {
+            var bits = 0
+            var current = 1
+            while (current < value) {
+                current = current shl 1
+                bits++
+            }
+            return bits
         }
 
         private fun readStringIndex(

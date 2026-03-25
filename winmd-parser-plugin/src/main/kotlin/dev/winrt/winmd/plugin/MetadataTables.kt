@@ -5,4 +5,7 @@ internal data class MetadataTables(
     val typeDefs: List<TypeDefRow>,
     val methodDefs: List<MethodDefRow>,
     val paramRows: List<ParamRow>,
+    val propertyMapRows: List<PropertyMapRow>,
+    val propertyRows: List<PropertyRow>,
+    val methodSemanticsRows: List<MethodSemanticsRow>,
 )

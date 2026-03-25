@@ -37,5 +37,11 @@ class WinMdMetadataReaderTest {
         assertEquals(1, stringable.methods.size)
         assertEquals(stringable.methods.toString(), "ToString", stringable.methods.single().name)
         assertEquals(stringable.methods.toString(), "String", stringable.methods.single().returnType)
+
+        val jsonObject = model.namespaces
+            .first { it.name == "Windows.Data.Json" }
+            .types.first { it.name == "JsonObject" }
+        assertTrue(jsonObject.properties.toString(), jsonObject.properties.any { it.name == "ValueType" && it.type == "Windows.Data.Json.JsonValueType" })
+        assertTrue(jsonObject.properties.toString(), jsonObject.properties.any { it.name == "Size" && it.type == "UInt32" })
     }
 }
