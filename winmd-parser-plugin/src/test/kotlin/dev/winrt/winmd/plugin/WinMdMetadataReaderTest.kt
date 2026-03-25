@@ -34,6 +34,7 @@ class WinMdMetadataReaderTest {
         val stringable = model.namespaces
             .first { it.name == "Windows.Foundation" }
             .types.first { it.name == "IStringable" }
+        assertEquals("96369f54-8eb6-48f0-abce-c1b211e627c3", stringable.guid)
         assertEquals(1, stringable.methods.size)
         assertEquals(stringable.methods.toString(), "ToString", stringable.methods.single().name)
         assertEquals(stringable.methods.toString(), "String", stringable.methods.single().returnType)

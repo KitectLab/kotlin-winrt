@@ -15,6 +15,8 @@ object WinMdMetadataReader {
     private const val tableField = 4
     private const val tableMethodDef = 6
     private const val tableParam = 8
+    private const val tableMemberRef = 10
+    private const val tableCustomAttribute = 12
     private const val tablePropertyMap = 21
     private const val tableProperty = 23
     private const val tableMethodSemantics = 24
@@ -60,11 +62,19 @@ object WinMdMetadataReader {
                     namespace = typeDef.namespace,
                     name = typeDef.name,
                     kind = classifyType(typeDef, tables),
+                    guid = readGuid(index + 1, tables),
                     defaultInterface = readDefaultInterface(index + 1, tables),
                     methods = readMethods(index + 1, tables),
                     properties = readProperties(index + 1, tables),
                 )
             }
+    }
+
+    private fun readGuid(typeDefIndex: Int, tables: MetadataTables): String? {
+        val customAttributes = tables.customAttributeRows.filter { decodeHasCustomAttributeTypeDefIndex(it.parentCodedIndex) == typeDefIndex }
+        val guidAttribute = customAttributes.firstOrNull { resolveCustomAttributeTypeName(it.typeCodedIndex, tables)?.endsWith(".GuidAttribute") == true }
+            ?: return null
+        return parseGuidAttributeValue(guidAttribute.value)
     }
 
     private fun readDefaultInterface(typeDefIndex: Int, tables: MetadataTables): String? {
@@ -75,6 +85,64 @@ object WinMdMetadataReader {
 
         val interfaceImpl = tables.interfaceImplRows.firstOrNull { it.classTypeDefIndex == typeDefIndex } ?: return null
         return resolveTypeDefOrRefName(interfaceImpl.interfaceCodedIndex, tables)
+    }
+
+    private fun decodeHasCustomAttributeTypeDefIndex(codedIndex: Int): Int? {
+        val tag = codedIndex and 0x1F
+        val index = codedIndex ushr 5
+        return if (tag == 3) index else null
+    }
+
+    private fun resolveCustomAttributeTypeName(codedIndex: Int, tables: MetadataTables): String? {
+        val tag = codedIndex and 0x7
+        val index = codedIndex ushr 3
+        return when (tag) {
+            2 -> null
+            3 -> tables.memberRefRows.getOrNull(index - 1)?.let { memberRef ->
+                resolveMemberRefParentTypeName(memberRef.classCodedIndex, tables)
+            }
+            else -> null
+        }
+    }
+
+    private fun resolveMemberRefParentTypeName(codedIndex: Int, tables: MetadataTables): String? {
+        val tag = codedIndex and 0x7
+        val index = codedIndex ushr 3
+        return when (tag) {
+            0 -> tables.typeDefs.getOrNull(index - 1)?.let { qualify(it.namespace, it.name) }
+            1 -> tables.typeRefs.getOrNull(index - 1)?.let { qualify(it.namespace, it.name) }
+            4 -> null
+            else -> null
+        }
+    }
+
+    private fun parseGuidAttributeValue(blob: ByteArray): String? {
+        if (blob.size < 20) {
+            return null
+        }
+        val buffer = ByteBuffer.wrap(blob).order(ByteOrder.LITTLE_ENDIAN)
+        val prolog = buffer.short.toInt() and 0xFFFF
+        if (prolog != 0x0001) {
+            return null
+        }
+
+        val data1 = buffer.int
+        val data2 = buffer.short.toInt() and 0xFFFF
+        val data3 = buffer.short.toInt() and 0xFFFF
+        val rest = ByteArray(8)
+        buffer.get(rest)
+        return buildString {
+            append(data1.toUInt().toString(16).padStart(8, '0'))
+            append('-')
+            append(data2.toString(16).padStart(4, '0'))
+            append('-')
+            append(data3.toString(16).padStart(4, '0'))
+            append('-')
+            append(rest[0].toUByte().toString(16).padStart(2, '0'))
+            append(rest[1].toUByte().toString(16).padStart(2, '0'))
+            append('-')
+            rest.drop(2).forEach { append(it.toUByte().toString(16).padStart(2, '0')) }
+        }
     }
 
     private fun readMethods(typeDefIndex: Int, tables: MetadataTables): List<WinMdMethod> {
@@ -326,6 +394,8 @@ object WinMdMetadataReader {
             val typeRefRows = mutableListOf<TypeReferenceRow>()
             val typeDefRows = mutableListOf<TypeDefRow>()
             val interfaceImplRows = mutableListOf<InterfaceImplRow>()
+            val memberRefRows = mutableListOf<MemberRefRow>()
+            val customAttributeRows = mutableListOf<CustomAttributeRow>()
             val methodDefRows = mutableListOf<MethodDefRow>()
             val paramRows = mutableListOf<ParamRow>()
             val propertyMapRows = mutableListOf<PropertyMapRow>()
@@ -402,6 +472,65 @@ object WinMdMetadataReader {
                             interfaceImplRows += InterfaceImplRow(
                                 classTypeDefIndex = classTypeDefIndex,
                                 interfaceCodedIndex = interfaceCodedIndex,
+                            )
+                        }
+                    }
+                    tableMemberRef -> {
+                        val memberRefParentSize = codedIndexSize(
+                            rowCounts[tableTypeDef],
+                            rowCounts[tableTypeRef],
+                            rowCounts[26],
+                            rowCounts[6],
+                            rowCounts[tableTypeSpec],
+                        )
+                        repeat(rowCount) {
+                            val classCodedIndex = readIndex(tablesHeap, cursor, memberRefParentSize)
+                            cursor += memberRefParentSize
+                            val name = readStringIndex(tablesHeap, stringHeap, cursor, stringIndexSize)
+                            cursor += stringIndexSize
+                            cursor += blobIndexSize
+                            memberRefRows += MemberRefRow(
+                                classCodedIndex = classCodedIndex,
+                                name = name,
+                            )
+                        }
+                    }
+                    tableCustomAttribute -> {
+                        val parentSize = codedIndexSize(
+                            rowCounts[tableMethodDef],
+                            rowCounts[tableField],
+                            rowCounts[tableTypeRef],
+                            rowCounts[tableTypeDef],
+                            rowCounts[tableParam],
+                            rowCounts[9],
+                            rowCounts[tableMemberRef],
+                            rowCounts[0],
+                            rowCounts[tableProperty],
+                            rowCounts[20],
+                            rowCounts[17],
+                            rowCounts[26],
+                            rowCounts[tableTypeSpec],
+                            rowCounts[32],
+                            rowCounts[35],
+                            rowCounts[38],
+                            rowCounts[39],
+                            rowCounts[40],
+                            rowCounts[42],
+                            rowCounts[44],
+                            rowCounts[43],
+                        )
+                        val typeSize = codedIndexSize(rowCounts[tableMethodDef], rowCounts[tableMemberRef])
+                        repeat(rowCount) {
+                            val parentCodedIndex = readIndex(tablesHeap, cursor, parentSize)
+                            cursor += parentSize
+                            val typeCodedIndex = readIndex(tablesHeap, cursor, typeSize)
+                            cursor += typeSize
+                            val value = readBlobIndex(tablesHeap, blobHeap, cursor, blobIndexSize)
+                            cursor += blobIndexSize
+                            customAttributeRows += CustomAttributeRow(
+                                parentCodedIndex = parentCodedIndex,
+                                typeCodedIndex = typeCodedIndex,
+                                value = value,
                             )
                         }
                     }
@@ -482,6 +611,8 @@ object WinMdMetadataReader {
                 typeRefs = typeRefRows,
                 typeDefs = typeDefRows,
                 interfaceImplRows = interfaceImplRows,
+                memberRefRows = memberRefRows,
+                customAttributeRows = customAttributeRows,
                 methodDefs = methodDefRows,
                 paramRows = paramRows,
                 propertyMapRows = propertyMapRows,
