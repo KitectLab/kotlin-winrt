@@ -8,6 +8,7 @@ import microsoft.ui.xaml.Window
 class SampleLaunchResult(
     val diagnostics: String,
     val launcherSummary: String,
+    val winRtSmoke: WinRtApiSmokeResult?,
 )
 
 interface WinUiApplicationLauncher {
@@ -31,6 +32,7 @@ object DefaultWinUiApplicationLauncher : WinUiApplicationLauncher {
         return SampleLaunchResult(
             diagnostics = KomSmoke.description(),
             launcherSummary = summary,
+            winRtSmoke = if (PlatformRuntime.isWindows) WinRtApiSmoke.run() else null,
         )
     }
 }
