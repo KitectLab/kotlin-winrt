@@ -100,6 +100,60 @@ actual object PlatformComInterop : ComInterop {
         }
     }
 
+    override fun invokeHStringMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<HString> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            val hString = JvmWinRtRuntime.createHString(value)
+            try {
+                Arena.ofConfined().use { arena ->
+                    val resultSegment = arena.allocate(ValueLayout.ADDRESS)
+                    val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                    val hresult = HResult(
+                        Jdk22Foreign.hstringMethodWithInputHandle.bindTo(function).invokeWithArguments(
+                            Jdk22Foreign.pointerOf(instance),
+                            MemorySegment.ofAddress(hString.raw),
+                            resultSegment,
+                        ) as Int,
+                    )
+                    hresult.requireSuccess("invokeHStringMethodWithStringArg($vtableIndex)")
+                    HString(resultSegment.get(ValueLayout.ADDRESS, 0L).address())
+                }
+            } finally {
+                JvmWinRtRuntime.releaseHString(hString)
+            }
+        }
+    }
+
+    override fun invokeObjectMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ComPtr> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            val hString = JvmWinRtRuntime.createHString(value)
+            try {
+                Arena.ofConfined().use { arena ->
+                    val resultSegment = arena.allocate(ValueLayout.ADDRESS)
+                    val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                    val hresult = HResult(
+                        Jdk22Foreign.objectMethodWithInputHandle.bindTo(function).invokeWithArguments(
+                            Jdk22Foreign.pointerOf(instance),
+                            MemorySegment.ofAddress(hString.raw),
+                            resultSegment,
+                        ) as Int,
+                    )
+                    hresult.requireSuccess("invokeObjectMethodWithStringArg($vtableIndex)")
+                    Jdk22Foreign.addressResult(resultSegment.get(ValueLayout.ADDRESS, 0L))
+                }
+            } finally {
+                JvmWinRtRuntime.releaseHString(hString)
+            }
+        }
+    }
+
     override fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit> {
         if (instance.isNull) {
             return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
@@ -285,7 +339,13 @@ object JvmWinRtRuntime {
                 lengthSegment,
             ) as MemorySegment
             val length = lengthSegment.get(ValueLayout.JAVA_INT, 0L)
-            rawBuffer.reinterpret(length.toLong() * 2).getString(0L, StandardCharsets.UTF_16LE)
+            val byteLength = length * 2
+            val content = rawBuffer.reinterpret(byteLength.toLong())
+            val bytes = ByteArray(byteLength)
+            for (index in 0 until byteLength) {
+                bytes[index] = content.get(ValueLayout.JAVA_BYTE, index.toLong())
+            }
+            String(bytes, StandardCharsets.UTF_16LE)
         }
     }
 

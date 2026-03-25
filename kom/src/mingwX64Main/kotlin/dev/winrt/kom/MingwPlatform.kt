@@ -29,6 +29,18 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeHStringMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<HString> {
+        return Result.failure(
+            UnsupportedOperationException("Native HSTRING invocation with input is not wired yet"),
+        )
+    }
+
+    override fun invokeObjectMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ComPtr> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with HSTRING input is not wired yet"),
+        )
+    }
+
     override fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit> {
         return Result.failure(
             UnsupportedOperationException("Native HSTRING setter invocation is not wired yet"),

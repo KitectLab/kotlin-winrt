@@ -4,6 +4,7 @@ import dev.winrt.kom.JvmComRuntime
 import dev.winrt.kom.JvmWinRtRuntime
 import dev.winrt.kom.KnownHResults
 import dev.winrt.kom.PlatformRuntime
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -22,8 +23,8 @@ class WinRtApiSmokeTest {
         try {
             val result = WinRtApiSmoke.run()
             assertFalse(result.runtimeClass.isBlank())
-            assertTrue(result.activationFactoryAcquired)
-            assertTrue(result.instanceActivated)
+            assertEquals("Windows.Data.Json.JsonObject", result.runtimeClass)
+            assertEquals("codex", result.parsedName)
         } finally {
             if (shouldUninitializeRo) {
                 JvmWinRtRuntime.uninitialize()

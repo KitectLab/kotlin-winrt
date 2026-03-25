@@ -13,9 +13,8 @@ class SampleBootstrapTest {
                     diagnostics = "diagnostics",
                     launcherSummary = "launcher",
                     winRtSmoke = WinRtApiSmokeResult(
-                        runtimeClass = "Windows.Globalization.Calendar",
-                        activationFactoryAcquired = true,
-                        instanceActivated = true,
+                        runtimeClass = "Windows.Data.Json.JsonObject",
+                        parsedName = "codex",
                     ),
                 )
             }
@@ -24,8 +23,7 @@ class SampleBootstrapTest {
         val result = SampleBootstrap.launch()
         assertEquals("diagnostics", result.diagnostics)
         assertEquals("launcher", result.launcherSummary)
-        assertEquals("Windows.Globalization.Calendar", result.winRtSmoke?.runtimeClass)
-        assertEquals(true, result.winRtSmoke?.activationFactoryAcquired)
-        assertEquals(true, result.winRtSmoke?.instanceActivated)
+        assertEquals("Windows.Data.Json.JsonObject", result.winRtSmoke?.runtimeClass)
+        assertEquals("codex", result.winRtSmoke?.parsedName)
     }
 }
