@@ -264,7 +264,7 @@ object WinMdModelFactory {
                                 WinMdMethod(
                                     name = "GetObjectAt",
                                     returnType = "Windows.Data.Json.JsonObject",
-                                    vtableIndex = 10,
+                                    vtableIndex = 13,
                                     parameters = listOf(
                                         WinMdParameter("index", "UInt32"),
                                     ),
