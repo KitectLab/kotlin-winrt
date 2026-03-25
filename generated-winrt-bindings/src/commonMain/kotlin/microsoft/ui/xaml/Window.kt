@@ -62,7 +62,10 @@ open class Window(pointer: ComPtr) : Inspectable(pointer) {
         }
 
     val lastToken: EventRegistrationToken
-        get() = backingLastToken.get()
+        get() {
+            if (pointer.isNull) return backingLastToken.get()
+            return EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer, 12).getOrThrow())
+        }
 
     val stableId: GuidValue
         get() {

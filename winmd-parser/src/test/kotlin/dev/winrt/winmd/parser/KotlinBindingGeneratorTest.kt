@@ -47,6 +47,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(windowBinding.contains("val lifetime: TimeSpan"))
         assertTrue(windowBinding.contains("return TimeSpan(PlatformComInterop.invokeInt64Getter(pointer, 11).getOrThrow())"))
         assertTrue(windowBinding.contains("val lastToken: EventRegistrationToken"))
+        assertTrue(windowBinding.contains("return EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer, 12).getOrThrow())"))
         assertTrue(windowBinding.contains("val stableId: GuidValue"))
         assertTrue(windowBinding.contains("return GuidValue(PlatformComInterop.invokeGuidGetter(pointer, 9).getOrThrow().toString())"))
         assertTrue(windowBinding.contains("val optionalTitle: IReference<String>"))
