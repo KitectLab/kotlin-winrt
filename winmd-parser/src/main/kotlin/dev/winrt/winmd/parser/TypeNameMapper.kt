@@ -21,10 +21,7 @@ internal class TypeNameMapper {
             typeName == "DateTime" -> PoetSymbols.dateTimeClass
             typeName == "TimeSpan" -> PoetSymbols.timeSpanClass
             typeName == "EventRegistrationToken" -> PoetSymbols.eventRegistrationTokenClass
-            typeName.startsWith("IReference<") -> {
-                val inner = typeName.removePrefix("IReference<").removeSuffix(">")
-                PoetSymbols.iReferenceClass.parameterizedBy(mapTypeName(inner, currentNamespace))
-            }
+            '<' in typeName && typeName.endsWith(">") -> mapGenericTypeName(typeName, currentNamespace)
             '.' in typeName -> normalizeQualifiedType(typeName)
             else -> ClassName(currentNamespace.lowercase(), typeName)
         }
@@ -57,8 +54,47 @@ internal class TypeNameMapper {
     }
 
     private fun normalizeQualifiedType(typeName: String): TypeName {
-        val simpleName = typeName.substringAfterLast('.')
+        val simpleName = normalizeSimpleName(typeName.substringAfterLast('.'))
         val namespace = typeName.substringBeforeLast('.', missingDelimiterValue = "")
         return ClassName(namespace.lowercase(), simpleName)
+    }
+
+    private fun mapGenericTypeName(typeName: String, currentNamespace: String): TypeName {
+        val genericStart = typeName.indexOf('<')
+        val rawType = typeName.substring(0, genericStart)
+        val argumentSource = typeName.substring(genericStart + 1, typeName.length - 1)
+        val arguments = splitGenericArguments(argumentSource).map { argument ->
+            mapTypeName(argument, currentNamespace)
+        }
+        val rawTypeName = when (normalizeSimpleName(rawType.substringAfterLast('.'))) {
+            "IReference" -> PoetSymbols.iReferenceClass
+            else -> normalizeQualifiedType(rawType) as ClassName
+        }
+        return rawTypeName.parameterizedBy(arguments)
+    }
+
+    private fun splitGenericArguments(source: String): List<String> {
+        if (source.isBlank()) {
+            return emptyList()
+        }
+        val arguments = mutableListOf<String>()
+        var depth = 0
+        var start = 0
+        source.forEachIndexed { index, char ->
+            when (char) {
+                '<' -> depth++
+                '>' -> depth--
+                ',' -> if (depth == 0) {
+                    arguments += source.substring(start, index).trim()
+                    start = index + 1
+                }
+            }
+        }
+        arguments += source.substring(start).trim()
+        return arguments
+    }
+
+    private fun normalizeSimpleName(simpleName: String): String {
+        return simpleName.substringBefore('`')
     }
 }
