@@ -1,5 +1,7 @@
 package dev.winrt.kom
 
+import kotlin.jvm.JvmInline
+
 @JvmInline
 value class HString(val raw: Long) {
     companion object {
