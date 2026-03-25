@@ -28,7 +28,8 @@ internal class RuntimeTypeRenderer(
             builder.addProperty(runtimePropertyRenderer.renderBackingProperty(property, type.namespace))
             builder.addProperty(runtimePropertyRenderer.renderRuntimeProperty(property, type.namespace))
         }
-        type.methods.forEach { builder.addFunction(runtimeMethodRenderer.renderRuntimeMethod(it, type.namespace)) }
+        type.methods.mapNotNull { runtimeMethodRenderer.renderRuntimeMethod(it, type.namespace) }
+            .forEach(builder::addFunction)
         builder.addType(runtimeCompanionRenderer.render(type))
         type.defaultInterface?.let { defaultInterface ->
             builder.addFunction(runtimeProjectionRenderer.renderDefaultInterfaceProjection(defaultInterface))

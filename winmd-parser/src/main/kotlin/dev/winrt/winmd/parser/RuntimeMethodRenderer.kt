@@ -6,7 +6,10 @@ import dev.winrt.winmd.plugin.WinMdMethod
 internal class RuntimeMethodRenderer(
     private val typeNameMapper: TypeNameMapper,
 ) {
-    fun renderRuntimeMethod(method: WinMdMethod, currentNamespace: String): FunSpec {
+    fun renderRuntimeMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
+        if (!isKotlinIdentifier(method.name)) {
+            return null
+        }
         val functionName = method.name.replaceFirstChar(Char::lowercase)
         val kotlinType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
         val builder = FunSpec.builder(functionName).returns(kotlinType)

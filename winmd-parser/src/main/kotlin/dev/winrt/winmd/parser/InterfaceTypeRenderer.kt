@@ -19,7 +19,7 @@ internal class InterfaceTypeRenderer(
             .primaryConstructor(pointerConstructor())
             .superclass(PoetSymbols.winRtInterfaceProjectionClass)
             .addSuperclassConstructorParameter("pointer")
-            .addFunctions(type.methods.map { renderMethod(it, type.namespace) })
+            .addFunctions(type.methods.mapNotNull { renderMethod(it, type.namespace) })
             .addType(
                 TypeSpec.companionObjectBuilder()
                     .addSuperinterface(PoetSymbols.winRtInterfaceMetadataClass)
@@ -42,7 +42,10 @@ internal class InterfaceTypeRenderer(
             .build()
     }
 
-    private fun renderMethod(method: WinMdMethod, currentNamespace: String): FunSpec {
+    private fun renderMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
+        if (!isKotlinIdentifier(method.name)) {
+            return null
+        }
         val functionName = method.name.replaceFirstChar(Char::lowercase)
         val builder = FunSpec.builder(functionName)
             .returns(typeNameMapper.mapTypeName(method.returnType, currentNamespace))
