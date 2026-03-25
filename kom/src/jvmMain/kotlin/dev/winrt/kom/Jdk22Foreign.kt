@@ -172,6 +172,12 @@ internal object Jdk22Foreign {
         )
     }
 
+    val int64GetterHandle: MethodHandle by lazy {
+        linker.downcallHandle(
+            FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
+        )
+    }
+
     fun guidFromSegment(segment: MemorySegment): Guid {
         val data4 = ByteArray(8) { index ->
             segment.get(ValueLayout.JAVA_BYTE, 8L + index)

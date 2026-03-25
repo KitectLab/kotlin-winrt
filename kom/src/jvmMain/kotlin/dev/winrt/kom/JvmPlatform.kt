@@ -168,6 +168,27 @@ actual object PlatformComInterop : ComInterop {
             }
         }
     }
+
+    override fun invokeInt64Getter(instance: ComPtr, vtableIndex: Int): Result<Long> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            Arena.ofConfined().use { arena ->
+                val resultSegment = arena.allocate(ValueLayout.JAVA_LONG)
+                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                val hresult = HResult(
+                    Jdk22Foreign.int64GetterHandle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        resultSegment,
+                    ) as Int,
+                )
+                hresult.requireSuccess("invokeInt64Getter($vtableIndex)")
+                resultSegment.get(ValueLayout.JAVA_LONG, 0L)
+            }
+        }
+    }
 }
 
 actual object PlatformHStringBridge : HStringBridge {

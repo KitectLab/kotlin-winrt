@@ -50,10 +50,16 @@ open class Window(pointer: ComPtr) : Inspectable(pointer) {
         }
 
     val createdAt: DateTime
-        get() = backingCreatedAt.get()
+        get() {
+            if (pointer.isNull) return backingCreatedAt.get()
+            return DateTime(PlatformComInterop.invokeInt64Getter(pointer, 10).getOrThrow())
+        }
 
     val lifetime: TimeSpan
-        get() = backingLifetime.get()
+        get() {
+            if (pointer.isNull) return backingLifetime.get()
+            return TimeSpan(PlatformComInterop.invokeInt64Getter(pointer, 11).getOrThrow())
+        }
 
     val lastToken: EventRegistrationToken
         get() = backingLastToken.get()

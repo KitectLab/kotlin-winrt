@@ -154,8 +154,8 @@ object WinMdModelFactory {
                             properties = listOf(
                                 WinMdProperty("Title", "String", mutable = true, getterVtableIndex = 6, setterVtableIndex = 7),
                                 WinMdProperty("IsVisible", "Boolean", mutable = false, getterVtableIndex = 8),
-                                WinMdProperty("CreatedAt", "DateTime", mutable = false),
-                                WinMdProperty("Lifetime", "TimeSpan", mutable = false),
+                                WinMdProperty("CreatedAt", "DateTime", mutable = false, getterVtableIndex = 10),
+                                WinMdProperty("Lifetime", "TimeSpan", mutable = false, getterVtableIndex = 11),
                                 WinMdProperty("LastToken", "EventRegistrationToken", mutable = false),
                                 WinMdProperty("StableId", "Guid", mutable = false, getterVtableIndex = 9),
                                 WinMdProperty("OptionalTitle", "IReference<String>", mutable = false),

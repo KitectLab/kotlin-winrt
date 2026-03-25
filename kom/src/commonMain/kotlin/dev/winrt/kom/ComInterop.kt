@@ -13,6 +13,7 @@ interface ComInterop {
     fun invokeUInt32Method(instance: ComPtr, vtableIndex: Int): Result<UInt>
     fun invokeBooleanGetter(instance: ComPtr, vtableIndex: Int): Result<Boolean>
     fun invokeGuidGetter(instance: ComPtr, vtableIndex: Int): Result<Guid>
+    fun invokeInt64Getter(instance: ComPtr, vtableIndex: Int): Result<Long>
 }
 
 expect object PlatformComInterop : ComInterop

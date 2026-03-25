@@ -180,6 +180,26 @@ class KotlinBindingGenerator {
                 appendLine("        }")
             }
         }
+        if (property.type == "DateTime" && property.getterVtableIndex != null) {
+            return buildString {
+                appendLine("    private val backing_${property.name} = RuntimeProperty<$kotlinType>(${defaultValueFor(kotlinType)})")
+                appendLine("    $keyword $propertyName: $kotlinType")
+                appendLine("        get() {")
+                appendLine("            if (pointer.isNull) return backing_${property.name}.get()")
+                appendLine("            return DateTime(PlatformComInterop.invokeInt64Getter(pointer, ${property.getterVtableIndex}).getOrThrow())")
+                appendLine("        }")
+            }
+        }
+        if (property.type == "TimeSpan" && property.getterVtableIndex != null) {
+            return buildString {
+                appendLine("    private val backing_${property.name} = RuntimeProperty<$kotlinType>(${defaultValueFor(kotlinType)})")
+                appendLine("    $keyword $propertyName: $kotlinType")
+                appendLine("        get() {")
+                appendLine("            if (pointer.isNull) return backing_${property.name}.get()")
+                appendLine("            return TimeSpan(PlatformComInterop.invokeInt64Getter(pointer, ${property.getterVtableIndex}).getOrThrow())")
+                appendLine("        }")
+            }
+        }
         if (property.type == "String" && property.getterVtableIndex != null) {
             return buildString {
                 appendLine("    private val backing_${property.name} = RuntimeProperty<$kotlinType>(${defaultValueFor(kotlinType)})")

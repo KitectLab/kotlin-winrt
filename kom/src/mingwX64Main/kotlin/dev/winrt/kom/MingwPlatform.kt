@@ -46,6 +46,12 @@ actual object PlatformComInterop : ComInterop {
             UnsupportedOperationException("Native GUID getter invocation is not wired yet"),
         )
     }
+
+    override fun invokeInt64Getter(instance: ComPtr, vtableIndex: Int): Result<Long> {
+        return Result.failure(
+            UnsupportedOperationException("Native Int64 getter invocation is not wired yet"),
+        )
+    }
 }
 
 actual object PlatformHStringBridge : HStringBridge {
