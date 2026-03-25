@@ -186,6 +186,46 @@ object WinMdModelFactory {
             files = emptyList(),
             namespaces = listOf(
                 WinMdNamespace(
+                    name = "Windows.Data.Json",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonValue",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "a3219a91-eccd-42e5-b553-261d0aefde37",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonObject",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "064e24dd-29c2-4f83-9ac1-9ee11578beb3",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetNamedString",
+                                    returnType = "String",
+                                    vtableIndex = 10,
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "JsonValueType",
+                            kind = WinMdTypeKind.Enum,
+                            enumMembers = listOf(
+                                WinMdEnumMember("Null", 0),
+                                WinMdEnumMember("Boolean", 1),
+                                WinMdEnumMember("Number", 2),
+                                WinMdEnumMember("String", 3),
+                                WinMdEnumMember("Array", 4),
+                                WinMdEnumMember("Object", 5),
+                            ),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
                     name = "Microsoft.UI.Xaml",
                     types = listOf(
                         WinMdType(
@@ -234,7 +274,9 @@ object WinMdModelFactory {
                 val mergedTypes = namespaceGroup
                     .flatMap(WinMdNamespace::types)
                     .groupBy { "${it.namespace}.${it.name}" }
-                    .map { (_, types) -> types.first() }
+                    .map { (_, types) ->
+                        types.drop(1).fold(types.first(), ::mergeType)
+                    }
                     .sortedBy(WinMdType::name)
                 WinMdNamespace(
                     name = namespaceName,
@@ -245,6 +287,64 @@ object WinMdModelFactory {
         return WinMdModel(
             files = mergedFiles,
             namespaces = mergedNamespaces,
+        )
+    }
+
+    private fun mergeType(primary: WinMdType, supplemental: WinMdType): WinMdType {
+        require(primary.namespace == supplemental.namespace && primary.name == supplemental.name) {
+            "Cannot merge different types: ${primary.namespace}.${primary.name} vs ${supplemental.namespace}.${supplemental.name}"
+        }
+
+        return primary.copy(
+            guid = primary.guid ?: supplemental.guid,
+            defaultInterface = primary.defaultInterface ?: supplemental.defaultInterface,
+            activationKind = primary.activationKind,
+            activationFunctionName = primary.activationFunctionName.takeIf { it != "activate" } ?: supplemental.activationFunctionName,
+            fields = if (primary.fields.isNotEmpty()) primary.fields else supplemental.fields,
+            enumMembers = if (primary.enumMembers.isNotEmpty()) primary.enumMembers else supplemental.enumMembers,
+            methods = mergeMethods(primary.methods, supplemental.methods),
+            properties = mergeProperties(primary.properties, supplemental.properties),
+        )
+    }
+
+    private fun mergeMethods(primary: List<WinMdMethod>, supplemental: List<WinMdMethod>): List<WinMdMethod> {
+        if (primary.isEmpty()) return supplemental
+        if (supplemental.isEmpty()) return primary
+        val supplementalByName = supplemental.associateBy(WinMdMethod::name)
+        val mergedPrimary = primary.map { method ->
+            supplementalByName[method.name]?.let { mergeMethod(method, it) } ?: method
+        }
+        val existingNames = primary.mapTo(linkedSetOf(), WinMdMethod::name)
+        val appended = supplemental.filterNot { it.name in existingNames }
+        return mergedPrimary + appended
+    }
+
+    private fun mergeMethod(primary: WinMdMethod, supplemental: WinMdMethod): WinMdMethod {
+        return primary.copy(
+            returnType = primary.returnType.takeIf { it != "UnknownType" } ?: supplemental.returnType,
+            vtableIndex = primary.vtableIndex ?: supplemental.vtableIndex,
+            parameters = if (primary.parameters.isNotEmpty()) primary.parameters else supplemental.parameters,
+        )
+    }
+
+    private fun mergeProperties(primary: List<WinMdProperty>, supplemental: List<WinMdProperty>): List<WinMdProperty> {
+        if (primary.isEmpty()) return supplemental
+        if (supplemental.isEmpty()) return primary
+        val supplementalByName = supplemental.associateBy(WinMdProperty::name)
+        val mergedPrimary = primary.map { property ->
+            supplementalByName[property.name]?.let { mergeProperty(property, it) } ?: property
+        }
+        val existingNames = primary.mapTo(linkedSetOf(), WinMdProperty::name)
+        val appended = supplemental.filterNot { it.name in existingNames }
+        return mergedPrimary + appended
+    }
+
+    private fun mergeProperty(primary: WinMdProperty, supplemental: WinMdProperty): WinMdProperty {
+        return primary.copy(
+            type = primary.type.takeIf { it != "UnknownType" } ?: supplemental.type,
+            mutable = primary.mutable || supplemental.mutable,
+            getterVtableIndex = primary.getterVtableIndex ?: supplemental.getterVtableIndex,
+            setterVtableIndex = primary.setterVtableIndex ?: supplemental.setterVtableIndex,
         )
     }
 }

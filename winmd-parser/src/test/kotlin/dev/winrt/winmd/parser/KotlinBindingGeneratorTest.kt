@@ -145,4 +145,18 @@ class KotlinBindingGeneratorTest {
         assertTrue(jsonInterfaceBinding.contains("fun getObject(): JsonObject"))
         assertFalse(jsonObjectBinding.contains("Windows.Data.Json.JsonValueType"))
     }
+
+    @Test
+    fun generates_string_argument_interface_calls_for_json_bindings() {
+        val model = WinMdModelFactory.sampleSupplementalModel()
+
+        val files = KotlinBindingGenerator().generate(model)
+        val jsonInterfaceBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonObject.kt" }.content
+        val jsonEnumBinding = files.first { it.relativePath == "Windows/Data/Json/JsonValueType.kt" }.content
+
+        assertTrue(jsonInterfaceBinding.contains("fun getNamedString(name: String): String"))
+        assertTrue(jsonInterfaceBinding.contains("PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 10, name).getOrThrow()"))
+        assertTrue(jsonEnumBinding.contains("enum class JsonValueType(val value: Int)"))
+        assertTrue(jsonEnumBinding.contains("Object(5)"))
+    }
 }

@@ -82,8 +82,28 @@ class KotlinBindingGenerator {
                         }
                     }
                 """.trimIndent().prependIndent("    ")
+            } else if (
+                method.returnType == "String" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "String" &&
+                method.vtableIndex != null
+            ) {
+                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                """
+                    fun $functionName($argumentName: String): String {
+                        val value = PlatformComInterop.invokeHStringMethodWithStringArg(pointer, ${method.vtableIndex}, $argumentName).getOrThrow()
+                        return try {
+                            WinRtStrings.toKotlin(value)
+                        } finally {
+                            WinRtStrings.release(value)
+                        }
+                    }
+                """.trimIndent().prependIndent("    ")
             } else {
-                "    fun $functionName(): ${mapType(method.returnType, type.namespace)}"
+                val parameters = method.parameters.joinToString(", ") { parameter ->
+                    "${parameter.name.replaceFirstChar(Char::lowercase)}: ${mapType(parameter.type, type.namespace)}"
+                }
+                "    fun $functionName($parameters): ${mapType(method.returnType, type.namespace)}"
             }
         }
         return buildString {
