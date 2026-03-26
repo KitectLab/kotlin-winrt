@@ -4,6 +4,7 @@ import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 class RuntimePropertyTest {
     @Test
