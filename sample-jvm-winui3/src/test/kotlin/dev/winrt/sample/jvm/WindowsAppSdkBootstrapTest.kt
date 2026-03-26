@@ -1,10 +1,21 @@
 package dev.winrt.sample.jvm
 
 import dev.winrt.kom.PlatformRuntime
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.nio.file.Path
 
 class WindowsAppSdkBootstrapTest {
+    @Test
+    fun parses_nuget_global_packages_output() {
+        val roots = WindowsAppSdkBootstrap.parseNuGetGlobalPackagesOutput(
+            "global-packages: F:\\Dependencies\\nuget\\",
+        )
+
+        assertEquals(listOf(Path.of("F:\\Dependencies\\nuget\\")), roots)
+    }
+
     @Test
     fun discovers_bootstrap_library_or_reports_absence() {
         if (!PlatformRuntime.isWindows) {
