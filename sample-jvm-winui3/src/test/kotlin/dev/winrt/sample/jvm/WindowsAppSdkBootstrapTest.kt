@@ -1,5 +1,6 @@
-package dev.winrt.kom
+package dev.winrt.sample.jvm
 
+import dev.winrt.kom.PlatformRuntime
 import org.junit.Assert.assertTrue
 import org.junit.Test
 

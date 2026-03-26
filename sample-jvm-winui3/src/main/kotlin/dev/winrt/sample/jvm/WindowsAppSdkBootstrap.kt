@@ -1,8 +1,11 @@
-package dev.winrt.kom
+package dev.winrt.sample.jvm
 
+import dev.winrt.kom.HResult
+import dev.winrt.kom.KomException
 import java.lang.foreign.Arena
 import java.lang.foreign.MemorySegment
 import java.lang.foreign.FunctionDescriptor
+import java.lang.foreign.Linker
 import java.lang.foreign.SymbolLookup
 import java.lang.foreign.ValueLayout
 import java.lang.invoke.MethodHandle
@@ -19,6 +22,7 @@ object WindowsAppSdkBootstrap {
     private val runtimeVersionRegex = Regex("""#define\s+WINDOWSAPPSDK_RUNTIME_VERSION_UINT64\s+(0x[0-9A-Fa-f]+)u""")
 
     private val arena: Arena = Arena.ofAuto()
+    private val linker: Linker = Linker.nativeLinker()
 
     data class BootstrapLibrary(
         val path: Path,
@@ -73,7 +77,7 @@ object WindowsAppSdkBootstrap {
         requireNotNull(symbol) {
             "Bootstrap symbol not found: $name in ${library.path}"
         }
-        return Jdk22Foreign.linker.downcallHandle(symbol, descriptor)
+        return linker.downcallHandle(symbol, descriptor)
     }
 
     fun initialize(majorMinorVersion: Int = defaultMajorMinorVersion): Result<BootstrapLibrary> {
