@@ -216,7 +216,19 @@ class WinMdMetadataReaderTest {
         )
 
         val applicationLanguages = globalization.types.first { it.name == "ApplicationLanguages" }
+        val calendarIdentifiers = globalization.types.first { it.name == "CalendarIdentifiers" }
+        val iCalendarIdentifiersStatics = globalization.types.first { it.name == "ICalendarIdentifiersStatics" }
+        val clockIdentifiers = globalization.types.first { it.name == "ClockIdentifiers" }
+        val iClockIdentifiersStatics = globalization.types.first { it.name == "IClockIdentifiersStatics" }
         val iApplicationLanguagesStatics = globalization.types.first { it.name == "IApplicationLanguagesStatics" }
+        assertEquals("80653f68-2cb2-4c1f-b590-f0f52bf4fd1a", iCalendarIdentifiersStatics.guid)
+        assertTrue(iCalendarIdentifiersStatics.methods.any { it.name == "get_Gregorian" && it.returnType == "String" && it.vtableIndex == 6 })
+        assertTrue(iCalendarIdentifiersStatics.methods.any { it.name == "get_UmAlQura" && it.returnType == "String" && it.vtableIndex == 14 })
+        assertEquals(null, calendarIdentifiers.defaultInterface)
+        assertEquals("523805bb-12ec-4f83-bc31-b1b4376b0808", iClockIdentifiersStatics.guid)
+        assertTrue(iClockIdentifiersStatics.methods.any { it.name == "get_TwelveHour" && it.returnType == "String" && it.vtableIndex == 6 })
+        assertTrue(iClockIdentifiersStatics.methods.any { it.name == "get_TwentyFourHour" && it.returnType == "String" && it.vtableIndex == 7 })
+        assertEquals(null, clockIdentifiers.defaultInterface)
         assertEquals("75b40847-0a4c-4a92-9565-fd63c95f7aed", iApplicationLanguagesStatics.guid)
         assertTrue(iApplicationLanguagesStatics.methods.any { it.name == "get_PrimaryLanguageOverride" && it.returnType == "String" && it.vtableIndex == 6 })
         assertTrue(iApplicationLanguagesStatics.methods.any { it.name == "get_Languages" && it.returnType.contains("IVectorView") && it.vtableIndex == 8 })

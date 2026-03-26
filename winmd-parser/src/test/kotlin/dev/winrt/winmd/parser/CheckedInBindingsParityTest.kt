@@ -21,8 +21,12 @@ class CheckedInBindingsParityTest {
         "windows/globalization/Calendar.kt",
         "windows/globalization/DayOfWeek.kt",
         "windows/globalization/ApplicationLanguages.kt",
+        "windows/globalization/CalendarIdentifiers.kt",
+        "windows/globalization/ClockIdentifiers.kt",
         "windows/globalization/IApplicationLanguagesStatics.kt",
+        "windows/globalization/ICalendarIdentifiersStatics.kt",
         "windows/globalization/ICalendar.kt",
+        "windows/globalization/IClockIdentifiersStatics.kt",
         "windows/system/userprofile/GlobalizationPreferences.kt",
         "windows/system/userprofile/IGlobalizationPreferencesStatics.kt",
         "windows/globalization/numberformatting/NumeralSystemTranslator.kt",
@@ -45,7 +49,7 @@ class CheckedInBindingsParityTest {
     private val trackedTypes = mapOf(
         "Windows.Foundation" to setOf("AsyncStatus", "IStringable", "Point"),
         "Windows.Data.Json" to setOf("IJsonArray", "IJsonObject", "IJsonValue", "JsonObject", "JsonValueType"),
-        "Windows.Globalization" to setOf("ApplicationLanguages", "Calendar", "DayOfWeek", "IApplicationLanguagesStatics", "ICalendar"),
+        "Windows.Globalization" to setOf("ApplicationLanguages", "Calendar", "CalendarIdentifiers", "ClockIdentifiers", "DayOfWeek", "IApplicationLanguagesStatics", "ICalendar", "ICalendarIdentifiersStatics", "IClockIdentifiersStatics"),
         "Windows.Globalization.NumberFormatting" to setOf("INumeralSystemTranslator", "NumeralSystemTranslator"),
         "Windows.System.UserProfile" to setOf("GlobalizationPreferences", "IGlobalizationPreferencesStatics"),
         "Microsoft.UI.Xaml" to setOf("Application", "Window"),
@@ -437,6 +441,29 @@ class CheckedInBindingsParityTest {
         assertTrue(translator.contains("fun translateNumerals(value: String): String"))
         assertTrue(translator.contains("invokeHStringMethodWithStringArg(pointer, 10,"))
         assertTrue(translator.contains("28f5bc2c-8c23-4234-ad2e-fa5a3a426e9b"))
+    }
+
+    @Test
+    fun checked_in_identifiers_keeps_verified_runtime_surface() {
+        val calendarRuntimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/CalendarIdentifiers.kt").readText()
+        val calendarStatics = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/ICalendarIdentifiersStatics.kt").readText()
+        val clockRuntimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/ClockIdentifiers.kt").readText()
+        val clockStatics = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/IClockIdentifiersStatics.kt").readText()
+
+        assertTrue(calendarRuntimeClass.contains("Windows.Globalization.CalendarIdentifiers"))
+        assertTrue(calendarRuntimeClass.contains("defaultInterfaceName: String? = null"))
+        assertTrue(calendarStatics.contains("val gregorian: String"))
+        assertTrue(calendarStatics.contains("get_Gregorian(): String = readString(6)"))
+        assertTrue(calendarStatics.contains("val umAlQura: String"))
+        assertTrue(calendarStatics.contains("get_UmAlQura(): String = readString(14)"))
+        assertTrue(calendarStatics.contains("80653f68-2cb2-4c1f-b590-f0f52bf4fd1a"))
+        assertTrue(clockRuntimeClass.contains("Windows.Globalization.ClockIdentifiers"))
+        assertTrue(clockRuntimeClass.contains("defaultInterfaceName: String? = null"))
+        assertTrue(clockStatics.contains("val twelveHour: String"))
+        assertTrue(clockStatics.contains("get_TwelveHour(): String = readString(6)"))
+        assertTrue(clockStatics.contains("val twentyFourHour: String"))
+        assertTrue(clockStatics.contains("get_TwentyFourHour(): String = readString(7)"))
+        assertTrue(clockStatics.contains("523805bb-12ec-4f83-bc31-b1b4376b0808"))
     }
 
 }
