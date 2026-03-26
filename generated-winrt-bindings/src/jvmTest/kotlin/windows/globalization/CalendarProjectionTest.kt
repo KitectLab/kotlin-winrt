@@ -32,7 +32,10 @@ class CalendarProjectionTest {
                         projected.setYear(projected.year)
                         assertTrue(projected.month.value > 0)
                         assertTrue(projected.day.value > 0)
+                        assertFalse(projected.numeralSystem.isBlank())
+                        projected.numeralSystem = projected.numeralSystem
                         assertTrue(projected.dayOfWeek.value in 0..6)
+                        assertFalse(projected.resolvedLanguage.isBlank())
                         assertFalse(projected.yearAsString().isBlank())
                         assertFalse(projected.yearAsPaddedString(Int32(4)).isBlank())
                         val cloned = projected.clone()

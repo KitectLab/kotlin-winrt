@@ -31,8 +31,17 @@ public open class ICalendar(
       PlatformComInterop.invokeInt32Setter(pointer, 53, value.value).getOrThrow()
     }
 
+  public var numeralSystem: String
+    get() = get_NumeralSystem()
+    set(value) {
+      PlatformComInterop.invokeStringSetter(pointer, 11, value).getOrThrow()
+    }
+
   public val dayOfWeek: DayOfWeek
     get() = get_DayOfWeek()
+
+  public val resolvedLanguage: String
+    get() = get_ResolvedLanguage()
 
   public val isDaylightSavingTime: WinRtBoolean
     get() = get_IsDaylightSavingTime()
@@ -72,8 +81,26 @@ public open class ICalendar(
   public fun get_Day(): Int32 =
       Int32(PlatformComInterop.invokeInt32Method(pointer, 52).getOrThrow())
 
+  public fun get_NumeralSystem(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 10).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
   public fun get_DayOfWeek(): DayOfWeek =
       DayOfWeek.fromValue(PlatformComInterop.invokeUInt32Method(pointer, 57).getOrThrow().toInt())
+
+  public fun get_ResolvedLanguage(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 102).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
 
   public fun get_IsDaylightSavingTime(): WinRtBoolean =
       WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 103).getOrThrow())

@@ -186,6 +186,9 @@ class CheckedInBindingsParityTest {
 
         assertTrue(checkedIn.contains("fun clone(): Calendar"))
         assertTrue(checkedIn.contains("invokeObjectMethod(pointer, 6).getOrThrow()"))
+        assertTrue(checkedIn.contains("var numeralSystem: String"))
+        assertTrue(checkedIn.contains("invokeHStringMethod(pointer, 10).getOrThrow()"))
+        assertTrue(checkedIn.contains("invokeStringSetter(pointer, 11, value).getOrThrow()"))
         assertTrue(checkedIn.contains("var month: Int32"))
         assertTrue(checkedIn.contains("invokeInt32Setter(pointer, 40, value.value).getOrThrow()"))
         assertTrue(checkedIn.contains("var day: Int32"))
@@ -198,6 +201,8 @@ class CheckedInBindingsParityTest {
         assertTrue(checkedIn.contains("invokeHStringMethodWithInt32Arg(pointer, 35,"))
         assertTrue(checkedIn.contains("fun get_DayOfWeek(): DayOfWeek"))
         assertTrue(checkedIn.contains("invokeUInt32Method(pointer, 57).getOrThrow().toInt()"))
+        assertTrue(checkedIn.contains("val resolvedLanguage: String"))
+        assertTrue(checkedIn.contains("invokeHStringMethod(pointer, 102).getOrThrow()"))
         assertTrue(checkedIn.contains("fun get_IsDaylightSavingTime(): WinRtBoolean"))
         assertTrue(checkedIn.contains("invokeBooleanGetter(pointer, 103).getOrThrow()"))
     }
