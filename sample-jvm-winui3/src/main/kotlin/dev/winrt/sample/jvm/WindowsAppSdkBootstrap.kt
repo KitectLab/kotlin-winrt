@@ -11,6 +11,7 @@ import java.lang.foreign.ValueLayout
 import java.lang.invoke.MethodHandle
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.charset.StandardCharsets
 import kotlin.io.path.name
 
 object WindowsAppSdkBootstrap {
@@ -104,7 +105,7 @@ object WindowsAppSdkBootstrap {
                 val tagSegment = if (versionInfo.versionTag.isEmpty()) {
                     MemorySegment.NULL
                 } else {
-                    callArena.allocateFrom(versionInfo.versionTag)
+                    allocateWideString(callArena, versionInfo.versionTag)
                 }
                 val result = HResult(
                     initialize2.invokeWithArguments(
@@ -167,5 +168,10 @@ object WindowsAppSdkBootstrap {
 
     private fun inferPackageRoot(bootstrapDll: Path): Path? {
         return bootstrapDll.parent?.parent?.parent?.parent
+    }
+
+    private fun allocateWideString(arena: Arena, value: String): MemorySegment {
+        val bytes = (value + '\u0000').toByteArray(StandardCharsets.UTF_16LE)
+        return arena.allocate(bytes.size.toLong(), 2).copyFrom(MemorySegment.ofArray(bytes))
     }
 }
