@@ -5,6 +5,13 @@ import com.squareup.kotlinpoet.FunSpec
 
 internal class RuntimeProjectionRenderer {
     fun renderDefaultInterfaceProjection(defaultInterface: String): FunSpec? {
+        if (
+            defaultInterface.contains('<') ||
+            defaultInterface.contains('`') ||
+            defaultInterface.endsWith("[]")
+        ) {
+            return null
+        }
         val simpleName = defaultInterface.substringAfterLast('.')
             .substringBefore('<')
             .substringBefore('`')

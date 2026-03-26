@@ -289,7 +289,9 @@ internal class InterfaceTypeRenderer(
                     )
                     .build()
             }
-            method.returnType.contains('.') && method.parameters.isEmpty() && method.vtableIndex != null -> {
+            supportsInterfaceObjectType(method.returnType) &&
+                method.parameters.isEmpty() &&
+                method.vtableIndex != null -> {
                 val vtableIndex = method.vtableIndex!!
                 val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
                 builder
@@ -301,7 +303,7 @@ internal class InterfaceTypeRenderer(
                     )
                     .build()
             }
-            method.returnType.contains('.') &&
+            supportsInterfaceObjectType(method.returnType) &&
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "String" &&
                 method.vtableIndex != null -> {
@@ -318,7 +320,7 @@ internal class InterfaceTypeRenderer(
                     )
                     .build()
             }
-            method.returnType.contains('.') &&
+            supportsInterfaceObjectType(method.returnType) &&
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "UInt32" &&
                 method.vtableIndex != null -> {
@@ -336,6 +338,33 @@ internal class InterfaceTypeRenderer(
                     .build()
             }
             method.returnType == "Unit" &&
+                method.parameters.isEmpty() &&
+                method.vtableIndex != null -> {
+                val vtableIndex = method.vtableIndex!!
+                builder
+                    .addStatement(
+                        "%T.invokeUnitMethod(pointer, %L).getOrThrow()",
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                    )
+                    .build()
+            }
+            method.returnType == "Unit" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "String" &&
+                method.vtableIndex != null -> {
+                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                val vtableIndex = method.vtableIndex!!
+                builder
+                    .addStatement(
+                        "%T.invokeStringSetter(pointer, %L, %N).getOrThrow()",
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                        argumentName,
+                    )
+                    .build()
+            }
+            method.returnType == "Unit" &&
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "Int32" &&
                 method.vtableIndex != null -> {
@@ -344,6 +373,21 @@ internal class InterfaceTypeRenderer(
                 builder
                     .addStatement(
                         "%T.invokeUnitMethodWithInt32Arg(pointer, %L, %N.value).getOrThrow()",
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                        argumentName,
+                    )
+                    .build()
+            }
+            method.returnType == "Unit" &&
+                method.parameters.size == 1 &&
+                supportsInterfaceObjectInput(method.parameters[0].type) &&
+                method.vtableIndex != null -> {
+                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                val vtableIndex = method.vtableIndex!!
+                builder
+                    .addStatement(
+                        "%T.invokeObjectSetter(pointer, %L, %N.pointer).getOrThrow()",
                         PoetSymbols.platformComInteropClass,
                         vtableIndex,
                         argumentName,
@@ -397,21 +441,46 @@ internal class InterfaceTypeRenderer(
             (typeRegistry.isEnumType(method.returnType, currentNamespace) &&
                 method.parameters.isEmpty() &&
                 method.vtableIndex != null) ||
-            (method.returnType.contains('.') &&
+            (supportsInterfaceObjectType(method.returnType) &&
                 method.parameters.isEmpty() &&
                 method.vtableIndex != null) ||
-            (method.returnType.contains('.') &&
+            (supportsInterfaceObjectType(method.returnType) &&
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "String" &&
                 method.vtableIndex != null) ||
-            (method.returnType.contains('.') &&
+            (supportsInterfaceObjectType(method.returnType) &&
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "UInt32" &&
                 method.vtableIndex != null) ||
             (method.returnType == "Unit" &&
+                method.parameters.isEmpty() &&
+                method.vtableIndex != null) ||
+            (method.returnType == "Unit" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "String" &&
+                method.vtableIndex != null) ||
+            (method.returnType == "Unit" &&
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "Int32" &&
+                method.vtableIndex != null) ||
+            (method.returnType == "Unit" &&
+                method.parameters.size == 1 &&
+                supportsInterfaceObjectInput(method.parameters[0].type) &&
                 method.vtableIndex != null)
+    }
+
+    private fun supportsInterfaceObjectInput(type: String): Boolean {
+        return type.contains('.') &&
+            !type.contains('`') &&
+            !type.contains('<') &&
+            !type.endsWith("[]")
+    }
+
+    private fun supportsInterfaceObjectType(type: String): Boolean {
+        return type.contains('.') &&
+            !type.contains('`') &&
+            !type.contains('<') &&
+            !type.endsWith("[]")
     }
 
     private fun supportsInterfaceProperty(property: WinMdProperty, currentNamespace: String): Boolean {

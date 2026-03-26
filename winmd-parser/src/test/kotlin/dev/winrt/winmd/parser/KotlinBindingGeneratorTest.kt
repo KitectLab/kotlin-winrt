@@ -1,6 +1,11 @@
 package dev.winrt.winmd.parser
 
 import dev.winrt.winmd.plugin.WinMdModelFactory
+import dev.winrt.winmd.plugin.WinMdMethod
+import dev.winrt.winmd.plugin.WinMdNamespace
+import dev.winrt.winmd.plugin.WinMdParameter
+import dev.winrt.winmd.plugin.WinMdType
+import dev.winrt.winmd.plugin.WinMdTypeKind
 import dev.winrt.winmd.plugin.WindowsSdkReferences
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -313,5 +318,76 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(jsonValueBinding.contains("fun get_ValueType(): JsonValueType"))
         assertTrue(jsonValueTypeBinding.contains("fromValue("))
+    }
+
+    @Test
+    fun generates_winui_unit_interface_methods() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "UIElement",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "LaunchActivatedEventArgs",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "IWindow",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "61f0ec79-5d52-56b5-86fb-40fa4af288b0",
+                            methods = listOf(
+                                WinMdMethod("Activate", "Unit", vtableIndex = 26),
+                                WinMdMethod(
+                                    "put_Title",
+                                    "Unit",
+                                    vtableIndex = 15,
+                                    parameters = listOf(WinMdParameter("value", "String")),
+                                ),
+                                WinMdMethod(
+                                    "put_Content",
+                                    "Unit",
+                                    vtableIndex = 9,
+                                    parameters = listOf(WinMdParameter("value", "Microsoft.UI.Xaml.UIElement")),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "IApplicationOverrides",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "a33e81ef-c665-503b-8827-d27ef1720a06",
+                            methods = listOf(
+                                WinMdMethod(
+                                    "OnLaunched",
+                                    "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter("args", "Microsoft.UI.Xaml.LaunchActivatedEventArgs")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val iWindowBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/IWindow.kt" }.content
+        val iOverridesBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/IApplicationOverrides.kt" }.content
+        assertTrue(iWindowBinding.contains("fun activate()"))
+        assertTrue(iWindowBinding.contains("PlatformComInterop.invokeUnitMethod(pointer, 26).getOrThrow()"))
+        assertTrue(iWindowBinding.contains("fun put_Title("))
+        assertTrue(iWindowBinding.contains("PlatformComInterop.invokeStringSetter(pointer, 15,"))
+        assertTrue(iWindowBinding.contains("fun put_Content("))
+        assertTrue(iWindowBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 9,"))
+        assertTrue(iOverridesBinding.contains("fun onLaunched("))
+        assertTrue(iOverridesBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 6,"))
     }
 }
