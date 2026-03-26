@@ -96,6 +96,10 @@ public open class ICalendar(
     PlatformComInterop.invokeInt32Setter(pointer, 31, value.value).getOrThrow()
   }
 
+  public fun addYears(years: Int32) {
+    PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 32, years.value).getOrThrow()
+  }
+
   public fun get_DateTime(): DateTime =
       DateTime(PlatformComInterop.invokeInt64Getter(pointer, 16).getOrThrow())
 
@@ -116,6 +120,16 @@ public open class ICalendar(
     }
   }
 
+  public fun yearAsTruncatedString(remainingDigits: Int32): String {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 34,
+        remainingDigits.value).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
   public fun yearAsPaddedString(minDigits: Int32): String {
     val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 35,
         minDigits.value).getOrThrow()
@@ -129,6 +143,10 @@ public open class ICalendar(
   public fun get_Month(): Int32 =
       Int32(PlatformComInterop.invokeInt32Method(pointer, 39).getOrThrow())
 
+  public fun addMonths(months: Int32) {
+    PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 41, months.value).getOrThrow()
+  }
+
   public fun monthAsString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 42).getOrThrow()
     return try {
@@ -138,11 +156,77 @@ public open class ICalendar(
     }
   }
 
+  public fun monthAsString(idealLength: Int32): String {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 43,
+        idealLength.value).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun monthAsSoloString(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 44).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun monthAsSoloString(idealLength: Int32): String {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 45,
+        idealLength.value).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun monthAsNumericString(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 46).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun monthAsPaddedNumericString(minDigits: Int32): String {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 47,
+        minDigits.value).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun addWeeks(weeks: Int32) {
+    PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 48, weeks.value).getOrThrow()
+  }
+
   public fun get_Day(): Int32 =
       Int32(PlatformComInterop.invokeInt32Method(pointer, 52).getOrThrow())
 
+  public fun addDays(days: Int32) {
+    PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 54, days.value).getOrThrow()
+  }
+
   public fun dayAsString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 55).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun dayAsPaddedString(minDigits: Int32): String {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 56,
+        minDigits.value).getOrThrow()
     return try {
       WinRtStrings.toKotlin(value)
     } finally {
