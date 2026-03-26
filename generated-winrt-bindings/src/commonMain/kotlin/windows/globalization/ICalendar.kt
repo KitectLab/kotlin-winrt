@@ -103,6 +103,10 @@ public open class ICalendar(
     PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 17, value.universalTime).getOrThrow()
   }
 
+  public fun setToNow() {
+    PlatformComInterop.invokeUnitMethod(pointer, 18).getOrThrow()
+  }
+
   public fun yearAsString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 33).getOrThrow()
     return try {
@@ -125,8 +129,26 @@ public open class ICalendar(
   public fun get_Month(): Int32 =
       Int32(PlatformComInterop.invokeInt32Method(pointer, 39).getOrThrow())
 
+  public fun monthAsString(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 42).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
   public fun get_Day(): Int32 =
       Int32(PlatformComInterop.invokeInt32Method(pointer, 52).getOrThrow())
+
+  public fun dayAsString(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 55).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
 
   public fun get_Hour(): Int32 =
       Int32(PlatformComInterop.invokeInt32Method(pointer, 73).getOrThrow())
@@ -177,6 +199,15 @@ public open class ICalendar(
 
   public fun get_DayOfWeek(): DayOfWeek =
       DayOfWeek.fromValue(PlatformComInterop.invokeUInt32Method(pointer, 57).getOrThrow().toInt())
+
+  public fun dayOfWeekAsString(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 58).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
 
   public fun get_ResolvedLanguage(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 102).getOrThrow()
