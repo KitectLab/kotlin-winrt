@@ -25,6 +25,12 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeUnitMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with Int64 input is not wired yet"),
+        )
+    }
+
     override fun addRef(instance: ComPtr): UInt = 1u
 
     override fun release(instance: ComPtr): UInt = 0u

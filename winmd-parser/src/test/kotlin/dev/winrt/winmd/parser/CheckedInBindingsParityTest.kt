@@ -186,6 +186,9 @@ class CheckedInBindingsParityTest {
 
         assertTrue(checkedIn.contains("fun clone(): Calendar"))
         assertTrue(checkedIn.contains("invokeObjectMethod(pointer, 6).getOrThrow()"))
+        assertTrue(checkedIn.contains("val dateTime: DateTime"))
+        assertTrue(checkedIn.contains("invokeInt64Getter(pointer, 16).getOrThrow()"))
+        assertTrue(checkedIn.contains("invokeUnitMethodWithInt64Arg(pointer, 17, value.value).getOrThrow()"))
         assertTrue(checkedIn.contains("var numeralSystem: String"))
         assertTrue(checkedIn.contains("invokeHStringMethod(pointer, 10).getOrThrow()"))
         assertTrue(checkedIn.contains("invokeStringSetter(pointer, 11, value).getOrThrow()"))

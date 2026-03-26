@@ -30,6 +30,8 @@ class CalendarProjectionTest {
                     try {
                         assertTrue(projected.year.value > 0)
                         projected.setYear(projected.year)
+                        assertTrue(projected.dateTime.value > 0)
+                        projected.setDateTime(projected.dateTime)
                         assertTrue(projected.month.value > 0)
                         assertTrue(projected.day.value > 0)
                         assertFalse(projected.numeralSystem.isBlank())

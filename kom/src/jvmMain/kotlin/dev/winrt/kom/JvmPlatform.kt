@@ -96,6 +96,23 @@ actual object PlatformComInterop : ComInterop {
         }
     }
 
+    override fun invokeUnitMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            val hresult = HResult(
+                Jdk22Foreign.unitMethodWithInt64Handle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    value,
+                ) as Int,
+            )
+            hresult.requireSuccess("invokeUnitMethodWithInt64Arg($vtableIndex)")
+        }
+    }
+
     override fun invokeHStringMethod(instance: ComPtr, vtableIndex: Int): Result<HString> {
         if (instance.isNull) {
             return Result.failure(KomException("Method invocation requires a non-null COM pointer"))

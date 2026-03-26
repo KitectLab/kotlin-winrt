@@ -2,6 +2,7 @@ package windows.globalization
 
 import dev.winrt.core.Inspectable
 import dev.winrt.core.Int32
+import dev.winrt.core.DateTime
 import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.WinRtInterfaceProjection
@@ -18,6 +19,9 @@ public open class ICalendar(
 ) : WinRtInterfaceProjection(pointer) {
   public val year: Int32
     get() = get_Year()
+
+  public val dateTime: DateTime
+    get() = getDateTime()
 
   public var month: Int32
     get() = get_Month()
@@ -66,6 +70,13 @@ public open class ICalendar(
 
   public fun setYear(value: Int32) {
     PlatformComInterop.invokeInt32Setter(pointer, 31, value.value).getOrThrow()
+  }
+
+  public fun getDateTime(): DateTime =
+      DateTime(PlatformComInterop.invokeInt64Getter(pointer, 16).getOrThrow())
+
+  public fun setDateTime(value: DateTime) {
+    PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 17, value.value).getOrThrow()
   }
 
   public fun yearAsString(): String {
