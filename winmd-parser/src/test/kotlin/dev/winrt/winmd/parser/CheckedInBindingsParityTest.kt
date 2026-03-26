@@ -186,6 +186,9 @@ class CheckedInBindingsParityTest {
 
         assertTrue(checkedIn.contains("fun clone(): Calendar"))
         assertTrue(checkedIn.contains("invokeObjectMethod(pointer, 6).getOrThrow()"))
+        assertTrue(checkedIn.contains("val languages: StringVectorView"))
+        assertTrue(checkedIn.contains("fun get_Languages(): StringVectorView"))
+        assertTrue(checkedIn.contains("invokeObjectMethod(pointer, 9).getOrThrow()"))
         assertTrue(checkedIn.contains("val dateTime: DateTime"))
         assertTrue(checkedIn.contains("invokeInt64Getter(pointer, 16).getOrThrow()"))
         assertTrue(checkedIn.contains("invokeUnitMethodWithInt64Arg("))
@@ -356,6 +359,17 @@ class CheckedInBindingsParityTest {
         assertTrue(checkedIn.contains("invokeInt32Method(pointer, 100).getOrThrow()"))
         assertTrue(checkedIn.contains("val numberOfSecondsInThisMinute: Int32"))
         assertTrue(checkedIn.contains("invokeInt32Method(pointer, 101).getOrThrow()"))
+    }
+
+    @Test
+    fun checked_in_string_vector_view_keeps_verified_runtime_surface() {
+        val checkedIn = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/foundation/collections/StringVectorView.kt").readText()
+
+        assertTrue(checkedIn.contains("class StringVectorView"))
+        assertTrue(checkedIn.contains("val size: UInt32"))
+        assertTrue(checkedIn.contains("invokeUInt32Method(pointer, 7).getOrThrow()"))
+        assertTrue(checkedIn.contains("fun getAt(index: UInt32): String"))
+        assertTrue(checkedIn.contains("invokeHStringMethodWithUInt32Arg(pointer, 6, index.value).getOrThrow()"))
     }
 
 }

@@ -29,6 +29,13 @@ class CalendarProjectionTest {
                     val projected = calendar.asICalendar()
                     try {
                         assertTrue(projected.year.value > 0)
+                        val languages = projected.languages
+                        try {
+                            assertTrue(languages.size.value > 0u)
+                            assertFalse(languages.getAt(dev.winrt.core.UInt32(0u)).isBlank())
+                        } finally {
+                            PlatformComInterop.release(languages.pointer)
+                        }
                         projected.setYear(projected.year)
                         projected.addYears(Int32(0))
                         assertTrue(projected.firstEra.value >= 0)

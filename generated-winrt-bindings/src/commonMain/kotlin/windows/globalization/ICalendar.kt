@@ -13,6 +13,7 @@ import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
+import windows.foundation.collections.StringVectorView
 
 public open class ICalendar(
   pointer: ComPtr,
@@ -79,6 +80,9 @@ public open class ICalendar(
 
   public val dayOfWeek: DayOfWeek
     get() = get_DayOfWeek()
+
+  public val languages: StringVectorView
+    get() = get_Languages()
 
   public var era: Int32
     get() = get_Era()
@@ -172,6 +176,9 @@ public open class ICalendar(
 
   public fun clone(): Calendar =
       Calendar(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
+
+  public fun get_Languages(): StringVectorView =
+      StringVectorView(PlatformComInterop.invokeObjectMethod(pointer, 9).getOrThrow())
 
   public fun get_FirstEra(): Int32 =
       Int32(PlatformComInterop.invokeInt32Method(pointer, 19).getOrThrow())
