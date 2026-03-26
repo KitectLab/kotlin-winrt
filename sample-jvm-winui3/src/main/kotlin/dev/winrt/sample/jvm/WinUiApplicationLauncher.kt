@@ -23,6 +23,7 @@ object DefaultWinUiApplicationLauncher : WinUiApplicationLauncher {
             !SampleBootstrap.isWindowsAppSdkReady() -> when (packageState?.readiness()) {
                 WindowsAppSdkEnvironment.Readiness.MissingFramework -> "xaml=blocked(missing-framework-package)"
                 WindowsAppSdkEnvironment.Readiness.MissingMain -> "xaml=blocked(missing-main-package)"
+                WindowsAppSdkEnvironment.Readiness.MissingDdlm -> "xaml=blocked(missing-ddlm-package)"
                 WindowsAppSdkEnvironment.Readiness.MissingSingleton -> "xaml=blocked(missing-singleton-package)"
                 else -> "xaml=skipped(bootstrap-not-ready)"
             }

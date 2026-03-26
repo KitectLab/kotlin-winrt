@@ -7,6 +7,7 @@ object WindowsAppSdkEnvironment {
         Ready,
         MissingFramework,
         MissingMain,
+        MissingDdlm,
         MissingSingleton,
         Unknown,
     }
@@ -14,16 +15,18 @@ object WindowsAppSdkEnvironment {
     data class PackageState(
         val frameworkInstalled: Boolean,
         val mainInstalled: Boolean,
+        val ddlmInstalled: Boolean,
         val singletonInstalled: Boolean,
     ) {
         fun summary(): String {
-            return "packages=framework:$frameworkInstalled,main:$mainInstalled,singleton:$singletonInstalled"
+            return "packages=framework:$frameworkInstalled,main:$mainInstalled,ddlm:$ddlmInstalled,singleton:$singletonInstalled"
         }
 
         fun readiness(): Readiness {
             return when {
                 !frameworkInstalled -> Readiness.MissingFramework
                 !mainInstalled -> Readiness.MissingMain
+                !ddlmInstalled -> Readiness.MissingDdlm
                 !singletonInstalled -> Readiness.MissingSingleton
                 else -> Readiness.Ready
             }
@@ -60,9 +63,11 @@ object WindowsAppSdkEnvironment {
         return """
             ${'$'}framework = @(Get-AppxPackage -Name 'Microsoft.WindowsAppRuntime.1.6')
             ${'$'}main = @(Get-AppxPackage -Name 'MicrosoftCorporationII.WinAppRuntime.Main.1.6*')
+            ${'$'}ddlm = @(Get-AppxPackage -Name 'Microsoft.WindowsAppRuntime.DDLM.1.6*')
             ${'$'}singleton = @(Get-AppxPackage -Name 'MicrosoftCorporationII.WinAppRuntime.Singleton')
             Write-Output ('framework=' + ${'$'}framework.Count)
             Write-Output ('main=' + ${'$'}main.Count)
+            Write-Output ('ddlm=' + ${'$'}ddlm.Count)
             Write-Output ('singleton=' + ${'$'}singleton.Count)
         """.trimIndent()
     }
@@ -82,6 +87,7 @@ object WindowsAppSdkEnvironment {
         return PackageState(
             frameworkInstalled = values["framework"]?.toIntOrNull()?.let { it > 0 } == true,
             mainInstalled = values["main"]?.toIntOrNull()?.let { it > 0 } == true,
+            ddlmInstalled = values["ddlm"]?.toIntOrNull()?.let { it > 0 } == true,
             singletonInstalled = values["singleton"]?.toIntOrNull()?.let { it > 0 } == true,
         )
     }

@@ -21,6 +21,10 @@ object SampleBootstrap {
 
     fun configure() {
         if (PlatformRuntime.isWindows) {
+            val comResult = JvmComRuntime.initializeMultithreaded()
+            comResult.requireSuccessUnlessChangedMode("CoInitializeEx")
+            comInitialized = comResult.isSuccess
+
             val bootstrapResult = WindowsAppSdkBootstrap.initialize()
             bootstrapResult.onSuccess { library ->
                 bootstrapLibrary = library
@@ -32,10 +36,6 @@ object SampleBootstrap {
                     packageSummary,
                 ).joinToString(" | ")
             }
-
-            val comResult = JvmComRuntime.initializeMultithreaded()
-            comResult.requireSuccessUnlessChangedMode("CoInitializeEx")
-            comInitialized = comResult.isSuccess
 
             val winRtResult = JvmWinRtRuntime.initializeMultithreaded()
             winRtResult.requireSuccessUnlessChangedMode("RoInitialize")
