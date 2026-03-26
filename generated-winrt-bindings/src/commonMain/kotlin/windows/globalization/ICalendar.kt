@@ -531,6 +531,35 @@ public open class ICalendar(
     }
   }
 
+  public fun dayOfWeekAsString(idealLength: Int32): String {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 59,
+        idealLength.value).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun dayOfWeekAsSoloString(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 60).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun dayOfWeekAsSoloString(idealLength: Int32): String {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 61,
+        idealLength.value).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
   public fun get_FirstPeriodInThisDay(): Int32 =
       Int32(PlatformComInterop.invokeInt32Method(pointer, 62).getOrThrow())
 
