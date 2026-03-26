@@ -17,15 +17,19 @@ interface WinUiApplicationLauncher {
 
 object DefaultWinUiApplicationLauncher : WinUiApplicationLauncher {
     override fun launch(): SampleLaunchResult {
-        val activationSummary = runCatching {
-            val app = Application.activate()
-            val window = Window.activateInstance()
-            window.title = "kotlin-winrt sample"
-            app.start()
-            window.activate()
-            "xaml=activated"
-        }.getOrElse { error ->
-            "xaml=${error::class.simpleName}:${error.message.orEmpty()}"
+        val activationSummary = when {
+            !PlatformRuntime.isWindows -> "xaml=skipped(non-windows)"
+            !SampleBootstrap.isWindowsAppSdkReady() -> "xaml=skipped(bootstrap-not-ready)"
+            else -> runCatching {
+                val app = Application.activate()
+                val window = Window.activateInstance()
+                window.title = "kotlin-winrt sample"
+                app.start()
+                window.activate()
+                "xaml=activated"
+            }.getOrElse { error ->
+                "xaml=${error::class.simpleName}:${error.message.orEmpty()}"
+            }
         }
 
         val summary = if (PlatformRuntime.isWindows) {

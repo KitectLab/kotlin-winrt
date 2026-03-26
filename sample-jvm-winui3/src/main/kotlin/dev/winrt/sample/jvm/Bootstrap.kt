@@ -85,4 +85,6 @@ object SampleBootstrap {
     fun launch(): SampleLaunchResult = launcher.launch()
 
     fun diagnostics(): String? = bootstrapDiagnostics
+
+    fun isWindowsAppSdkReady(): Boolean = bootstrapLibrary != null
 }
