@@ -237,14 +237,106 @@ public open class ICalendar(
   public fun get_Hour(): Int32 =
       Int32(PlatformComInterop.invokeInt32Method(pointer, 73).getOrThrow())
 
+  public fun addHours(hours: Int32) {
+    PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 75, hours.value).getOrThrow()
+  }
+
+  public fun hourAsString(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 76).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun hourAsPaddedString(minDigits: Int32): String {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 77,
+        minDigits.value).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
   public fun get_Minute(): Int32 =
       Int32(PlatformComInterop.invokeInt32Method(pointer, 78).getOrThrow())
+
+  public fun addMinutes(minutes: Int32) {
+    PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 80, minutes.value).getOrThrow()
+  }
+
+  public fun minuteAsString(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 81).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun minuteAsPaddedString(minDigits: Int32): String {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 82,
+        minDigits.value).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
 
   public fun get_Second(): Int32 =
       Int32(PlatformComInterop.invokeInt32Method(pointer, 83).getOrThrow())
 
+  public fun addSeconds(seconds: Int32) {
+    PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 85, seconds.value).getOrThrow()
+  }
+
+  public fun secondAsString(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 86).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun secondAsPaddedString(minDigits: Int32): String {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 87,
+        minDigits.value).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
   public fun get_Nanosecond(): Int32 =
       Int32(PlatformComInterop.invokeInt32Method(pointer, 88).getOrThrow())
+
+  public fun addNanoseconds(nanoseconds: Int32) {
+    PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 90, nanoseconds.value).getOrThrow()
+  }
+
+  public fun nanosecondAsString(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 91).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun nanosecondAsPaddedString(minDigits: Int32): String {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 92,
+        minDigits.value).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
 
   public fun get_NumeralSystem(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 10).getOrThrow()

@@ -41,12 +41,16 @@ class CalendarProjectionTest {
                         projected.addDays(Int32(0))
                         assertTrue(projected.hour.value >= 0)
                         projected.hour = projected.hour
+                        projected.addHours(Int32(0))
                         assertTrue(projected.minute.value >= 0)
                         projected.minute = projected.minute
+                        projected.addMinutes(Int32(0))
                         assertTrue(projected.second.value >= 0)
                         projected.second = projected.second
+                        projected.addSeconds(Int32(0))
                         assertTrue(projected.nanosecond.value >= 0)
                         projected.nanosecond = projected.nanosecond
+                        projected.addNanoseconds(Int32(0))
                         assertFalse(projected.numeralSystem.isBlank())
                         projected.numeralSystem = projected.numeralSystem
                         assertFalse(projected.calendarSystem.isBlank())
@@ -67,6 +71,14 @@ class CalendarProjectionTest {
                         assertFalse(projected.dayAsPaddedString(Int32(2)).isBlank())
                         assertFalse(projected.dayOfWeekAsString().isBlank())
                         assertFalse(projected.yearAsPaddedString(Int32(4)).isBlank())
+                        assertFalse(projected.hourAsString().isBlank())
+                        assertFalse(projected.hourAsPaddedString(Int32(2)).isBlank())
+                        assertFalse(projected.minuteAsString().isBlank())
+                        assertFalse(projected.minuteAsPaddedString(Int32(2)).isBlank())
+                        assertFalse(projected.secondAsString().isBlank())
+                        assertFalse(projected.secondAsPaddedString(Int32(2)).isBlank())
+                        assertFalse(projected.nanosecondAsString().isBlank())
+                        assertFalse(projected.nanosecondAsPaddedString(Int32(3)).isBlank())
                         val cloned = projected.clone()
                         try {
                             assertFalse(cloned.pointer.isNull)
