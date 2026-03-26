@@ -18,4 +18,27 @@ class WindowsAppSdkBootstrapTest {
             assertTrue(result.exceptionOrNull().toString(), result.isFailure)
         }
     }
+
+    @Test
+    fun initializes_and_shuts_down_when_explicit_bootstrap_dll_is_configured() {
+        if (!PlatformRuntime.isWindows) {
+            return
+        }
+
+        val bootstrapDll = System.getProperty("dev.winrt.bootstrapDll").orEmpty()
+        if (bootstrapDll.isBlank()) {
+            return
+        }
+
+        val result = WindowsAppSdkBootstrap.initialize()
+        if (result.isSuccess) {
+            val library = result.getOrThrow()
+            WindowsAppSdkBootstrap.shutdown(library)
+                .getOrElse { throw AssertionError("Bootstrap shutdown failed", it) }
+            return
+        }
+
+        val message = result.exceptionOrNull()?.message.orEmpty()
+        assertTrue(message, message.contains("0x80670016", ignoreCase = true))
+    }
 }

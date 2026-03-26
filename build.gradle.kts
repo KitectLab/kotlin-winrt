@@ -26,5 +26,13 @@ allprojects {
             "dev.winrt.probeMode",
             providers.gradleProperty("dev.winrt.probeMode").orNull ?: "",
         )
+        systemProperty(
+            "dev.winrt.bootstrapDll",
+            providers.systemProperty("dev.winrt.bootstrapDll").orNull ?: "",
+        )
+        systemProperty(
+            "dev.winrt.windowsAppSdkRoot",
+            providers.systemProperty("dev.winrt.windowsAppSdkRoot").orNull ?: "",
+        )
     }
 }
