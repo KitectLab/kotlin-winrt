@@ -21,7 +21,7 @@ public open class ICalendar(
     get() = get_Year()
 
   public val dateTime: DateTime
-    get() = getDateTime()
+    get() = get_DateTime()
 
   public var month: Int32
     get() = get_Month()
@@ -33,6 +33,30 @@ public open class ICalendar(
     get() = get_Day()
     set(value) {
       PlatformComInterop.invokeInt32Setter(pointer, 53, value.value).getOrThrow()
+    }
+
+  public var hour: Int32
+    get() = get_Hour()
+    set(value) {
+      PlatformComInterop.invokeInt32Setter(pointer, 74, value.value).getOrThrow()
+    }
+
+  public var minute: Int32
+    get() = get_Minute()
+    set(value) {
+      PlatformComInterop.invokeInt32Setter(pointer, 79, value.value).getOrThrow()
+    }
+
+  public var second: Int32
+    get() = get_Second()
+    set(value) {
+      PlatformComInterop.invokeInt32Setter(pointer, 84, value.value).getOrThrow()
+    }
+
+  public var nanosecond: Int32
+    get() = get_Nanosecond()
+    set(value) {
+      PlatformComInterop.invokeInt32Setter(pointer, 89, value.value).getOrThrow()
     }
 
   public var numeralSystem: String
@@ -72,11 +96,11 @@ public open class ICalendar(
     PlatformComInterop.invokeInt32Setter(pointer, 31, value.value).getOrThrow()
   }
 
-  public fun getDateTime(): DateTime =
+  public fun get_DateTime(): DateTime =
       DateTime(PlatformComInterop.invokeInt64Getter(pointer, 16).getOrThrow())
 
   public fun setDateTime(value: DateTime) {
-    PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 17, value.value).getOrThrow()
+    PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 17, value.universalTime).getOrThrow()
   }
 
   public fun yearAsString(): String {
@@ -103,6 +127,18 @@ public open class ICalendar(
 
   public fun get_Day(): Int32 =
       Int32(PlatformComInterop.invokeInt32Method(pointer, 52).getOrThrow())
+
+  public fun get_Hour(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 73).getOrThrow())
+
+  public fun get_Minute(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 78).getOrThrow())
+
+  public fun get_Second(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 83).getOrThrow())
+
+  public fun get_Nanosecond(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 88).getOrThrow())
 
   public fun get_NumeralSystem(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 10).getOrThrow()

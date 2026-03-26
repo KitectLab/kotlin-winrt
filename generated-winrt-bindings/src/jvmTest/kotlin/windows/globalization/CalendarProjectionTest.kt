@@ -34,6 +34,14 @@ class CalendarProjectionTest {
                         projected.setDateTime(projected.dateTime)
                         assertTrue(projected.month.value > 0)
                         assertTrue(projected.day.value > 0)
+                        assertTrue(projected.hour.value >= 0)
+                        projected.hour = projected.hour
+                        assertTrue(projected.minute.value >= 0)
+                        projected.minute = projected.minute
+                        assertTrue(projected.second.value >= 0)
+                        projected.second = projected.second
+                        assertTrue(projected.nanosecond.value >= 0)
+                        projected.nanosecond = projected.nanosecond
                         assertFalse(projected.numeralSystem.isBlank())
                         projected.numeralSystem = projected.numeralSystem
                         assertFalse(projected.calendarSystem.isBlank())
