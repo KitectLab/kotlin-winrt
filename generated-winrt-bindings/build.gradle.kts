@@ -37,6 +37,24 @@ fun registerPresetSdkGenerationTask(
     configureWinMdParserClasspath()
 }
 
+fun registerPresetSdkRegenerationTask(
+    name: String,
+    descriptionText: String,
+    contracts: List<String>,
+    namespaces: List<String>,
+) = tasks.register(name, JavaExec::class) {
+    group = "code generation"
+    description = descriptionText
+    dependsOn(project(":winmd-parser").tasks.named("classes"))
+
+    args(
+        layout.projectDirectory.dir("src/commonMain/kotlin").asFile.absolutePath,
+        *contracts.map { "--contract=$it" }.toTypedArray(),
+        *namespaces.map { "--namespace=$it" }.toTypedArray(),
+    )
+    configureWinMdParserClasspath()
+}
+
 kotlin {
     jvmToolchain(22)
     jvm()
@@ -150,6 +168,26 @@ val generateJsonBindingsFromSdk by registerPresetSdkGenerationTask(
     name = "generateJsonBindingsFromSdk",
     descriptionText = "Generates Windows.Data.Json bindings from installed Windows SDK contracts.",
     outputDir = "generated/presets/windows-data-json",
+    contracts = listOf(
+        "Windows.Foundation.UniversalApiContract",
+        "Windows.Foundation.FoundationContract",
+    ),
+    namespaces = listOf("Windows.Data.Json"),
+)
+
+val regenerateGlobalizationBindingsFromSdk by registerPresetSdkRegenerationTask(
+    name = "regenerateGlobalizationBindingsFromSdk",
+    descriptionText = "Regenerates checked-in Windows.Globalization bindings from installed Windows SDK contracts.",
+    contracts = listOf(
+        "Windows.Foundation.UniversalApiContract",
+        "Windows.Foundation.FoundationContract",
+    ),
+    namespaces = listOf("Windows.Globalization"),
+)
+
+val regenerateJsonBindingsFromSdk by registerPresetSdkRegenerationTask(
+    name = "regenerateJsonBindingsFromSdk",
+    descriptionText = "Regenerates checked-in Windows.Data.Json bindings from installed Windows SDK contracts.",
     contracts = listOf(
         "Windows.Foundation.UniversalApiContract",
         "Windows.Foundation.FoundationContract",
