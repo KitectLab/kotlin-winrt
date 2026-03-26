@@ -28,6 +28,21 @@ class WinMdMetadataReaderTest {
         val xamlNamespace = model.namespaces.first { it.name == "Microsoft.UI.Xaml" }
         val typeNames = xamlNamespace.types.map { it.name }
         assertTrue(typeNames.toString(), typeNames.contains("XamlContract"))
+
+        val applicationStatics = xamlNamespace.types.first { it.name == "IApplicationStatics" }
+        assertEquals(
+            listOf("get_Current", "Start", "LoadComponent", "LoadComponent"),
+            applicationStatics.methods.map { it.name },
+        )
+        assertEquals(
+            "Microsoft.UI.Xaml.ApplicationInitializationCallback",
+            applicationStatics.methods.first { it.name == "Start" }.parameters.single().type,
+        )
+
+        val applicationInitializationCallback =
+            xamlNamespace.types.first { it.name == "ApplicationInitializationCallback" }
+        println("ApplicationInitializationCallback guid=${applicationInitializationCallback.guid}")
+        assertTrue(applicationInitializationCallback.guid.orEmpty().isNotBlank())
     }
 
     @Test
