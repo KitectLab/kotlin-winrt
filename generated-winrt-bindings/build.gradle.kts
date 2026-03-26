@@ -164,6 +164,17 @@ val generateGlobalizationBindingsFromSdk by registerPresetSdkGenerationTask(
     namespaces = listOf("Windows.Globalization"),
 )
 
+val generateFoundationBindingsFromSdk by registerPresetSdkGenerationTask(
+    name = "generateFoundationBindingsFromSdk",
+    descriptionText = "Generates Windows.Foundation bindings from installed Windows SDK contracts.",
+    outputDir = "generated/presets/windows-foundation",
+    contracts = listOf(
+        "Windows.Foundation.UniversalApiContract",
+        "Windows.Foundation.FoundationContract",
+    ),
+    namespaces = listOf("Windows.Foundation"),
+)
+
 val generateJsonBindingsFromSdk by registerPresetSdkGenerationTask(
     name = "generateJsonBindingsFromSdk",
     descriptionText = "Generates Windows.Data.Json bindings from installed Windows SDK contracts.",
@@ -183,6 +194,16 @@ val regenerateGlobalizationBindingsFromSdk by registerPresetSdkRegenerationTask(
         "Windows.Foundation.FoundationContract",
     ),
     namespaces = listOf("Windows.Globalization"),
+)
+
+val regenerateFoundationBindingsFromSdk by registerPresetSdkRegenerationTask(
+    name = "regenerateFoundationBindingsFromSdk",
+    descriptionText = "Regenerates checked-in Windows.Foundation bindings from installed Windows SDK contracts.",
+    contracts = listOf(
+        "Windows.Foundation.UniversalApiContract",
+        "Windows.Foundation.FoundationContract",
+    ),
+    namespaces = listOf("Windows.Foundation"),
 )
 
 val regenerateJsonBindingsFromSdk by registerPresetSdkRegenerationTask(
