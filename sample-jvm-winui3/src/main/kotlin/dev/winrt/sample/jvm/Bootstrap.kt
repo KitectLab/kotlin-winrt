@@ -13,12 +13,22 @@ import dev.winrt.kom.PlatformComInterop
 import dev.winrt.kom.PlatformRuntime
 
 object SampleBootstrap {
+    private var bootstrapLibrary: WindowsAppSdkBootstrap.BootstrapLibrary? = null
+    private var bootstrapDiagnostics: String? = null
     private var comInitialized = false
     private var winRtInitialized = false
     var launcher: WinUiApplicationLauncher = DefaultWinUiApplicationLauncher
 
     fun configure() {
         if (PlatformRuntime.isWindows) {
+            val bootstrapResult = WindowsAppSdkBootstrap.initialize()
+            bootstrapResult.onSuccess { library ->
+                bootstrapLibrary = library
+                bootstrapDiagnostics = "bootstrap=initialized"
+            }.onFailure { error ->
+                bootstrapDiagnostics = "bootstrap=${error.message}"
+            }
+
             val comResult = JvmComRuntime.initializeMultithreaded()
             comResult.requireSuccessUnlessChangedMode("CoInitializeEx")
             comInitialized = comResult.isSuccess
@@ -60,6 +70,10 @@ object SampleBootstrap {
             JvmComRuntime.uninitialize()
             comInitialized = false
         }
+        bootstrapLibrary?.let { library ->
+            WindowsAppSdkBootstrap.shutdown(library)
+            bootstrapLibrary = null
+        }
     }
 
     private fun dev.winrt.kom.HResult.requireSuccessUnlessChangedMode(operation: String) {
@@ -69,4 +83,6 @@ object SampleBootstrap {
     }
 
     fun launch(): SampleLaunchResult = launcher.launch()
+
+    fun diagnostics(): String? = bootstrapDiagnostics
 }

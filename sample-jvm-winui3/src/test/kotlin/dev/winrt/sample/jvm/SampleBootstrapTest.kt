@@ -1,6 +1,7 @@
 package dev.winrt.sample.jvm
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Test
 
 class SampleBootstrapTest {
@@ -25,5 +26,7 @@ class SampleBootstrapTest {
         assertEquals("launcher", result.launcherSummary)
         assertEquals("Windows.Data.Json.JsonObject", result.winRtSmoke?.runtimeClass)
         assertEquals("codex", result.winRtSmoke?.parsedName)
+        assertNotNull(SampleBootstrap.diagnostics())
+        SampleBootstrap.shutdown()
     }
 }
