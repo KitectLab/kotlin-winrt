@@ -26,7 +26,11 @@ object SampleBootstrap {
                 bootstrapLibrary = library
                 bootstrapDiagnostics = "bootstrap=initialized"
             }.onFailure { error ->
-                bootstrapDiagnostics = "bootstrap=${error.message}"
+                val packageSummary = WindowsAppSdkEnvironment.detect()?.summary()
+                bootstrapDiagnostics = listOfNotNull(
+                    "bootstrap=${error.message}",
+                    packageSummary,
+                ).joinToString(" | ")
             }
 
             val comResult = JvmComRuntime.initializeMultithreaded()
