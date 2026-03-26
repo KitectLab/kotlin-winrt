@@ -214,5 +214,13 @@ class WinMdMetadataReaderTest {
             "Expected a large real ICalendar surface, got ${iCalendar.methods.size}",
             iCalendar.methods.size >= 90,
         )
+
+        val applicationLanguages = globalization.types.first { it.name == "ApplicationLanguages" }
+        val iApplicationLanguagesStatics = globalization.types.first { it.name == "IApplicationLanguagesStatics" }
+        assertEquals("75b40847-0a4c-4a92-9565-fd63c95f7aed", iApplicationLanguagesStatics.guid)
+        assertTrue(iApplicationLanguagesStatics.methods.any { it.name == "get_PrimaryLanguageOverride" && it.returnType == "String" && it.vtableIndex == 6 })
+        assertTrue(iApplicationLanguagesStatics.methods.any { it.name == "get_Languages" && it.returnType.contains("IVectorView") && it.vtableIndex == 8 })
+        assertTrue(iApplicationLanguagesStatics.methods.any { it.name == "get_ManifestLanguages" && it.returnType.contains("IVectorView") && it.vtableIndex == 9 })
+        assertEquals(null, applicationLanguages.defaultInterface)
     }
 }
