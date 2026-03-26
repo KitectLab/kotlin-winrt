@@ -567,7 +567,16 @@ actual object PlatformHStringBridge : HStringBridge {
 }
 
 object JvmComRuntime {
+    private const val coinitApartmentThreaded = 2
     private const val coinitMultithreaded = 0
+
+    fun initializeSingleThreaded(): HResult {
+        val result = Jdk22Foreign.coInitializeExHandle.invokeWithArguments(
+            MemorySegment.NULL,
+            coinitApartmentThreaded,
+        ) as Int
+        return HResult(result)
+    }
 
     fun initializeMultithreaded(): HResult {
         val result = Jdk22Foreign.coInitializeExHandle.invokeWithArguments(
@@ -583,6 +592,7 @@ object JvmComRuntime {
 }
 
 object JvmWinRtRuntime {
+    private const val roInitSingleThreaded = 0
     private const val roInitMultithreaded = 1
     val iidIActivationFactory = Guid(
         data1 = 0x00000035,
@@ -590,6 +600,11 @@ object JvmWinRtRuntime {
         data3 = 0,
         data4 = byteArrayOf(0xC0.toByte(), 0, 0, 0, 0, 0, 0, 0x46),
     )
+
+    fun initializeSingleThreaded(): HResult {
+        val result = Jdk22Foreign.roInitializeHandle.invokeWithArguments(roInitSingleThreaded) as Int
+        return HResult(result)
+    }
 
     fun initializeMultithreaded(): HResult {
         val result = Jdk22Foreign.roInitializeHandle.invokeWithArguments(roInitMultithreaded) as Int

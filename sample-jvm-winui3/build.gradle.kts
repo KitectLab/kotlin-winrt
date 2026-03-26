@@ -21,6 +21,10 @@ tasks.withType<JavaExec>().configureEach {
         "dev.winrt.windowsAppSdkRoot",
         providers.systemProperty("dev.winrt.windowsAppSdkRoot").orNull ?: "",
     )
+    systemProperty(
+        "dev.winrt.autoQuitVisible",
+        providers.systemProperty("dev.winrt.autoQuitVisible").orNull ?: "",
+    )
 }
 
 dependencies {

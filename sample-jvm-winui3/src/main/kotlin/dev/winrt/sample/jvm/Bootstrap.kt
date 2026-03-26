@@ -21,7 +21,7 @@ object SampleBootstrap {
 
     fun configure() {
         if (PlatformRuntime.isWindows) {
-            val comResult = JvmComRuntime.initializeMultithreaded()
+            val comResult = JvmComRuntime.initializeSingleThreaded()
             comResult.requireSuccessUnlessChangedMode("CoInitializeEx")
             comInitialized = comResult.isSuccess
 
@@ -37,7 +37,7 @@ object SampleBootstrap {
                 ).joinToString(" | ")
             }
 
-            val winRtResult = JvmWinRtRuntime.initializeMultithreaded()
+            val winRtResult = JvmWinRtRuntime.initializeSingleThreaded()
             winRtResult.requireSuccessUnlessChangedMode("RoInitialize")
             winRtInitialized = winRtResult.isSuccess
         }
@@ -66,6 +66,7 @@ object SampleBootstrap {
     }
 
     fun shutdown() {
+        WinUiApplicationStart.shutdown()
         if (winRtInitialized) {
             JvmWinRtRuntime.uninitialize()
             winRtInitialized = false

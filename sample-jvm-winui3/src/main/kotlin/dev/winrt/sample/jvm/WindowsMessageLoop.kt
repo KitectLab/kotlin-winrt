@@ -12,9 +12,11 @@ import java.lang.foreign.ValueLayout
 import java.lang.invoke.MethodHandle
 
 object WindowsMessageLoop {
+    private const val wmQuit = 0x0012
     private val linker: Linker = Linker.nativeLinker()
     private val libraryArena: Arena = Arena.ofAuto()
     private val user32: SymbolLookup = SymbolLookup.libraryLookup("user32", libraryArena)
+    private val kernel32: SymbolLookup = SymbolLookup.libraryLookup("kernel32", libraryArena)
     private val msgLayout: MemoryLayout = MemoryLayout.structLayout(
         ValueLayout.ADDRESS.withName("hwnd"),
         ValueLayout.JAVA_INT.withName("message"),
@@ -79,11 +81,54 @@ object WindowsMessageLoop {
         }
     }
 
-    private fun downcall(name: String, descriptor: FunctionDescriptor): MethodHandle {
+    fun currentThreadId(): Int {
+        if (!PlatformRuntime.isWindows) {
+            return 0
+        }
+        val getCurrentThreadId = downcallKernel32(
+            "GetCurrentThreadId",
+            FunctionDescriptor.of(ValueLayout.JAVA_INT),
+        )
+        return getCurrentThreadId.invokeWithArguments() as Int
+    }
+
+    fun postThreadQuit(threadId: Int) {
+        if (!PlatformRuntime.isWindows || threadId == 0) {
+            return
+        }
+        val postThreadMessage = downcallUser32(
+            "PostThreadMessageW",
+            FunctionDescriptor.of(
+                ValueLayout.JAVA_INT,
+                ValueLayout.JAVA_INT,
+                ValueLayout.JAVA_INT,
+                ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS,
+            ),
+        )
+        postThreadMessage.invokeWithArguments(
+            threadId,
+            wmQuit,
+            MemorySegment.NULL,
+            MemorySegment.NULL,
+        )
+    }
+
+    private fun downcallUser32(name: String, descriptor: FunctionDescriptor): MethodHandle {
         val symbol = user32.find(name).orElse(null)
         requireNotNull(symbol) {
             "Win32 symbol not found: $name"
         }
         return linker.downcallHandle(symbol, descriptor)
     }
+
+    private fun downcallKernel32(name: String, descriptor: FunctionDescriptor): MethodHandle {
+        val symbol = kernel32.find(name).orElse(null)
+        requireNotNull(symbol) {
+            "Win32 symbol not found: $name"
+        }
+        return linker.downcallHandle(symbol, descriptor)
+    }
+
+    private fun downcall(name: String, descriptor: FunctionDescriptor): MethodHandle = downcallUser32(name, descriptor)
 }
