@@ -16,6 +16,8 @@ interface WinUiApplicationLauncher {
 }
 
 object DefaultWinUiApplicationLauncher : WinUiApplicationLauncher {
+    private const val sampleWindowTitle = "kotlin-winrt sample"
+
     override fun launch(): SampleLaunchResult {
         val packageState = WindowsAppSdkEnvironment.detect()
         val activationSummary = when {
@@ -31,11 +33,15 @@ object DefaultWinUiApplicationLauncher : WinUiApplicationLauncher {
                 val message = TextBlock.activate()
                 message.text = "Hello from Kotlin/WinUI 3"
                 val window = Window.activateInstance()
-                window.title = "kotlin-winrt sample"
+                window.title = sampleWindowTitle
                 window.setContent(message)
                 window.activate()
+                val visible = WindowsWindowProbe.waitForWindowByTitle(sampleWindowTitle)
+                if (!visible) {
+                    return@runCatching "xaml=window-not-visible"
+                }
                 WindowsMessageLoop.run()
-                "xaml=window-with-text-activated"
+                "xaml=window-with-text-activated:visible=$visible"
             }.getOrElse { error ->
                 "xaml=${error::class.simpleName}:${error.message.orEmpty()}"
             }
