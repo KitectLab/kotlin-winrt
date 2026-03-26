@@ -246,6 +246,7 @@ object WinMdMetadataReader {
         return when {
             extends.namespace == "System" && extends.name == "Enum" -> WinMdTypeKind.Enum
             extends.namespace == "System" && extends.name == "ValueType" -> WinMdTypeKind.Struct
+            extends.namespace == "System" && extends.name == "MulticastDelegate" -> WinMdTypeKind.Delegate
             else -> WinMdTypeKind.RuntimeClass
         }
     }

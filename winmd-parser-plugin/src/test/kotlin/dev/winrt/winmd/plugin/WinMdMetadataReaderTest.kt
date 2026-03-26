@@ -41,6 +41,7 @@ class WinMdMetadataReaderTest {
 
         val applicationInitializationCallback =
             xamlNamespace.types.first { it.name == "ApplicationInitializationCallback" }
+        assertEquals(WinMdTypeKind.Delegate, applicationInitializationCallback.kind)
         println("ApplicationInitializationCallback guid=${applicationInitializationCallback.guid}")
         assertTrue(applicationInitializationCallback.guid.orEmpty().isNotBlank())
 

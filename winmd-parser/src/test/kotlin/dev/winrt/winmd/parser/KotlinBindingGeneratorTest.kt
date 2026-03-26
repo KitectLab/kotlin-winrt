@@ -390,4 +390,35 @@ class KotlinBindingGeneratorTest {
         assertTrue(iOverridesBinding.contains("fun onLaunched("))
         assertTrue(iOverridesBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 6,"))
     }
+
+    @Test
+    fun generates_delegate_types_as_projection_metadata() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "ApplicationInitializationCallback",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "d8eef1c9-1234-56f1-9963-45dd9c80a661",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val callbackBinding = files.first {
+            it.relativePath == "Microsoft/UI/Xaml/ApplicationInitializationCallback.kt"
+        }.content
+
+        assertTrue(callbackBinding.contains("class ApplicationInitializationCallback("))
+        assertTrue(callbackBinding.contains(": WinRtInterfaceProjection(pointer)"))
+        assertTrue(callbackBinding.contains("override val iid: Guid = guidOf(\"d8eef1c9-1234-56f1-9963-45dd9c80a661\")"))
+        assertFalse(callbackBinding.contains("WinRtRuntimeClassMetadata"))
+        assertFalse(callbackBinding.contains("RuntimeClassId"))
+    }
 }

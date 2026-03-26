@@ -10,6 +10,7 @@ internal class TypeFileEmitter(
 ) {
     private val typeNameMapper = TypeNameMapper()
     private val interfaceTypeRenderer = InterfaceTypeRenderer(typeNameMapper, typeRegistry)
+    private val delegateTypeRenderer = DelegateTypeRenderer()
     private val runtimePropertyRenderer = RuntimePropertyRenderer(typeNameMapper)
     private val runtimeMethodRenderer = RuntimeMethodRenderer(typeNameMapper)
     private val runtimeCompanionRenderer = RuntimeCompanionRenderer()
@@ -43,6 +44,7 @@ internal class TypeFileEmitter(
 
     private fun renderType(type: WinMdType) = when (type.kind) {
         WinMdTypeKind.Interface -> interfaceTypeRenderer.render(type)
+        WinMdTypeKind.Delegate -> delegateTypeRenderer.render(type)
         WinMdTypeKind.RuntimeClass -> runtimeTypeRenderer.render(type)
         WinMdTypeKind.Struct,
         WinMdTypeKind.Enum,

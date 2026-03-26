@@ -46,6 +46,7 @@ enum class WinMdActivationKind {
 @Serializable
 enum class WinMdTypeKind {
     Interface,
+    Delegate,
     RuntimeClass,
     Struct,
     Enum,
