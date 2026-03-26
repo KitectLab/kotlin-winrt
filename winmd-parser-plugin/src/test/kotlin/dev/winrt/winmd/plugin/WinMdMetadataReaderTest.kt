@@ -3,8 +3,26 @@ package dev.winrt.winmd.plugin
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.nio.file.Files
+import java.nio.file.Path
 
 class WinMdMetadataReaderTest {
+    @Test
+    fun reads_real_types_from_local_winui_xaml_winmd_when_available() {
+        val candidatePaths = listOf(
+            Path.of("C:/Program Files (x86)/Mica For Everyone/Microsoft.UI.Xaml.winmd"),
+        )
+        val winuiWinmd = candidatePaths.firstOrNull { Files.isRegularFile(it) } ?: return
+
+        val model = WinMdMetadataReader.readModel(listOf(winuiWinmd))
+        val namespaceNames = model.namespaces.map { it.name }
+        assertTrue(namespaceNames.toString(), namespaceNames.contains("Microsoft.UI.Xaml"))
+
+        val xamlNamespace = model.namespaces.first { it.name == "Microsoft.UI.Xaml" }
+        val typeNames = xamlNamespace.types.map { it.name }
+        assertTrue(typeNames.toString(), typeNames.contains("XamlContract"))
+    }
+
     @Test
     fun reads_real_types_from_windows_sdk_winmd() {
         val universalContract = WindowsSdkReferences.findContract(
