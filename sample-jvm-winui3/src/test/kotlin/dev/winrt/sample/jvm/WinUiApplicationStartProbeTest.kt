@@ -17,4 +17,16 @@ class WinUiApplicationStartProbeTest {
             SampleBootstrap.shutdown()
         }
     }
+
+    @Test
+    fun application_start_callback_receives_initialization_params() {
+        assumeTrue(PlatformRuntime.isWindows)
+
+        SampleBootstrap.configure()
+        try {
+            assertTrue(WinUiApplicationStart.probeCallbackParamsInterface())
+        } finally {
+            SampleBootstrap.shutdown()
+        }
+    }
 }

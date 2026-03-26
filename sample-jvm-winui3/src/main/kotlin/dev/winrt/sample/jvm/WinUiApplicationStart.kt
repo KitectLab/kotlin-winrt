@@ -9,6 +9,7 @@ import dev.winrt.kom.PlatformComInterop
 import microsoft.ui.xaml.Application
 import microsoft.ui.xaml.ApplicationInitializationCallback
 import microsoft.ui.xaml.IApplicationStatics
+import microsoft.ui.xaml.IApplicationInitializationCallbackParams
 import microsoft.ui.xaml.IWindow
 import microsoft.ui.xaml.Window
 
@@ -44,6 +45,41 @@ object WinUiApplicationStart {
             activeCallback = callback
             applicationStatics.start(ApplicationInitializationCallback(callback.pointer))
             return callbackInvoked
+        } finally {
+            PlatformComInterop.release(applicationStatics.pointer)
+            PlatformComInterop.release(activationFactory)
+        }
+    }
+
+    fun probeCallbackParamsInterface(): Boolean {
+        var callbackInvoked = false
+        var paramsSupported = false
+        val activationFactory = JvmWinRtRuntime.getActivationFactory("Microsoft.UI.Xaml.Application").getOrThrow()
+        val applicationStatics = IApplicationStatics(
+            PlatformComInterop.queryInterface(activationFactory, IApplicationStatics.iid).getOrThrow(),
+        )
+        try {
+            val callback = JvmWinRtObjectArgDelegate.create(ApplicationInitializationCallback.iid) { arg ->
+                callbackInvoked = true
+                paramsSupported = runCatching {
+                    val paramsPointer = PlatformComInterop.queryInterface(
+                        arg,
+                        IApplicationInitializationCallbackParams.iid,
+                    ).getOrThrow()
+                    PlatformComInterop.release(paramsPointer)
+                    true
+                }.getOrDefault(false)
+                val uiThreadId = WindowsMessageLoop.currentThreadId()
+                Thread.ofPlatform().daemon(true).start {
+                    Thread.sleep(100L)
+                    WindowsMessageLoop.postThreadQuit(uiThreadId)
+                }
+                HResult(0)
+            }
+            activeCallback?.close()
+            activeCallback = callback
+            applicationStatics.start(ApplicationInitializationCallback(callback.pointer))
+            return callbackInvoked && paramsSupported
         } finally {
             PlatformComInterop.release(applicationStatics.pointer)
             PlatformComInterop.release(activationFactory)
