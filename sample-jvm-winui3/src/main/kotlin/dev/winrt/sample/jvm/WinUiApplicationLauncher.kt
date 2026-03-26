@@ -31,6 +31,7 @@ object DefaultWinUiApplicationLauncher : WinUiApplicationLauncher {
                 val window = Window.activateInstance()
                 window.title = "kotlin-winrt sample"
                 window.activate()
+                WindowsMessageLoop.run()
                 "xaml=window-activated"
             }.getOrElse { error ->
                 "xaml=${error::class.simpleName}:${error.message.orEmpty()}"
