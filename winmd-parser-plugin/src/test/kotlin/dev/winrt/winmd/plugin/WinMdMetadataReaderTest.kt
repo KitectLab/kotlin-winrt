@@ -222,5 +222,17 @@ class WinMdMetadataReaderTest {
         assertTrue(iApplicationLanguagesStatics.methods.any { it.name == "get_Languages" && it.returnType.contains("IVectorView") && it.vtableIndex == 8 })
         assertTrue(iApplicationLanguagesStatics.methods.any { it.name == "get_ManifestLanguages" && it.returnType.contains("IVectorView") && it.vtableIndex == 9 })
         assertEquals(null, applicationLanguages.defaultInterface)
+
+        val userProfile = model.namespaces.first { it.name == "Windows.System.UserProfile" }
+        val globalizationPreferences = userProfile.types.first { it.name == "GlobalizationPreferences" }
+        val iGlobalizationPreferencesStatics = userProfile.types.first { it.name == "IGlobalizationPreferencesStatics" }
+        assertEquals("01bf4326-ed37-4e96-b0e9-c1340d1ea158", iGlobalizationPreferencesStatics.guid)
+        assertTrue(iGlobalizationPreferencesStatics.methods.any { it.name == "get_Calendars" && it.returnType.contains("IVectorView") && it.vtableIndex == 6 })
+        assertTrue(iGlobalizationPreferencesStatics.methods.any { it.name == "get_Clocks" && it.returnType.contains("IVectorView") && it.vtableIndex == 7 })
+        assertTrue(iGlobalizationPreferencesStatics.methods.any { it.name == "get_Currencies" && it.returnType.contains("IVectorView") && it.vtableIndex == 8 })
+        assertTrue(iGlobalizationPreferencesStatics.methods.any { it.name == "get_Languages" && it.returnType.contains("IVectorView") && it.vtableIndex == 9 })
+        assertTrue(iGlobalizationPreferencesStatics.methods.any { it.name == "get_HomeGeographicRegion" && it.returnType == "String" && it.vtableIndex == 10 })
+        assertTrue(iGlobalizationPreferencesStatics.methods.any { it.name == "get_WeekStartsOn" && it.returnType == "Windows.Globalization.DayOfWeek" && it.vtableIndex == 11 })
+        assertEquals(null, globalizationPreferences.defaultInterface)
     }
 }

@@ -23,6 +23,8 @@ class CheckedInBindingsParityTest {
         "windows/globalization/ApplicationLanguages.kt",
         "windows/globalization/IApplicationLanguagesStatics.kt",
         "windows/globalization/ICalendar.kt",
+        "windows/system/userprofile/GlobalizationPreferences.kt",
+        "windows/system/userprofile/IGlobalizationPreferencesStatics.kt",
         "microsoft/ui/xaml/Application.kt",
         "microsoft/ui/xaml/Window.kt",
     )
@@ -42,6 +44,7 @@ class CheckedInBindingsParityTest {
         "Windows.Foundation" to setOf("AsyncStatus", "IStringable", "Point"),
         "Windows.Data.Json" to setOf("IJsonArray", "IJsonObject", "IJsonValue", "JsonObject", "JsonValueType"),
         "Windows.Globalization" to setOf("ApplicationLanguages", "Calendar", "DayOfWeek", "IApplicationLanguagesStatics", "ICalendar"),
+        "Windows.System.UserProfile" to setOf("GlobalizationPreferences", "IGlobalizationPreferencesStatics"),
         "Microsoft.UI.Xaml" to setOf("Application", "Window"),
     )
 
@@ -389,6 +392,29 @@ class CheckedInBindingsParityTest {
         assertTrue(statics.contains("invokeObjectMethod(pointer, 9).getOrThrow()"))
         assertTrue(statics.contains("qualifiedName: String = \"Windows.Globalization.IApplicationLanguagesStatics\""))
         assertTrue(statics.contains("75b40847-0a4c-4a92-9565-fd63c95f7aed"))
+    }
+
+    @Test
+    fun checked_in_globalization_preferences_keeps_verified_runtime_surface() {
+        val runtimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/system/userprofile/GlobalizationPreferences.kt").readText()
+        val statics = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/system/userprofile/IGlobalizationPreferencesStatics.kt").readText()
+
+        assertTrue(runtimeClass.contains("qualifiedName: String = \"Windows.System.UserProfile.GlobalizationPreferences\""))
+        assertTrue(runtimeClass.contains("defaultInterfaceName: String? = null"))
+        assertTrue(statics.contains("val calendars: StringVectorView"))
+        assertTrue(statics.contains("invokeObjectMethod(pointer, 6).getOrThrow()"))
+        assertTrue(statics.contains("val clocks: StringVectorView"))
+        assertTrue(statics.contains("invokeObjectMethod(pointer, 7).getOrThrow()"))
+        assertTrue(statics.contains("val currencies: StringVectorView"))
+        assertTrue(statics.contains("invokeObjectMethod(pointer, 8).getOrThrow()"))
+        assertTrue(statics.contains("val languages: StringVectorView"))
+        assertTrue(statics.contains("invokeObjectMethod(pointer, 9).getOrThrow()"))
+        assertTrue(statics.contains("val homeGeographicRegion: String"))
+        assertTrue(statics.contains("invokeHStringMethod(pointer, 10).getOrThrow()"))
+        assertTrue(statics.contains("val weekStartsOn: DayOfWeek"))
+        assertTrue(statics.contains("invokeUInt32Method(pointer, 11).getOrThrow().toInt()"))
+        assertTrue(statics.contains("Windows.System.UserProfile.IGlobalizationPreferencesStatics"))
+        assertTrue(statics.contains("01bf4326-ed37-4e96-b0e9-c1340d1ea158"))
     }
 
 }
