@@ -7,15 +7,14 @@ import dev.winrt.kom.HResult
 import dev.winrt.kom.JvmWinRtRuntime
 import dev.winrt.kom.PlatformComInterop
 import microsoft.ui.xaml.Application
+import microsoft.ui.xaml.ApplicationInitializationCallback
+import microsoft.ui.xaml.IApplicationStatics
 import microsoft.ui.xaml.IWindow
 import microsoft.ui.xaml.Window
 
 object WinUiApplicationStart {
-    private const val applicationStartSlot = 7
     private const val dispatcherQueueGetterSlot = 13
     private const val dispatcherQueueTryEnqueueSlot = 7
-    private val applicationStaticsIid = guidOf("4e0d09f5-4358-512c-a987-503b52848e95")
-    private val callbackIid = guidOf("d8eef1c9-1234-56f1-9963-45dd9c80a661")
     private val dispatcherQueueHandlerIid = guidOf("2e0872a9-4e29-5f14-b688-fb96d5f9d5f8")
 
     private var application: Application? = null
@@ -28,9 +27,11 @@ object WinUiApplicationStart {
     fun probeCallbackOnly(): Boolean {
         var callbackInvoked = false
         val activationFactory = JvmWinRtRuntime.getActivationFactory("Microsoft.UI.Xaml.Application").getOrThrow()
-        val applicationStatics = PlatformComInterop.queryInterface(activationFactory, applicationStaticsIid).getOrThrow()
+        val applicationStatics = IApplicationStatics(
+            PlatformComInterop.queryInterface(activationFactory, IApplicationStatics.iid).getOrThrow(),
+        )
         try {
-            val callback = JvmWinRtObjectArgDelegate.create(callbackIid) {
+            val callback = JvmWinRtObjectArgDelegate.create(ApplicationInitializationCallback.iid) {
                 callbackInvoked = true
                 val uiThreadId = WindowsMessageLoop.currentThreadId()
                 Thread.ofPlatform().daemon(true).start {
@@ -41,10 +42,10 @@ object WinUiApplicationStart {
             }
             activeCallback?.close()
             activeCallback = callback
-            PlatformComInterop.invokeObjectSetter(applicationStatics, applicationStartSlot, callback.pointer).getOrThrow()
+            applicationStatics.start(ApplicationInitializationCallback(callback.pointer))
             return callbackInvoked
         } finally {
-            PlatformComInterop.release(applicationStatics)
+            PlatformComInterop.release(applicationStatics.pointer)
             PlatformComInterop.release(activationFactory)
         }
     }
@@ -66,9 +67,11 @@ object WinUiApplicationStart {
         activeCallback?.close()
         activeCallback = null
         val activationFactory = JvmWinRtRuntime.getActivationFactory("Microsoft.UI.Xaml.Application").getOrThrow()
-        val applicationStatics = PlatformComInterop.queryInterface(activationFactory, applicationStaticsIid).getOrThrow()
+        val applicationStatics = IApplicationStatics(
+            PlatformComInterop.queryInterface(activationFactory, IApplicationStatics.iid).getOrThrow(),
+        )
         try {
-            val callback = JvmWinRtObjectArgDelegate.create(callbackIid) {
+            val callback = JvmWinRtObjectArgDelegate.create(ApplicationInitializationCallback.iid) {
                 runCatching {
                     application = Application.activate()
                     window = Window.activateInstance()
@@ -118,7 +121,7 @@ object WinUiApplicationStart {
                 }
             }
             activeCallback = callback
-            PlatformComInterop.invokeObjectSetter(applicationStatics, applicationStartSlot, callback.pointer).getOrThrow()
+            applicationStatics.start(ApplicationInitializationCallback(callback.pointer))
             launchFailure?.let { throw it }
             return if (windowVisible) {
                 "xaml=application-start-visible"
@@ -126,7 +129,7 @@ object WinUiApplicationStart {
                 "xaml=window-not-visible"
             }
         } finally {
-            PlatformComInterop.release(applicationStatics)
+            PlatformComInterop.release(applicationStatics.pointer)
             PlatformComInterop.release(activationFactory)
         }
     }
