@@ -17,9 +17,15 @@ interface WinUiApplicationLauncher {
 
 object DefaultWinUiApplicationLauncher : WinUiApplicationLauncher {
     override fun launch(): SampleLaunchResult {
+        val packageState = WindowsAppSdkEnvironment.detect()
         val activationSummary = when {
             !PlatformRuntime.isWindows -> "xaml=skipped(non-windows)"
-            !SampleBootstrap.isWindowsAppSdkReady() -> "xaml=skipped(bootstrap-not-ready)"
+            !SampleBootstrap.isWindowsAppSdkReady() -> when (packageState?.readiness()) {
+                WindowsAppSdkEnvironment.Readiness.MissingFramework -> "xaml=blocked(missing-framework-package)"
+                WindowsAppSdkEnvironment.Readiness.MissingMain -> "xaml=blocked(missing-main-package)"
+                WindowsAppSdkEnvironment.Readiness.MissingSingleton -> "xaml=blocked(missing-singleton-package)"
+                else -> "xaml=skipped(bootstrap-not-ready)"
+            }
             else -> runCatching {
                 val app = Application.activate()
                 val window = Window.activateInstance()

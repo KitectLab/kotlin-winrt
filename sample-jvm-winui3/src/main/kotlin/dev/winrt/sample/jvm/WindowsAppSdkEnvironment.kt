@@ -3,6 +3,14 @@ package dev.winrt.sample.jvm
 import dev.winrt.kom.PlatformRuntime
 
 object WindowsAppSdkEnvironment {
+    enum class Readiness {
+        Ready,
+        MissingFramework,
+        MissingMain,
+        MissingSingleton,
+        Unknown,
+    }
+
     data class PackageState(
         val frameworkInstalled: Boolean,
         val mainInstalled: Boolean,
@@ -10,6 +18,15 @@ object WindowsAppSdkEnvironment {
     ) {
         fun summary(): String {
             return "packages=framework:$frameworkInstalled,main:$mainInstalled,singleton:$singletonInstalled"
+        }
+
+        fun readiness(): Readiness {
+            return when {
+                !frameworkInstalled -> Readiness.MissingFramework
+                !mainInstalled -> Readiness.MissingMain
+                !singletonInstalled -> Readiness.MissingSingleton
+                else -> Readiness.Ready
+            }
         }
     }
 
