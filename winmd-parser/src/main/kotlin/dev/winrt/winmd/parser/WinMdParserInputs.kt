@@ -55,6 +55,9 @@ object WinMdParserInputResolver {
 
         args.forEach { arg ->
             when {
+                arg.startsWith("--winmd-file=") -> {
+                    extension.winmdFiles = extension.winmdFiles + arg.substringAfter('=')
+                }
                 arg.startsWith("--contract=") -> {
                     extension.contracts = extension.contracts + arg.substringAfter('=')
                 }
@@ -67,12 +70,21 @@ object WinMdParserInputResolver {
                 arg.startsWith("--references-root=") -> {
                     extension.referencesRoot = arg.substringAfter('=')
                 }
+                arg.startsWith("--nuget-root=") -> {
+                    extension.nugetRoot = arg.substringAfter('=')
+                }
+                arg.startsWith("--nuget-package=") -> {
+                    extension.nugetPackageId = arg.substringAfter('=')
+                }
+                arg.startsWith("--nuget-version=") -> {
+                    extension.nugetPackageVersion = arg.substringAfter('=')
+                }
                 arg.startsWith("--namespace=") -> Unit
                 else -> error("Unknown option: $arg")
             }
         }
 
         val resolved = WinMdConfigurationResolver.resolve(extension)
-        return resolved.contracts.map { it.winmdPath }
+        return resolved.sourceFiles
     }
 }

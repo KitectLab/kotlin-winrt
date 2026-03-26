@@ -5,4 +5,8 @@ open class WinMdExtension {
     var windowsKitsRoot: String? = null
     var referencesRoot: String? = null
     var contracts: List<String> = emptyList()
+    var winmdFiles: List<String> = emptyList()
+    var nugetRoot: String? = null
+    var nugetPackageId: String? = null
+    var nugetPackageVersion: String? = null
 }

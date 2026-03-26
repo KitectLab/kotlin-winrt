@@ -25,8 +25,21 @@ fun Project.winMdSourceArgs(
         }
     }
 
+    val nugetPackage = providers.gradleProperty("winmd.nugetPackage").orNull
+    if (nugetPackage != null) {
+        val nugetVersion = providers.gradleProperty("winmd.nugetVersion").orNull
+            ?: error("Set -Pwinmd.nugetVersion=<version> when using -Pwinmd.nugetPackage.")
+        val nugetRoot = providers.gradleProperty("winmd.nugetRoot").orNull
+        return buildList {
+            add("--nuget-package=$nugetPackage")
+            add("--nuget-version=$nugetVersion")
+            nugetRoot?.let { add("--nuget-root=$it") }
+            namespaces.forEach { add("--namespace=$it") }
+        }
+    }
+
     require(contracts.isNotEmpty()) {
-        "Set -Pwinmd.files=<a.winmd,b.winmd> or -Pwinmd.contracts=ContractA,ContractB to choose WinMD inputs."
+        "Set -Pwinmd.files=<a.winmd,b.winmd>, -Pwinmd.nugetPackage=<id> with -Pwinmd.nugetVersion=<version>, or -Pwinmd.contracts=ContractA,ContractB to choose WinMD inputs."
     }
 
     return buildList {

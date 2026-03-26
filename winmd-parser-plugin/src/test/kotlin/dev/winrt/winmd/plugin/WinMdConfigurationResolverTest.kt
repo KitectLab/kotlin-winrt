@@ -22,6 +22,7 @@ class WinMdConfigurationResolverTest {
         assertEquals("10.0.22621.0", resolved.sdkVersion)
         assertEquals(Path.of("D:/Windows Kits/10/References"), resolved.referencesRoot)
         assertEquals(2, resolved.contracts.size)
+        assertEquals(2, resolved.sourceFiles.size)
         assertEquals("Windows.Foundation.UniversalApiContract", resolved.contracts[0].contractName)
         assertEquals("Windows.Foundation.FoundationContract", resolved.contracts[1].contractName)
     }
@@ -38,6 +39,7 @@ class WinMdConfigurationResolverTest {
         assertEquals(Path.of("D:/Windows Kits/10/References"), resolved.referencesRoot)
         assertEquals("10.0.22621.0", resolved.sdkVersion)
         assertEquals(1, resolved.contracts.size)
+        assertEquals(1, resolved.sourceFiles.size)
     }
 
     @Test
@@ -46,5 +48,6 @@ class WinMdConfigurationResolverTest {
 
         assertTrue(resolved.referencesRoot.toString().endsWith("References"))
         assertTrue(resolved.contracts.isNotEmpty())
+        assertEquals(resolved.contracts.map { it.winmdPath }, resolved.sourceFiles)
     }
 }

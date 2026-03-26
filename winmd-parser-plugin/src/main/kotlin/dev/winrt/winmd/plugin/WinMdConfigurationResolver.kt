@@ -4,6 +4,26 @@ import java.nio.file.Path
 
 object WinMdConfigurationResolver {
     fun resolve(extension: WinMdExtension): ResolvedWinMdConfiguration {
+        if (extension.winmdFiles.isNotEmpty()) {
+            return ResolvedWinMdConfiguration(
+                winmdFiles = extension.winmdFiles.map(Path::of),
+            )
+        }
+
+        val nugetPackageId = extension.nugetPackageId
+        if (nugetPackageId != null) {
+            val nugetPackage = NuGetPackageReferences.resolvePackage(
+                packageId = nugetPackageId,
+                packageVersion = extension.nugetPackageVersion
+                    ?: error("NuGet package version is required when nugetPackageId is set."),
+                nugetRoot = extension.nugetRoot?.let(Path::of) ?: NuGetPackageReferences.discoverPackagesRoot(),
+            )
+            return ResolvedWinMdConfiguration(
+                winmdFiles = nugetPackage.winmdFiles,
+                nugetPackage = nugetPackage,
+            )
+        }
+
         val referencesRoot = resolveReferencesRoot(extension)
         val sdkVersion = extension.sdkVersion ?: WindowsSdkReferences.latestSdkVersion(referencesRoot)
         val contractNames = extension.contracts.ifEmpty {
