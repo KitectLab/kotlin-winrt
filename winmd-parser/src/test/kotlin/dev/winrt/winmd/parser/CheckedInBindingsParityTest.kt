@@ -25,6 +25,8 @@ class CheckedInBindingsParityTest {
         "windows/globalization/ICalendar.kt",
         "windows/system/userprofile/GlobalizationPreferences.kt",
         "windows/system/userprofile/IGlobalizationPreferencesStatics.kt",
+        "windows/globalization/numberformatting/NumeralSystemTranslator.kt",
+        "windows/globalization/numberformatting/INumeralSystemTranslator.kt",
         "microsoft/ui/xaml/Application.kt",
         "microsoft/ui/xaml/Window.kt",
     )
@@ -44,6 +46,7 @@ class CheckedInBindingsParityTest {
         "Windows.Foundation" to setOf("AsyncStatus", "IStringable", "Point"),
         "Windows.Data.Json" to setOf("IJsonArray", "IJsonObject", "IJsonValue", "JsonObject", "JsonValueType"),
         "Windows.Globalization" to setOf("ApplicationLanguages", "Calendar", "DayOfWeek", "IApplicationLanguagesStatics", "ICalendar"),
+        "Windows.Globalization.NumberFormatting" to setOf("INumeralSystemTranslator", "NumeralSystemTranslator"),
         "Windows.System.UserProfile" to setOf("GlobalizationPreferences", "IGlobalizationPreferencesStatics"),
         "Microsoft.UI.Xaml" to setOf("Application", "Window"),
     )
@@ -415,6 +418,25 @@ class CheckedInBindingsParityTest {
         assertTrue(statics.contains("invokeUInt32Method(pointer, 11).getOrThrow().toInt()"))
         assertTrue(statics.contains("Windows.System.UserProfile.IGlobalizationPreferencesStatics"))
         assertTrue(statics.contains("01bf4326-ed37-4e96-b0e9-c1340d1ea158"))
+    }
+
+    @Test
+    fun checked_in_numeral_system_translator_keeps_verified_runtime_surface() {
+        val runtimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/numberformatting/NumeralSystemTranslator.kt").readText()
+        val translator = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/numberformatting/INumeralSystemTranslator.kt").readText()
+
+        assertTrue(runtimeClass.contains("Windows.Globalization.NumberFormatting.NumeralSystemTranslator"))
+        assertTrue(runtimeClass.contains("defaultInterfaceName: String? ="))
+        assertTrue(runtimeClass.contains("Windows.Globalization.NumberFormatting.INumeralSystemTranslator"))
+        assertTrue(translator.contains("val languages: StringVectorView"))
+        assertTrue(translator.contains("invokeObjectMethod(pointer, 6).getOrThrow()"))
+        assertTrue(translator.contains("val resolvedLanguage: String"))
+        assertTrue(translator.contains("invokeHStringMethod(pointer, 7).getOrThrow()"))
+        assertTrue(translator.contains("val numeralSystem: String"))
+        assertTrue(translator.contains("invokeHStringMethod(pointer, 8).getOrThrow()"))
+        assertTrue(translator.contains("fun translateNumerals(value: String): String"))
+        assertTrue(translator.contains("invokeHStringMethodWithStringArg(pointer, 10,"))
+        assertTrue(translator.contains("28f5bc2c-8c23-4234-ad2e-fa5a3a426e9b"))
     }
 
 }

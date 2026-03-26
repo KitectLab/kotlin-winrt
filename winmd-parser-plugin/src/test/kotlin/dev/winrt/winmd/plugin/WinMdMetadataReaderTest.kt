@@ -234,5 +234,15 @@ class WinMdMetadataReaderTest {
         assertTrue(iGlobalizationPreferencesStatics.methods.any { it.name == "get_HomeGeographicRegion" && it.returnType == "String" && it.vtableIndex == 10 })
         assertTrue(iGlobalizationPreferencesStatics.methods.any { it.name == "get_WeekStartsOn" && it.returnType == "Windows.Globalization.DayOfWeek" && it.vtableIndex == 11 })
         assertEquals(null, globalizationPreferences.defaultInterface)
+
+        val numberFormatting = model.namespaces.first { it.name == "Windows.Globalization.NumberFormatting" }
+        val numeralSystemTranslator = numberFormatting.types.first { it.name == "NumeralSystemTranslator" }
+        val iNumeralSystemTranslator = numberFormatting.types.first { it.name == "INumeralSystemTranslator" }
+        assertEquals("Windows.Globalization.NumberFormatting.INumeralSystemTranslator", numeralSystemTranslator.defaultInterface)
+        assertEquals("28f5bc2c-8c23-4234-ad2e-fa5a3a426e9b", iNumeralSystemTranslator.guid)
+        assertTrue(iNumeralSystemTranslator.methods.any { it.name == "get_Languages" && it.returnType.contains("IVectorView") && it.vtableIndex == 6 })
+        assertTrue(iNumeralSystemTranslator.methods.any { it.name == "get_ResolvedLanguage" && it.returnType == "String" && it.vtableIndex == 7 })
+        assertTrue(iNumeralSystemTranslator.methods.any { it.name == "get_NumeralSystem" && it.returnType == "String" && it.vtableIndex == 8 })
+        assertTrue(iNumeralSystemTranslator.methods.any { it.name == "TranslateNumerals" && it.returnType == "String" && it.vtableIndex == 10 })
     }
 }
