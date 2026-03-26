@@ -18,6 +18,7 @@ interface ComInterop {
     fun invokeObjectMethod(instance: ComPtr, vtableIndex: Int): Result<ComPtr>
     fun invokeObjectMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ComPtr>
     fun invokeObjectMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ComPtr>
+    fun invokeObjectSetter(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Unit>
     fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit>
     fun invokeInt32Setter(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit>
     fun invokeInt32Method(instance: ComPtr, vtableIndex: Int): Result<Int>

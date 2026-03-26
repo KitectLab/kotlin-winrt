@@ -90,6 +90,11 @@ open class Window(pointer: ComPtr) : Inspectable(pointer) {
         PlatformComInterop.invokeUnitMethod(pointer, 13).getOrThrow()
     }
 
+    fun setContent(content: Inspectable) {
+        if (pointer.isNull) return
+        PlatformComInterop.invokeObjectSetter(pointer, 9, content.pointer).getOrThrow()
+    }
+
     fun asIStringable(): IStringable = IStringable.from(this)
 
     companion object : WinRtRuntimeClassMetadata {

@@ -297,6 +297,23 @@ actual object PlatformComInterop : ComInterop {
         }
     }
 
+    override fun invokeObjectSetter(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Unit> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            val hresult = HResult(
+                Jdk22Foreign.objectSetterHandle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    if (value.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(value),
+                ) as Int,
+            )
+            hresult.requireSuccess("invokeObjectSetter($vtableIndex)")
+        }
+    }
+
     override fun invokeInt32Setter(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit> {
         if (instance.isNull) {
             return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
