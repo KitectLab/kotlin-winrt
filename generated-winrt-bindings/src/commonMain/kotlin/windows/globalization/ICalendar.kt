@@ -37,6 +37,12 @@ public open class ICalendar(
       PlatformComInterop.invokeStringSetter(pointer, 11, value).getOrThrow()
     }
 
+  public var calendarSystem: String
+    get() = get_CalendarSystem()
+    set(value) {
+      changeCalendarSystem(value)
+    }
+
   public val dayOfWeek: DayOfWeek
     get() = get_DayOfWeek()
 
@@ -88,6 +94,19 @@ public open class ICalendar(
     } finally {
       WinRtStrings.release(value)
     }
+  }
+
+  public fun get_CalendarSystem(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 12).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun changeCalendarSystem(value: String) {
+    PlatformComInterop.invokeStringSetter(pointer, 13, value).getOrThrow()
   }
 
   public fun get_DayOfWeek(): DayOfWeek =
