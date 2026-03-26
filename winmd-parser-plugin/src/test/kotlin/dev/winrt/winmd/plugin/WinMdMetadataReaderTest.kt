@@ -42,6 +42,19 @@ class WinMdMetadataReaderTest {
     }
 
     @Test
+    fun inspects_table_row_counts_for_local_winui_xaml_winmd_when_available() {
+        val winuiWinmd = localWinUiXamlWinmdCandidates().firstOrNull { Files.isRegularFile(it) } ?: return
+        val rowCounts = WinMdMetadataReader.inspectTableRowCounts(winuiWinmd)
+        println("WinUI row counts: $rowCounts")
+
+        assertTrue(rowCounts.isNotEmpty())
+        assertTrue(rowCounts.toString(), rowCounts.containsKey(1))
+        assertTrue(rowCounts.toString(), rowCounts.containsKey(2))
+        assertTrue(rowCounts.toString(), rowCounts.containsKey(6))
+        assertTrue(rowCounts.toString(), rowCounts.containsKey(12))
+    }
+
+    @Test
     fun reads_real_types_from_windows_sdk_winmd() {
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",

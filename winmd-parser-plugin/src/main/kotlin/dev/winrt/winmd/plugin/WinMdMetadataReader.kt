@@ -71,6 +71,11 @@ object WinMdMetadataReader {
             }
     }
 
+    internal fun inspectTableRowCounts(path: Path): Map<Int, Int> {
+        val bytes = Files.readAllBytes(path)
+        return WinMdBinaryReader(bytes).readTableRowCounts()
+    }
+
     private fun readGuid(typeDefIndex: Int, tables: MetadataTables): String? {
         val customAttributes = tables.customAttributeRows.filter { decodeHasCustomAttributeTypeDefIndex(it.parentCodedIndex) == typeDefIndex }
         val guidAttribute = customAttributes.firstOrNull { resolveCustomAttributeTypeName(it.typeCodedIndex, tables)?.endsWith(".GuidAttribute") == true }
@@ -390,7 +395,55 @@ object WinMdMetadataReader {
             return readMetadataRoot(metadataOffset)
         }
 
+        fun readTableRowCounts(): Map<Int, Int> {
+            val peOffset = readInt32(0x3C)
+            require(readInt32(peOffset) == peSignature) {
+                "Not a valid PE image"
+            }
+
+            val sectionCount = readUInt16(peOffset + 6)
+            val optionalHeaderSize = readUInt16(peOffset + 20)
+            val optionalHeaderOffset = peOffset + 24
+            val magic = readUInt16(optionalHeaderOffset)
+            val dataDirectoryOffset = optionalHeaderOffset + if (magic == 0x20B) 112 else 96
+            val cliDirectoryEntryOffset = dataDirectoryOffset + (cliDirectoryIndex * 8)
+            val cliRva = readInt32(cliDirectoryEntryOffset)
+            val sectionHeadersOffset = optionalHeaderOffset + optionalHeaderSize
+            val sections = (0 until sectionCount).map { index ->
+                val sectionOffset = sectionHeadersOffset + (index * 40)
+                SectionHeader(
+                    virtualAddress = readInt32(sectionOffset + 12),
+                    virtualSize = readInt32(sectionOffset + 8),
+                    rawDataSize = readInt32(sectionOffset + 16),
+                    rawDataPointer = readInt32(sectionOffset + 20),
+                )
+            }
+
+            val cliOffset = rvaToOffset(cliRva, sections)
+            val metadataRva = readInt32(cliOffset + 8)
+            val metadataOffset = rvaToOffset(metadataRva, sections)
+            val tablesHeap = readMetadataStreams(metadataOffset).tablesHeap ?: error("Missing #~ stream")
+            return buildMap {
+                val rowCounts = readRowCounts(tablesHeap)
+                for (tableId in rowCounts.indices) {
+                    val rowCount = rowCounts[tableId]
+                    if (rowCount != 0) {
+                        put(tableId, rowCount)
+                    }
+                }
+            }
+        }
+
         private fun readMetadataRoot(metadataOffset: Int): MetadataTables {
+            val streams = readMetadataStreams(metadataOffset)
+            return readTables(
+                streams.tablesHeap ?: error("Missing #~ stream"),
+                streams.stringHeap ?: error("Missing #Strings stream"),
+                streams.blobHeap ?: error("Missing #Blob stream"),
+            )
+        }
+
+        private fun readMetadataStreams(metadataOffset: Int): MetadataStreams {
             require(readInt32(metadataOffset) == metadataSignature) {
                 "Not a valid CLI metadata root"
             }
@@ -414,11 +467,10 @@ object WinMdMetadataReader {
                 }
                 cursor += headerSize
             }
-
-            return readTables(
-                tablesHeap ?: error("Missing #~ stream"),
-                stringHeap ?: error("Missing #Strings stream"),
-                blobHeap ?: error("Missing #Blob stream"),
+            return MetadataStreams(
+                tablesHeap = tablesHeap,
+                stringHeap = stringHeap,
+                blobHeap = blobHeap,
             )
         }
 
@@ -431,14 +483,9 @@ object WinMdMetadataReader {
             val heapSizes = tablesHeap.get(6).toInt() and 0xFF
             val stringIndexSize = if ((heapSizes and 0x01) != 0) 4 else 2
             val blobIndexSize = if ((heapSizes and 0x04) != 0) 4 else 2
-            val validMask = tablesHeap.getLong(8)
             var cursor = 24
-            val rowCounts = IntArray(64)
-            for (tableId in 0 until 64) {
-                if (((validMask ushr tableId) and 1L) != 0L) {
-                    rowCounts[tableId] = tablesHeap.getInt(cursor)
-                    cursor += 4
-                }
+            val rowCounts = readRowCounts(tablesHeap).also { counts ->
+                cursor += counts.count { it != 0 } * 4
             }
 
             val typeRefRows = mutableListOf<TypeReferenceRow>()
@@ -577,7 +624,7 @@ object WinMdMetadataReader {
                             rowCounts[44],
                             rowCounts[43],
                         )
-                        val typeSize = codedIndexSize(rowCounts[tableMethodDef], rowCounts[tableMemberRef])
+                        val typeSize = customAttributeTypeIndexSize(rowCounts)
                         repeat(rowCount) {
                             val parentCodedIndex = readIndex(tablesHeap, cursor, parentSize)
                             cursor += parentSize
@@ -704,7 +751,7 @@ object WinMdMetadataReader {
                     rowCounts[6], rowCounts[4], rowCounts[1], rowCounts[2], rowCounts[8], rowCounts[9], rowCounts[10],
                     rowCounts[0], rowCounts[14], rowCounts[23], rowCounts[20], rowCounts[17], rowCounts[26], rowCounts[27],
                     rowCounts[32], rowCounts[35], rowCounts[38], rowCounts[39], rowCounts[40], rowCounts[42], rowCounts[44], rowCounts[43],
-                ) + codedIndexSize(rowCounts[6], rowCounts[10], rowCounts[0], rowCounts[26], rowCounts[27]) + blobIndexSize
+                ) + customAttributeTypeIndexSize(rowCounts) + blobIndexSize
                 13 -> codedIndexSize(rowCounts[4], rowCounts[8]) + blobIndexSize
                 14 -> 2 + codedIndexSize(rowCounts[2], rowCounts[6], rowCounts[32]) + blobIndexSize
                 15 -> 2 + 4 + tableIndexSize(rowCounts[2])
@@ -717,15 +764,17 @@ object WinMdMetadataReader {
                 22 -> tableIndexSize(rowCounts[23])
                 23 -> 2 + stringIndexSize + blobIndexSize
                 24 -> 2 + tableIndexSize(rowCounts[6]) + codedIndexSize(rowCounts[20], rowCounts[23])
-                25 -> tableIndexSize(rowCounts[20])
+                25 -> tableIndexSize(rowCounts[2]) + codedIndexSize(rowCounts[6], rowCounts[10]) + codedIndexSize(rowCounts[6], rowCounts[10])
                 26 -> stringIndexSize
                 27 -> blobIndexSize
                 28 -> 2 + codedIndexSize(rowCounts[4], rowCounts[6], rowCounts[2], rowCounts[1], rowCounts[20], rowCounts[23], rowCounts[26], rowCounts[27], rowCounts[32], rowCounts[35], rowCounts[38], rowCounts[39], rowCounts[40], rowCounts[42], rowCounts[44], rowCounts[43]) + stringIndexSize + tableIndexSize(rowCounts[26])
                 29 -> 4 + tableIndexSize(rowCounts[4])
+                30 -> 4 + 4
+                31 -> 4
                 32 -> 4 + 4 + stringIndexSize + blobIndexSize + tableIndexSize(rowCounts[8])
                 33 -> 4
                 34 -> 4 + 4 + 4
-                35 -> 2 + 2 + 2 + 2 + 4 + blobIndexSize + stringIndexSize + stringIndexSize + tableIndexSize(rowCounts[0])
+                35 -> 2 + 2 + 2 + 2 + 4 + blobIndexSize + stringIndexSize + stringIndexSize + blobIndexSize
                 36 -> 4 + tableIndexSize(rowCounts[35])
                 37 -> 4 + 4 + 4 + tableIndexSize(rowCounts[35])
                 38 -> 4 + stringIndexSize + blobIndexSize
@@ -756,6 +805,28 @@ object WinMdMetadataReader {
                 bits++
             }
             return bits
+        }
+
+        private fun readRowCounts(tablesHeap: ByteBuffer): IntArray {
+            val validMask = tablesHeap.getLong(8)
+            var cursor = 24
+            return IntArray(64).also { rowCounts ->
+                for (tableId in 0 until 64) {
+                    if (((validMask ushr tableId) and 1L) != 0L) {
+                        rowCounts[tableId] = tablesHeap.getInt(cursor)
+                        cursor += 4
+                    }
+                }
+            }
+        }
+
+        private fun customAttributeTypeIndexSize(rowCounts: IntArray): Int {
+            return codedIndexSizeForTagBits(3, rowCounts[tableMethodDef], rowCounts[tableMemberRef])
+        }
+
+        private fun codedIndexSizeForTagBits(tagBits: Int, vararg rowCounts: Int): Int {
+            val maxRowCount = rowCounts.maxOrNull() ?: 0
+            return if (maxRowCount < (1 shl (16 - tagBits))) 2 else 4
         }
 
         private fun readStringIndex(
@@ -864,6 +935,12 @@ object WinMdMetadataReader {
         private fun readUInt16(buffer: ByteBuffer, offset: Int): Int = buffer.getShort(offset).toInt() and 0xFFFF
 
         private fun align4(value: Int): Int = (value + 3) and -4
+
+        private data class MetadataStreams(
+            val tablesHeap: ByteBuffer?,
+            val stringHeap: ByteBuffer?,
+            val blobHeap: ByteBuffer?,
+        )
     }
 }
 
