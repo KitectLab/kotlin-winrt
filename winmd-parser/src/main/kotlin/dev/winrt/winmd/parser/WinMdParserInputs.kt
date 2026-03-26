@@ -24,12 +24,13 @@ object WinMdParserInputResolver {
         val optionArgs = remainingArgs.filter { it.startsWith("--") }
         val positionalArgs = remainingArgs.filterNot { it.startsWith("--") }
 
-        if (optionArgs.isNotEmpty() && positionalArgs.isNotEmpty()) {
+        val nonNamespaceOptions = optionArgs.filterNot { it.startsWith("--namespace=") }
+        if (nonNamespaceOptions.isNotEmpty() && positionalArgs.isNotEmpty()) {
             error("Do not mix WinMD file paths with --contract/--sdk-version style options.")
         }
 
-        val sources = if (optionArgs.isNotEmpty()) {
-            resolveConfiguredSources(optionArgs)
+        val sources = if (nonNamespaceOptions.isNotEmpty()) {
+            resolveConfiguredSources(nonNamespaceOptions)
         } else {
             positionalArgs.map(Path::of)
         }

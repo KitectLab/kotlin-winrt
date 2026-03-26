@@ -10,6 +10,34 @@ fun Project.stringListProperty(name: String): List<String> =
         ?.filter(String::isNotEmpty)
         ?: emptyList()
 
+fun Project.winMdSourceArgs(
+    contracts: List<String>,
+    namespaces: List<String>,
+    sdkVersion: String?,
+    windowsKitsRoot: String?,
+    referencesRoot: String?,
+): List<String> {
+    val explicitWinMdFiles = stringListProperty("winmd.files")
+    if (explicitWinMdFiles.isNotEmpty()) {
+        return buildList {
+            addAll(explicitWinMdFiles)
+            namespaces.forEach { add("--namespace=$it") }
+        }
+    }
+
+    require(contracts.isNotEmpty()) {
+        "Set -Pwinmd.files=<a.winmd,b.winmd> or -Pwinmd.contracts=ContractA,ContractB to choose WinMD inputs."
+    }
+
+    return buildList {
+        contracts.forEach { add("--contract=$it") }
+        namespaces.forEach { add("--namespace=$it") }
+        sdkVersion?.let { add("--sdk-version=$it") }
+        windowsKitsRoot?.let { add("--windows-kits-root=$it") }
+        referencesRoot?.let { add("--references-root=$it") }
+    }
+}
+
 fun JavaExec.configureWinMdParserClasspath() {
     classpath(
         winmdParserMainOutput,
@@ -27,6 +55,7 @@ fun registerPresetSdkGenerationTask(
 ) = tasks.register(name, JavaExec::class) {
     group = "code generation"
     description = descriptionText
+    notCompatibleWithConfigurationCache("WinMD generation tasks build dynamic JavaExec args from Gradle properties.")
     dependsOn(project(":winmd-parser").tasks.named("classes"))
 
     args(
@@ -83,6 +112,7 @@ val winmdParserMainOutput = files(
 val generateBindings by tasks.registering(JavaExec::class) {
     group = "code generation"
     description = "Generates checked-in WinRT bindings from local WinMD fixtures."
+    notCompatibleWithConfigurationCache("WinMD generation tasks build dynamic JavaExec args from Gradle properties.")
     dependsOn(project(":winmd-parser").tasks.named("classes"))
 
     val outputDir = layout.projectDirectory.dir("src/commonMain/kotlin")
@@ -95,6 +125,7 @@ val generateBindings by tasks.registering(JavaExec::class) {
 val generateBindingsFromSdk by tasks.registering(JavaExec::class) {
     group = "code generation"
     description = "Generates WinRT bindings from installed Windows SDK contracts with optional namespace filters."
+    notCompatibleWithConfigurationCache("WinMD generation tasks build dynamic JavaExec args from Gradle properties.")
     dependsOn(project(":winmd-parser").tasks.named("classes"))
 
     val outputDir = providers.gradleProperty("winmd.outputDir")
@@ -106,16 +137,14 @@ val generateBindingsFromSdk by tasks.registering(JavaExec::class) {
     val referencesRoot = providers.gradleProperty("winmd.referencesRoot").orNull
 
     doFirst {
-        require(contracts.isNotEmpty()) {
-            "Set -Pwinmd.contracts=ContractA,ContractB to choose Windows SDK contracts."
-        }
-
         val resolvedArgs = mutableListOf(outputDir.get())
-        contracts.forEach { resolvedArgs += "--contract=$it" }
-        namespaces.forEach { resolvedArgs += "--namespace=$it" }
-        sdkVersion?.let { resolvedArgs += "--sdk-version=$it" }
-        windowsKitsRoot?.let { resolvedArgs += "--windows-kits-root=$it" }
-        referencesRoot?.let { resolvedArgs += "--references-root=$it" }
+        resolvedArgs += winMdSourceArgs(
+            contracts = contracts,
+            namespaces = namespaces,
+            sdkVersion = sdkVersion,
+            windowsKitsRoot = windowsKitsRoot,
+            referencesRoot = referencesRoot,
+        )
 
         args = resolvedArgs
     }
@@ -126,6 +155,7 @@ val generateBindingsFromSdk by tasks.registering(JavaExec::class) {
 val regenerateCheckedInBindingsFromSdk by tasks.registering(JavaExec::class) {
     group = "code generation"
     description = "Regenerates checked-in bindings from installed Windows SDK contracts with optional namespace filters."
+    notCompatibleWithConfigurationCache("WinMD generation tasks build dynamic JavaExec args from Gradle properties.")
     dependsOn(project(":winmd-parser").tasks.named("classes"))
 
     val outputDir = layout.projectDirectory.dir("src/commonMain/kotlin")
@@ -136,16 +166,14 @@ val regenerateCheckedInBindingsFromSdk by tasks.registering(JavaExec::class) {
     val referencesRoot = providers.gradleProperty("winmd.referencesRoot").orNull
 
     doFirst {
-        require(contracts.isNotEmpty()) {
-            "Set -Pwinmd.contracts=ContractA,ContractB to choose Windows SDK contracts."
-        }
-
         val resolvedArgs = mutableListOf(outputDir.asFile.absolutePath)
-        contracts.forEach { resolvedArgs += "--contract=$it" }
-        namespaces.forEach { resolvedArgs += "--namespace=$it" }
-        sdkVersion?.let { resolvedArgs += "--sdk-version=$it" }
-        windowsKitsRoot?.let { resolvedArgs += "--windows-kits-root=$it" }
-        referencesRoot?.let { resolvedArgs += "--references-root=$it" }
+        resolvedArgs += winMdSourceArgs(
+            contracts = contracts,
+            namespaces = namespaces,
+            sdkVersion = sdkVersion,
+            windowsKitsRoot = windowsKitsRoot,
+            referencesRoot = referencesRoot,
+        )
 
         args = resolvedArgs
     }

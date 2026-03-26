@@ -56,4 +56,18 @@ class WinMdParserInputResolverTest {
             inputs.namespaceFilters,
         )
     }
+
+    @Test
+    fun allows_explicit_winmd_files_with_namespace_filters() {
+        val inputs = WinMdParserInputResolver.resolve(
+            arrayOf(
+                "build/generated",
+                "D:/Windows Kits/10/References/sample.winmd",
+                "--namespace=Windows.Globalization",
+            ),
+        )
+
+        assertEquals(listOf("Windows.Globalization"), inputs.namespaceFilters)
+        assertEquals(listOf("sample.winmd"), inputs.sources.map { it.fileName.toString() })
+    }
 }
