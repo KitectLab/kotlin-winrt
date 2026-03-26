@@ -36,6 +36,8 @@ class CalendarProjectionTest {
                         projected.numeralSystem = projected.numeralSystem
                         assertFalse(projected.calendarSystem.isBlank())
                         projected.changeCalendarSystem(projected.calendarSystem)
+                        assertFalse(projected.clock.isBlank())
+                        projected.changeClock(projected.clock)
                         assertTrue(projected.dayOfWeek.value in 0..6)
                         assertFalse(projected.resolvedLanguage.isBlank())
                         assertFalse(projected.yearAsString().isBlank())
