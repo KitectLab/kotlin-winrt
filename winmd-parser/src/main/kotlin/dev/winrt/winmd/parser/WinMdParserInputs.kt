@@ -7,6 +7,7 @@ import java.nio.file.Path
 data class WinMdParserInputs(
     val outputDir: Path,
     val sources: List<Path>,
+    val namespaceFilters: List<String> = emptyList(),
 )
 
 object WinMdParserInputResolver {
@@ -14,7 +15,8 @@ object WinMdParserInputResolver {
         require(args.size >= 2) {
             "Usage: winmd-parser <outputDir> <winmdFile> [<winmdFile> ...] | " +
                 "winmd-parser <outputDir> --contract=<name> [--contract=<name> ...] " +
-                "[--sdk-version=<version>] [--windows-kits-root=<path>] [--references-root=<path>]"
+                "[--sdk-version=<version>] [--windows-kits-root=<path>] [--references-root=<path>] " +
+                "[--namespace=<prefix> ...]"
         }
 
         val outputDir = Path.of(args.first())
@@ -36,9 +38,14 @@ object WinMdParserInputResolver {
             "No WinMD sources were resolved."
         }
 
+        val namespaceFilters = optionArgs
+            .filter { it.startsWith("--namespace=") }
+            .map { it.substringAfter('=') }
+
         return WinMdParserInputs(
             outputDir = outputDir,
             sources = sources,
+            namespaceFilters = namespaceFilters,
         )
     }
 
@@ -59,6 +66,7 @@ object WinMdParserInputResolver {
                 arg.startsWith("--references-root=") -> {
                     extension.referencesRoot = arg.substringAfter('=')
                 }
+                arg.startsWith("--namespace=") -> Unit
                 else -> error("Unknown option: $arg")
             }
         }

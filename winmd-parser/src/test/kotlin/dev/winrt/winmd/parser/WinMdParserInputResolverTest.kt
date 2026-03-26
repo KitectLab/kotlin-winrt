@@ -37,4 +37,23 @@ class WinMdParserInputResolverTest {
         assertTrue(inputs.sources.any { it.toString().contains("Windows.Foundation.UniversalApiContract.winmd") })
         assertTrue(inputs.sources.any { it.toString().contains("Windows.Foundation.FoundationContract.winmd") })
     }
+
+    @Test
+    fun resolves_namespace_filters() {
+        val inputs = WinMdParserInputResolver.resolve(
+            arrayOf(
+                "build/generated",
+                "--windows-kits-root=D:/Windows Kits/10",
+                "--sdk-version=10.0.22621.0",
+                "--contract=Windows.Foundation.UniversalApiContract",
+                "--namespace=Windows.Globalization",
+                "--namespace=Windows.Data.Json",
+            ),
+        )
+
+        assertEquals(
+            listOf("Windows.Globalization", "Windows.Data.Json"),
+            inputs.namespaceFilters,
+        )
+    }
 }

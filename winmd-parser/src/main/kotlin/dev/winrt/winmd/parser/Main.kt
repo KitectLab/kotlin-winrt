@@ -10,9 +10,12 @@ fun main(args: Array<String>) {
     val outputDir = inputs.outputDir
     val sources = inputs.sources
 
-    val model = WinMdModelFactory.merge(
-        primary = WinMdModelFactory.metadataModel(sources),
-        supplemental = WinMdModelFactory.sampleSupplementalModel(),
+    val model = WinMdModelFilters.filterNamespaces(
+        model = WinMdModelFactory.merge(
+            primary = WinMdModelFactory.metadataModel(sources),
+            supplemental = WinMdModelFactory.sampleSupplementalModel(),
+        ),
+        namespaceFilters = inputs.namespaceFilters,
     )
     val generatedFiles = KotlinBindingGenerator().generate(model)
 
@@ -28,6 +31,10 @@ fun main(args: Array<String>) {
             appendLine("Generated ${generatedFiles.size} binding files")
             appendLine("Source WinMD files:")
             sources.forEach { appendLine(it.toString()) }
+            if (inputs.namespaceFilters.isNotEmpty()) {
+                appendLine("Namespace filters:")
+                inputs.namespaceFilters.forEach { appendLine(it) }
+            }
             appendLine("Generated files:")
             generatedFiles.forEach { appendLine(it.relativePath) }
         },
