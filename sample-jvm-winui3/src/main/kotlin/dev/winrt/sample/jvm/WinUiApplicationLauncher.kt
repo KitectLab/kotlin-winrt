@@ -28,12 +28,10 @@ object DefaultWinUiApplicationLauncher : WinUiApplicationLauncher {
                 else -> "xaml=skipped(bootstrap-not-ready)"
             }
             else -> runCatching {
-                val app = Application.activate()
                 val window = Window.activateInstance()
                 window.title = "kotlin-winrt sample"
-                app.start()
                 window.activate()
-                "xaml=activated"
+                "xaml=window-activated"
             }.getOrElse { error ->
                 "xaml=${error::class.simpleName}:${error.message.orEmpty()}"
             }
