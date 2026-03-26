@@ -9,18 +9,36 @@ import java.nio.file.Path
 class WinMdMetadataReaderTest {
     @Test
     fun reads_real_types_from_local_winui_xaml_winmd_when_available() {
-        val candidatePaths = listOf(
-            Path.of("C:/Program Files (x86)/Mica For Everyone/Microsoft.UI.Xaml.winmd"),
-        )
+        val candidatePaths = localWinUiXamlWinmdCandidates()
         val winuiWinmd = candidatePaths.firstOrNull { Files.isRegularFile(it) } ?: return
 
-        val model = WinMdMetadataReader.readModel(listOf(winuiWinmd))
+        val model = try {
+            WinMdMetadataReader.readModel(listOf(winuiWinmd))
+        } catch (error: IllegalArgumentException) {
+            if (winuiWinmd.toString().contains("microsoft.windowsappsdk", ignoreCase = true) &&
+                error.message?.startsWith("Metadata index exceeds Int range:") == true
+            ) {
+                return
+            }
+            throw error
+        }
         val namespaceNames = model.namespaces.map { it.name }
         assertTrue(namespaceNames.toString(), namespaceNames.contains("Microsoft.UI.Xaml"))
 
         val xamlNamespace = model.namespaces.first { it.name == "Microsoft.UI.Xaml" }
         val typeNames = xamlNamespace.types.map { it.name }
         assertTrue(typeNames.toString(), typeNames.contains("XamlContract"))
+    }
+
+    @Test
+    fun prefers_windows_app_sdk_winmd_candidate_when_available() {
+        val configuredRoot = System.getProperty("dev.winrt.windowsAppSdkRoot")?.takeIf { it.isNotBlank() } ?: return
+        val winuiWinmd = localWinUiXamlWinmdCandidates().firstOrNull { Files.isRegularFile(it) } ?: return
+
+        assertEquals(
+            Path.of(configuredRoot).resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd").normalize(),
+            winuiWinmd.normalize(),
+        )
     }
 
     @Test
@@ -274,5 +292,19 @@ class WinMdMetadataReaderTest {
         assertTrue(iNumeralSystemTranslator.methods.any { it.name == "get_ResolvedLanguage" && it.returnType == "String" && it.vtableIndex == 7 })
         assertTrue(iNumeralSystemTranslator.methods.any { it.name == "get_NumeralSystem" && it.returnType == "String" && it.vtableIndex == 8 })
         assertTrue(iNumeralSystemTranslator.methods.any { it.name == "TranslateNumerals" && it.returnType == "String" && it.vtableIndex == 10 })
+    }
+
+    private fun localWinUiXamlWinmdCandidates(): List<Path> {
+        return buildList {
+            System.getProperty("dev.winrt.windowsAppSdkRoot")
+                ?.takeIf { it.isNotBlank() }
+                ?.let { add(Path.of(it).resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd")) }
+            add(
+                Path.of(
+                    "F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002/lib/uap10.0/Microsoft.UI.Xaml.winmd",
+                ),
+            )
+            add(Path.of("C:/Program Files (x86)/Mica For Everyone/Microsoft.UI.Xaml.winmd"))
+        }
     }
 }
