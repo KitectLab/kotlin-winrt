@@ -10,6 +10,33 @@ fun Project.stringListProperty(name: String): List<String> =
         ?.filter(String::isNotEmpty)
         ?: emptyList()
 
+fun JavaExec.configureWinMdParserClasspath() {
+    classpath(
+        winmdParserMainOutput,
+        project(":winmd-parser").configurations.getByName("runtimeClasspath"),
+    )
+    mainClass = "dev.winrt.winmd.parser.MainKt"
+}
+
+fun registerPresetSdkGenerationTask(
+    name: String,
+    descriptionText: String,
+    outputDir: String,
+    contracts: List<String>,
+    namespaces: List<String>,
+) = tasks.register(name, JavaExec::class) {
+    group = "code generation"
+    description = descriptionText
+    dependsOn(project(":winmd-parser").tasks.named("classes"))
+
+    args(
+        layout.buildDirectory.dir(outputDir).get().asFile.absolutePath,
+        *contracts.map { "--contract=$it" }.toTypedArray(),
+        *namespaces.map { "--namespace=$it" }.toTypedArray(),
+    )
+    configureWinMdParserClasspath()
+}
+
 kotlin {
     jvmToolchain(22)
     jvm()
@@ -43,11 +70,7 @@ val generateBindings by tasks.registering(JavaExec::class) {
     val outputDir = layout.projectDirectory.dir("src/commonMain/kotlin")
     val fixtureDir = rootProject.layout.projectDirectory.file("metadata/Windows.WinRT.winmd")
 
-    classpath(
-        winmdParserMainOutput,
-        project(":winmd-parser").configurations.getByName("runtimeClasspath"),
-    )
-    mainClass = "dev.winrt.winmd.parser.MainKt"
+    configureWinMdParserClasspath()
     args(outputDir.asFile.absolutePath, fixtureDir.asFile.absolutePath)
 }
 
@@ -79,11 +102,7 @@ val generateBindingsFromSdk by tasks.registering(JavaExec::class) {
         args = resolvedArgs
     }
 
-    classpath(
-        winmdParserMainOutput,
-        project(":winmd-parser").configurations.getByName("runtimeClasspath"),
-    )
-    mainClass = "dev.winrt.winmd.parser.MainKt"
+    configureWinMdParserClasspath()
 }
 
 val regenerateCheckedInBindingsFromSdk by tasks.registering(JavaExec::class) {
@@ -113,9 +132,27 @@ val regenerateCheckedInBindingsFromSdk by tasks.registering(JavaExec::class) {
         args = resolvedArgs
     }
 
-    classpath(
-        winmdParserMainOutput,
-        project(":winmd-parser").configurations.getByName("runtimeClasspath"),
-    )
-    mainClass = "dev.winrt.winmd.parser.MainKt"
+    configureWinMdParserClasspath()
 }
+
+val generateGlobalizationBindingsFromSdk by registerPresetSdkGenerationTask(
+    name = "generateGlobalizationBindingsFromSdk",
+    descriptionText = "Generates Windows.Globalization bindings from installed Windows SDK contracts.",
+    outputDir = "generated/presets/windows-globalization",
+    contracts = listOf(
+        "Windows.Foundation.UniversalApiContract",
+        "Windows.Foundation.FoundationContract",
+    ),
+    namespaces = listOf("Windows.Globalization"),
+)
+
+val generateJsonBindingsFromSdk by registerPresetSdkGenerationTask(
+    name = "generateJsonBindingsFromSdk",
+    descriptionText = "Generates Windows.Data.Json bindings from installed Windows SDK contracts.",
+    outputDir = "generated/presets/windows-data-json",
+    contracts = listOf(
+        "Windows.Foundation.UniversalApiContract",
+        "Windows.Foundation.FoundationContract",
+    ),
+    namespaces = listOf("Windows.Data.Json"),
+)
