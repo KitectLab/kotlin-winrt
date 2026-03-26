@@ -80,14 +80,142 @@ public open class ICalendar(
   public val dayOfWeek: DayOfWeek
     get() = get_DayOfWeek()
 
+  public var era: Int32
+    get() = get_Era()
+    set(value) {
+      PlatformComInterop.invokeInt32Setter(pointer, 23, value.value).getOrThrow()
+    }
+
+  public val firstDayInThisMonth: Int32
+    get() = get_FirstDayInThisMonth()
+
+  public val firstEra: Int32
+    get() = get_FirstEra()
+
+  public val firstHourInThisPeriod: Int32
+    get() = get_FirstHourInThisPeriod()
+
+  public val firstMinuteInThisHour: Int32
+    get() = get_FirstMinuteInThisHour()
+
+  public val firstMonthInThisYear: Int32
+    get() = get_FirstMonthInThisYear()
+
+  public val firstPeriodInThisDay: Int32
+    get() = get_FirstPeriodInThisDay()
+
+  public val firstSecondInThisMinute: Int32
+    get() = get_FirstSecondInThisMinute()
+
+  public val firstYearInThisEra: Int32
+    get() = get_FirstYearInThisEra()
+
+  public val lastDayInThisMonth: Int32
+    get() = get_LastDayInThisMonth()
+
+  public val lastEra: Int32
+    get() = get_LastEra()
+
+  public val lastHourInThisPeriod: Int32
+    get() = get_LastHourInThisPeriod()
+
+  public val lastMinuteInThisHour: Int32
+    get() = get_LastMinuteInThisHour()
+
+  public val lastMonthInThisYear: Int32
+    get() = get_LastMonthInThisYear()
+
+  public val lastPeriodInThisDay: Int32
+    get() = get_LastPeriodInThisDay()
+
+  public val lastSecondInThisMinute: Int32
+    get() = get_LastSecondInThisMinute()
+
+  public val lastYearInThisEra: Int32
+    get() = get_LastYearInThisEra()
+
   public val resolvedLanguage: String
     get() = get_ResolvedLanguage()
 
   public val isDaylightSavingTime: WinRtBoolean
     get() = get_IsDaylightSavingTime()
 
+  public val numberOfDaysInThisMonth: Int32
+    get() = get_NumberOfDaysInThisMonth()
+
+  public val numberOfEras: Int32
+    get() = get_NumberOfEras()
+
+  public val numberOfHoursInThisPeriod: Int32
+    get() = get_NumberOfHoursInThisPeriod()
+
+  public val numberOfMinutesInThisHour: Int32
+    get() = get_NumberOfMinutesInThisHour()
+
+  public val numberOfMonthsInThisYear: Int32
+    get() = get_NumberOfMonthsInThisYear()
+
+  public val numberOfPeriodsInThisDay: Int32
+    get() = get_NumberOfPeriodsInThisDay()
+
+  public val numberOfSecondsInThisMinute: Int32
+    get() = get_NumberOfSecondsInThisMinute()
+
+  public val numberOfYearsInThisEra: Int32
+    get() = get_NumberOfYearsInThisEra()
+
+  public var period: Int32
+    get() = get_Period()
+    set(value) {
+      PlatformComInterop.invokeInt32Setter(pointer, 66, value.value).getOrThrow()
+    }
+
   public fun clone(): Calendar =
       Calendar(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
+
+  public fun get_FirstEra(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 19).getOrThrow())
+
+  public fun get_LastEra(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 20).getOrThrow())
+
+  public fun get_NumberOfEras(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 21).getOrThrow())
+
+  public fun get_Era(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 22).getOrThrow())
+
+  public fun addEras(eras: Int32) {
+    PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 24, eras.value).getOrThrow()
+  }
+
+  public fun eraAsString(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 25).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun eraAsString(idealLength: Int32): String {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 26,
+        idealLength.value).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun get_FirstYearInThisEra(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 27).getOrThrow())
+
+  public fun get_LastYearInThisEra(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 28).getOrThrow())
+
+  public fun get_NumberOfYearsInThisEra(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 29).getOrThrow())
 
   public fun get_Year(): Int32 =
       Int32(PlatformComInterop.invokeInt32Method(pointer, 30).getOrThrow())
@@ -142,6 +270,15 @@ public open class ICalendar(
 
   public fun get_Month(): Int32 =
       Int32(PlatformComInterop.invokeInt32Method(pointer, 39).getOrThrow())
+
+  public fun get_FirstMonthInThisYear(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 36).getOrThrow())
+
+  public fun get_LastMonthInThisYear(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 37).getOrThrow())
+
+  public fun get_NumberOfMonthsInThisYear(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 38).getOrThrow())
 
   public fun addMonths(months: Int32) {
     PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 41, months.value).getOrThrow()
@@ -210,6 +347,15 @@ public open class ICalendar(
 
   public fun get_Day(): Int32 =
       Int32(PlatformComInterop.invokeInt32Method(pointer, 52).getOrThrow())
+
+  public fun get_FirstDayInThisMonth(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 49).getOrThrow())
+
+  public fun get_LastDayInThisMonth(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 50).getOrThrow())
+
+  public fun get_NumberOfDaysInThisMonth(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 51).getOrThrow())
 
   public fun addDays(days: Int32) {
     PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 54, days.value).getOrThrow()
@@ -384,6 +530,68 @@ public open class ICalendar(
       WinRtStrings.release(value)
     }
   }
+
+  public fun get_FirstPeriodInThisDay(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 62).getOrThrow())
+
+  public fun get_LastPeriodInThisDay(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 63).getOrThrow())
+
+  public fun get_NumberOfPeriodsInThisDay(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 64).getOrThrow())
+
+  public fun get_Period(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 65).getOrThrow())
+
+  public fun addPeriods(periods: Int32) {
+    PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 67, periods.value).getOrThrow()
+  }
+
+  public fun periodAsString(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 68).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun periodAsString(idealLength: Int32): String {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 69,
+        idealLength.value).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
+  }
+
+  public fun get_FirstHourInThisPeriod(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 70).getOrThrow())
+
+  public fun get_LastHourInThisPeriod(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 71).getOrThrow())
+
+  public fun get_NumberOfHoursInThisPeriod(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 72).getOrThrow())
+
+  public fun get_FirstMinuteInThisHour(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 96).getOrThrow())
+
+  public fun get_LastMinuteInThisHour(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 97).getOrThrow())
+
+  public fun get_NumberOfMinutesInThisHour(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 98).getOrThrow())
+
+  public fun get_FirstSecondInThisMinute(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 99).getOrThrow())
+
+  public fun get_LastSecondInThisMinute(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 100).getOrThrow())
+
+  public fun get_NumberOfSecondsInThisMinute(): Int32 =
+      Int32(PlatformComInterop.invokeInt32Method(pointer, 101).getOrThrow())
 
   public fun get_ResolvedLanguage(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 102).getOrThrow()
