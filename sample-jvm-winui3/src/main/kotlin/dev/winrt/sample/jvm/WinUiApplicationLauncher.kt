@@ -17,20 +17,28 @@ interface WinUiApplicationLauncher {
 
 object DefaultWinUiApplicationLauncher : WinUiApplicationLauncher {
     override fun launch(): SampleLaunchResult {
-        val app = Application.activate()
-        val window = Window.activateInstance()
-        window.title = "kotlin-winrt sample"
-        app.start()
-        window.activate()
+        val activationSummary = runCatching {
+            val app = Application.activate()
+            val window = Window.activateInstance()
+            window.title = "kotlin-winrt sample"
+            app.start()
+            window.activate()
+            "xaml=activated"
+        }.getOrElse { error ->
+            "xaml=${error::class.simpleName}:${error.message.orEmpty()}"
+        }
 
         val summary = if (PlatformRuntime.isWindows) {
-            "Sample launcher completed with JDK 22+ FFM COM initialization. Replace DefaultWinUiApplicationLauncher with a real WinUI 3 launcher bridge."
+            "Sample launcher completed with $activationSummary"
         } else {
             "Non-Windows host detected. Static sample launcher path executed without native WinUI 3 launch."
         }
 
         return SampleLaunchResult(
-            diagnostics = KomSmoke.description(),
+            diagnostics = listOfNotNull(
+                KomSmoke.description(),
+                SampleBootstrap.diagnostics(),
+            ).joinToString(" | "),
             launcherSummary = summary,
             winRtSmoke = if (PlatformRuntime.isWindows) WinRtApiSmoke.run() else null,
         )

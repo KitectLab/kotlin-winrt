@@ -11,6 +11,18 @@ tasks.withType<Test>().configureEach {
     jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 
+tasks.withType<JavaExec>().configureEach {
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
+    systemProperty(
+        "dev.winrt.bootstrapDll",
+        providers.systemProperty("dev.winrt.bootstrapDll").orNull ?: "",
+    )
+    systemProperty(
+        "dev.winrt.windowsAppSdkRoot",
+        providers.systemProperty("dev.winrt.windowsAppSdkRoot").orNull ?: "",
+    )
+}
+
 dependencies {
     implementation(projects.generatedWinrtBindings)
     implementation(projects.winrtCore)
@@ -20,5 +32,4 @@ dependencies {
 
 application {
     mainClass = "dev.winrt.sample.jvm.MainKt"
-    applicationDefaultJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
 }
