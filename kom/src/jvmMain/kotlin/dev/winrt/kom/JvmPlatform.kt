@@ -394,6 +394,28 @@ actual object PlatformComInterop : ComInterop {
         }
     }
 
+    override fun invokeBooleanMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Boolean> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            Arena.ofConfined().use { arena ->
+                val resultSegment = arena.allocate(ValueLayout.JAVA_INT)
+                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                val hresult = HResult(
+                    Jdk22Foreign.booleanMethodWithInputHandle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        Jdk22Foreign.pointerOf(value),
+                        resultSegment,
+                    ) as Int,
+                )
+                hresult.requireSuccess("invokeBooleanMethodWithObjectArg($vtableIndex)")
+                resultSegment.get(ValueLayout.JAVA_INT, 0L) != 0
+            }
+        }
+    }
+
     override fun invokeBooleanMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Boolean> {
         if (instance.isNull) {
             return Result.failure(KomException("Method invocation requires a non-null COM pointer"))

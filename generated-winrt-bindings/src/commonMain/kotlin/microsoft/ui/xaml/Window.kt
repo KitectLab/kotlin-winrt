@@ -29,19 +29,14 @@ open class Window(pointer: ComPtr) : Inspectable(pointer) {
     var title: String
         get() {
             if (pointer.isNull) return backingTitle.get()
-            val value = PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()
-            return try {
-                WinRtStrings.toKotlin(value)
-            } finally {
-                WinRtStrings.release(value)
-            }
+            return asIWindow().title
         }
         set(value) {
             if (pointer.isNull) {
                 backingTitle.set(value)
                 return
             }
-            PlatformComInterop.invokeStringSetter(pointer, 7, value).getOrThrow()
+            asIWindow().title = value
         }
 
     val isVisible: WinRtBoolean
@@ -87,20 +82,21 @@ open class Window(pointer: ComPtr) : Inspectable(pointer) {
 
     fun activate() {
         if (pointer.isNull) return
-        PlatformComInterop.invokeUnitMethod(pointer, 13).getOrThrow()
+        asIWindow().activate()
     }
 
     fun setContent(content: Inspectable) {
         if (pointer.isNull) return
-        PlatformComInterop.invokeObjectSetter(pointer, 9, content.pointer).getOrThrow()
+        asIWindow().setContent(content)
     }
 
+    fun asIWindow(): IWindow = IWindow.from(this)
     fun asIStringable(): IStringable = IStringable.from(this)
 
     companion object : WinRtRuntimeClassMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Window"
         override val classId = RuntimeClassId("Microsoft.UI.Xaml", "Window")
-        override val defaultInterfaceName: String? = "Windows.Foundation.IStringable"
+        override val defaultInterfaceName: String? = "Microsoft.UI.Xaml.IWindow"
         override val activationKind = WinRtActivationKind.Factory
 
         fun activateInstance(): Window = WinRtRuntime.activate(this, ::Window)

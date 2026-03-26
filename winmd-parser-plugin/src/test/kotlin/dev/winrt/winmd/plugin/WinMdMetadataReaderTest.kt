@@ -43,6 +43,46 @@ class WinMdMetadataReaderTest {
             xamlNamespace.types.first { it.name == "ApplicationInitializationCallback" }
         println("ApplicationInitializationCallback guid=${applicationInitializationCallback.guid}")
         assertTrue(applicationInitializationCallback.guid.orEmpty().isNotBlank())
+
+        val window = xamlNamespace.types.first { it.name == "Window" }
+        println("Window methods=${window.methods}")
+        println("Window properties=${window.properties}")
+    }
+
+    @Test
+    fun reads_real_dispatcher_queue_metadata_from_windows_app_sdk_when_available() {
+        val uiWinmd = Path.of(
+            "F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002/lib/uap10.0.18362/Microsoft.UI.winmd",
+        )
+        if (!Files.isRegularFile(uiWinmd)) {
+            return
+        }
+
+        val model = WinMdMetadataReader.readModel(listOf(uiWinmd))
+        val dispatching = model.namespaces.first { it.name == "Microsoft.UI.Dispatching" }
+        val dispatcherQueue = dispatching.types.first { it.name == "DispatcherQueue" }
+        val iDispatcherQueue = dispatching.types.first { it.name == "IDispatcherQueue" }
+        val iDispatcherQueue2 = dispatching.types.first { it.name == "IDispatcherQueue2" }
+        val iDispatcherQueue3 = dispatching.types.first { it.name == "IDispatcherQueue3" }
+        val handler = dispatching.types.first { it.name == "DispatcherQueueHandler" }
+
+        assertEquals("Microsoft.UI.Dispatching.IDispatcherQueue", dispatcherQueue.defaultInterface)
+        assertEquals(
+            listOf(
+                "CreateTimer",
+                "TryEnqueue",
+                "TryEnqueue",
+                "add_ShutdownStarting",
+                "remove_ShutdownStarting",
+                "add_ShutdownCompleted",
+                "remove_ShutdownCompleted",
+            ),
+            iDispatcherQueue.methods.map { it.name },
+        )
+        assertEquals(listOf("get_HasThreadAccess"), iDispatcherQueue2.methods.map { it.name })
+        println("IDispatcherQueue3 methods=${iDispatcherQueue3.methods}")
+        println("DispatcherQueueHandler guid=${handler.guid}")
+        assertTrue(handler.guid.orEmpty().isNotBlank())
     }
 
     @Test

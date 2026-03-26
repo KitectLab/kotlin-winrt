@@ -9,10 +9,16 @@ kotlin {
 
 tasks.withType<Test>().configureEach {
     jvmArgs("--enable-native-access=ALL-UNNAMED")
+    providers.systemProperty("dev.winrt.errorFile").orNull?.let { errorFile ->
+        jvmArgs("-XX:ErrorFile=$errorFile")
+    }
 }
 
 tasks.withType<JavaExec>().configureEach {
     jvmArgs("--enable-native-access=ALL-UNNAMED")
+    providers.systemProperty("dev.winrt.errorFile").orNull?.let { errorFile ->
+        jvmArgs("-XX:ErrorFile=$errorFile")
+    }
     systemProperty(
         "dev.winrt.bootstrapDll",
         providers.systemProperty("dev.winrt.bootstrapDll").orNull ?: "",

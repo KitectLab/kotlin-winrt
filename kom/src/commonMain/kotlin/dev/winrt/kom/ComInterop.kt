@@ -24,6 +24,7 @@ interface ComInterop {
     fun invokeInt32Method(instance: ComPtr, vtableIndex: Int): Result<Int>
     fun invokeUInt32Method(instance: ComPtr, vtableIndex: Int): Result<UInt>
     fun invokeBooleanGetter(instance: ComPtr, vtableIndex: Int): Result<Boolean>
+    fun invokeBooleanMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Boolean>
     fun invokeBooleanMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Boolean>
     fun invokeBooleanMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Boolean>
     fun invokeFloat64Method(instance: ComPtr, vtableIndex: Int): Result<Double>

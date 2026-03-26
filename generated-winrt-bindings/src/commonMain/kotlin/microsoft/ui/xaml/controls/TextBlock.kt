@@ -6,9 +6,7 @@ import dev.winrt.core.RuntimeProperty
 import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
-import dev.winrt.core.WinRtStrings
 import dev.winrt.kom.ComPtr
-import dev.winrt.kom.PlatformComInterop
 
 open class TextBlock(pointer: ComPtr) : Inspectable(pointer) {
     private val backingText = RuntimeProperty("")
@@ -16,20 +14,17 @@ open class TextBlock(pointer: ComPtr) : Inspectable(pointer) {
     var text: String
         get() {
             if (pointer.isNull) return backingText.get()
-            val value = PlatformComInterop.invokeHStringMethod(pointer, 26).getOrThrow()
-            return try {
-                WinRtStrings.toKotlin(value)
-            } finally {
-                WinRtStrings.release(value)
-            }
+            return asITextBlock().text
         }
         set(value) {
             if (pointer.isNull) {
                 backingText.set(value)
                 return
             }
-            PlatformComInterop.invokeStringSetter(pointer, 27, value).getOrThrow()
+            asITextBlock().text = value
         }
+
+    fun asITextBlock(): ITextBlock = ITextBlock.from(this)
 
     companion object : WinRtRuntimeClassMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Controls.TextBlock"

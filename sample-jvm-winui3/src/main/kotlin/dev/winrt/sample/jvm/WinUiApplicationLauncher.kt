@@ -2,8 +2,6 @@ package dev.winrt.sample.jvm
 
 import dev.winrt.kom.KomSmoke
 import dev.winrt.kom.PlatformRuntime
-import microsoft.ui.xaml.Window
-import microsoft.ui.xaml.controls.TextBlock
 
 class SampleLaunchResult(
     val diagnostics: String,
@@ -30,18 +28,10 @@ object DefaultWinUiApplicationLauncher : WinUiApplicationLauncher {
                 else -> "xaml=skipped(bootstrap-not-ready)"
             }
             else -> runCatching {
-                val message = TextBlock.activate()
-                message.text = "Hello from Kotlin/WinUI 3"
-                val window = Window.activateInstance()
-                window.title = sampleWindowTitle
-                window.setContent(message)
-                window.activate()
-                val visible = WindowsWindowProbe.waitForWindowByTitle(sampleWindowTitle)
-                if (!visible) {
-                    return@runCatching "xaml=window-not-visible"
-                }
-                WindowsMessageLoop.run()
-                "xaml=window-with-text-activated:visible=$visible"
+                WinUiApplicationStart.launchWindow(
+                    windowTitle = sampleWindowTitle,
+                    messageText = "Hello from Kotlin/WinUI 3",
+                )
             }.getOrElse { error ->
                 "xaml=${error::class.simpleName}:${error.message.orEmpty()}"
             }

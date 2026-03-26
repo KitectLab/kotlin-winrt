@@ -113,6 +113,12 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeBooleanMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Boolean> {
+        return Result.failure(
+            UnsupportedOperationException("Native Boolean method invocation with object input is not wired yet"),
+        )
+    }
+
     override fun invokeBooleanMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Boolean> {
         return Result.failure(
             UnsupportedOperationException("Native Boolean method invocation with input is not wired yet"),
