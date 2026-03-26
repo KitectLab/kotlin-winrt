@@ -70,4 +70,28 @@ class WinMdParserInputResolverTest {
         assertEquals(listOf("Windows.Globalization"), inputs.namespaceFilters)
         assertEquals(listOf("sample.winmd"), inputs.sources.map { it.fileName.toString() })
     }
+
+    @Test
+    fun resolves_sources_from_nuget_package_configuration() {
+        val root = Files.createTempDirectory("nuget-root")
+        val packageRoot = root.resolve("microsoft.windowsappsdk").resolve("1.6.0")
+        Files.createDirectories(packageRoot.resolve("lib").resolve("uap10.0"))
+        Files.write(
+            packageRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd"),
+            byteArrayOf('M'.code.toByte(), 'Z'.code.toByte()),
+        )
+
+        val inputs = WinMdParserInputResolver.resolve(
+            arrayOf(
+                "build/generated",
+                "--nuget-root=${root}",
+                "--nuget-package=Microsoft.WindowsAppSDK",
+                "--nuget-version=1.6.0",
+                "--namespace=Microsoft.UI.Xaml",
+            ),
+        )
+
+        assertEquals(listOf("Microsoft.UI.Xaml"), inputs.namespaceFilters)
+        assertEquals(listOf("Microsoft.UI.Xaml.winmd"), inputs.sources.map { it.fileName.toString() })
+    }
 }

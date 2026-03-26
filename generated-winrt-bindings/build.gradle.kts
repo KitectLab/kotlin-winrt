@@ -97,6 +97,63 @@ fun registerPresetSdkRegenerationTask(
     configureWinMdParserClasspath()
 }
 
+fun registerPresetNuGetGenerationTask(
+    name: String,
+    descriptionText: String,
+    outputDir: String,
+    packageId: String,
+    namespaces: List<String>,
+    versionProperty: String = "winmd.nugetVersion",
+    rootProperty: String = "winmd.nugetRoot",
+) = tasks.register(name, JavaExec::class) {
+    group = "code generation"
+    description = descriptionText
+    notCompatibleWithConfigurationCache("WinMD generation tasks build dynamic JavaExec args from Gradle properties.")
+    dependsOn(project(":winmd-parser").tasks.named("classes"))
+
+    doFirst {
+        val packageVersion = providers.gradleProperty(versionProperty).orNull
+            ?: error("Set -P$versionProperty=<version> to choose the NuGet package version.")
+        val nugetRoot = providers.gradleProperty(rootProperty).orNull
+        val resolvedArgs = mutableListOf(layout.buildDirectory.dir(outputDir).get().asFile.absolutePath)
+        resolvedArgs += "--nuget-package=$packageId"
+        resolvedArgs += "--nuget-version=$packageVersion"
+        nugetRoot?.let { resolvedArgs += "--nuget-root=$it" }
+        namespaces.forEach { resolvedArgs += "--namespace=$it" }
+        args = resolvedArgs
+    }
+
+    configureWinMdParserClasspath()
+}
+
+fun registerPresetNuGetRegenerationTask(
+    name: String,
+    descriptionText: String,
+    packageId: String,
+    namespaces: List<String>,
+    versionProperty: String = "winmd.nugetVersion",
+    rootProperty: String = "winmd.nugetRoot",
+) = tasks.register(name, JavaExec::class) {
+    group = "code generation"
+    description = descriptionText
+    notCompatibleWithConfigurationCache("WinMD generation tasks build dynamic JavaExec args from Gradle properties.")
+    dependsOn(project(":winmd-parser").tasks.named("classes"))
+
+    doFirst {
+        val packageVersion = providers.gradleProperty(versionProperty).orNull
+            ?: error("Set -P$versionProperty=<version> to choose the NuGet package version.")
+        val nugetRoot = providers.gradleProperty(rootProperty).orNull
+        val resolvedArgs = mutableListOf(layout.projectDirectory.dir("src/commonMain/kotlin").asFile.absolutePath)
+        resolvedArgs += "--nuget-package=$packageId"
+        resolvedArgs += "--nuget-version=$packageVersion"
+        nugetRoot?.let { resolvedArgs += "--nuget-root=$it" }
+        namespaces.forEach { resolvedArgs += "--namespace=$it" }
+        args = resolvedArgs
+    }
+
+    configureWinMdParserClasspath()
+}
+
 kotlin {
     jvmToolchain(22)
     jvm()
@@ -227,6 +284,14 @@ val generateJsonBindingsFromSdk by registerPresetSdkGenerationTask(
     namespaces = listOf("Windows.Data.Json"),
 )
 
+val generateWinUiBindingsFromNuGet by registerPresetNuGetGenerationTask(
+    name = "generateWinUiBindingsFromNuGet",
+    descriptionText = "Generates Microsoft.UI.Xaml bindings from the Microsoft.WindowsAppSDK NuGet package.",
+    outputDir = "generated/presets/microsoft-ui-xaml",
+    packageId = "Microsoft.WindowsAppSDK",
+    namespaces = listOf("Microsoft.UI.Xaml"),
+)
+
 val regenerateGlobalizationBindingsFromSdk by registerPresetSdkRegenerationTask(
     name = "regenerateGlobalizationBindingsFromSdk",
     descriptionText = "Regenerates checked-in Windows.Globalization bindings from installed Windows SDK contracts.",
@@ -255,4 +320,11 @@ val regenerateJsonBindingsFromSdk by registerPresetSdkRegenerationTask(
         "Windows.Foundation.FoundationContract",
     ),
     namespaces = listOf("Windows.Data.Json"),
+)
+
+val regenerateWinUiBindingsFromNuGet by registerPresetNuGetRegenerationTask(
+    name = "regenerateWinUiBindingsFromNuGet",
+    descriptionText = "Regenerates checked-in Microsoft.UI.Xaml bindings from the Microsoft.WindowsAppSDK NuGet package.",
+    packageId = "Microsoft.WindowsAppSDK",
+    namespaces = listOf("Microsoft.UI.Xaml"),
 )
