@@ -414,6 +414,7 @@ class KotlinBindingGeneratorTest {
         }.content
 
         assertTrue(binding.contains("open class `IVector`1`<T>("))
+        assertTrue(binding.contains("fun <T> from(inspectable: Inspectable): `IVector`1`<T>"))
     }
 
     @Test

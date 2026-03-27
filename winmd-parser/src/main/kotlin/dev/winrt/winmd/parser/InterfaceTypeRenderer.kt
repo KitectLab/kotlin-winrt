@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.TypeSpec
@@ -16,12 +17,14 @@ internal class InterfaceTypeRenderer(
     private val typeRegistry: TypeRegistry,
 ) {
     fun render(type: WinMdType): TypeSpec {
-        val typeClass = ClassName(type.namespace.lowercase(), type.name)
+        val rawTypeClass = ClassName(type.namespace.lowercase(), type.name)
+        val typeVariables = type.genericParameters.map { TypeVariableName(it) }
+        val typeClass = if (typeVariables.isEmpty()) rawTypeClass else rawTypeClass.parameterizedBy(typeVariables)
         val genericParameters = type.genericParameters.toSet()
         return TypeSpec.classBuilder(type.name)
             .addModifiers(KModifier.OPEN)
             .apply {
-                type.genericParameters.forEach { addTypeVariable(TypeVariableName(it)) }
+                typeVariables.forEach(::addTypeVariable)
             }
             .primaryConstructor(pointerConstructor())
             .superclass(PoetSymbols.winRtInterfaceProjectionClass)
@@ -40,6 +43,9 @@ internal class InterfaceTypeRenderer(
                     )
                     .addFunction(
                         FunSpec.builder("from")
+                            .apply {
+                                typeVariables.forEach(::addTypeVariable)
+                            }
                             .returns(typeClass)
                             .addParameter("inspectable", PoetSymbols.inspectableClass)
                             .addStatement("return inspectable.%M(this, ::%L)", PoetSymbols.projectInterfaceMember, type.name)
