@@ -450,6 +450,12 @@ class KotlinBindingGeneratorTest {
             runtimeClass.implementedInterfaces.toString(),
             runtimeClass.implementedInterfaces.contains("Microsoft.UI.Xaml.Controls.IUIElementCollection"),
         )
+        assertTrue(
+            runtimeClass.implementedInterfaces.toString(),
+            runtimeClass.implementedInterfaces.any {
+                it.startsWith("Windows.Foundation.Collections.IVector`1<Microsoft.UI.Xaml.UIElement>")
+            },
+        )
     }
 
     @Test
