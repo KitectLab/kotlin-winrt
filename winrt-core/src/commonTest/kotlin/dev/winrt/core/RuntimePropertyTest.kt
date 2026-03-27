@@ -50,4 +50,24 @@ class RuntimePropertyTest {
         assertEquals(1, subject.additionalTypeData.size)
         assertSame(first, second)
     }
+
+    @Test
+    fun inspectable_can_cache_object_references_by_type_key() {
+        val iid = Guid(0, 0, 0, byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8))
+        val subject = object : Inspectable(ComPtr.NULL) {
+            var queryCount = 0
+
+            override fun queryInterface(iid: Guid): ComPtr {
+                queryCount += 1
+                return ComPtr.NULL
+            }
+        }
+
+        val first = subject.getObjectReferenceForType("System.Collections.IList", iid)
+        val second = subject.getObjectReferenceForType("System.Collections.IList", iid)
+
+        assertEquals(ComPtr.NULL, first)
+        assertEquals(ComPtr.NULL, second)
+        assertEquals(1, subject.queryCount)
+    }
 }

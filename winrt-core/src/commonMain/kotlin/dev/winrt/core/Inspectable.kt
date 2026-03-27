@@ -25,13 +25,19 @@ open class WinRtObject(
 }
 
 open class Inspectable(pointer: ComPtr) : WinRtObject(pointer) {
-    fun queryInterface(iid: Guid): ComPtr {
+    open fun queryInterface(iid: Guid): ComPtr {
         return PlatformComInterop.queryInterface(pointer, iid)
             .getOrElse { throw KomException("QueryInterface failed: ${it.message}") }
     }
 
     fun cachedQueryInterface(iid: Guid): ComPtr {
         return queryInterfaceCache.getOrPut(iid.toString()) {
+            queryInterface(iid)
+        }
+    }
+
+    fun getObjectReferenceForType(typeKey: String, iid: Guid): ComPtr {
+        return queryInterfaceCache.getOrPut(typeKey) {
             queryInterface(iid)
         }
     }
