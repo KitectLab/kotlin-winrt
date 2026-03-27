@@ -9,7 +9,7 @@ internal class TypeFileEmitter(
     typeRegistry: TypeRegistry,
 ) {
     private val typeNameMapper = TypeNameMapper()
-    private val interfaceTypeRenderer = InterfaceTypeRenderer(typeNameMapper, typeRegistry)
+    private val interfaceTypeRenderer = InterfaceTypeRenderer(typeNameMapper, typeRegistry, WinRtSignatureMapper(typeRegistry))
     private val delegateTypeRenderer = DelegateTypeRenderer()
     private val runtimePropertyRenderer = RuntimePropertyRenderer(typeNameMapper)
     private val runtimeMethodRenderer = RuntimeMethodRenderer(typeNameMapper)

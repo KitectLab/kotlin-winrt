@@ -1,11 +1,13 @@
 package dev.winrt.winmd.parser
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.TypeSpec
 import dev.winrt.winmd.plugin.WinMdMethod
@@ -15,6 +17,7 @@ import dev.winrt.winmd.plugin.WinMdType
 internal class InterfaceTypeRenderer(
     private val typeNameMapper: TypeNameMapper,
     private val typeRegistry: TypeRegistry,
+    private val winRtSignatureMapper: WinRtSignatureMapper,
 ) {
     fun render(type: WinMdType): TypeSpec {
         val rawTypeClass = ClassName(type.namespace.lowercase(), type.name)
@@ -41,17 +44,102 @@ internal class InterfaceTypeRenderer(
                             .initializer("%M(%S)", PoetSymbols.guidOfMember, type.guid ?: "00000000-0000-0000-0000-000000000000")
                             .build(),
                     )
-                    .addFunction(
-                        FunSpec.builder("from")
-                            .apply {
-                                typeVariables.forEach(::addTypeVariable)
-                            }
-                            .returns(typeClass)
-                            .addParameter("inspectable", PoetSymbols.inspectableClass)
-                            .addStatement("return inspectable.%M(this, ::%L)", PoetSymbols.projectInterfaceMember, type.name)
-                            .build(),
-                    )
+                    .apply {
+                        if (type.genericParameters.isEmpty()) {
+                            addFunction(
+                                FunSpec.builder("from")
+                                    .apply {
+                                        typeVariables.forEach(::addTypeVariable)
+                                    }
+                                    .returns(typeClass)
+                                    .addParameter("inspectable", PoetSymbols.inspectableClass)
+                                    .addStatement("return inspectable.%M(this, ::%L)", PoetSymbols.projectInterfaceMember, type.name)
+                                    .build(),
+                            )
+                        } else {
+                            addFunction(renderGenericSignatureOf(type))
+                            addFunction(renderGenericIidOf())
+                            addFunction(renderGenericMetadataOf(type))
+                            addFunction(renderGenericFrom(type, typeClass, typeVariables))
+                        }
+                    }
                     .build(),
+            )
+            .build()
+    }
+
+    private fun renderGenericSignatureOf(type: WinMdType): FunSpec {
+        val argumentSignatureVars = type.genericParameters.indices.joinToString(", ") { index -> "arg${index}Signature" }
+        return FunSpec.builder("signatureOf")
+            .returns(String::class)
+            .addParameters(
+                type.genericParameters.indices.map { index ->
+                    ParameterSpec.builder("arg${index}Signature", String::class).build()
+                },
+            )
+            .addStatement(
+                "return %T.parameterizedInterface(%S, $argumentSignatureVars)",
+                PoetSymbols.winRtTypeSignatureClass,
+                type.guid ?: "00000000-0000-0000-0000-000000000000",
+            )
+            .build()
+    }
+
+    private fun renderGenericIidOf(): FunSpec {
+        return FunSpec.builder("iidOf")
+            .returns(PoetSymbols.guidClass)
+            .addParameter(
+                ParameterSpec.builder("argumentSignatures", String::class)
+                    .addModifiers(KModifier.VARARG)
+                    .build(),
+            )
+            .addStatement("return %T.createFromSignature(signatureOf(*argumentSignatures))", PoetSymbols.parameterizedInterfaceIdClass)
+            .build()
+    }
+
+    private fun renderGenericMetadataOf(type: WinMdType): FunSpec {
+        val metadataType = PoetSymbols.winRtInterfaceMetadataClass
+        val argumentSignatureVars = type.genericParameters.indices.joinToString(", ") { index -> "arg${index}Signature" }
+        return FunSpec.builder("metadataOf")
+            .returns(metadataType)
+            .addParameters(
+                type.genericParameters.indices.map { index ->
+                    ParameterSpec.builder("arg${index}Signature", String::class).build()
+                },
+            )
+            .addCode(
+                CodeBlock.builder()
+                    .add("return object : %T {\n", metadataType)
+                    .indent()
+                    .add("override val qualifiedName: String = %S\n", "${type.namespace}.${type.name}")
+                    .add("override val iid: %T = iidOf($argumentSignatureVars)\n", PoetSymbols.guidClass)
+                    .unindent()
+                    .add("}\n")
+                    .build(),
+            )
+            .build()
+    }
+
+    private fun renderGenericFrom(
+        type: WinMdType,
+        typeClass: TypeName,
+        typeVariables: List<TypeVariableName>,
+    ): FunSpec {
+        val argumentParameters = type.genericParameters.indices.map { index ->
+            ParameterSpec.builder("arg${index}Signature", String::class).build()
+        }
+        val argumentNames = argumentParameters.joinToString(", ") { it.name }
+        return FunSpec.builder("from")
+            .apply {
+                typeVariables.forEach(::addTypeVariable)
+            }
+            .returns(typeClass)
+            .addParameter("inspectable", PoetSymbols.inspectableClass)
+            .addParameters(argumentParameters)
+            .addStatement(
+                "return inspectable.%M(metadataOf($argumentNames), ::%L)",
+                PoetSymbols.projectInterfaceMember,
+                type.name,
             )
             .build()
     }

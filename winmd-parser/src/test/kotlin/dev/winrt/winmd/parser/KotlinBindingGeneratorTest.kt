@@ -414,7 +414,17 @@ class KotlinBindingGeneratorTest {
         }.content
 
         assertTrue(binding.contains("open class `IVector`1`<T>("))
-        assertTrue(binding.contains("fun <T> from(inspectable: Inspectable): `IVector`1`<T>"))
+        assertTrue(binding.contains("fun signatureOf(arg0Signature: String): String"))
+        assertTrue(binding.contains("WinRtTypeSignature.parameterizedInterface("))
+        assertTrue(binding.contains("\"00000000-0000-0000-0000-000000000001\""))
+        assertTrue(binding.contains("arg0Signature"))
+        assertTrue(binding.contains("fun iidOf(vararg argumentSignatures: String): Guid"))
+        assertTrue(binding.contains("ParameterizedInterfaceId.createFromSignature(signatureOf(*argumentSignatures))"))
+        assertTrue(binding.contains("fun metadataOf(arg0Signature: String): WinRtInterfaceMetadata"))
+        assertTrue(binding.contains("override val iid: Guid = iidOf(arg0Signature)"))
+        assertTrue(binding.contains("fun <T> from(inspectable: Inspectable, arg0Signature: String): `IVector`1`<T>"))
+        assertTrue(binding.contains("inspectable.projectInterface(metadataOf(arg0Signature),"))
+        assertTrue(binding.contains("IVector"))
     }
 
     @Test
