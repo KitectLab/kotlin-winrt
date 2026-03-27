@@ -1,7 +1,10 @@
 package dev.winrt.winmd.parser
 
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.TypeSpec
+import dev.winrt.winmd.plugin.WinMdActivationKind
 import dev.winrt.winmd.plugin.WinMdType
 
 internal class RuntimeTypeRenderer(
@@ -23,6 +26,14 @@ internal class RuntimeTypeRenderer(
             .primaryConstructor(pointerConstructor())
             .superclass(PoetSymbols.inspectableClass)
             .addSuperclassConstructorParameter("pointer")
+
+        if (type.activationKind == WinMdActivationKind.Factory) {
+            builder.addFunction(
+                FunSpec.constructorBuilder()
+                    .callThisConstructor(CodeBlock.of("Companion.%L().pointer", type.activationFunctionName))
+                    .build(),
+            )
+        }
 
         type.properties.filter(runtimePropertyRenderer::canRenderRuntimeProperty).forEach { property ->
             builder.addProperty(runtimePropertyRenderer.renderBackingProperty(property, type.namespace))

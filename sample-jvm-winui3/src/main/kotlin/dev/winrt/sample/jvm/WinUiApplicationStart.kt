@@ -100,9 +100,9 @@ object WinUiApplicationStart {
             val callback = JvmWinRtObjectArgDelegate.create(ApplicationInitializationCallback.iid) {
                 runCatching {
                     application = applicationStatics.get_Current()
-                    window = Window.activateInstance()
+                    window = Window()
                     val iWindow = IWindow.from(window!!)
-                    val textBlock = TextBlock.activate().apply {
+                    val textBlock = TextBlock().apply {
                         text = messageText
                     }
                     iWindow.title = windowTitle

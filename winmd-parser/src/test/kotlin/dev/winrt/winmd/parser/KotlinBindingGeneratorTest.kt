@@ -69,6 +69,8 @@ class KotlinBindingGeneratorTest {
         assertTrue(applicationBinding.contains("WinRtActivationKind.Factory"))
         assertTrue(windowBinding.contains("override val activationKind"))
         assertTrue(windowBinding.contains("WinRtActivationKind.Factory"))
+        assertTrue(applicationBinding.contains("constructor() : this(Companion.activate().pointer)"))
+        assertTrue(windowBinding.contains("constructor() : this(Companion.activateInstance().pointer)"))
         assertTrue(applicationBinding.contains("fun activate(): Application = WinRtRuntime.activate(this, ::Application)"))
         assertTrue(windowBinding.contains("fun activateInstance(): Window = WinRtRuntime.activate(this, ::Window)"))
         assertTrue(windowBinding.contains("defaultInterfaceName: String? = \"Windows.Foundation.IStringable\""))

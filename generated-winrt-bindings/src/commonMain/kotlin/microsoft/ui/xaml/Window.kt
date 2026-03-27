@@ -18,6 +18,8 @@ import dev.winrt.kom.PlatformComInterop
 import windows.foundation.IStringable
 
 open class Window(pointer: ComPtr) : Inspectable(pointer) {
+    constructor() : this(Companion.activateInstance().pointer)
+
     private val backingTitle = RuntimeProperty("")
     private val backingIsVisible = RuntimeProperty(WinRtBoolean.FALSE)
     private val backingCreatedAt = RuntimeProperty(DateTime(0))

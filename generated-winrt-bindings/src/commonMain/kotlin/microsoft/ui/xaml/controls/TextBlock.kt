@@ -9,6 +9,8 @@ import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.kom.ComPtr
 
 open class TextBlock(pointer: ComPtr) : Inspectable(pointer) {
+    constructor() : this(Companion.activate().pointer)
+
     private val backingText = RuntimeProperty("")
 
     var text: String

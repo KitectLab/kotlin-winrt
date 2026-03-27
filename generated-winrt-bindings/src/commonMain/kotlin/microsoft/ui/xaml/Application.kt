@@ -11,6 +11,8 @@ import dev.winrt.kom.PlatformComInterop
 import windows.foundation.IStringable
 
 open class Application(pointer: ComPtr) : Inspectable(pointer) {
+    constructor() : this(Companion.activate().pointer)
+
     fun start() {
         if (pointer.isNull) return
         PlatformComInterop.invokeUnitMethod(pointer, 6).getOrThrow()
