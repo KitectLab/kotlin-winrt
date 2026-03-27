@@ -290,6 +290,36 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun reads_generic_parameter_names_from_real_metadata_model() {
+        val universalContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.UniversalApiContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val foundationContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.FoundationContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val model = WinMdModelFactory.metadataModel(
+            listOf(
+                universalContract.winmdPath,
+                foundationContract.winmdPath,
+            ),
+        )
+
+        val vector = model.namespaces
+            .first { it.name == "Windows.Foundation.Collections" }
+            .types.first { it.name == "IVector`1" }
+
+        val renderedSignatures = vector.methods.joinToString(separator = "\n") { method ->
+            "${method.name}(${method.parameters.joinToString(",") { it.type }}):${method.returnType}"
+        }
+
+        assertFalse(renderedSignatures, renderedSignatures.contains("ElementType0x13"))
+        assertTrue(renderedSignatures, renderedSignatures.contains("GetAt(UInt32):T"))
+        assertTrue(renderedSignatures, renderedSignatures.contains("Append(T):Unit"))
+    }
+
+    @Test
     fun merged_json_object_generation_keeps_verified_surface() {
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",
