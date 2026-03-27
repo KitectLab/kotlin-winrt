@@ -5,6 +5,7 @@ import dev.winrt.kom.Guid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertSame
 
 class RuntimePropertyTest {
     @Test
@@ -32,5 +33,21 @@ class RuntimePropertyTest {
         assertEquals(42, Int32(42).value)
         assertEquals(42u, UInt32(42u).value)
         assertFalse(WinRtBoolean.FALSE.value)
+    }
+
+    @Test
+    fun projected_objects_expose_query_interface_and_helper_state() {
+        val subject = WinRtObject(ComPtr.NULL)
+
+        assertEquals(0, subject.queryInterfaceCache.size)
+        assertEquals(0, subject.additionalTypeData.size)
+
+        subject.queryInterfaceCache["test"] = ComPtr.NULL
+        val first = subject.getOrPutAdditionalTypeData("helper") { mutableListOf("cached") }
+        val second = subject.getOrPutAdditionalTypeData("helper") { mutableListOf("new") }
+
+        assertEquals(1, subject.queryInterfaceCache.size)
+        assertEquals(1, subject.additionalTypeData.size)
+        assertSame(first, second)
     }
 }

@@ -7,14 +7,33 @@ import dev.winrt.kom.HResult
 import dev.winrt.kom.KomException
 import dev.winrt.kom.PlatformComInterop
 
+interface WinRtProjectedObject {
+    val queryInterfaceCache: MutableMap<String, ComPtr>
+    val additionalTypeData: MutableMap<String, Any>
+}
+
 open class WinRtObject(
     final override val pointer: ComPtr,
-) : ComReference
+) : ComReference, WinRtProjectedObject {
+    override val queryInterfaceCache: MutableMap<String, ComPtr> = linkedMapOf()
+    override val additionalTypeData: MutableMap<String, Any> = linkedMapOf()
+
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Any> getOrPutAdditionalTypeData(key: String, factory: () -> T): T {
+        return additionalTypeData.getOrPut(key, factory) as T
+    }
+}
 
 open class Inspectable(pointer: ComPtr) : WinRtObject(pointer) {
     fun queryInterface(iid: Guid): ComPtr {
         return PlatformComInterop.queryInterface(pointer, iid)
             .getOrElse { throw KomException("QueryInterface failed: ${it.message}") }
+    }
+
+    fun cachedQueryInterface(iid: Guid): ComPtr {
+        return queryInterfaceCache.getOrPut(iid.toString()) {
+            queryInterface(iid)
+        }
     }
 }
 
