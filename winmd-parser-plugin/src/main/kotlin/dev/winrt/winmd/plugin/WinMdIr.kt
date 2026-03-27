@@ -28,6 +28,7 @@ data class WinMdType(
     val name: String,
     val kind: WinMdTypeKind,
     val guid: String? = null,
+    val genericParameters: List<String> = emptyList(),
     val baseClass: String? = null,
     val defaultInterface: String? = null,
     val baseInterfaces: List<String> = emptyList(),
@@ -190,7 +191,9 @@ object WinMdModelFactory {
     }
 
     fun metadataModel(sourceFiles: List<Path>): WinMdModel {
-        return inferInterfaceSlots(WinMdMetadataReader.readModel(sourceFiles))
+        return expandSpecializedInterfaceMembers(
+            inferInterfaceSlots(WinMdMetadataReader.readModel(sourceFiles)),
+        )
     }
 
     fun sampleSupplementalModel(): WinMdModel {
@@ -503,6 +506,7 @@ object WinMdModelFactory {
 
         return primary.copy(
             guid = primary.guid ?: supplemental.guid,
+            genericParameters = if (primary.genericParameters.isNotEmpty()) primary.genericParameters else supplemental.genericParameters,
             baseClass = primary.baseClass ?: supplemental.baseClass,
             defaultInterface = primary.defaultInterface ?: supplemental.defaultInterface,
             baseInterfaces = if (primary.baseInterfaces.isNotEmpty()) primary.baseInterfaces else supplemental.baseInterfaces,
@@ -555,4 +559,122 @@ object WinMdModelFactory {
             setterVtableIndex = primary.setterVtableIndex ?: supplemental.setterVtableIndex,
         )
     }
+
+    private fun expandSpecializedInterfaceMembers(model: WinMdModel): WinMdModel {
+        val typeIndex = model.namespaces
+            .flatMap { namespace -> namespace.types.map { type -> "${type.namespace}.${type.name}" to type } }
+            .toMap()
+        val expanded = mutableMapOf<String, WinMdType>()
+
+        fun expand(type: WinMdType): WinMdType {
+            val qualifiedName = "${type.namespace}.${type.name}"
+            return expanded.getOrPut(qualifiedName) {
+                if (type.kind != WinMdTypeKind.Interface || type.baseInterfaces.isEmpty()) {
+                    type
+                } else {
+                    val inheritedMethods = mutableListOf<WinMdMethod>()
+                    val inheritedProperties = mutableListOf<WinMdProperty>()
+                    type.baseInterfaces.forEach { baseInterface ->
+                        val specialization = parseSpecializedType(baseInterface)
+                        val baseType = typeIndex[specialization.rawType]?.let(::expand) ?: return@forEach
+                        val substitutions = baseType.genericParameters.zip(specialization.arguments).toMap()
+                        inheritedMethods += baseType.methods.map { substituteMethod(it, substitutions) }
+                        inheritedProperties += baseType.properties.map { substituteProperty(it, substitutions) }
+                    }
+                    type.copy(
+                        methods = pruneUnresolvedGenericMethods(mergeMethods(type.methods, inheritedMethods)),
+                        properties = pruneUnresolvedGenericProperties(mergeProperties(type.properties, inheritedProperties)),
+                    )
+                }
+            }
+        }
+
+        return model.copy(
+            namespaces = model.namespaces.map { namespace ->
+                namespace.copy(types = namespace.types.map(::expand))
+            },
+        )
+    }
+
+    private fun substituteMethod(method: WinMdMethod, substitutions: Map<String, String>): WinMdMethod {
+        if (substitutions.isEmpty()) return method
+        return method.copy(
+            returnType = substituteType(method.returnType, substitutions),
+            parameters = method.parameters.map { parameter ->
+                parameter.copy(type = substituteType(parameter.type, substitutions))
+            },
+        )
+    }
+
+    private fun substituteProperty(property: WinMdProperty, substitutions: Map<String, String>): WinMdProperty {
+        if (substitutions.isEmpty()) return property
+        return property.copy(type = substituteType(property.type, substitutions))
+    }
+
+    private fun pruneUnresolvedGenericMethods(methods: List<WinMdMethod>): List<WinMdMethod> {
+        return methods.filterNot { method ->
+            containsGenericPlaceholder(method.returnType) ||
+                method.parameters.any { parameter -> containsGenericPlaceholder(parameter.type) }
+        }.ifEmpty { methods }
+    }
+
+    private fun pruneUnresolvedGenericProperties(properties: List<WinMdProperty>): List<WinMdProperty> {
+        return properties.filterNot { property ->
+            containsGenericPlaceholder(property.type)
+        }.ifEmpty { properties }
+    }
+
+    private fun containsGenericPlaceholder(typeName: String): Boolean {
+        return "ElementType0x13" in typeName || "ElementType0x1e" in typeName
+    }
+
+    private fun substituteType(typeName: String, substitutions: Map<String, String>): String {
+        substitutions[typeName]?.let { return it }
+        return when {
+            typeName.endsWith("[]") -> substituteType(typeName.removeSuffix("[]"), substitutions) + "[]"
+            '<' in typeName && typeName.endsWith(">") -> {
+                val rawType = typeName.substringBefore('<')
+                val argumentSource = typeName.substringAfter('<').removeSuffix(">")
+                val rewrittenArguments = splitGenericArguments(argumentSource).joinToString(", ") { argument ->
+                    substituteType(argument, substitutions)
+                }
+                "$rawType<$rewrittenArguments>"
+            }
+            else -> typeName
+        }
+    }
+
+    private fun splitGenericArguments(source: String): List<String> {
+        if (source.isBlank()) return emptyList()
+        val arguments = mutableListOf<String>()
+        var depth = 0
+        var start = 0
+        source.forEachIndexed { index, char ->
+            when (char) {
+                '<' -> depth++
+                '>' -> depth--
+                ',' -> if (depth == 0) {
+                    arguments += source.substring(start, index).trim()
+                    start = index + 1
+                }
+            }
+        }
+        arguments += source.substring(start).trim()
+        return arguments
+    }
+
+    private fun parseSpecializedType(typeName: String): SpecializedType {
+        if ('<' !in typeName || !typeName.endsWith(">")) {
+            return SpecializedType(typeName, emptyList())
+        }
+        return SpecializedType(
+            rawType = typeName.substringBefore('<'),
+            arguments = splitGenericArguments(typeName.substringAfter('<').removeSuffix(">")),
+        )
+    }
+
+    private data class SpecializedType(
+        val rawType: String,
+        val arguments: List<String>,
+    )
 }

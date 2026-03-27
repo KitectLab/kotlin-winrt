@@ -310,13 +310,46 @@ class KotlinBindingGeneratorTest {
             .first { it.name == "Windows.Foundation.Collections" }
             .types.first { it.name == "IVector`1" }
 
+        assertTrue(vector.genericParameters.toString(), vector.genericParameters == listOf("T"))
+
         val renderedSignatures = vector.methods.joinToString(separator = "\n") { method ->
             "${method.name}(${method.parameters.joinToString(",") { it.type }}):${method.returnType}"
         }
 
-        assertFalse(renderedSignatures, renderedSignatures.contains("ElementType0x13"))
         assertTrue(renderedSignatures, renderedSignatures.contains("GetAt(UInt32):T"))
         assertTrue(renderedSignatures, renderedSignatures.contains("Append(T):Unit"))
+        assertTrue(renderedSignatures, renderedSignatures.contains("GetView():Windows.Foundation.Collections.IVectorView`1<T>"))
+    }
+
+    @Test
+    fun expands_specialized_interface_members_from_real_metadata_model() {
+        val universalContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.UniversalApiContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val foundationContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.FoundationContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val model = WinMdModelFactory.metadataModel(
+            listOf(
+                universalContract.winmdPath,
+                foundationContract.winmdPath,
+            ),
+        )
+
+        val propertySet = model.namespaces
+            .first { it.name == "Windows.Foundation.Collections" }
+            .types.first { it.name == "IPropertySet" }
+
+        val renderedSignatures = propertySet.methods.joinToString(separator = "\n") { method ->
+            "${method.name}(${method.parameters.joinToString(",") { it.type }}):${method.returnType}"
+        }
+
+        assertTrue(propertySet.baseInterfaces.toString(), propertySet.baseInterfaces.any { it.startsWith("Windows.Foundation.Collections.IMap`2<") })
+        assertTrue(renderedSignatures, renderedSignatures.contains("Lookup(String):Object"))
+        assertTrue(renderedSignatures, renderedSignatures.contains("Insert(String,Object):Boolean"))
+        assertFalse(renderedSignatures, renderedSignatures.contains("ElementType0x13"))
     }
 
     @Test

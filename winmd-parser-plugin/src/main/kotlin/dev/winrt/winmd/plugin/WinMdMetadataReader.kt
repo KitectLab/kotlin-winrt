@@ -64,6 +64,7 @@ object WinMdMetadataReader {
                     name = typeDef.name,
                     kind = classifyType(typeDef, tables),
                     guid = readGuid(index + 1, tables),
+                    genericParameters = readTypeGenericParameterNames(index + 1, tables),
                     baseClass = readBaseClass(typeDef, tables),
                     defaultInterface = readDefaultInterface(index + 1, tables),
                     baseInterfaces = readBaseInterfaces(index + 1, tables),
@@ -358,7 +359,13 @@ object WinMdMetadataReader {
             0x0C -> "Float32"
             0x0D -> "Float64"
             0x0E -> "String"
-            0x11, 0x12 -> resolveTypeDefOrRefOrSpecName(reader.readCompressedUInt(), tables)
+            0x10 -> parseElementType(reader, tables, typeGenericParameters, methodGenericParameters)
+            0x11, 0x12 -> resolveTypeDefOrRefOrSpecName(
+                reader.readCompressedUInt(),
+                tables,
+                typeGenericParameters,
+                methodGenericParameters,
+            )
             0x13 -> typeGenericParameters.getOrElse(reader.readCompressedUInt()) { "ElementType0x13" }
             0x15 -> parseGenericInstanceType(reader, tables, typeGenericParameters, methodGenericParameters)
             0x1D -> "${parseElementType(reader, tables, typeGenericParameters, methodGenericParameters)}[]"
@@ -368,24 +375,36 @@ object WinMdMetadataReader {
         }
     }
 
-    private fun resolveTypeDefOrRefOrSpecName(codedIndex: Int, tables: MetadataTables): String {
+    private fun resolveTypeDefOrRefOrSpecName(
+        codedIndex: Int,
+        tables: MetadataTables,
+        typeGenericParameters: List<String> = emptyList(),
+        methodGenericParameters: List<String> = emptyList(),
+    ): String {
         val tag = codedIndex and 0x3
         val index = codedIndex ushr 2
         return when (tag) {
             0 -> tables.typeDefs.getOrNull(index - 1)?.let { qualify(it.namespace, it.name) }
             1 -> tables.typeRefs.getOrNull(index - 1)?.let { qualify(it.namespace, it.name) }
-            2 -> tables.typeSpecRows.getOrNull(index - 1)?.let { parseTypeSpecSignature(it.signature, tables) }
+            2 -> tables.typeSpecRows.getOrNull(index - 1)?.let {
+                parseTypeSpecSignature(it.signature, tables, typeGenericParameters, methodGenericParameters)
+            }
             else -> null
         } ?: "UnknownType"
     }
 
-    private fun parseTypeSpecSignature(signature: ByteArray, tables: MetadataTables): String {
+    private fun parseTypeSpecSignature(
+        signature: ByteArray,
+        tables: MetadataTables,
+        typeGenericParameters: List<String> = emptyList(),
+        methodGenericParameters: List<String> = emptyList(),
+    ): String {
         if (signature.isEmpty()) {
             return "UnknownType"
         }
         return try {
             val reader = BlobReader(signature)
-            parseElementType(reader, tables)
+            parseElementType(reader, tables, typeGenericParameters, methodGenericParameters)
         } catch (_: IndexOutOfBoundsException) {
             "UnknownType"
         }
@@ -402,7 +421,12 @@ object WinMdMetadataReader {
         }
         val next = reader.readByte()
         val genericType = when (next) {
-            0x11, 0x12 -> resolveTypeDefOrRefOrSpecName(reader.readCompressedUInt(), tables)
+            0x11, 0x12 -> resolveTypeDefOrRefOrSpecName(
+                reader.readCompressedUInt(),
+                tables,
+                typeGenericParameters,
+                methodGenericParameters,
+            )
             else -> "ElementType0x${next.toString(16)}"
         }
         val argumentCount = reader.readCompressedUInt()
