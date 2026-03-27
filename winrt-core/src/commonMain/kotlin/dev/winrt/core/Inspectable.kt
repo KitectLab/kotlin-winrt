@@ -36,7 +36,7 @@ open class Inspectable(pointer: ComPtr) : WinRtObject(pointer) {
         }
     }
 
-    fun getObjectReferenceForType(typeKey: String, iid: Guid): ComPtr {
+    open fun getObjectReferenceForType(typeKey: String, iid: Guid): ComPtr {
         return queryInterfaceCache.getOrPut(typeKey) {
             queryInterface(iid)
         }
