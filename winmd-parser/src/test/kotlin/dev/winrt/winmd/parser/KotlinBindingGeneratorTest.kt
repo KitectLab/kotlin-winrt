@@ -382,6 +382,41 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_type_parameters_for_open_generic_interfaces() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IVector`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "00000000-0000-0000-0000-000000000001",
+                            genericParameters = listOf("T"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetView",
+                                    returnType = "Windows.Foundation.Collections.IVectorView`1<T>",
+                                    vtableIndex = 8,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Windows/Foundation/Collections/IVector`1.kt"
+        }.content
+
+        assertTrue(binding.contains("open class `IVector`1`<T>("))
+    }
+
+    @Test
     fun expands_winui_ui_element_collection_members_from_real_metadata_model_when_available() {
         val winUiRoot = java.nio.file.Path.of("F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002")
         val xamlWinmd = winUiRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd")

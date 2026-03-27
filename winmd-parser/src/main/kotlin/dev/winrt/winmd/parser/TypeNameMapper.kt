@@ -4,11 +4,17 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asTypeName
 
 internal class TypeNameMapper {
-    fun mapTypeName(typeName: String, currentNamespace: String): TypeName {
+    fun mapTypeName(
+        typeName: String,
+        currentNamespace: String,
+        genericParameters: Set<String> = emptySet(),
+    ): TypeName {
         return when {
+            typeName in genericParameters -> TypeVariableName(typeName)
             typeName == "String" -> String::class.asTypeName()
             typeName == "Unit" -> Unit::class.asTypeName()
             typeName == "Object" -> PoetSymbols.inspectableClass
@@ -23,9 +29,9 @@ internal class TypeNameMapper {
             typeName == "TimeSpan" -> PoetSymbols.timeSpanClass
             typeName == "EventRegistrationToken" -> PoetSymbols.eventRegistrationTokenClass
             typeName.endsWith("[]") -> arrayClass.parameterizedBy(
-                mapTypeName(typeName.removeSuffix("[]"), currentNamespace),
+                mapTypeName(typeName.removeSuffix("[]"), currentNamespace, genericParameters),
             )
-            '<' in typeName && typeName.endsWith(">") -> mapGenericTypeName(typeName, currentNamespace)
+            '<' in typeName && typeName.endsWith(">") -> mapGenericTypeName(typeName, currentNamespace, genericParameters)
             '.' in typeName -> normalizeQualifiedType(typeName)
             else -> ClassName(currentNamespace.lowercase(), typeName)
         }
@@ -64,12 +70,12 @@ internal class TypeNameMapper {
         return ClassName(namespace.lowercase(), simpleName)
     }
 
-    private fun mapGenericTypeName(typeName: String, currentNamespace: String): TypeName {
+    private fun mapGenericTypeName(typeName: String, currentNamespace: String, genericParameters: Set<String>): TypeName {
         val genericStart = typeName.indexOf('<')
         val rawType = typeName.substring(0, genericStart)
         val argumentSource = typeName.substring(genericStart + 1, typeName.length - 1)
         val arguments = splitGenericArguments(argumentSource).map { argument ->
-            mapTypeName(argument, currentNamespace)
+            mapTypeName(argument, currentNamespace, genericParameters)
         }
         val rawTypeName = when (normalizeSimpleName(rawType.substringAfterLast('.'))) {
             "IReference" -> PoetSymbols.iReferenceClass

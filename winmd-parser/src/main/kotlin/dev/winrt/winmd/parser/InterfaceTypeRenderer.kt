@@ -5,6 +5,7 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.TypeSpec
 import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdProperty
@@ -16,13 +17,17 @@ internal class InterfaceTypeRenderer(
 ) {
     fun render(type: WinMdType): TypeSpec {
         val typeClass = ClassName(type.namespace.lowercase(), type.name)
+        val genericParameters = type.genericParameters.toSet()
         return TypeSpec.classBuilder(type.name)
             .addModifiers(KModifier.OPEN)
+            .apply {
+                type.genericParameters.forEach { addTypeVariable(TypeVariableName(it)) }
+            }
             .primaryConstructor(pointerConstructor())
             .superclass(PoetSymbols.winRtInterfaceProjectionClass)
             .addSuperclassConstructorParameter("pointer")
-            .addProperties(type.properties.mapNotNull { renderProperty(it, type.namespace) })
-            .addFunctions(type.methods.mapNotNull { renderMethod(it, type.namespace) })
+            .addProperties(type.properties.mapNotNull { renderProperty(it, type.namespace, genericParameters) })
+            .addFunctions(type.methods.mapNotNull { renderMethod(it, type.namespace, genericParameters) })
             .addType(
                 TypeSpec.companionObjectBuilder()
                     .addSuperinterface(PoetSymbols.winRtInterfaceMetadataClass)
@@ -45,12 +50,16 @@ internal class InterfaceTypeRenderer(
             .build()
     }
 
-    private fun renderProperty(property: WinMdProperty, currentNamespace: String): PropertySpec? {
-        if (!supportsInterfaceProperty(property, currentNamespace)) {
+    private fun renderProperty(
+        property: WinMdProperty,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): PropertySpec? {
+        if (!supportsInterfaceProperty(property, currentNamespace, genericParameters)) {
             return null
         }
         val propertyName = property.name.replaceFirstChar(Char::lowercase)
-        val propertyType = typeNameMapper.mapTypeName(property.type, currentNamespace)
+        val propertyType = typeNameMapper.mapTypeName(property.type, currentNamespace, genericParameters)
         val getterVtableIndex = property.getterVtableIndex!!
         val getterBuilder = FunSpec.getterBuilder()
         when {
@@ -89,20 +98,20 @@ internal class InterfaceTypeRenderer(
         return propertyBuilder.build()
     }
 
-    private fun renderMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
+    private fun renderMethod(method: WinMdMethod, currentNamespace: String, genericParameters: Set<String>): FunSpec? {
         if (!isKotlinIdentifier(method.name)) {
             return null
         }
-        if (!supportsInterfaceMethod(method, currentNamespace)) {
+        if (!supportsInterfaceMethod(method, currentNamespace, genericParameters)) {
             return null
         }
         val functionName = kotlinMethodName(method.name)
         val builder = FunSpec.builder(functionName)
-            .returns(typeNameMapper.mapTypeName(method.returnType, currentNamespace))
+            .returns(typeNameMapper.mapTypeName(method.returnType, currentNamespace, genericParameters))
             .addParameters(method.parameters.map { parameter ->
                 ParameterSpec.builder(
                     parameter.name.replaceFirstChar(Char::lowercase),
-                    typeNameMapper.mapTypeName(parameter.type, currentNamespace),
+                    typeNameMapper.mapTypeName(parameter.type, currentNamespace, genericParameters),
                 ).build()
             })
 
@@ -405,7 +414,11 @@ internal class InterfaceTypeRenderer(
         }
     }
 
-    private fun supportsInterfaceMethod(method: WinMdMethod, currentNamespace: String): Boolean {
+    private fun supportsInterfaceMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): Boolean {
         return (method.returnType == "String" && method.parameters.isEmpty() && method.vtableIndex != null) ||
             (method.returnType == "String" &&
                 method.parameters.size == 1 &&
@@ -483,7 +496,11 @@ internal class InterfaceTypeRenderer(
             !type.endsWith("[]")
     }
 
-    private fun supportsInterfaceProperty(property: WinMdProperty, currentNamespace: String): Boolean {
+    private fun supportsInterfaceProperty(
+        property: WinMdProperty,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): Boolean {
         return property.getterVtableIndex != null &&
             (
                 typeRegistry.isEnumType(property.type, currentNamespace) ||
