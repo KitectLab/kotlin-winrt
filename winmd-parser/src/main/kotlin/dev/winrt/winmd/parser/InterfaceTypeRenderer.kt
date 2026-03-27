@@ -470,14 +470,14 @@ internal class InterfaceTypeRenderer(
     }
 
     private fun supportsInterfaceObjectInput(type: String): Boolean {
-        return type.contains('.') &&
+        return (type == "Object" || type.contains('.')) &&
             !type.contains('`') &&
             !type.contains('<') &&
             !type.endsWith("[]")
     }
 
     private fun supportsInterfaceObjectType(type: String): Boolean {
-        return type.contains('.') &&
+        return (type == "Object" || type.contains('.')) &&
             !type.contains('`') &&
             !type.contains('<') &&
             !type.endsWith("[]")

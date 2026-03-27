@@ -354,6 +354,34 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_specialized_object_methods_for_property_set_binding() {
+        val universalContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.UniversalApiContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val foundationContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.FoundationContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val model = WinMdModelFactory.metadataModel(
+            listOf(
+                universalContract.winmdPath,
+                foundationContract.winmdPath,
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val propertySetBinding = files.first {
+            it.relativePath == "Windows/Foundation/Collections/IPropertySet.kt"
+        }.content
+
+        assertTrue(propertySetBinding.contains("fun lookup(key: String): Inspectable"))
+        assertTrue(propertySetBinding.contains("fun hasKey(key: String): WinRtBoolean"))
+        assertTrue(propertySetBinding.contains("invokeObjectMethodWithStringArg(pointer, 6, key).getOrThrow()"))
+        assertTrue(propertySetBinding.contains("invokeBooleanMethodWithStringArg(pointer, 8,"))
+    }
+
+    @Test
     fun expands_winui_ui_element_collection_members_from_real_metadata_model_when_available() {
         val winUiRoot = java.nio.file.Path.of("F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002")
         val xamlWinmd = winUiRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd")

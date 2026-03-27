@@ -11,6 +11,7 @@ internal class TypeNameMapper {
         return when {
             typeName == "String" -> String::class.asTypeName()
             typeName == "Unit" -> Unit::class.asTypeName()
+            typeName == "Object" -> PoetSymbols.inspectableClass
             typeName == "Boolean" -> PoetSymbols.winRtBooleanClass
             typeName == "Int" -> Int::class.asTypeName()
             typeName == "Int32" -> PoetSymbols.int32Class
