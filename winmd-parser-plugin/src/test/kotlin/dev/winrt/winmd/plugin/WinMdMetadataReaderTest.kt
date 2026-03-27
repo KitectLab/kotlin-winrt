@@ -2,6 +2,7 @@ package dev.winrt.winmd.plugin
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assume
 import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Path
@@ -361,6 +362,29 @@ class WinMdMetadataReaderTest {
         assertTrue(iNumeralSystemTranslator.methods.any { it.name == "get_ResolvedLanguage" && it.returnType == "String" && it.vtableIndex == 7 })
         assertTrue(iNumeralSystemTranslator.methods.any { it.name == "get_NumeralSystem" && it.returnType == "String" && it.vtableIndex == 8 })
         assertTrue(iNumeralSystemTranslator.methods.any { it.name == "TranslateNumerals" && it.returnType == "String" && it.vtableIndex == 10 })
+    }
+
+    @Test
+    fun reads_winui_bindable_vector_metadata_when_available() {
+        val winUiXaml = localWinUiXamlWinmdCandidates().firstOrNull(Files::exists)
+        Assume.assumeTrue(winUiXaml != null)
+
+        val model = WinMdMetadataReader.readModel(listOf(winUiXaml!!))
+        val interop = model.namespaces.first { it.name == "Microsoft.UI.Xaml.Interop" }
+        val bindableIterable = interop.types.first { it.name == "IBindableIterable" }
+        val bindableVector = interop.types.first { it.name == "IBindableVector" }
+
+        assertEquals("036d2c08-df29-41af-8aa2-d774be62ba6f", bindableIterable.guid)
+        assertEquals(listOf("First"), bindableIterable.methods.map { it.name })
+        assertEquals("393de7de-6fd0-4c0d-bb71-47244a113e93", bindableVector.guid)
+        assertTrue(
+            bindableVector.baseInterfaces.toString(),
+            bindableVector.baseInterfaces.contains("Microsoft.UI.Xaml.Interop.IBindableIterable"),
+        )
+        assertEquals(
+            listOf("GetAt", "get_Size", "GetView", "IndexOf", "SetAt", "InsertAt", "RemoveAt", "Append", "RemoveAtEnd", "Clear"),
+            bindableVector.methods.map { it.name },
+        )
     }
 
     private fun localWinUiXamlWinmdCandidates(): List<Path> {
