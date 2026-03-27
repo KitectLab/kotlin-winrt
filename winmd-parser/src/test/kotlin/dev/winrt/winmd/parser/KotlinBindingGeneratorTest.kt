@@ -229,6 +229,67 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun preserves_runtime_class_base_type_in_generated_binding() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "DependencyObject",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml.Controls",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Controls",
+                            name = "TextBlock",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            baseClass = "Microsoft.UI.Xaml.DependencyObject",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val textBlockBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/Controls/TextBlock.kt" }.content
+
+        assertTrue(textBlockBinding.contains("open class TextBlock"))
+        assertTrue(textBlockBinding.contains(": DependencyObject(pointer)"))
+        assertFalse(textBlockBinding.contains(": Inspectable(pointer)"))
+    }
+
+    @Test
+    fun reads_runtime_class_base_type_from_real_metadata_model() {
+        val universalContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.UniversalApiContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val foundationContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.FoundationContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val model = WinMdModelFactory.metadataModel(
+            listOf(
+                universalContract.winmdPath,
+                foundationContract.winmdPath,
+            ),
+        )
+
+        val jsonObject = model.namespaces
+            .first { it.name == "Windows.Data.Json" }
+            .types.first { it.name == "JsonObject" }
+
+        assertTrue(jsonObject.baseClass == "Windows.Data.Json.JsonValue" || jsonObject.baseClass == "System.Object")
+    }
+
+    @Test
     fun merged_json_object_generation_keeps_verified_surface() {
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",

@@ -63,6 +63,7 @@ object WinMdMetadataReader {
                     name = typeDef.name,
                     kind = classifyType(typeDef, tables),
                     guid = readGuid(index + 1, tables),
+                    baseClass = readBaseClass(typeDef, tables),
                     defaultInterface = readDefaultInterface(index + 1, tables),
                     baseInterfaces = readBaseInterfaces(index + 1, tables),
                     methods = readMethods(index + 1, tables),
@@ -94,6 +95,15 @@ object WinMdMetadataReader {
             .filter { it.classTypeDefIndex == typeDefIndex }
             .map { resolveTypeDefOrRefOrSpecName(it.interfaceCodedIndex, tables) }
             .firstOrNull { it != "UnknownType" }
+    }
+
+    private fun readBaseClass(typeDef: TypeDefRow, tables: MetadataTables): String? {
+        val typeKind = classifyType(typeDef, tables)
+        if (typeKind != WinMdTypeKind.RuntimeClass) {
+            return null
+        }
+        return resolveTypeDefOrRefOrSpecName(typeDef.extendsCodedIndex, tables)
+            .takeUnless { it == "UnknownType" }
     }
 
     private fun readBaseInterfaces(typeDefIndex: Int, tables: MetadataTables): List<String> {

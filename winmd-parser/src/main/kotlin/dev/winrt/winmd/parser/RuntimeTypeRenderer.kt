@@ -8,6 +8,7 @@ import dev.winrt.winmd.plugin.WinMdActivationKind
 import dev.winrt.winmd.plugin.WinMdType
 
 internal class RuntimeTypeRenderer(
+    private val typeNameMapper: TypeNameMapper,
     private val runtimePropertyRenderer: RuntimePropertyRenderer,
     private val runtimeMethodRenderer: RuntimeMethodRenderer,
     private val runtimeCompanionRenderer: RuntimeCompanionRenderer,
@@ -21,10 +22,14 @@ internal class RuntimeTypeRenderer(
     }
 
     private fun renderRuntimeClass(type: WinMdType): TypeSpec {
+        val superclass = type.baseClass
+            ?.takeUnless { it == "System.Object" }
+            ?.let { typeNameMapper.mapTypeName(it, type.namespace) }
+            ?: PoetSymbols.inspectableClass
         val builder = TypeSpec.classBuilder(type.name)
             .addModifiers(KModifier.OPEN)
             .primaryConstructor(pointerConstructor())
-            .superclass(PoetSymbols.inspectableClass)
+            .superclass(superclass)
             .addSuperclassConstructorParameter("pointer")
 
         if (type.activationKind == WinMdActivationKind.Factory) {
