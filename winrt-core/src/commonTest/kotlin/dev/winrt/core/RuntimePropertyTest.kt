@@ -145,4 +145,33 @@ class RuntimePropertyTest {
         assertEquals(ComPtr.NULL, projection.pointer)
         assertEquals(listOf("System.Collections.IList"), subject.requestedKeys)
     }
+
+    @Test
+    fun interface_projection_uses_projection_type_key_when_provided() {
+        WinRtProjectionRegistry.clearForTests()
+        WinRtProjectionRegistry.registerHelperTypeMapping(
+            publicTypeKey = "System.Collections.IList",
+            helperTypeKey = "ABI.System.Collections.IList",
+        )
+
+        val metadata = object : WinRtInterfaceMetadata {
+            override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
+            override val projectionTypeKey: String = "System.Collections.IList"
+            override val iid = Guid(0, 0, 0, byteArrayOf(9, 9, 9, 9, 9, 9, 9, 9))
+        }
+        val subject = object : Inspectable(ComPtr.NULL) {
+            val requestedKeys = mutableListOf<String>()
+
+            override fun queryInterface(iid: Guid): ComPtr = ComPtr.NULL
+
+            override fun getObjectReferenceForType(typeKey: String, iid: Guid): ComPtr {
+                requestedKeys += typeKey
+                return super.getObjectReferenceForType(typeKey, iid)
+            }
+        }
+
+        subject.projectInterface(metadata) { pointer -> WinRtInterfaceProjection(pointer) }
+
+        assertEquals(listOf("ABI.System.Collections.IList"), subject.requestedKeys)
+    }
 }

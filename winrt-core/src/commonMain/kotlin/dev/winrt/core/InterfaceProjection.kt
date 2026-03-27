@@ -9,7 +9,7 @@ fun <T : WinRtObject> Inspectable.projectInterface(
     constructor: (ComPtr) -> T,
 ): T {
     val projected = try {
-        getObjectReferenceForProjectedType(metadata.qualifiedName, metadata.iid)
+        getObjectReferenceForProjectedType(metadata.projectionTypeKey, metadata.iid)
     } catch (error: Throwable) {
         throw ProjectionException("Failed to project ${metadata.qualifiedName}: ${error.message}")
     }
