@@ -67,6 +67,7 @@ object WinMdMetadataReader {
                     genericParameters = readTypeGenericParameterNames(index + 1, tables),
                     baseClass = readBaseClass(typeDef, tables),
                     defaultInterface = readDefaultInterface(index + 1, tables),
+                    implementedInterfaces = readImplementedInterfaces(index + 1, tables),
                     baseInterfaces = readBaseInterfaces(index + 1, tables),
                     methods = readMethods(index + 1, tables),
                     properties = readProperties(index + 1, tables),
@@ -111,6 +112,19 @@ object WinMdMetadataReader {
     private fun readBaseInterfaces(typeDefIndex: Int, tables: MetadataTables): List<String> {
         val typeKind = classifyType(tables.typeDefs[typeDefIndex - 1], tables)
         if (typeKind != WinMdTypeKind.Interface) {
+            return emptyList()
+        }
+        return tables.interfaceImplRows
+            .asSequence()
+            .filter { it.classTypeDefIndex == typeDefIndex }
+            .mapNotNull { resolveTypeDefOrRefOrSpecName(it.interfaceCodedIndex, tables) }
+            .filter { it != "UnknownType" }
+            .toList()
+    }
+
+    private fun readImplementedInterfaces(typeDefIndex: Int, tables: MetadataTables): List<String> {
+        val typeKind = classifyType(tables.typeDefs[typeDefIndex - 1], tables)
+        if (typeKind != WinMdTypeKind.RuntimeClass) {
             return emptyList()
         }
         return tables.interfaceImplRows

@@ -7,6 +7,7 @@ import dev.winrt.winmd.plugin.WinMdParameter
 import dev.winrt.winmd.plugin.WinMdType
 import dev.winrt.winmd.plugin.WinMdTypeKind
 import dev.winrt.winmd.plugin.WindowsSdkReferences
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -350,6 +351,77 @@ class KotlinBindingGeneratorTest {
         assertTrue(renderedSignatures, renderedSignatures.contains("Lookup(String):Object"))
         assertTrue(renderedSignatures, renderedSignatures.contains("Insert(String,Object):Boolean"))
         assertFalse(renderedSignatures, renderedSignatures.contains("ElementType0x13"))
+    }
+
+    @Test
+    fun expands_winui_ui_element_collection_members_from_real_metadata_model_when_available() {
+        val winUiRoot = java.nio.file.Path.of("F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002")
+        val xamlWinmd = winUiRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd")
+        if (!java.nio.file.Files.isRegularFile(xamlWinmd)) {
+            return
+        }
+
+        val universalContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.UniversalApiContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val foundationContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.FoundationContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val model = WinMdModelFactory.metadataModel(
+            listOf(
+                xamlWinmd,
+                universalContract.winmdPath,
+                foundationContract.winmdPath,
+            ),
+        )
+
+        val collection = model.namespaces
+            .first { it.name == "Microsoft.UI.Xaml.Controls" }
+            .types.first { it.name == "IUIElementCollection" }
+
+        val renderedSignatures = collection.methods.joinToString(separator = "\n") { method ->
+            "${method.name}(${method.parameters.joinToString(",") { it.type }}):${method.returnType}"
+        }
+
+        assertTrue(collection.baseInterfaces.toString(), collection.baseInterfaces.any { it.startsWith("Windows.Foundation.Collections.IVector`1<Microsoft.UI.Xaml.UIElement>") })
+        assertTrue(renderedSignatures, renderedSignatures.contains("Append(Microsoft.UI.Xaml.UIElement):Unit"))
+    }
+
+    @Test
+    fun reads_winui_ui_element_collection_runtime_class_when_available() {
+        val winUiRoot = java.nio.file.Path.of("F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002")
+        val xamlWinmd = winUiRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd")
+        if (!java.nio.file.Files.isRegularFile(xamlWinmd)) {
+            return
+        }
+
+        val universalContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.UniversalApiContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val foundationContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.FoundationContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val model = WinMdModelFactory.metadataModel(
+            listOf(
+                xamlWinmd,
+                universalContract.winmdPath,
+                foundationContract.winmdPath,
+            ),
+        )
+
+        val runtimeClass = model.namespaces
+            .first { it.name == "Microsoft.UI.Xaml.Controls" }
+            .types.first { it.name == "UIElementCollection" }
+
+        assertEquals("Microsoft.UI.Xaml.Controls.IUIElementCollection", runtimeClass.defaultInterface)
+        assertTrue(
+            runtimeClass.implementedInterfaces.toString(),
+            runtimeClass.implementedInterfaces.contains("Microsoft.UI.Xaml.Controls.IUIElementCollection"),
+        )
     }
 
     @Test
