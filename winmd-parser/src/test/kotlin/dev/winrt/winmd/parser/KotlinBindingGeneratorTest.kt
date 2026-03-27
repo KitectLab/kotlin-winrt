@@ -464,6 +464,26 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_dispatcher_queue_try_enqueue_from_real_metadata_model_when_available() {
+        val uiWinmd = java.nio.file.Path.of(
+            "F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002/lib/uap10.0.18362/Microsoft.UI.winmd",
+        )
+        if (!java.nio.file.Files.isRegularFile(uiWinmd)) {
+            return
+        }
+
+        val model = WinMdModelFactory.metadataModel(listOf(uiWinmd))
+        val files = KotlinBindingGenerator().generate(model)
+        val dispatcherQueueBinding = files.first {
+            it.relativePath == "Microsoft/UI/Dispatching/IDispatcherQueue.kt"
+        }.content
+
+        assertTrue(dispatcherQueueBinding.contains("fun tryEnqueue(callback: DispatcherQueueHandler): WinRtBoolean"))
+        assertTrue(dispatcherQueueBinding.contains("invokeBooleanMethodWithObjectArg(pointer, 7,"))
+        assertTrue(dispatcherQueueBinding.contains("callback.pointer"))
+    }
+
+    @Test
     fun reads_winui_ui_element_collection_runtime_class_when_available() {
         val winUiRoot = java.nio.file.Path.of("F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002")
         val xamlWinmd = winUiRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd")

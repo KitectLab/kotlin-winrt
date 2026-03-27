@@ -353,6 +353,22 @@ internal class InterfaceTypeRenderer(
             }
             method.returnType == "Boolean" &&
                 method.parameters.size == 1 &&
+                supportsInterfaceObjectInput(method.parameters[0].type) &&
+                method.vtableIndex != null -> {
+                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                val vtableIndex = method.vtableIndex!!
+                builder
+                    .addStatement(
+                        "return %T(%T.invokeBooleanMethodWithObjectArg(pointer, %L, %N.pointer).getOrThrow())",
+                        PoetSymbols.winRtBooleanClass,
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                        argumentName,
+                    )
+                    .build()
+            }
+            method.returnType == "Boolean" &&
+                method.parameters.size == 1 &&
                 method.parameters[0].type == "String" &&
                 method.vtableIndex != null -> {
                 val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
@@ -543,6 +559,10 @@ internal class InterfaceTypeRenderer(
             (method.returnType == "Boolean" &&
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "UInt32" &&
+                method.vtableIndex != null) ||
+            (method.returnType == "Boolean" &&
+                method.parameters.size == 1 &&
+                supportsInterfaceObjectInput(method.parameters[0].type) &&
                 method.vtableIndex != null) ||
             (method.returnType == "Int32" && method.parameters.isEmpty() && method.vtableIndex != null) ||
             (typeRegistry.isEnumType(method.returnType, currentNamespace) &&

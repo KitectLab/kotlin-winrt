@@ -84,6 +84,7 @@ class WinMdMetadataReaderTest {
         assertEquals(listOf("get_HasThreadAccess"), iDispatcherQueue2.methods.map { it.name })
         println("IDispatcherQueue3 methods=${iDispatcherQueue3.methods}")
         println("DispatcherQueueHandler guid=${handler.guid}")
+        assertEquals(WinMdTypeKind.Delegate, handler.kind)
         assertTrue(handler.guid.orEmpty().isNotBlank())
     }
 
