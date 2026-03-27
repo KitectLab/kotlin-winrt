@@ -61,6 +61,7 @@ data class WinMdMethod(
     val returnType: String,
     val vtableIndex: Int? = null,
     val parameters: List<WinMdParameter> = emptyList(),
+    val sourceInterface: String? = null,
 ) {
     val signatureKey: String
         get() = buildString {
@@ -601,7 +602,9 @@ object WinMdModelFactory {
                                 val specialization = parseSpecializedType(implementedInterface)
                                 val interfaceType = typeIndex[specialization.rawType]?.let(::expand) ?: return@forEach
                                 val substitutions = interfaceType.genericParameters.zip(specialization.arguments).toMap()
-                                inheritedMethods += interfaceType.methods.map { substituteMethod(it, substitutions) }
+                                inheritedMethods += interfaceType.methods.map { inheritedMethod ->
+                                    substituteMethod(inheritedMethod, substitutions).copy(sourceInterface = implementedInterface)
+                                }
                                 inheritedProperties += interfaceType.properties.map { substituteProperty(it, substitutions) }
                             }
                             type.copy(

@@ -495,6 +495,15 @@ class KotlinBindingGeneratorTest {
         val renderedSignatures = runtimeClass.methods.joinToString(separator = "\n") { method ->
             "${method.name}(${method.parameters.joinToString(",") { it.type }}):${method.returnType}"
         }
+        val appendMethod = runtimeClass.methods.firstOrNull { it.name == "Append" }
+        assertTrue(runtimeClass.methods.toString(), appendMethod != null)
+        assertTrue(
+            runtimeClass.methods.toString(),
+            appendMethod!!.sourceInterface == null ||
+            appendMethod.sourceInterface == "Microsoft.UI.Xaml.Controls.IUIElementCollection" ||
+            appendMethod.sourceInterface?.startsWith("Windows.Foundation.Collections.IVector`1<Microsoft.UI.Xaml.UIElement>") == true ||
+                appendMethod.sourceInterface == "Microsoft.UI.Xaml.Interop.IBindableVector",
+        )
         assertTrue(renderedSignatures, renderedSignatures.contains("Append(Microsoft.UI.Xaml.UIElement):Unit"))
         assertTrue(renderedSignatures, renderedSignatures.contains("GetAt(UInt32):Microsoft.UI.Xaml.UIElement"))
     }
