@@ -94,4 +94,32 @@ class WinMdParserInputResolverTest {
         assertEquals(listOf("Microsoft.UI.Xaml"), inputs.namespaceFilters)
         assertEquals(listOf("Microsoft.UI.Xaml.winmd"), inputs.sources.map { it.fileName.toString() })
     }
+
+    @Test
+    fun resolves_sources_from_combined_nuget_and_contract_configuration() {
+        val root = Files.createTempDirectory("nuget-root")
+        val packageRoot = root.resolve("microsoft.windowsappsdk").resolve("1.6.0")
+        Files.createDirectories(packageRoot.resolve("lib").resolve("uap10.0"))
+        Files.write(
+            packageRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd"),
+            byteArrayOf('M'.code.toByte(), 'Z'.code.toByte()),
+        )
+
+        val inputs = WinMdParserInputResolver.resolve(
+            arrayOf(
+                "build/generated",
+                "--nuget-root=${root}",
+                "--nuget-package=Microsoft.WindowsAppSDK",
+                "--nuget-version=1.6.0",
+                "--windows-kits-root=D:/Windows Kits/10",
+                "--sdk-version=10.0.22621.0",
+                "--contract=Windows.Foundation.UniversalApiContract",
+                "--namespace=Microsoft.UI.Xaml",
+            ),
+        )
+
+        assertEquals(listOf("Microsoft.UI.Xaml"), inputs.namespaceFilters)
+        assertTrue(inputs.sources.any { it.fileName.toString() == "Microsoft.UI.Xaml.winmd" })
+        assertTrue(inputs.sources.any { it.fileName.toString() == "Windows.Foundation.UniversalApiContract.winmd" })
+    }
 }

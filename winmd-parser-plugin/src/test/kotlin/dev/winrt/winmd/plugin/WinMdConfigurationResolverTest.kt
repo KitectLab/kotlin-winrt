@@ -3,6 +3,7 @@ package dev.winrt.winmd.plugin
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.nio.file.Files
 import java.nio.file.Path
 
 class WinMdConfigurationResolverTest {
@@ -49,5 +50,30 @@ class WinMdConfigurationResolverTest {
         assertTrue(resolved.referencesRoot.toString().endsWith("References"))
         assertTrue(resolved.contracts.isNotEmpty())
         assertEquals(resolved.contracts.map { it.winmdPath }, resolved.sourceFiles)
+    }
+
+    @Test
+    fun combines_nuget_winmd_and_sdk_contract_sources() {
+        val root = Files.createTempDirectory("nuget-root")
+        val packageRoot = root.resolve("microsoft.windowsappsdk").resolve("1.6.0")
+        Files.createDirectories(packageRoot.resolve("lib").resolve("uap10.0"))
+        Files.write(
+            packageRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd"),
+            byteArrayOf('M'.code.toByte(), 'Z'.code.toByte()),
+        )
+
+        val resolved = WinMdConfigurationResolver.resolve(
+            WinMdExtension().apply {
+                nugetRoot = root.toString()
+                nugetPackageId = "Microsoft.WindowsAppSDK"
+                nugetPackageVersion = "1.6.0"
+                referencesRoot = "D:/Windows Kits/10/References"
+                sdkVersion = "10.0.22621.0"
+                contracts = listOf("Windows.Foundation.UniversalApiContract")
+            },
+        )
+
+        assertTrue(resolved.sourceFiles.any { it.fileName.toString() == "Microsoft.UI.Xaml.winmd" })
+        assertTrue(resolved.sourceFiles.any { it.fileName.toString() == "Windows.Foundation.UniversalApiContract.winmd" })
     }
 }

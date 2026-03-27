@@ -4,39 +4,44 @@ import java.nio.file.Path
 
 object WinMdConfigurationResolver {
     fun resolve(extension: WinMdExtension): ResolvedWinMdConfiguration {
-        if (extension.winmdFiles.isNotEmpty()) {
-            return ResolvedWinMdConfiguration(
-                winmdFiles = extension.winmdFiles.map(Path::of),
-            )
-        }
+        val explicitWinMdFiles = extension.winmdFiles.map(Path::of)
 
         val nugetPackageId = extension.nugetPackageId
-        if (nugetPackageId != null) {
-            val nugetPackage = NuGetPackageReferences.resolvePackage(
+        val nugetPackage = if (nugetPackageId != null) {
+            NuGetPackageReferences.resolvePackage(
                 packageId = nugetPackageId,
                 packageVersion = extension.nugetPackageVersion
                     ?: error("NuGet package version is required when nugetPackageId is set."),
                 nugetRoot = extension.nugetRoot?.let(Path::of) ?: NuGetPackageReferences.discoverPackagesRoot(),
             )
-            return ResolvedWinMdConfiguration(
-                winmdFiles = nugetPackage.winmdFiles,
-                nugetPackage = nugetPackage,
-            )
+        } else {
+            null
+        }
+
+        val resolvedWinMdFiles = buildList {
+            addAll(explicitWinMdFiles)
+            addAll(nugetPackage?.winmdFiles.orEmpty())
         }
 
         val referencesRoot = resolveReferencesRoot(extension)
-        val sdkVersion = extension.sdkVersion ?: WindowsSdkReferences.latestSdkVersion(referencesRoot)
         val contractNames = extension.contracts.ifEmpty {
-            listOf(
-                "Windows.Foundation.UniversalApiContract",
-            )
+            if (resolvedWinMdFiles.isEmpty()) {
+                listOf("Windows.Foundation.UniversalApiContract")
+            } else {
+                emptyList()
+            }
+        }
+        val sdkVersion = if (contractNames.isNotEmpty()) {
+            extension.sdkVersion ?: WindowsSdkReferences.latestSdkVersion(referencesRoot)
+        } else {
+            extension.sdkVersion
         }
 
         val contracts = contractNames.map { contractName ->
             WindowsSdkReferences.findContract(
                 referencesRoot = referencesRoot,
                 contractName = contractName,
-                sdkVersion = sdkVersion,
+                sdkVersion = sdkVersion ?: error("SDK version is required when resolving contracts."),
             )
         }
 
@@ -44,6 +49,8 @@ object WinMdConfigurationResolver {
             sdkVersion = sdkVersion,
             referencesRoot = referencesRoot,
             contracts = contracts,
+            winmdFiles = resolvedWinMdFiles,
+            nugetPackage = nugetPackage,
         )
     }
 

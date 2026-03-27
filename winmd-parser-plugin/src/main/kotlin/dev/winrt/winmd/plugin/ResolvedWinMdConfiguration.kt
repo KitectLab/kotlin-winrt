@@ -10,5 +10,8 @@ data class ResolvedWinMdConfiguration(
     val nugetPackage: NuGetWinMdPackageReference? = null,
 ) {
     val sourceFiles: List<Path>
-        get() = if (winmdFiles.isNotEmpty()) winmdFiles else contracts.map { it.winmdPath }
+        get() = buildList {
+            addAll(winmdFiles)
+            addAll(contracts.map { it.winmdPath })
+        }.distinct()
 }

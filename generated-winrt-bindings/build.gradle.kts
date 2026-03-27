@@ -18,36 +18,24 @@ fun Project.winMdSourceArgs(
     referencesRoot: String?,
 ): List<String> {
     val explicitWinMdFiles = stringListProperty("winmd.files")
-    if (explicitWinMdFiles.isNotEmpty()) {
-        return buildList {
-            addAll(explicitWinMdFiles)
-            namespaces.forEach { add("--namespace=$it") }
-        }
-    }
-
     val nugetPackage = providers.gradleProperty("winmd.nugetPackage").orNull
-    if (nugetPackage != null) {
-        val nugetVersion = providers.gradleProperty("winmd.nugetVersion").orNull
-            ?: error("Set -Pwinmd.nugetVersion=<version> when using -Pwinmd.nugetPackage.")
-        val nugetRoot = providers.gradleProperty("winmd.nugetRoot").orNull
-        return buildList {
+    return buildList {
+        addAll(explicitWinMdFiles)
+        if (nugetPackage != null) {
+            val nugetVersion = providers.gradleProperty("winmd.nugetVersion").orNull
+                ?: error("Set -Pwinmd.nugetVersion=<version> when using -Pwinmd.nugetPackage.")
             add("--nuget-package=$nugetPackage")
             add("--nuget-version=$nugetVersion")
-            nugetRoot?.let { add("--nuget-root=$it") }
-            namespaces.forEach { add("--namespace=$it") }
+            providers.gradleProperty("winmd.nugetRoot").orNull?.let { add("--nuget-root=$it") }
         }
-    }
-
-    require(contracts.isNotEmpty()) {
-        "Set -Pwinmd.files=<a.winmd,b.winmd>, -Pwinmd.nugetPackage=<id> with -Pwinmd.nugetVersion=<version>, or -Pwinmd.contracts=ContractA,ContractB to choose WinMD inputs."
-    }
-
-    return buildList {
         contracts.forEach { add("--contract=$it") }
         namespaces.forEach { add("--namespace=$it") }
         sdkVersion?.let { add("--sdk-version=$it") }
         windowsKitsRoot?.let { add("--windows-kits-root=$it") }
         referencesRoot?.let { add("--references-root=$it") }
+        require(isNotEmpty()) {
+            "Set -Pwinmd.files=<a.winmd,b.winmd>, -Pwinmd.nugetPackage=<id> with -Pwinmd.nugetVersion=<version>, or -Pwinmd.contracts=ContractA,ContractB to choose WinMD inputs."
+        }
     }
 }
 
@@ -103,6 +91,7 @@ fun registerPresetNuGetGenerationTask(
     outputDir: String,
     packageId: String,
     namespaces: List<String>,
+    contracts: List<String> = emptyList(),
     versionProperty: String = "winmd.nugetVersion",
     rootProperty: String = "winmd.nugetRoot",
 ) = tasks.register(name, JavaExec::class) {
@@ -119,6 +108,7 @@ fun registerPresetNuGetGenerationTask(
         resolvedArgs += "--nuget-package=$packageId"
         resolvedArgs += "--nuget-version=$packageVersion"
         nugetRoot?.let { resolvedArgs += "--nuget-root=$it" }
+        contracts.forEach { resolvedArgs += "--contract=$it" }
         namespaces.forEach { resolvedArgs += "--namespace=$it" }
         args = resolvedArgs
     }
@@ -131,6 +121,7 @@ fun registerPresetNuGetRegenerationTask(
     descriptionText: String,
     packageId: String,
     namespaces: List<String>,
+    contracts: List<String> = emptyList(),
     versionProperty: String = "winmd.nugetVersion",
     rootProperty: String = "winmd.nugetRoot",
 ) = tasks.register(name, JavaExec::class) {
@@ -147,6 +138,7 @@ fun registerPresetNuGetRegenerationTask(
         resolvedArgs += "--nuget-package=$packageId"
         resolvedArgs += "--nuget-version=$packageVersion"
         nugetRoot?.let { resolvedArgs += "--nuget-root=$it" }
+        contracts.forEach { resolvedArgs += "--contract=$it" }
         namespaces.forEach { resolvedArgs += "--namespace=$it" }
         args = resolvedArgs
     }
@@ -289,6 +281,10 @@ val generateWinUiBindingsFromNuGet by registerPresetNuGetGenerationTask(
     descriptionText = "Generates Microsoft.UI.Xaml bindings from the Microsoft.WindowsAppSDK NuGet package.",
     outputDir = "generated/presets/microsoft-ui-xaml",
     packageId = "Microsoft.WindowsAppSDK",
+    contracts = listOf(
+        "Windows.Foundation.UniversalApiContract",
+        "Windows.Foundation.FoundationContract",
+    ),
     namespaces = listOf("Microsoft.UI.Xaml"),
 )
 
@@ -326,5 +322,9 @@ val regenerateWinUiBindingsFromNuGet by registerPresetNuGetRegenerationTask(
     name = "regenerateWinUiBindingsFromNuGet",
     descriptionText = "Regenerates checked-in Microsoft.UI.Xaml bindings from the Microsoft.WindowsAppSDK NuGet package.",
     packageId = "Microsoft.WindowsAppSDK",
+    contracts = listOf(
+        "Windows.Foundation.UniversalApiContract",
+        "Windows.Foundation.FoundationContract",
+    ),
     namespaces = listOf("Microsoft.UI.Xaml"),
 )
