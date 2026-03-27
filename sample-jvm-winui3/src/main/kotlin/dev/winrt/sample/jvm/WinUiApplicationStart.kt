@@ -10,6 +10,7 @@ import microsoft.ui.xaml.IApplicationStatics
 import microsoft.ui.xaml.IApplicationInitializationCallbackParams
 import microsoft.ui.xaml.IWindow
 import microsoft.ui.xaml.Window
+import microsoft.ui.xaml.controls.StackPanel
 import microsoft.ui.xaml.controls.TextBlock
 
 object WinUiApplicationStart {
@@ -102,11 +103,9 @@ object WinUiApplicationStart {
                     application = applicationStatics.get_Current()
                     window = Window()
                     val iWindow = IWindow.from(window!!)
-                    val textBlock = TextBlock().apply {
-                        text = messageText
-                    }
+                    val stackPanel = StackPanel()
                     iWindow.title = windowTitle
-                    iWindow.setContent(textBlock)
+                    iWindow.setContent(stackPanel)
                     iWindow.activate()
                     val uiThreadId = WindowsMessageLoop.currentThreadId()
                     val autoQuitVisible = System.getProperty("dev.winrt.autoQuitVisible", "false").equals("true", ignoreCase = true)

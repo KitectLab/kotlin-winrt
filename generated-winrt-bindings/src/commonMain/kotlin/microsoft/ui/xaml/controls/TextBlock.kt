@@ -1,14 +1,14 @@
 package microsoft.ui.xaml.controls
 
-import dev.winrt.core.Inspectable
 import dev.winrt.core.RuntimeClassId
 import dev.winrt.core.RuntimeProperty
 import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.kom.ComPtr
+import microsoft.ui.xaml.FrameworkElement
 
-open class TextBlock(pointer: ComPtr) : Inspectable(pointer) {
+open class TextBlock(pointer: ComPtr) : FrameworkElement(pointer) {
     constructor() : this(Companion.activate().pointer)
 
     private val backingText = RuntimeProperty("")
