@@ -8,6 +8,8 @@ kotlin {
 }
 
 dependencies {
+    implementation(projects.kom)
+    implementation(projects.winrtCore)
     implementation(projects.winmdParserPlugin)
     implementation(libs.kotlinpoet)
     testImplementation(libs.junit)
