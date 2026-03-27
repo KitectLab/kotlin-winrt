@@ -6,6 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertSame
+import kotlin.test.assertNull
 
 class RuntimePropertyTest {
     @Test
@@ -64,6 +65,47 @@ class RuntimePropertyTest {
         }
 
         val first = subject.getObjectReferenceForType("System.Collections.IList", iid)
+        val second = subject.getObjectReferenceForType("System.Collections.IList", iid)
+
+        assertEquals(ComPtr.NULL, first)
+        assertEquals(ComPtr.NULL, second)
+        assertEquals(1, subject.queryCount)
+    }
+
+    @Test
+    fun projection_registry_maps_projected_types_to_helper_keys() {
+        WinRtProjectionRegistry.clearForTests()
+        WinRtProjectionRegistry.registerHelperTypeMapping(
+            publicTypeKey = "Microsoft.UI.Xaml.Interop.IBindableVector",
+            helperTypeKey = "System.Collections.IList",
+        )
+
+        assertEquals(
+            "System.Collections.IList",
+            WinRtProjectionRegistry.helperTypeKeyFor("Microsoft.UI.Xaml.Interop.IBindableVector"),
+        )
+        assertNull(WinRtProjectionRegistry.findHelperTypeKey("Windows.Foundation.Collections.IVector<String>"))
+    }
+
+    @Test
+    fun inspectable_can_cache_object_references_by_projected_type_key() {
+        WinRtProjectionRegistry.clearForTests()
+        WinRtProjectionRegistry.registerHelperTypeMapping(
+            publicTypeKey = "Microsoft.UI.Xaml.Interop.IBindableVector",
+            helperTypeKey = "System.Collections.IList",
+        )
+
+        val iid = Guid(0, 0, 0, byteArrayOf(8, 7, 6, 5, 4, 3, 2, 1))
+        val subject = object : Inspectable(ComPtr.NULL) {
+            var queryCount = 0
+
+            override fun queryInterface(iid: Guid): ComPtr {
+                queryCount += 1
+                return ComPtr.NULL
+            }
+        }
+
+        val first = subject.getObjectReferenceForProjectedType("Microsoft.UI.Xaml.Interop.IBindableVector", iid)
         val second = subject.getObjectReferenceForType("System.Collections.IList", iid)
 
         assertEquals(ComPtr.NULL, first)
