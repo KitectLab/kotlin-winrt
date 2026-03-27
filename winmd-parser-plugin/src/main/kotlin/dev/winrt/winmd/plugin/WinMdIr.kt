@@ -28,6 +28,7 @@ data class WinMdType(
     val name: String,
     val kind: WinMdTypeKind,
     val guid: String? = null,
+    val baseClass: String? = null,
     val defaultInterface: String? = null,
     val baseInterfaces: List<String> = emptyList(),
     val activationKind: WinMdActivationKind = WinMdActivationKind.Factory,
@@ -502,6 +503,7 @@ object WinMdModelFactory {
 
         return primary.copy(
             guid = primary.guid ?: supplemental.guid,
+            baseClass = primary.baseClass ?: supplemental.baseClass,
             defaultInterface = primary.defaultInterface ?: supplemental.defaultInterface,
             baseInterfaces = if (primary.baseInterfaces.isNotEmpty()) primary.baseInterfaces else supplemental.baseInterfaces,
             activationKind = primary.activationKind,
