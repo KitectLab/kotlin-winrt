@@ -11,13 +11,44 @@ import java.lang.invoke.MethodHandle
 import java.nio.charset.StandardCharsets
 
 object WindowsWindowProbe {
+    private const val wmClose = 0x0010
     private val linker: Linker = Linker.nativeLinker()
     private val arena: Arena = Arena.ofAuto()
     private val user32: SymbolLookup = SymbolLookup.libraryLookup("user32", arena)
 
     fun findWindowByTitle(title: String): Boolean {
+        val hwnd = findWindowHandleByTitle(title) ?: return false
+        return hwnd != MemorySegment.NULL && hwnd.address() != 0L
+    }
+
+    fun closeWindowByTitle(title: String): Boolean {
         if (!PlatformRuntime.isWindows) {
             return false
+        }
+
+        val hwnd = findWindowHandleByTitle(title) ?: return false
+        val postMessage = downcall(
+            "PostMessageW",
+            FunctionDescriptor.of(
+                ValueLayout.JAVA_INT,
+                ValueLayout.ADDRESS,
+                ValueLayout.JAVA_INT,
+                ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS,
+            ),
+        )
+        val result = postMessage.invokeWithArguments(
+            hwnd,
+            wmClose,
+            MemorySegment.NULL,
+            MemorySegment.NULL,
+        ) as Int
+        return result != 0
+    }
+
+    private fun findWindowHandleByTitle(title: String): MemorySegment? {
+        if (!PlatformRuntime.isWindows) {
+            return null
         }
 
         Arena.ofConfined().use { callArena ->
@@ -34,7 +65,7 @@ object WindowsWindowProbe {
                 MemorySegment.NULL,
                 titleSegment,
             ) as MemorySegment
-            return hwnd != MemorySegment.NULL && hwnd.address() != 0L
+            return hwnd
         }
     }
 
