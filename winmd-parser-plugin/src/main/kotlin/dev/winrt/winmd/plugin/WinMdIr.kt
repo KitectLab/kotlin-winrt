@@ -571,22 +571,46 @@ object WinMdModelFactory {
         fun expand(type: WinMdType): WinMdType {
             val qualifiedName = "${type.namespace}.${type.name}"
             return expanded.getOrPut(qualifiedName) {
-                if (type.kind != WinMdTypeKind.Interface || type.baseInterfaces.isEmpty()) {
-                    type
-                } else {
-                    val inheritedMethods = mutableListOf<WinMdMethod>()
-                    val inheritedProperties = mutableListOf<WinMdProperty>()
-                    type.baseInterfaces.forEach { baseInterface ->
-                        val specialization = parseSpecializedType(baseInterface)
-                        val baseType = typeIndex[specialization.rawType]?.let(::expand) ?: return@forEach
-                        val substitutions = baseType.genericParameters.zip(specialization.arguments).toMap()
-                        inheritedMethods += baseType.methods.map { substituteMethod(it, substitutions) }
-                        inheritedProperties += baseType.properties.map { substituteProperty(it, substitutions) }
+                when (type.kind) {
+                    WinMdTypeKind.Interface -> {
+                        if (type.baseInterfaces.isEmpty()) {
+                            type
+                        } else {
+                            val inheritedMethods = mutableListOf<WinMdMethod>()
+                            val inheritedProperties = mutableListOf<WinMdProperty>()
+                            type.baseInterfaces.forEach { baseInterface ->
+                                val specialization = parseSpecializedType(baseInterface)
+                                val baseType = typeIndex[specialization.rawType]?.let(::expand) ?: return@forEach
+                                val substitutions = baseType.genericParameters.zip(specialization.arguments).toMap()
+                                inheritedMethods += baseType.methods.map { substituteMethod(it, substitutions) }
+                                inheritedProperties += baseType.properties.map { substituteProperty(it, substitutions) }
+                            }
+                            type.copy(
+                                methods = pruneUnresolvedGenericMethods(mergeMethods(type.methods, inheritedMethods)),
+                                properties = pruneUnresolvedGenericProperties(mergeProperties(type.properties, inheritedProperties)),
+                            )
+                        }
                     }
-                    type.copy(
-                        methods = pruneUnresolvedGenericMethods(mergeMethods(type.methods, inheritedMethods)),
-                        properties = pruneUnresolvedGenericProperties(mergeProperties(type.properties, inheritedProperties)),
-                    )
+                    WinMdTypeKind.RuntimeClass -> {
+                        if (type.implementedInterfaces.isEmpty()) {
+                            type
+                        } else {
+                            val inheritedMethods = mutableListOf<WinMdMethod>()
+                            val inheritedProperties = mutableListOf<WinMdProperty>()
+                            type.implementedInterfaces.forEach { implementedInterface ->
+                                val specialization = parseSpecializedType(implementedInterface)
+                                val interfaceType = typeIndex[specialization.rawType]?.let(::expand) ?: return@forEach
+                                val substitutions = interfaceType.genericParameters.zip(specialization.arguments).toMap()
+                                inheritedMethods += interfaceType.methods.map { substituteMethod(it, substitutions) }
+                                inheritedProperties += interfaceType.properties.map { substituteProperty(it, substitutions) }
+                            }
+                            type.copy(
+                                methods = pruneUnresolvedGenericMethods(mergeMethods(type.methods, inheritedMethods)),
+                                properties = pruneUnresolvedGenericProperties(mergeProperties(type.properties, inheritedProperties)),
+                            )
+                        }
+                    }
+                    else -> type
                 }
             }
         }

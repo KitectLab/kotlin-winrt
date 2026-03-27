@@ -492,6 +492,11 @@ class KotlinBindingGeneratorTest {
                 it.startsWith("Windows.Foundation.Collections.IVector`1<Microsoft.UI.Xaml.UIElement>")
             },
         )
+        val renderedSignatures = runtimeClass.methods.joinToString(separator = "\n") { method ->
+            "${method.name}(${method.parameters.joinToString(",") { it.type }}):${method.returnType}"
+        }
+        assertTrue(renderedSignatures, renderedSignatures.contains("Append(Microsoft.UI.Xaml.UIElement):Unit"))
+        assertTrue(renderedSignatures, renderedSignatures.contains("GetAt(UInt32):Microsoft.UI.Xaml.UIElement"))
     }
 
     @Test
