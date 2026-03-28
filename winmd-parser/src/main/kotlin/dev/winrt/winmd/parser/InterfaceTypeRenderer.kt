@@ -20,6 +20,7 @@ internal class InterfaceTypeRenderer(
     private val typeRegistry: TypeRegistry,
     private val winRtSignatureMapper: WinRtSignatureMapper,
     private val winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
+    private val kotlinCollectionProjectionMapper: KotlinCollectionProjectionMapper = KotlinCollectionProjectionMapper(),
 ) {
     fun render(type: WinMdType): TypeSpec {
         val rawTypeClass = ClassName(type.namespace.lowercase(), type.name)
@@ -35,59 +36,9 @@ internal class InterfaceTypeRenderer(
             .superclass(PoetSymbols.winRtInterfaceProjectionClass)
             .addSuperclassConstructorParameter("pointer")
             .apply {
-                if (type.namespace == "Microsoft.UI.Xaml.Interop" && type.name == "IBindableVector") {
-                    addSuperinterface(
-                        PoetSymbols.mutableListClass.parameterizedBy(PoetSymbols.inspectableClass),
-                        CodeBlock.of(
-                            "%T(sizeProvider = { %T(%T.invokeUInt32Method(pointer, 8).getOrThrow()).value.toInt() }, getter = { index -> %T(%T.invokeObjectMethodWithUInt32Arg(pointer, 7, index.toUInt()).getOrThrow()) }, append = { value -> %T.invokeObjectSetter(pointer, 14, value.pointer).getOrThrow() }, clearer = { %T.invokeUnitMethod(pointer, 16).getOrThrow() })",
-                            PoetSymbols.winRtMutableListProjectionClass.parameterizedBy(PoetSymbols.inspectableClass),
-                            PoetSymbols.uint32Class,
-                            PoetSymbols.platformComInteropClass,
-                            PoetSymbols.inspectableClass,
-                            PoetSymbols.platformComInteropClass,
-                            PoetSymbols.platformComInteropClass,
-                            PoetSymbols.platformComInteropClass,
-                        ),
-                    )
-                    addProperty(
-                        PropertySpec.builder("winRtSize", PoetSymbols.uint32Class)
-                            .getter(
-                                FunSpec.getterBuilder()
-                                    .addStatement(
-                                        "return %T(%T.invokeUInt32Method(pointer, 8).getOrThrow())",
-                                        PoetSymbols.uint32Class,
-                                        PoetSymbols.platformComInteropClass,
-                                    )
-                                    .build(),
-                            )
-                            .build(),
-                    )
-                }
-                if (type.namespace == "Microsoft.UI.Xaml.Interop" && type.name == "IBindableVectorView") {
-                    addSuperinterface(
-                        PoetSymbols.listClass.parameterizedBy(PoetSymbols.inspectableClass),
-                        CodeBlock.of(
-                            "%T(sizeProvider = { %T(%T.invokeUInt32Method(pointer, 8).getOrThrow()).value.toInt() }, getter = { index -> %T(%T.invokeObjectMethodWithUInt32Arg(pointer, 7, index.toUInt()).getOrThrow()) })",
-                            PoetSymbols.winRtListProjectionClass.parameterizedBy(PoetSymbols.inspectableClass),
-                            PoetSymbols.uint32Class,
-                            PoetSymbols.platformComInteropClass,
-                            PoetSymbols.inspectableClass,
-                            PoetSymbols.platformComInteropClass,
-                        ),
-                    )
-                    addProperty(
-                        PropertySpec.builder("winRtSize", PoetSymbols.uint32Class)
-                            .getter(
-                                FunSpec.getterBuilder()
-                                    .addStatement(
-                                        "return %T(%T.invokeUInt32Method(pointer, 8).getOrThrow())",
-                                        PoetSymbols.uint32Class,
-                                        PoetSymbols.platformComInteropClass,
-                                    )
-                                    .build(),
-                            )
-                            .build(),
-                    )
+                kotlinCollectionProjectionMapper.interfaceProjection(type)?.let { projection ->
+                    addSuperinterface(projection.superinterface, projection.delegateFactory)
+                    addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
                 }
             }
             .addProperties(type.properties.mapNotNull { renderProperty(it, type.namespace, genericParameters) })

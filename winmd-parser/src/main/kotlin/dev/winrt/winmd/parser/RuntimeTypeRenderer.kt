@@ -3,9 +3,6 @@ package dev.winrt.winmd.parser
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.asTypeName
 import com.squareup.kotlinpoet.TypeSpec
 import dev.winrt.winmd.plugin.WinMdActivationKind
 import dev.winrt.winmd.plugin.WinMdType
@@ -16,6 +13,7 @@ internal class RuntimeTypeRenderer(
     private val runtimeMethodRenderer: RuntimeMethodRenderer,
     private val runtimeCompanionRenderer: RuntimeCompanionRenderer,
     private val runtimeProjectionRenderer: RuntimeProjectionRenderer,
+    private val kotlinCollectionProjectionMapper: KotlinCollectionProjectionMapper = KotlinCollectionProjectionMapper(),
 ) {
     fun render(type: WinMdType): TypeSpec {
         require(type.kind == dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass) {
@@ -35,47 +33,10 @@ internal class RuntimeTypeRenderer(
             .superclass(superclass)
             .addSuperclassConstructorParameter("pointer")
 
-        if (type.namespace == "Windows.Foundation.Collections" && type.name == "StringVectorView") {
-            builder.addSuperinterface(
-                PoetSymbols.listClass.parameterizedBy(String::class.asTypeName()),
-                CodeBlock.of(
-                    "%T(sizeProvider = { %T(%T.invokeUInt32Method(pointer, 7).getOrThrow()).value.toInt() }, getter = { index -> val value = %T.invokeHStringMethodWithUInt32Arg(pointer, 6, index.toUInt()).getOrThrow(); try { %T.toKotlin(value) } finally { %T.release(value) } })",
-                    PoetSymbols.winRtListProjectionClass.parameterizedBy(String::class.asTypeName()),
-                    PoetSymbols.uint32Class,
-                    PoetSymbols.platformComInteropClass,
-                    PoetSymbols.platformComInteropClass,
-                    PoetSymbols.winRtStringsClass,
-                    PoetSymbols.winRtStringsClass,
-                ),
-            )
-            builder.addProperty(
-                PropertySpec.builder("winRtSize", PoetSymbols.uint32Class)
-                    .getter(
-                        FunSpec.getterBuilder()
-                            .addStatement(
-                                "return %T(%T.invokeUInt32Method(pointer, 7).getOrThrow())",
-                                PoetSymbols.uint32Class,
-                                PoetSymbols.platformComInteropClass,
-                            )
-                            .build(),
-                    )
-                    .build(),
-            )
-            builder.addFunction(
-                FunSpec.builder("getAt")
-                    .addParameter("index", PoetSymbols.uint32Class)
-                    .returns(String::class)
-                    .addStatement(
-                        "val value = %T.invokeHStringMethodWithUInt32Arg(pointer, 6, index.value).getOrThrow()",
-                        PoetSymbols.platformComInteropClass,
-                    )
-                    .beginControlFlow("return try")
-                    .addStatement("%T.toKotlin(value)", PoetSymbols.winRtStringsClass)
-                    .nextControlFlow("finally")
-                    .addStatement("%T.release(value)", PoetSymbols.winRtStringsClass)
-                    .endControlFlow()
-                    .build(),
-            )
+        kotlinCollectionProjectionMapper.runtimeClassProjection(type)?.let { projection ->
+            builder.addSuperinterface(projection.superinterface, projection.delegateFactory)
+            builder.addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
+            projection.extraFunctions.forEach(builder::addFunction)
         }
 
         if (type.activationKind == WinMdActivationKind.Factory) {
