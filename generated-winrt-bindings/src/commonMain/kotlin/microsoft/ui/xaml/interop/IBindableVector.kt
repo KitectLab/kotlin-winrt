@@ -14,21 +14,21 @@ open class IBindableVector(
     pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
     fun getAt(index: UInt32): Inspectable =
-        Inspectable(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 6, index.value).getOrThrow())
+        Inspectable(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 7, index.value).getOrThrow())
 
     fun getView(): IBindableVectorView =
-        IBindableVectorView(PlatformComInterop.invokeObjectMethod(pointer, 8).getOrThrow())
+        IBindableVectorView(PlatformComInterop.invokeObjectMethod(pointer, 9).getOrThrow())
 
     fun append(value: Inspectable) {
-        PlatformComInterop.invokeObjectSetter(pointer, 13, value.pointer).getOrThrow()
+        PlatformComInterop.invokeObjectSetter(pointer, 14, value.pointer).getOrThrow()
     }
 
     fun removeAtEnd() {
-        PlatformComInterop.invokeUnitMethod(pointer, 14).getOrThrow()
+        PlatformComInterop.invokeUnitMethod(pointer, 15).getOrThrow()
     }
 
     fun clear() {
-        PlatformComInterop.invokeUnitMethod(pointer, 15).getOrThrow()
+        PlatformComInterop.invokeUnitMethod(pointer, 16).getOrThrow()
     }
 
     fun first(): IBindableIterator =

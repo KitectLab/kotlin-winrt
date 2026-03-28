@@ -14,7 +14,7 @@ open class IBindableVectorView(
     pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
     fun getAt(index: UInt32): Inspectable =
-        Inspectable(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 6, index.value).getOrThrow())
+        Inspectable(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 7, index.value).getOrThrow())
 
     fun first(): IBindableIterator =
         IBindableIterator(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
