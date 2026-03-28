@@ -41,20 +41,48 @@ open class IBindableVector(
     fun first(): IBindableIterator =
         IBindableIterator(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
 
+    internal fun <T> projectMutableList(
+        cacheKey: String,
+        getter: (Int) -> T,
+        append: (T) -> Unit,
+    ): MutableList<T> =
+        getOrPutHelperWrapper(cacheKey) { mutableListProjection(getter, append) }
+
+    internal fun <T> mutableListProjection(
+        getter: (Int) -> T,
+        append: (T) -> Unit,
+    ): MutableList<T> =
+        createMutableListProjection(
+            sizeProvider = { size.value.toInt() },
+            getter = getter,
+            append = append,
+            clearer = ::clear,
+        )
+
     fun asMutableList(): MutableList<Inspectable> =
-        getOrPutHelperWrapper("kotlin.collections.MutableList") {
-            WinRtMutableListProjection(
-                sizeProvider = { size.value.toInt() },
-                getter = { index -> getAt(UInt32(index.toUInt())) },
-                append = ::append,
-                clearer = ::clear,
-            )
-        }
+        projectMutableList(
+            cacheKey = "kotlin.collections.MutableList",
+            getter = { index -> getAt(UInt32(index.toUInt())) },
+            append = ::append,
+        )
 
     companion object : WinRtInterfaceMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
         override val projectionTypeKey: String = "System.Collections.IList"
         override val iid: Guid = guidOf("393de7de-6fd0-4c0d-bb71-47244a113e93")
+
+        internal fun <T> createMutableListProjection(
+            sizeProvider: () -> Int,
+            getter: (Int) -> T,
+            append: (T) -> Unit,
+            clearer: () -> Unit,
+        ): MutableList<T> =
+            WinRtMutableListProjection(
+                sizeProvider = sizeProvider,
+                getter = getter,
+                append = append,
+                clearer = clearer,
+            )
 
         fun from(inspectable: Inspectable): IBindableVector =
             inspectable.projectInterface(this, ::IBindableVector)

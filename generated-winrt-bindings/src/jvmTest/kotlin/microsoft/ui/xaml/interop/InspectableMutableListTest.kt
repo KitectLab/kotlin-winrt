@@ -1,6 +1,7 @@
 package microsoft.ui.xaml.interop
 
 import dev.winrt.core.Inspectable
+import dev.winrt.core.UInt32
 import dev.winrt.kom.ComPtr
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -34,5 +35,19 @@ class InspectableMutableListTest {
         val list: MutableList<Inspectable> = vector.asMutableList()
 
         assertSame(vector.asMutableList(), list)
+    }
+
+    @Test
+    fun custom_typed_projection_uses_shared_bindable_vector_factory() {
+        val vector = IBindableVector(ComPtr.NULL)
+
+        val list: MutableList<UInt32> = vector.projectMutableList(
+            cacheKey = "test.UInt32List",
+            getter = { UInt32(it.toUInt()) },
+            append = {},
+        )
+
+        assertSame(list, vector.projectMutableList("test.UInt32List", { UInt32(it.toUInt()) }, {}))
+        assertEquals(UInt32(0u), list[0])
     }
 }
