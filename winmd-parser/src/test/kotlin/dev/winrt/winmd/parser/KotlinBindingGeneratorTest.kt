@@ -806,6 +806,78 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_kotlin_list_shape_for_runtime_class_implementing_closed_generic_string_vector_view() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IVectorView",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbe1fa4c-b0e3-4583-baef-1f1b2e483e56",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "StringVectorViewHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IVectorView<String>",
+                            implementedInterfaces = listOf("Windows.Foundation.Collections.IVectorView<String>"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Windows/Foundation/Collections/StringVectorViewHost.kt"
+        }.content
+
+        assertTrue(binding.contains("List<String> by IVectorView.from(Inspectable(pointer), \"string\", \"String\")"))
+        assertTrue(binding.contains("val winRtSize: UInt32"))
+    }
+
+    @Test
+    fun generates_kotlin_mutable_list_shape_for_runtime_class_implementing_closed_generic_string_vector() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IVector",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "913337e9-11a1-4345-a3a2-4e7f956e222d",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "StringVectorHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IVector<String>",
+                            implementedInterfaces = listOf("Windows.Foundation.Collections.IVector<String>"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Windows/Foundation/Collections/StringVectorHost.kt"
+        }.content
+
+        assertTrue(binding.contains("MutableList<String> by IVector.from(Inspectable(pointer), \"string\", \"String\")"))
+        assertTrue(binding.contains("val winRtSize: UInt32"))
+    }
+
+    @Test
     fun generates_kotlin_list_shape_for_string_vector_view() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

@@ -171,6 +171,9 @@ internal class KotlinCollectionProjectionMapper {
     ): CollectionInterfaceMetadata? {
         if (qualifiedName.startsWith("Windows.Foundation.Collections.IVectorView<") && qualifiedName.endsWith(">")) {
             val elementType = qualifiedName.substringAfter('<').substringBeforeLast('>')
+            if (!supportsClosedGenericVectorElement(elementType)) {
+                return null
+            }
             val rawInterfaceClass = typeNameMapper.mapTypeName(
                 "Windows.Foundation.Collections.IVectorView",
                 "Windows.Foundation.Collections",
@@ -190,6 +193,9 @@ internal class KotlinCollectionProjectionMapper {
         }
         if (qualifiedName.startsWith("Windows.Foundation.Collections.IVector<") && qualifiedName.endsWith(">")) {
             val elementType = qualifiedName.substringAfter('<').substringBeforeLast('>')
+            if (!supportsClosedGenericVectorElement(elementType)) {
+                return null
+            }
             val rawInterfaceClass = typeNameMapper.mapTypeName(
                 "Windows.Foundation.Collections.IVector",
                 "Windows.Foundation.Collections",
@@ -336,6 +342,10 @@ internal class KotlinCollectionProjectionMapper {
                 !typeName.contains('<') &&
                 !typeName.endsWith("[]")
             )
+    }
+
+    private fun supportsClosedGenericVectorElement(typeName: String): Boolean {
+        return supportsClosedGenericIterableElement(typeName)
     }
 
     private fun elementReadExpression(
