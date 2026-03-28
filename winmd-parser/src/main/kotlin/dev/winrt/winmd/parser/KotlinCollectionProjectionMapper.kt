@@ -44,6 +44,25 @@ internal class KotlinCollectionProjectionMapper {
         return null
     }
 
+    fun runtimeClassInterfaceProjection(type: WinMdType, typeNameMapper: TypeNameMapper): RuntimeCollectionProjection? {
+        val collectionInterface = sequenceOf(type.defaultInterface)
+            .filterNotNull()
+            .plus(type.implementedInterfaces.asSequence())
+            .distinct()
+            .mapNotNull { interfaceProjectionMetadata(it, typeNameMapper) }
+            .firstOrNull()
+            ?: return null
+        return RuntimeCollectionProjection(
+            superinterface = collectionInterface.collectionSuperinterface,
+            delegateFactory = CodeBlock.of(
+                "%T.from(%T(pointer))",
+                collectionInterface.interfaceClass,
+                PoetSymbols.inspectableClass,
+            ),
+            winRtSizeSlot = collectionInterface.winRtSizeSlot,
+        )
+    }
+
     fun interfaceProjection(type: WinMdType): InterfaceCollectionProjection? {
         if (type.namespace == "Microsoft.UI.Xaml.Interop" && type.name == "IBindableVector") {
             return InterfaceCollectionProjection(
@@ -92,6 +111,25 @@ internal class KotlinCollectionProjectionMapper {
             )
             .build()
     }
+
+    private fun interfaceProjectionMetadata(
+        qualifiedName: String,
+        typeNameMapper: TypeNameMapper,
+    ): CollectionInterfaceMetadata? {
+        return when (qualifiedName) {
+            "Microsoft.UI.Xaml.Interop.IBindableVector" -> CollectionInterfaceMetadata(
+                interfaceClass = typeNameMapper.mapTypeName(qualifiedName, qualifiedName.substringBeforeLast(".")) as ClassName,
+                collectionSuperinterface = PoetSymbols.mutableListClass.parameterizedBy(PoetSymbols.inspectableClass),
+                winRtSizeSlot = 8,
+            )
+            "Microsoft.UI.Xaml.Interop.IBindableVectorView" -> CollectionInterfaceMetadata(
+                interfaceClass = typeNameMapper.mapTypeName(qualifiedName, qualifiedName.substringBeforeLast(".")) as ClassName,
+                collectionSuperinterface = PoetSymbols.listClass.parameterizedBy(PoetSymbols.inspectableClass),
+                winRtSizeSlot = 8,
+            )
+            else -> null
+        }
+    }
 }
 
 internal data class RuntimeCollectionProjection(
@@ -104,5 +142,11 @@ internal data class RuntimeCollectionProjection(
 internal data class InterfaceCollectionProjection(
     val superinterface: TypeName,
     val delegateFactory: CodeBlock,
+    val winRtSizeSlot: Int,
+)
+
+internal data class CollectionInterfaceMetadata(
+    val interfaceClass: ClassName,
+    val collectionSuperinterface: TypeName,
     val winRtSizeSlot: Int,
 )

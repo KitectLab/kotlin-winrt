@@ -338,6 +338,46 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_kotlin_mutable_list_shape_for_runtime_class_implementing_bindable_vector() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml.Interop",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Interop",
+                            name = "IBindableVector",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "393de7de-6fd0-4c0d-bb71-47244a113e93",
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml.Controls",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Controls",
+                            name = "UIElementCollection",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Microsoft.UI.Xaml.Interop.IBindableVector",
+                            implementedInterfaces = listOf("Microsoft.UI.Xaml.Interop.IBindableVector"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Microsoft/UI/Xaml/Controls/UIElementCollection.kt"
+        }.content
+
+        assertTrue(binding.contains("MutableList<Inspectable> by IBindableVector.from(Inspectable(pointer))"))
+        assertTrue(binding.contains("val winRtSize: UInt32"))
+    }
+
+    @Test
     fun generates_kotlin_list_shape_for_string_vector_view() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

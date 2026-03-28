@@ -38,6 +38,10 @@ internal class RuntimeTypeRenderer(
             builder.addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
             projection.extraFunctions.forEach(builder::addFunction)
         }
+        kotlinCollectionProjectionMapper.runtimeClassInterfaceProjection(type, typeNameMapper)?.let { projection ->
+            builder.addSuperinterface(projection.superinterface, projection.delegateFactory)
+            builder.addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
+        }
 
         if (type.activationKind == WinMdActivationKind.Factory) {
             builder.addFunction(
