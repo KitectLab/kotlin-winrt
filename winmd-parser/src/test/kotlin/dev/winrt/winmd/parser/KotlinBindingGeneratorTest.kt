@@ -4,6 +4,7 @@ import dev.winrt.winmd.plugin.WinMdModelFactory
 import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdNamespace
 import dev.winrt.winmd.plugin.WinMdParameter
+import dev.winrt.winmd.plugin.WinMdProperty
 import dev.winrt.winmd.plugin.WinMdType
 import dev.winrt.winmd.plugin.WinMdTypeKind
 import dev.winrt.winmd.plugin.WindowsSdkReferences
@@ -14,6 +15,114 @@ import org.junit.Test
 import java.nio.file.Files
 
 class KotlinBindingGeneratorTest {
+    @Test
+    fun folds_runtime_class_statics_into_companion_object() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "Application",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.IStringable",
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "IApplicationInitializationCallbackParams",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "ApplicationInitializationCallback",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("e", "Microsoft.UI.Xaml.IApplicationInitializationCallbackParams")),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "IApplicationStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                            methods = listOf(
+                                WinMdMethod(name = "get_Current", returnType = "Microsoft.UI.Xaml.Application", vtableIndex = 6),
+                                WinMdMethod(
+                                    name = "Start",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("callback", "Microsoft.UI.Xaml.ApplicationInitializationCallback")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Microsoft/UI/Xaml/Application.kt" }.content
+
+        assertTrue(binding, binding.contains("private fun __statics(): IApplicationStatics"))
+        assertTrue(binding, binding.contains("val current: Application"))
+        assertTrue(binding, binding.contains("get() = __statics().get_Current()"))
+        assertTrue(binding, binding.contains("fun start(callback: ApplicationInitializationCallback)"))
+        assertTrue(binding, binding.contains("__statics().start(callback)"))
+        assertTrue(binding, binding.contains("fun start(callback: (IApplicationInitializationCallbackParams) -> Unit)"))
+        assertTrue(binding, binding.contains("WinRtDelegateBridge.createObjectArgUnitDelegate"))
+    }
+
+    @Test
+    fun folds_runtime_class_static_properties_into_companion_object() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Globalization",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Globalization",
+                            name = "ApplicationLanguages",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "StringVectorView",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Globalization",
+                            name = "IApplicationLanguagesStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-dddd-dddd-dddd-dddddddddddd",
+                            properties = listOf(
+                                WinMdProperty(name = "Languages", type = "Windows.Foundation.Collections.StringVectorView", mutable = false),
+                                WinMdProperty(name = "ManifestLanguages", type = "Windows.Foundation.Collections.StringVectorView", mutable = false),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Windows/Globalization/ApplicationLanguages.kt" }.content
+
+        assertTrue(binding, binding.contains("private fun __statics(): IApplicationLanguagesStatics"))
+        assertTrue(binding, binding.contains("val languages: List<String>"))
+        assertTrue(binding, binding.contains("get() = __statics().languages"))
+        assertTrue(binding, binding.contains("val manifestLanguages: List<String>"))
+        assertTrue(binding, binding.contains("get() = __statics().manifestLanguages"))
+    }
+
     @Test
     fun generates_bindings_for_known_namespaces() {
         val tempFile = Files.createTempFile("sample", ".winmd")

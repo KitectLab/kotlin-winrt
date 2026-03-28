@@ -22,7 +22,14 @@ internal class TypeFileEmitter(
     private val delegateTypeRenderer = DelegateTypeRenderer(typeNameMapper)
     private val runtimePropertyRenderer = RuntimePropertyRenderer(typeNameMapper)
     private val runtimeMethodRenderer = RuntimeMethodRenderer(typeNameMapper, delegateLambdaPlanResolver, typeRegistry)
-    private val runtimeCompanionRenderer = RuntimeCompanionRenderer()
+    private val runtimeCompanionRenderer = RuntimeCompanionRenderer(
+        typeRegistry = typeRegistry,
+        typeNameMapper = typeNameMapper,
+        delegateLambdaPlanResolver = delegateLambdaPlanResolver,
+        winRtSignatureMapper = winRtSignatureMapper,
+        winRtProjectionTypeMapper = winRtProjectionTypeMapper,
+        kotlinCollectionProjectionMapper = KotlinCollectionProjectionMapper(),
+    )
     private val runtimeProjectionRenderer = RuntimeProjectionRenderer()
     private val valueTypeRenderer = ValueTypeRenderer(typeNameMapper)
     private val runtimeTypeRenderer = RuntimeTypeRenderer(

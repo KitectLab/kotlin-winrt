@@ -5,7 +5,9 @@ import dev.winrt.core.RuntimeClassId
 import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.core.WinRtObject
 import dev.winrt.core.WinRtRuntime
+import dev.winrt.core.guidOf
 import dev.winrt.kom.ComPtr
+import dev.winrt.kom.Guid
 import dev.winrt.kom.JvmComRuntime
 import dev.winrt.kom.JvmWinRtRuntime
 import dev.winrt.kom.KnownHResults
@@ -13,6 +15,7 @@ import dev.winrt.kom.PlatformComInterop
 import dev.winrt.kom.PlatformRuntime
 
 object SampleBootstrap {
+    private val iidIActivationFactory: Guid = guidOf("00000035-0000-0000-c000-000000000046")
     private var bootstrapLibrary: WindowsAppSdkBootstrap.BootstrapLibrary? = null
     private var bootstrapDiagnostics: String? = null
     private var comInitialized = false
@@ -48,8 +51,7 @@ object SampleBootstrap {
                     return Result.success(constructor(ComPtr.NULL))
                 }
 
-                val qualifiedName = metadata.classId.qualifiedName
-                return JvmWinRtRuntime.getActivationFactory(qualifiedName)
+                return getActivationFactory(metadata, iidIActivationFactory)
                     .mapCatching { factory ->
                         try {
                             val instance = JvmWinRtRuntime.activateInstance(factory).getOrThrow()
@@ -61,6 +63,14 @@ object SampleBootstrap {
                     .recoverCatching {
                         constructor(ComPtr.NULL)
                     }
+            }
+
+            override fun getActivationFactory(metadata: WinRtRuntimeClassMetadata, iid: dev.winrt.kom.Guid): Result<ComPtr> {
+                if (!PlatformRuntime.isWindows) {
+                    return Result.success(ComPtr.NULL)
+                }
+
+                return JvmWinRtRuntime.getActivationFactory(metadata.classId.qualifiedName, iid)
             }
         }
     }

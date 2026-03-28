@@ -82,11 +82,16 @@ class ActivationException(message: String) : RuntimeException(message)
 
 interface ActivationFactoryProvider {
     fun <T : WinRtObject> activate(metadata: WinRtRuntimeClassMetadata, constructor: (ComPtr) -> T): Result<T>
+    fun getActivationFactory(metadata: WinRtRuntimeClassMetadata, iid: Guid): Result<ComPtr>
 }
 
 object NullActivationFactoryProvider : ActivationFactoryProvider {
     override fun <T : WinRtObject> activate(metadata: WinRtRuntimeClassMetadata, constructor: (ComPtr) -> T): Result<T> {
         return Result.failure(ActivationException("Activation is not configured for ${metadata.classId.qualifiedName}"))
+    }
+
+    override fun getActivationFactory(metadata: WinRtRuntimeClassMetadata, iid: Guid): Result<ComPtr> {
+        return Result.failure(ActivationException("Activation factory is not configured for ${metadata.classId.qualifiedName}"))
     }
 }
 
@@ -95,6 +100,16 @@ object WinRtRuntime {
 
     fun <T : WinRtObject> activate(metadata: WinRtRuntimeClassMetadata, constructor: (ComPtr) -> T): T {
         return activationFactoryProvider.activate(metadata, constructor).getOrElse { throw it }
+    }
+
+    fun <T : WinRtObject> projectActivationFactory(
+        runtimeClass: WinRtRuntimeClassMetadata,
+        interfaceMetadata: WinRtInterfaceMetadata,
+        constructor: (ComPtr) -> T,
+    ): T {
+        val factory = activationFactoryProvider.getActivationFactory(runtimeClass, interfaceMetadata.iid)
+            .getOrElse { throw it }
+        return interfaceMetadata.project(factory, constructor)
     }
 
     fun check(result: HResult, operation: String) {
