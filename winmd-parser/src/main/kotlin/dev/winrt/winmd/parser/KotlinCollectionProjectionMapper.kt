@@ -337,7 +337,7 @@ internal class KotlinCollectionProjectionMapper {
     }
 
     private fun supportsClosedGenericIterableElement(typeName: String): Boolean {
-        return typeName == "String" || typeName == "Boolean" || typeName == "Int32" || (
+        return typeName == "String" || typeName == "Boolean" || typeName == "Int32" || typeName == "Float64" || (
             (typeName == "Object" || typeName.contains('.')) &&
                 !typeName.contains('<') &&
                 !typeName.endsWith("[]")
@@ -384,6 +384,13 @@ internal class KotlinCollectionProjectionMapper {
                 pointerExpression,
                 slot,
             )
+        } else if (elementTypeName == Double::class.asTypeName()) {
+            CodeBlock.of(
+                "%T.invokeFloat64Method(%L, %L).getOrThrow()",
+                PoetSymbols.platformComInteropClass,
+                pointerExpression,
+                slot,
+            )
         } else {
             CodeBlock.of(
                 "%T(%T.invokeObjectMethod(%L, %L).getOrThrow())",
@@ -399,6 +406,7 @@ internal class KotlinCollectionProjectionMapper {
         return when (typeName) {
             "Boolean" -> Boolean::class.asTypeName()
             "Int32" -> Int::class.asTypeName()
+            "Float64" -> Double::class.asTypeName()
             else -> typeNameMapper.mapTypeName(typeName, "Windows.Foundation.Collections")
         }
     }
