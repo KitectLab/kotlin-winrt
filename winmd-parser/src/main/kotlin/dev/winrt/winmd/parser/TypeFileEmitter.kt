@@ -17,7 +17,7 @@ internal class TypeFileEmitter(
         winRtSignatureMapper,
         winRtProjectionTypeMapper,
     )
-    private val delegateTypeRenderer = DelegateTypeRenderer()
+    private val delegateTypeRenderer = DelegateTypeRenderer(typeNameMapper)
     private val runtimePropertyRenderer = RuntimePropertyRenderer(typeNameMapper)
     private val runtimeMethodRenderer = RuntimeMethodRenderer(typeNameMapper)
     private val runtimeCompanionRenderer = RuntimeCompanionRenderer()
@@ -47,7 +47,11 @@ internal class TypeFileEmitter(
     }
 
     private fun renderTypeFile(namespace: WinMdNamespace, type: WinMdType): FileSpec {
-        return FileSpec.builder(namespace.name.lowercase(), type.name)
+        val builder = FileSpec.builder(namespace.name.lowercase(), type.name)
+        if (type.kind == WinMdTypeKind.Delegate) {
+            delegateTypeRenderer.renderLambdaAlias(type)?.let(builder::addTypeAlias)
+        }
+        return builder
             .addType(renderType(type))
             .build()
     }

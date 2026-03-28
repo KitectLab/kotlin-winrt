@@ -2213,6 +2213,18 @@ class KotlinBindingGeneratorTest {
                             name = "ApplicationInitializationCallback",
                             kind = WinMdTypeKind.Delegate,
                             guid = "d8eef1c9-1234-56f1-9963-45dd9c80a661",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter(
+                                            name = "value",
+                                            type = "Microsoft.UI.Xaml.IApplicationInitializationCallbackParams",
+                                        ),
+                                    ),
+                                ),
+                            ),
                         ),
                     ),
                 ),
@@ -2225,9 +2237,45 @@ class KotlinBindingGeneratorTest {
         }.content
 
         assertTrue(callbackBinding.contains("class ApplicationInitializationCallback("))
+        assertTrue(callbackBinding.contains("typealias ApplicationInitializationCallbackHandler ="))
+        assertTrue(callbackBinding.contains("IApplicationInitializationCallbackParams) -> Unit"))
         assertTrue(callbackBinding.contains(": WinRtInterfaceProjection(pointer)"))
         assertTrue(callbackBinding.contains("override val iid: Guid = guidOf(\"d8eef1c9-1234-56f1-9963-45dd9c80a661\")"))
         assertFalse(callbackBinding.contains("WinRtRuntimeClassMetadata"))
         assertFalse(callbackBinding.contains("RuntimeClassId"))
+    }
+
+    @Test
+    fun generates_kotlin_lambda_alias_for_no_arg_unit_delegate() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Dispatching",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Dispatching",
+                            name = "DispatcherQueueHandler",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "aaaa1111-2222-3333-4444-555555555555",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Microsoft/UI/Dispatching/DispatcherQueueHandler.kt"
+        }.content
+
+        assertTrue(binding.contains("typealias DispatcherQueueHandlerHandler = () -> Unit"))
+        assertTrue(binding.contains("class DispatcherQueueHandler("))
     }
 }
