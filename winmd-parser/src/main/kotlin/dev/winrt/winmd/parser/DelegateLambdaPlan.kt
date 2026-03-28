@@ -20,9 +20,54 @@ internal sealed interface DelegateLambdaPlan {
     ) : DelegateLambdaPlan
 }
 
+private data class ScalarBridgeSpec(
+    val parameterType: TypeName,
+    val unitBridgeFactoryMethod: String? = null,
+    val booleanBridgeFactoryMethod: String? = null,
+)
+
 internal class DelegateLambdaPlanResolver(
     private val typeNameMapper: TypeNameMapper,
 ) {
+    private val scalarBridgeSpecs = mapOf(
+        "Int32" to ScalarBridgeSpec(
+            parameterType = Int::class.asTypeName(),
+            unitBridgeFactoryMethod = "createInt32ArgUnitDelegate",
+            booleanBridgeFactoryMethod = "createInt32ArgBooleanDelegate",
+        ),
+        "String" to ScalarBridgeSpec(
+            parameterType = String::class.asTypeName(),
+            unitBridgeFactoryMethod = "createStringArgUnitDelegate",
+            booleanBridgeFactoryMethod = "createStringArgBooleanDelegate",
+        ),
+        "UInt32" to ScalarBridgeSpec(
+            parameterType = UInt::class.asTypeName(),
+            unitBridgeFactoryMethod = "createUInt32ArgUnitDelegate",
+            booleanBridgeFactoryMethod = "createUInt32ArgBooleanDelegate",
+        ),
+        "Boolean" to ScalarBridgeSpec(
+            parameterType = Boolean::class.asTypeName(),
+            unitBridgeFactoryMethod = "createBooleanArgUnitDelegate",
+        ),
+        "Int64" to ScalarBridgeSpec(
+            parameterType = Long::class.asTypeName(),
+            unitBridgeFactoryMethod = "createInt64ArgUnitDelegate",
+            booleanBridgeFactoryMethod = "createInt64ArgBooleanDelegate",
+        ),
+        "UInt64" to ScalarBridgeSpec(
+            parameterType = ULong::class.asTypeName(),
+            unitBridgeFactoryMethod = "createUInt64ArgUnitDelegate",
+        ),
+        "Float32" to ScalarBridgeSpec(
+            parameterType = Float::class.asTypeName(),
+            unitBridgeFactoryMethod = "createFloat32ArgUnitDelegate",
+        ),
+        "Float64" to ScalarBridgeSpec(
+            parameterType = Double::class.asTypeName(),
+            unitBridgeFactoryMethod = "createFloat64ArgUnitDelegate",
+        ),
+    )
+
     fun resolve(
         invokeMethod: WinMdMethod,
         currentNamespace: String,
@@ -47,42 +92,7 @@ internal class DelegateLambdaPlanResolver(
                     bridgeFactoryMethod = "createNoArgBooleanDelegate",
                 )
             }
-            invokeMethod.parameters.size == 1 &&
-                invokeMethod.parameters.single().type == "Int32" &&
-                invokeMethod.returnType == "Unit" -> directSingleArgPlan(Int::class.asTypeName(), Unit::class.asTypeName(), "createInt32ArgUnitDelegate")
-            invokeMethod.parameters.size == 1 &&
-                invokeMethod.parameters.single().type == "Int32" &&
-                invokeMethod.returnType == "Boolean" -> directSingleArgPlan(Int::class.asTypeName(), Boolean::class.asTypeName(), "createInt32ArgBooleanDelegate")
-            invokeMethod.parameters.size == 1 &&
-                invokeMethod.parameters.single().type == "String" &&
-                invokeMethod.returnType == "Unit" -> directSingleArgPlan(String::class.asTypeName(), Unit::class.asTypeName(), "createStringArgUnitDelegate")
-            invokeMethod.parameters.size == 1 &&
-                invokeMethod.parameters.single().type == "String" &&
-                invokeMethod.returnType == "Boolean" -> directSingleArgPlan(String::class.asTypeName(), Boolean::class.asTypeName(), "createStringArgBooleanDelegate")
-            invokeMethod.parameters.size == 1 &&
-                invokeMethod.parameters.single().type == "UInt32" &&
-                invokeMethod.returnType == "Boolean" -> directSingleArgPlan(UInt::class.asTypeName(), Boolean::class.asTypeName(), "createUInt32ArgBooleanDelegate")
-            invokeMethod.parameters.size == 1 &&
-                invokeMethod.parameters.single().type == "UInt32" &&
-                invokeMethod.returnType == "Unit" -> directSingleArgPlan(UInt::class.asTypeName(), Unit::class.asTypeName(), "createUInt32ArgUnitDelegate")
-            invokeMethod.parameters.size == 1 &&
-                invokeMethod.parameters.single().type == "Int64" &&
-                invokeMethod.returnType == "Boolean" -> directSingleArgPlan(Long::class.asTypeName(), Boolean::class.asTypeName(), "createInt64ArgBooleanDelegate")
-            invokeMethod.parameters.size == 1 &&
-                invokeMethod.parameters.single().type == "UInt64" &&
-                invokeMethod.returnType == "Unit" -> directSingleArgPlan(ULong::class.asTypeName(), Unit::class.asTypeName(), "createUInt64ArgUnitDelegate")
-            invokeMethod.parameters.size == 1 &&
-                invokeMethod.parameters.single().type == "Int64" &&
-                invokeMethod.returnType == "Unit" -> directSingleArgPlan(Long::class.asTypeName(), Unit::class.asTypeName(), "createInt64ArgUnitDelegate")
-            invokeMethod.parameters.size == 1 &&
-                invokeMethod.parameters.single().type == "Boolean" &&
-                invokeMethod.returnType == "Unit" -> directSingleArgPlan(Boolean::class.asTypeName(), Unit::class.asTypeName(), "createBooleanArgUnitDelegate")
-            invokeMethod.parameters.size == 1 &&
-                invokeMethod.parameters.single().type == "Float32" &&
-                invokeMethod.returnType == "Unit" -> directSingleArgPlan(Float::class.asTypeName(), Unit::class.asTypeName(), "createFloat32ArgUnitDelegate")
-            invokeMethod.parameters.size == 1 &&
-                invokeMethod.parameters.single().type == "Float64" &&
-                invokeMethod.returnType == "Unit" -> directSingleArgPlan(Double::class.asTypeName(), Unit::class.asTypeName(), "createFloat64ArgUnitDelegate")
+            invokeMethod.parameters.size == 1 -> resolveScalarPlan(invokeMethod.parameters.single().type, invokeMethod.returnType)
             invokeMethod.parameters.size == 1 &&
                 supportsObjectType(invokeMethod.parameters.single().type) &&
                 invokeMethod.returnType == "Unit" -> {
@@ -102,6 +112,19 @@ internal class DelegateLambdaPlanResolver(
                     bridgeFactoryMethod = "createObjectArgBooleanDelegate",
                     callbackArgType = callbackArgType,
                 )
+            }
+            else -> null
+        }
+    }
+
+    private fun resolveScalarPlan(parameterTypeName: String, returnTypeName: String): DelegateLambdaPlan.DirectBridge? {
+        val spec = scalarBridgeSpecs[parameterTypeName] ?: return null
+        return when (returnTypeName) {
+            "Unit" -> spec.unitBridgeFactoryMethod?.let {
+                directSingleArgPlan(spec.parameterType, Unit::class.asTypeName(), it)
+            }
+            "Boolean" -> spec.booleanBridgeFactoryMethod?.let {
+                directSingleArgPlan(spec.parameterType, Boolean::class.asTypeName(), it)
             }
             else -> null
         }
