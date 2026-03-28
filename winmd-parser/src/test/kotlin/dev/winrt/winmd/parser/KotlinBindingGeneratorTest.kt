@@ -2828,6 +2828,117 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_lambda_overload_for_boolean_delegate_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Callbacks",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Callbacks",
+                            name = "ToggleHandler",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "18181818-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter(name = "value", type = "Boolean"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Callbacks",
+                            name = "IToggleSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "19191919-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetHandler",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter(name = "callback", type = "Example.Callbacks.ToggleHandler"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Example/Callbacks/IToggleSource.kt"
+        }.content
+
+        assertTrue(binding.contains("fun setHandler(callback: ToggleHandler)"))
+        assertTrue(binding.contains("(Boolean) -> Unit"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createBooleanArgUnitDelegate"))
+        assertTrue(binding.contains("ToggleHandler.iid"))
+        assertTrue(binding.contains("setHandler(ToggleHandler(delegateHandle.pointer))"))
+    }
+
+    @Test
+    fun generates_runtime_lambda_overload_for_boolean_delegate_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "ToggleHandler",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "20202020-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter(name = "value", type = "Boolean"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "ToggleSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetHandler",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter(name = "callback", type = "Example.Runtime.ToggleHandler"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Example/Runtime/ToggleSource.kt"
+        }.content
+
+        assertTrue(binding.contains("fun setHandler(callback: ToggleHandler)"))
+        assertTrue(binding.contains("(Boolean) -> Unit"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createBooleanArgUnitDelegate"))
+        assertTrue(binding.contains("ToggleHandler.iid"))
+        assertTrue(binding.contains("setHandler(ToggleHandler(delegateHandle.pointer))"))
+    }
+
+    @Test
     fun reads_winui_ui_element_collection_runtime_class_when_available() {
         val winUiRoot = java.nio.file.Path.of("F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002")
         val xamlWinmd = winUiRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd")

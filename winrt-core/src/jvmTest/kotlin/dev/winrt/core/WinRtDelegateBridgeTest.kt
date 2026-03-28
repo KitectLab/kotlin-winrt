@@ -216,6 +216,32 @@ class WinRtDelegateBridgeTest {
     }
 
     @Test
+    fun creates_boolean_arg_unit_delegate_handle() {
+        val iid = guidOf("f0f0f0f0-bbbb-cccc-dddd-eeeeeeeeeeee")
+        var captured: Boolean? = null
+
+        WinRtDelegateBridge.createBooleanArgUnitDelegate(iid) { value ->
+            captured = value
+        }.use { handle ->
+            val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
+            val vtablePointer = callbackPointer.reinterpret(ValueLayout.ADDRESS.byteSize()).get(ValueLayout.ADDRESS, 0L)
+            val function = Linker.nativeLinker().downcallHandle(
+                vtablePointer.reinterpret(ValueLayout.ADDRESS.byteSize() * 4).getAtIndex(ValueLayout.ADDRESS, 3),
+                FunctionDescriptor.of(
+                    ValueLayout.JAVA_INT,
+                    ValueLayout.ADDRESS,
+                    ValueLayout.JAVA_INT,
+                ),
+            )
+
+            val hresult = function.invokeWithArguments(callbackPointer, 1) as Int
+            assertEquals(0, hresult)
+            assertEquals(true, captured)
+            assertFalse(handle.pointer.isNull)
+        }
+    }
+
+    @Test
     fun creates_float32_arg_unit_delegate_handle() {
         val iid = guidOf("ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee")
         var captured: Float? = null
