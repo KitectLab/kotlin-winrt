@@ -44,6 +44,13 @@ private data class ScalarBridgeSpec(
     val booleanBridgeFactoryMethod: String? = null,
 )
 
+private data class DelegateSignatureShape(
+    val parameterCarriers: List<ParameterCarrier>,
+    val lambdaParameterTypes: List<TypeName>,
+    val returnCarrier: ReturnCarrier,
+    val lambdaReturnType: TypeName,
+)
+
 internal class DelegateLambdaPlanResolver(
     private val typeNameMapper: TypeNameMapper,
 ) {
@@ -92,73 +99,140 @@ internal class DelegateLambdaPlanResolver(
         genericParameters: Set<String> = emptySet(),
         supportsObjectType: (String) -> Boolean,
     ): DelegateLambdaPlan? {
-        val returnType = kotlinScalarType(invokeMethod.returnType, currentNamespace, genericParameters)
-        if (returnType == null && invokeMethod.returnType !in setOf("Unit", "Boolean")) {
-            return null
-        }
+        val signatureShape = resolveSignatureShape(
+            invokeMethod = invokeMethod,
+            currentNamespace = currentNamespace,
+            genericParameters = genericParameters,
+            supportsObjectType = supportsObjectType,
+        ) ?: return null
 
         return when {
-            invokeMethod.parameters.isEmpty() && invokeMethod.returnType == "Unit" -> {
+            signatureShape.parameterCarriers.singleOrNull() == ParameterCarrier.NoArgs &&
+                signatureShape.returnCarrier == ReturnCarrier.UNIT -> {
                 DelegateLambdaPlan.PlannedBridge(
-                    lambdaType = LambdaTypeName.get(returnType = Unit::class.asTypeName()),
+                    lambdaType = LambdaTypeName.get(returnType = signatureShape.lambdaReturnType),
                     bridge = BridgeSpec(
                         factoryMethod = "createNoArgUnitDelegate",
-                        parameterCarriers = listOf(ParameterCarrier.NoArgs),
-                        returnCarrier = ReturnCarrier.UNIT,
+                        parameterCarriers = signatureShape.parameterCarriers,
+                        returnCarrier = signatureShape.returnCarrier,
                     ),
                 )
             }
-            invokeMethod.parameters.isEmpty() && invokeMethod.returnType == "Boolean" -> {
+            signatureShape.parameterCarriers.singleOrNull() == ParameterCarrier.NoArgs &&
+                signatureShape.returnCarrier == ReturnCarrier.BOOLEAN -> {
                 DelegateLambdaPlan.PlannedBridge(
-                    lambdaType = LambdaTypeName.get(returnType = Boolean::class.asTypeName()),
+                    lambdaType = LambdaTypeName.get(returnType = signatureShape.lambdaReturnType),
                     bridge = BridgeSpec(
                         factoryMethod = "createNoArgBooleanDelegate",
-                        parameterCarriers = listOf(ParameterCarrier.NoArgs),
-                        returnCarrier = ReturnCarrier.BOOLEAN,
+                        parameterCarriers = signatureShape.parameterCarriers,
+                        returnCarrier = signatureShape.returnCarrier,
                     ),
                 )
             }
-            invokeMethod.parameters.size == 1 &&
-                supportsObjectType(invokeMethod.parameters.single().type) &&
-                invokeMethod.returnType == "Unit" -> {
-                val callbackArgType = typeNameMapper.mapTypeName(invokeMethod.parameters.single().type, currentNamespace, genericParameters)
+            signatureShape.parameterCarriers.singleOrNull() is ParameterCarrier.ObjectWrapped &&
+                signatureShape.returnCarrier == ReturnCarrier.UNIT -> {
                 DelegateLambdaPlan.PlannedBridge(
-                    lambdaType = LambdaTypeName.get(parameters = arrayOf(callbackArgType), returnType = Unit::class.asTypeName()),
+                    lambdaType = LambdaTypeName.get(
+                        parameters = signatureShape.lambdaParameterTypes.toTypedArray(),
+                        returnType = signatureShape.lambdaReturnType,
+                    ),
                     bridge = BridgeSpec(
                         factoryMethod = "createObjectArgUnitDelegate",
-                        parameterCarriers = listOf(ParameterCarrier.ObjectWrapped(callbackArgType)),
-                        returnCarrier = ReturnCarrier.UNIT,
+                        parameterCarriers = signatureShape.parameterCarriers,
+                        returnCarrier = signatureShape.returnCarrier,
                     ),
                 )
             }
-            invokeMethod.parameters.size == 1 &&
-                supportsObjectType(invokeMethod.parameters.single().type) &&
-                invokeMethod.returnType == "Boolean" -> {
-                val callbackArgType = typeNameMapper.mapTypeName(invokeMethod.parameters.single().type, currentNamespace, genericParameters)
+            signatureShape.parameterCarriers.singleOrNull() is ParameterCarrier.ObjectWrapped &&
+                signatureShape.returnCarrier == ReturnCarrier.BOOLEAN -> {
                 DelegateLambdaPlan.PlannedBridge(
-                    lambdaType = LambdaTypeName.get(parameters = arrayOf(callbackArgType), returnType = Boolean::class.asTypeName()),
+                    lambdaType = LambdaTypeName.get(
+                        parameters = signatureShape.lambdaParameterTypes.toTypedArray(),
+                        returnType = signatureShape.lambdaReturnType,
+                    ),
                     bridge = BridgeSpec(
                         factoryMethod = "createObjectArgBooleanDelegate",
-                        parameterCarriers = listOf(ParameterCarrier.ObjectWrapped(callbackArgType)),
-                        returnCarrier = ReturnCarrier.BOOLEAN,
+                        parameterCarriers = signatureShape.parameterCarriers,
+                        returnCarrier = signatureShape.returnCarrier,
                     ),
                 )
             }
-            invokeMethod.parameters.size == 1 -> resolveScalarPlan(invokeMethod.parameters.single().type, invokeMethod.returnType)
+            signatureShape.parameterCarriers.size == 1 &&
+                signatureShape.parameterCarriers.single() is ParameterCarrier.Direct -> {
+                resolveScalarPlan(signatureShape)
+            }
             else -> null
         }
     }
 
-    private fun resolveScalarPlan(parameterTypeName: String, returnTypeName: String): DelegateLambdaPlan.PlannedBridge? {
+    private fun resolveSignatureShape(
+        invokeMethod: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+        supportsObjectType: (String) -> Boolean,
+    ): DelegateSignatureShape? {
+        val returnCarrier = when (invokeMethod.returnType) {
+            "Unit" -> ReturnCarrier.UNIT
+            "Boolean" -> ReturnCarrier.BOOLEAN
+            else -> return null
+        }
+        val lambdaReturnType = when (returnCarrier) {
+            ReturnCarrier.UNIT -> Unit::class.asTypeName()
+            ReturnCarrier.BOOLEAN -> Boolean::class.asTypeName()
+        }
+        val carriers = invokeMethod.parameters.map { parameter ->
+            resolveParameterCarrier(
+                typeName = parameter.type,
+                currentNamespace = currentNamespace,
+                genericParameters = genericParameters,
+                supportsObjectType = supportsObjectType,
+            ) ?: return null
+        }
+        val lambdaParameterTypes = carriers.mapNotNull {
+            when (it) {
+                ParameterCarrier.NoArgs -> null
+                is ParameterCarrier.Direct -> it.kotlinType
+                is ParameterCarrier.ObjectWrapped -> it.callbackArgType
+            }
+        }
+        val normalizedCarriers = if (carriers.isEmpty()) listOf(ParameterCarrier.NoArgs) else carriers
+        return DelegateSignatureShape(
+            parameterCarriers = normalizedCarriers,
+            lambdaParameterTypes = lambdaParameterTypes,
+            returnCarrier = returnCarrier,
+            lambdaReturnType = lambdaReturnType,
+        )
+    }
+
+    private fun resolveParameterCarrier(
+        typeName: String,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+        supportsObjectType: (String) -> Boolean,
+    ): ParameterCarrier? {
+        val scalar = scalarBridgeSpecs[typeName]
+        if (scalar != null) {
+            return ParameterCarrier.Direct(scalar.parameterType)
+        }
+        if (supportsObjectType(typeName)) {
+            return ParameterCarrier.ObjectWrapped(
+                typeNameMapper.mapTypeName(typeName, currentNamespace, genericParameters),
+            )
+        }
+        return null
+    }
+
+    private fun resolveScalarPlan(signatureShape: DelegateSignatureShape): DelegateLambdaPlan.PlannedBridge? {
+        val parameterCarrier = signatureShape.parameterCarriers.single() as? ParameterCarrier.Direct ?: return null
+        val parameterTypeName = scalarBridgeSpecs.entries.firstOrNull { it.value.parameterType == parameterCarrier.kotlinType }?.key ?: return null
         val spec = scalarBridgeSpecs[parameterTypeName] ?: return null
-        return when (returnTypeName) {
-            "Unit" -> spec.unitBridgeFactoryMethod?.let {
-                directSingleArgPlan(spec.parameterType, Unit::class.asTypeName(), it)
+        return when (signatureShape.returnCarrier) {
+            ReturnCarrier.UNIT -> spec.unitBridgeFactoryMethod?.let {
+                directSingleArgPlan(spec.parameterType, signatureShape.lambdaReturnType, it)
             }
-            "Boolean" -> spec.booleanBridgeFactoryMethod?.let {
-                directSingleArgPlan(spec.parameterType, Boolean::class.asTypeName(), it)
+            ReturnCarrier.BOOLEAN -> spec.booleanBridgeFactoryMethod?.let {
+                directSingleArgPlan(spec.parameterType, signatureShape.lambdaReturnType, it)
             }
-            else -> null
         }
     }
 
