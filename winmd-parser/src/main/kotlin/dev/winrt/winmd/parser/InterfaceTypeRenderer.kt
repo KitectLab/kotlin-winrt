@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
@@ -101,6 +102,7 @@ internal class InterfaceTypeRenderer(
             }
             .addProperties(type.properties.mapNotNull { renderProperty(it, type.namespace, genericParameters) })
             .addFunctions(type.methods.mapNotNull { renderMethod(it, type.namespace, genericParameters) })
+            .addFunctions(type.methods.mapNotNull { renderLambdaOverload(it, type.namespace, genericParameters) })
             .addType(
                 TypeSpec.companionObjectBuilder()
                     .addSuperinterface(PoetSymbols.winRtInterfaceMetadataClass)
@@ -613,6 +615,67 @@ internal class InterfaceTypeRenderer(
                         vtableIndex,
                         argumentName,
                     )
+                    .build()
+            }
+            else -> null
+        }
+    }
+
+    private fun renderLambdaOverload(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): FunSpec? {
+        if (method.parameters.size != 1 || method.vtableIndex == null) {
+            return null
+        }
+        val delegateType = typeRegistry.findType(method.parameters.single().type, currentNamespace) ?: return null
+        if (delegateType.kind != dev.winrt.winmd.plugin.WinMdTypeKind.Delegate) {
+            return null
+        }
+        val invokeMethod = delegateType.methods.singleOrNull { it.name == "Invoke" } ?: return null
+        if (invokeMethod.returnType != "Unit") {
+            return null
+        }
+
+        val functionName = kotlinMethodName(method.name)
+        val delegateClass = typeNameMapper.mapTypeName(method.parameters.single().type, currentNamespace, genericParameters)
+        val lambdaParameterName = "callback"
+        return when {
+            invokeMethod.parameters.isEmpty() -> {
+                FunSpec.builder(functionName)
+                    .returns(PoetSymbols.winRtDelegateHandleClass)
+                    .addParameter(lambdaParameterName, LambdaTypeName.get(returnType = Unit::class.asTypeName()))
+                    .addStatement(
+                        "val delegateHandle = %T.createNoArgUnitDelegate(%T.iid, %N)",
+                        PoetSymbols.winRtDelegateBridgeClass,
+                        delegateClass,
+                        lambdaParameterName,
+                    )
+                    .addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
+                    .addStatement("return delegateHandle")
+                    .build()
+            }
+            invokeMethod.parameters.size == 1 && supportsInterfaceObjectType(invokeMethod.parameters.single().type) -> {
+                val callbackArgType = typeNameMapper.mapTypeName(invokeMethod.parameters.single().type, currentNamespace, genericParameters)
+                FunSpec.builder(functionName)
+                    .returns(PoetSymbols.winRtDelegateHandleClass)
+                    .addParameter(
+                        lambdaParameterName,
+                        LambdaTypeName.get(
+                            parameters = arrayOf(callbackArgType),
+                            returnType = Unit::class.asTypeName(),
+                        ),
+                    )
+                    .addStatement(
+                        "val delegateHandle = %T.createObjectArgUnitDelegate(%T.iid) { arg -> %N(%T(arg)) }",
+                        PoetSymbols.winRtDelegateBridgeClass,
+                        delegateClass,
+                        lambdaParameterName,
+                        callbackArgType,
+                    )
+                    .addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
+                    .addStatement("return delegateHandle")
                     .build()
             }
             else -> null

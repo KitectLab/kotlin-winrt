@@ -1976,8 +1976,83 @@ class KotlinBindingGeneratorTest {
         }.content
 
         assertTrue(dispatcherQueueBinding.contains("fun tryEnqueue(callback: DispatcherQueueHandler): WinRtBoolean"))
+        assertTrue(dispatcherQueueBinding.contains("fun tryEnqueue("))
+        assertTrue(dispatcherQueueBinding.contains("() -> Unit"))
+        assertTrue(dispatcherQueueBinding.contains("WinRtDelegateBridge.createNoArgUnitDelegate"))
+        assertTrue(dispatcherQueueBinding.contains("DispatcherQueueHandler.iid"))
         assertTrue(dispatcherQueueBinding.contains("invokeBooleanMethodWithObjectArg(pointer, 7,"))
         assertTrue(dispatcherQueueBinding.contains("callback.pointer"))
+    }
+
+    @Test
+    fun generates_lambda_overload_for_object_arg_delegate_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "IApplicationInitializationCallbackParams",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbbbbbbb-1111-2222-3333-444444444444",
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "ApplicationInitializationCallback",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "d8eef1c9-1234-56f1-9963-45dd9c80a661",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter(
+                                            name = "value",
+                                            type = "Microsoft.UI.Xaml.IApplicationInitializationCallbackParams",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "IApplicationStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "4e0d09f5-4358-512c-a987-503b52848e95",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Start",
+                                    returnType = "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(
+                                        WinMdParameter(
+                                            name = "callback",
+                                            type = "Microsoft.UI.Xaml.ApplicationInitializationCallback",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Microsoft/UI/Xaml/IApplicationStatics.kt"
+        }.content
+
+        assertTrue(binding.contains("fun start(callback: ApplicationInitializationCallback)"))
+        assertTrue(binding.contains("fun start("))
+        assertTrue(binding.contains("IApplicationInitializationCallbackParams"))
+        assertTrue(binding.contains("-> Unit"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createObjectArgUnitDelegate"))
+        assertTrue(binding.contains("ApplicationInitializationCallback.iid"))
+        assertTrue(binding.contains("callback(IApplicationInitializationCallbackParams(arg))"))
+        assertTrue(binding.contains("start(ApplicationInitializationCallback(delegateHandle.pointer))"))
     }
 
     @Test
