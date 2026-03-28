@@ -7,11 +7,11 @@ import kotlin.test.assertSame
 
 class UIElementMutableListTest {
     @Test
-    fun ui_element_collection_projects_to_cached_mutable_list() {
+    fun ui_element_collection_implements_mutable_list() {
         val collection = UIElementCollection(ComPtr.NULL)
 
-        val first: MutableList<UIElement> = collection.asMutableList()
-        val second = collection.asMutableList()
+        val first: MutableList<UIElement> = collection
+        val second: MutableList<UIElement> = collection
 
         assertSame(first, second)
     }
