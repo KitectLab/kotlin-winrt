@@ -40,6 +40,64 @@ internal class InterfaceTypeRenderer(
                     addSuperinterface(projection.superinterface, projection.delegateFactory)
                     addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
                 }
+                if (type.namespace == "Microsoft.UI.Xaml.Interop" && type.name == "IBindableIterable") {
+                    addSuperinterface(PoetSymbols.iterableClass.parameterizedBy(PoetSymbols.inspectableClass))
+                    addFunction(
+                        FunSpec.builder("iterator")
+                            .addModifiers(KModifier.OVERRIDE)
+                            .returns(PoetSymbols.iteratorClass.parameterizedBy(PoetSymbols.inspectableClass))
+                            .addStatement("return first()")
+                            .build(),
+                    )
+                }
+                if (type.namespace == "Microsoft.UI.Xaml.Interop" && type.name == "IBindableIterator") {
+                    addSuperinterface(PoetSymbols.iteratorClass.parameterizedBy(PoetSymbols.inspectableClass))
+                    addProperty(
+                        PropertySpec.builder("winRtCurrent", PoetSymbols.inspectableClass)
+                            .getter(
+                                FunSpec.getterBuilder()
+                                    .addStatement(
+                                        "return %T(%T.invokeObjectMethod(pointer, 6).getOrThrow())",
+                                        PoetSymbols.inspectableClass,
+                                        PoetSymbols.platformComInteropClass,
+                                    )
+                                    .build(),
+                            )
+                            .build(),
+                    )
+                    addProperty(
+                        PropertySpec.builder("winRtHasCurrent", PoetSymbols.winRtBooleanClass)
+                            .getter(
+                                FunSpec.getterBuilder()
+                                    .addStatement(
+                                        "return %T(%T.invokeBooleanGetter(pointer, 7).getOrThrow())",
+                                        PoetSymbols.winRtBooleanClass,
+                                        PoetSymbols.platformComInteropClass,
+                                    )
+                                    .build(),
+                            )
+                            .build(),
+                    )
+                    addFunction(
+                        FunSpec.builder("hasNext")
+                            .addModifiers(KModifier.OVERRIDE)
+                            .returns(Boolean::class)
+                            .addStatement("return winRtHasCurrent.value")
+                            .build(),
+                    )
+                    addFunction(
+                        FunSpec.builder("next")
+                            .addModifiers(KModifier.OVERRIDE)
+                            .returns(PoetSymbols.inspectableClass)
+                            .beginControlFlow("if (!hasNext())")
+                            .addStatement("throw %T()", NoSuchElementException::class)
+                            .endControlFlow()
+                            .addStatement("val current = winRtCurrent")
+                            .addStatement("moveNext()")
+                            .addStatement("return current")
+                            .build(),
+                    )
+                }
             }
             .addProperties(type.properties.mapNotNull { renderProperty(it, type.namespace, genericParameters) })
             .addFunctions(type.methods.mapNotNull { renderMethod(it, type.namespace, genericParameters) })

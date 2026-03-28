@@ -289,6 +289,77 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_kotlin_iterable_shape_for_bindable_iterable() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml.Interop",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Interop",
+                            name = "IBindableIterable",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "036d2c08-df29-41af-8aa2-d774be62ba6f",
+                            methods = listOf(
+                                WinMdMethod(name = "First", returnType = "Microsoft.UI.Xaml.Interop.IBindableIterator", vtableIndex = 6),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Interop",
+                            name = "IBindableIterator",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "6a1d6c07-076d-49f2-8314-f52c9c9a8331",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Microsoft/UI/Xaml/Interop/IBindableIterable.kt" }.content
+
+        assertTrue(binding.contains("Iterable<Inspectable>"))
+        assertTrue(binding.contains("override fun iterator(): Iterator<Inspectable>"))
+        assertTrue(binding.contains("first()"))
+    }
+
+    @Test
+    fun generates_kotlin_iterator_shape_for_bindable_iterator() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml.Interop",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Interop",
+                            name = "IBindableIterator",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "6a1d6c07-076d-49f2-8314-f52c9c9a8331",
+                            methods = listOf(
+                                WinMdMethod(name = "get_Current", returnType = "Object", vtableIndex = 6),
+                                WinMdMethod(name = "get_HasCurrent", returnType = "Boolean", vtableIndex = 7),
+                                WinMdMethod(name = "MoveNext", returnType = "Boolean", vtableIndex = 8),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Microsoft/UI/Xaml/Interop/IBindableIterator.kt" }.content
+
+        assertTrue(binding.contains("Iterator<Inspectable>"))
+        assertTrue(binding.contains("val winRtCurrent: Inspectable"))
+        assertTrue(binding.contains("val winRtHasCurrent: WinRtBoolean"))
+        assertTrue(binding.contains("override fun hasNext(): Boolean"))
+        assertTrue(binding.contains("override fun next(): Inspectable"))
+        assertTrue(binding.contains("throw NoSuchElementException()"))
+    }
+
+    @Test
     fun generates_runtime_class_projections_for_implemented_interfaces() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

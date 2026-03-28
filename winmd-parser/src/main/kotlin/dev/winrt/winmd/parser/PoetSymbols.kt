@@ -4,6 +4,8 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.MemberName
 
 internal object PoetSymbols {
+    val iterableClass = ClassName("kotlin.collections", "Iterable")
+    val iteratorClass = ClassName("kotlin.collections", "Iterator")
     val listClass = ClassName("kotlin.collections", "List")
     val mutableListClass = ClassName("kotlin.collections", "MutableList")
     val dateTimeClass = ClassName("dev.winrt.core", "DateTime")
