@@ -31,8 +31,8 @@ class CalendarProjectionTest {
                         assertTrue(projected.year.value > 0)
                         val languages = projected.languages
                         try {
-                            assertTrue(languages.size.value > 0u)
-                            assertFalse(languages.getAt(dev.winrt.core.UInt32(0u)).isBlank())
+                            assertTrue(languages.size > 0)
+                            assertFalse(languages[0].isBlank())
                         } finally {
                             PlatformComInterop.release(languages.pointer)
                         }

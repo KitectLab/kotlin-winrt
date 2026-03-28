@@ -2,15 +2,16 @@ package windows.foundation.collections
 
 import dev.winrt.core.UInt32
 import dev.winrt.core.WinRtStrings
+import dev.winrt.projection.WinRtListProjection
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
 
 public open class StringVectorView(
   pointer: ComPtr,
-) {
+) : List<String> by createListDelegate(pointer) {
   public val pointer: ComPtr = pointer
 
-  public val size: UInt32
+  public val winRtSize: UInt32
     get() = UInt32(PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow())
 
   public fun getAt(index: UInt32): String {
@@ -20,5 +21,22 @@ public open class StringVectorView(
     } finally {
       WinRtStrings.release(value)
     }
+  }
+
+  public companion object {
+    private fun createListDelegate(pointer: ComPtr): List<String> =
+        WinRtListProjection(
+            sizeProvider = {
+              UInt32(PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow()).value.toInt()
+            },
+            getter = { index ->
+              val value = PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 6, index.toUInt()).getOrThrow()
+              try {
+                WinRtStrings.toKotlin(value)
+              } finally {
+                WinRtStrings.release(value)
+              }
+            },
+        )
   }
 }

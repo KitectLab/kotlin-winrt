@@ -1,6 +1,5 @@
 package windows.system.userprofile
 
-import dev.winrt.core.UInt32
 import dev.winrt.kom.JvmComRuntime
 import dev.winrt.kom.JvmWinRtRuntime
 import dev.winrt.kom.KnownHResults
@@ -35,14 +34,14 @@ class GlobalizationPreferencesProjectionTest {
                 val currencies = statics.currencies
                 val languages = statics.languages
                 try {
-                    assertTrue(calendars.size.value > 0u)
-                    assertTrue(clocks.size.value > 0u)
-                    assertTrue(currencies.size.value > 0u)
-                    assertTrue(languages.size.value > 0u)
-                    assertFalse(calendars.getAt(UInt32(0u)).isBlank())
-                    assertFalse(clocks.getAt(UInt32(0u)).isBlank())
-                    assertFalse(currencies.getAt(UInt32(0u)).isBlank())
-                    assertFalse(languages.getAt(UInt32(0u)).isBlank())
+                    assertTrue(calendars.size > 0)
+                    assertTrue(clocks.size > 0)
+                    assertTrue(currencies.size > 0)
+                    assertTrue(languages.size > 0)
+                    assertFalse(calendars[0].isBlank())
+                    assertFalse(clocks[0].isBlank())
+                    assertFalse(currencies[0].isBlank())
+                    assertFalse(languages[0].isBlank())
                     assertFalse(statics.homeGeographicRegion.isBlank())
                     assertTrue(statics.weekStartsOn.value in 0..6)
                 } finally {

@@ -1,6 +1,5 @@
 package windows.globalization.numberformatting
 
-import dev.winrt.core.UInt32
 import dev.winrt.kom.JvmComRuntime
 import dev.winrt.kom.JvmWinRtRuntime
 import dev.winrt.kom.KnownHResults
@@ -30,8 +29,8 @@ class NumeralSystemTranslatorProjectionTest {
                     try {
                         val languages = projected.languages
                         try {
-                            assertTrue(languages.size.value > 0u)
-                            assertFalse(languages.getAt(UInt32(0u)).isBlank())
+                            assertTrue(languages.size > 0)
+                            assertFalse(languages[0].isBlank())
                         } finally {
                             PlatformComInterop.release(languages.pointer)
                         }
