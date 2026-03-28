@@ -3,7 +3,7 @@ package microsoft.ui.xaml.interop
 import dev.winrt.core.Inspectable
 import dev.winrt.core.UInt32
 
-class IBindableVectorListHelper internal constructor(
+class InspectableMutableList internal constructor(
     private val vector: IBindableVector,
 ) {
     val size: Int

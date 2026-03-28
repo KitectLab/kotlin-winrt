@@ -5,23 +5,23 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
 
-class IBindableVectorListHelperTest {
+class InspectableMutableListTest {
     @Test
-    fun list_helper_is_cached_per_bindable_vector_instance() {
+    fun mutable_list_projection_is_cached_per_bindable_vector_instance() {
         val vector = IBindableVector(ComPtr.NULL)
 
-        val first = vector.asListHelper()
-        val second = vector.asListHelper()
+        val first = vector.asMutableList()
+        val second = vector.asMutableList()
 
         assertSame(first, second)
     }
 
     @Test
-    fun list_helper_rejects_negative_indices_before_com_invocation() {
+    fun mutable_list_projection_rejects_negative_indices_before_com_invocation() {
         val vector = IBindableVector(ComPtr.NULL)
-        val helper = vector.asListHelper()
+        val list = vector.asMutableList()
 
-        val error = runCatching { helper[-1] }.exceptionOrNull()
+        val error = runCatching { list[-1] }.exceptionOrNull()
 
         requireNotNull(error)
         assertEquals("index must be non-negative", error.message)

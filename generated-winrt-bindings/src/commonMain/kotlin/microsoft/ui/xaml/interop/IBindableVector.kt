@@ -40,8 +40,8 @@ open class IBindableVector(
     fun first(): IBindableIterator =
         IBindableIterator(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
 
-    fun asListHelper(): IBindableVectorListHelper =
-        getOrPutHelperWrapper("System.Collections.IList") { IBindableVectorListHelper(this) }
+    fun asMutableList(): InspectableMutableList =
+        getOrPutHelperWrapper("kotlin.collections.MutableList") { InspectableMutableList(this) }
 
     companion object : WinRtInterfaceMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
