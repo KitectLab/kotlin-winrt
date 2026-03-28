@@ -74,6 +74,8 @@ internal class KotlinCollectionProjectionMapper {
     fun runtimeClassIterableProjection(
         type: WinMdType,
         typeNameMapper: TypeNameMapper,
+        winRtSignatureMapper: WinRtSignatureMapper,
+        winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     ): RuntimeIterableProjection? {
         val iterableInterface = sequenceOf(type.defaultInterface)
             .filterNotNull()
@@ -81,7 +83,9 @@ internal class KotlinCollectionProjectionMapper {
             .distinct()
             .firstOrNull {
                 it == "Microsoft.UI.Xaml.Interop.IBindableIterable" ||
-                    it == "Microsoft.UI.Xaml.Interop.IBindableIterator"
+                    it == "Microsoft.UI.Xaml.Interop.IBindableIterator" ||
+                    it.startsWith("Windows.Foundation.Collections.IIterable<") ||
+                    it.startsWith("Windows.Foundation.Collections.IIterator<")
             }
             ?: return null
         return when (iterableInterface) {
@@ -101,7 +105,12 @@ internal class KotlinCollectionProjectionMapper {
                     PoetSymbols.inspectableClass,
                 ),
             )
-            else -> null
+            else -> closedGenericIterableProjection(
+                qualifiedName = iterableInterface,
+                typeNameMapper = typeNameMapper,
+                winRtSignatureMapper = winRtSignatureMapper,
+                winRtProjectionTypeMapper = winRtProjectionTypeMapper,
+            )
         }
     }
 
@@ -219,6 +228,114 @@ internal class KotlinCollectionProjectionMapper {
             )
             else -> null
         }
+    }
+
+    private fun closedGenericIterableProjection(
+        qualifiedName: String,
+        typeNameMapper: TypeNameMapper,
+        winRtSignatureMapper: WinRtSignatureMapper,
+        winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
+    ): RuntimeIterableProjection? {
+        if (qualifiedName.startsWith("Windows.Foundation.Collections.IIterable<") && qualifiedName.endsWith(">")) {
+            val elementType = qualifiedName.substringAfter('<').substringBeforeLast('>')
+            if (!supportsClosedGenericObjectElement(elementType)) {
+                return null
+            }
+            val rawIterableClass = typeNameMapper.mapTypeName(
+                "Windows.Foundation.Collections.IIterable",
+                "Windows.Foundation.Collections",
+            ) as ClassName
+            val rawIteratorClass = typeNameMapper.mapTypeName(
+                "Windows.Foundation.Collections.IIterator",
+                "Windows.Foundation.Collections",
+            ) as ClassName
+            val elementTypeName = typeNameMapper.mapTypeName(elementType, "Windows.Foundation.Collections")
+            val elementSignature = winRtSignatureMapper.signatureFor(elementType, "Windows.Foundation.Collections")
+            val elementProjectionTypeKey = winRtProjectionTypeMapper.projectionTypeKeyFor(elementType, "Windows.Foundation.Collections")
+            return RuntimeIterableProjection(
+                superinterface = PoetSymbols.iterableClass.parameterizedBy(elementTypeName),
+                delegateFactory = CodeBlock.of(
+                    "object : %T {\n" +
+                        "  override fun iterator(): %T = object : %T {\n" +
+                        "    private val iteratorProjection = %T.from(%T(%T.invokeObjectMethod(%T.from(%T(pointer), %S, %S).pointer, 6).getOrThrow()), %S, %S)\n" +
+                        "    override fun hasNext(): Boolean = %T(%T.invokeBooleanGetter(iteratorProjection.pointer, 7).getOrThrow()).value\n" +
+                        "    override fun next(): %T {\n" +
+                        "      if (!hasNext()) throw %T()\n" +
+                        "      val current = %T(%T.invokeObjectMethod(iteratorProjection.pointer, 6).getOrThrow())\n" +
+                        "      %T.invokeBooleanGetter(iteratorProjection.pointer, 8).getOrThrow()\n" +
+                        "      return current\n" +
+                        "    }\n" +
+                        "  }\n" +
+                        "}",
+                    PoetSymbols.iterableClass.parameterizedBy(elementTypeName),
+                    PoetSymbols.iteratorClass.parameterizedBy(elementTypeName),
+                    PoetSymbols.iteratorClass.parameterizedBy(elementTypeName),
+                    rawIteratorClass,
+                    PoetSymbols.inspectableClass,
+                    PoetSymbols.platformComInteropClass,
+                    rawIterableClass,
+                    PoetSymbols.inspectableClass,
+                    elementSignature,
+                    elementProjectionTypeKey,
+                    elementSignature,
+                    elementProjectionTypeKey,
+                    PoetSymbols.winRtBooleanClass,
+                    PoetSymbols.platformComInteropClass,
+                    elementTypeName,
+                    NoSuchElementException::class,
+                    elementTypeName,
+                    PoetSymbols.platformComInteropClass,
+                    PoetSymbols.platformComInteropClass,
+                ),
+            )
+        }
+        if (qualifiedName.startsWith("Windows.Foundation.Collections.IIterator<") && qualifiedName.endsWith(">")) {
+            val elementType = qualifiedName.substringAfter('<').substringBeforeLast('>')
+            if (!supportsClosedGenericObjectElement(elementType)) {
+                return null
+            }
+            val rawIteratorClass = typeNameMapper.mapTypeName(
+                "Windows.Foundation.Collections.IIterator",
+                "Windows.Foundation.Collections",
+            ) as ClassName
+            val elementTypeName = typeNameMapper.mapTypeName(elementType, "Windows.Foundation.Collections")
+            val elementSignature = winRtSignatureMapper.signatureFor(elementType, "Windows.Foundation.Collections")
+            val elementProjectionTypeKey = winRtProjectionTypeMapper.projectionTypeKeyFor(elementType, "Windows.Foundation.Collections")
+            return RuntimeIterableProjection(
+                superinterface = PoetSymbols.iteratorClass.parameterizedBy(elementTypeName),
+                delegateFactory = CodeBlock.of(
+                    "object : %T {\n" +
+                        "  private val iteratorProjection = %T.from(%T(pointer), %S, %S)\n" +
+                        "  override fun hasNext(): Boolean = %T(%T.invokeBooleanGetter(iteratorProjection.pointer, 7).getOrThrow()).value\n" +
+                        "  override fun next(): %T {\n" +
+                        "    if (!hasNext()) throw %T()\n" +
+                        "    val current = %T(%T.invokeObjectMethod(iteratorProjection.pointer, 6).getOrThrow())\n" +
+                        "    %T.invokeBooleanGetter(iteratorProjection.pointer, 8).getOrThrow()\n" +
+                        "    return current\n" +
+                        "  }\n" +
+                        "}",
+                    PoetSymbols.iteratorClass.parameterizedBy(elementTypeName),
+                    rawIteratorClass,
+                    PoetSymbols.inspectableClass,
+                    elementSignature,
+                    elementProjectionTypeKey,
+                    PoetSymbols.winRtBooleanClass,
+                    PoetSymbols.platformComInteropClass,
+                    elementTypeName,
+                    NoSuchElementException::class,
+                    elementTypeName,
+                    PoetSymbols.platformComInteropClass,
+                    PoetSymbols.platformComInteropClass,
+                ),
+            )
+        }
+        return null
+    }
+
+    private fun supportsClosedGenericObjectElement(typeName: String): Boolean {
+        return (typeName == "Object" || typeName.contains('.')) &&
+            !typeName.contains('<') &&
+            !typeName.endsWith("[]")
     }
 }
 

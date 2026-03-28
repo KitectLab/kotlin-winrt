@@ -52,6 +52,8 @@ internal class RuntimeTypeRenderer(
         kotlinCollectionProjectionMapper.runtimeClassIterableProjection(
             type = type,
             typeNameMapper = typeNameMapper,
+            winRtSignatureMapper = winRtSignatureMapper,
+            winRtProjectionTypeMapper = winRtProjectionTypeMapper,
         )?.let { projection ->
             builder.addSuperinterface(projection.superinterface, projection.delegateFactory)
         }
