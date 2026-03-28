@@ -6,6 +6,7 @@ import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.WinRtInterfaceProjection
 import dev.winrt.core.guidOf
 import dev.winrt.core.projectInterface
+import dev.winrt.projection.WinRtMutableListProjection
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
@@ -40,8 +41,15 @@ open class IBindableVector(
     fun first(): IBindableIterator =
         IBindableIterator(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
 
-    fun asMutableList(): InspectableMutableList =
-        getOrPutHelperWrapper("kotlin.collections.MutableList") { InspectableMutableList(this) }
+    fun asMutableList(): MutableList<Inspectable> =
+        getOrPutHelperWrapper("kotlin.collections.MutableList") {
+            WinRtMutableListProjection(
+                sizeProvider = { size.value.toInt() },
+                getter = { index -> getAt(UInt32(index.toUInt())) },
+                append = ::append,
+                clearer = ::clear,
+            )
+        }
 
     companion object : WinRtInterfaceMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"

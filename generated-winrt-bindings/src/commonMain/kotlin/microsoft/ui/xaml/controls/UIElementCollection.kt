@@ -5,6 +5,7 @@ import dev.winrt.core.UInt32
 import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
+import dev.winrt.projection.WinRtMutableListProjection
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
 import microsoft.ui.xaml.UIElement
@@ -24,9 +25,14 @@ open class UIElementCollection(
 
     fun asIBindableVector(): IBindableVector = IBindableVector.from(this)
 
-    fun asMutableList(): UIElementMutableList =
+    fun asMutableList(): MutableList<UIElement> =
         getOrPutHelperWrapper("kotlin.collections.MutableList<Microsoft.UI.Xaml.UIElement>") {
-            UIElementMutableList(this)
+            WinRtMutableListProjection(
+                sizeProvider = { asIBindableVector().size.value.toInt() },
+                getter = { index -> getAt(UInt32(index.toUInt())) },
+                append = ::append,
+                clearer = { asIBindableVector().clear() },
+            )
         }
 
     companion object : WinRtRuntimeClassMetadata {
