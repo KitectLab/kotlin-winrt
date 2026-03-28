@@ -2828,6 +2828,117 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_lambda_overload_for_uint32_boolean_delegate_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Callbacks",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Callbacks",
+                            name = "IndexPredicate",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "2d2d2d2d-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Boolean",
+                                    parameters = listOf(
+                                        WinMdParameter(name = "value", type = "UInt32"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Callbacks",
+                            name = "IIndexSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "2e2e2e2e-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetPredicate",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter(name = "callback", type = "Example.Callbacks.IndexPredicate"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Example/Callbacks/IIndexSource.kt"
+        }.content
+
+        assertTrue(binding.contains("fun setPredicate(callback: IndexPredicate)"))
+        assertTrue(binding.contains("(UInt) -> Boolean"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUInt32ArgBooleanDelegate"))
+        assertTrue(binding.contains("IndexPredicate.iid"))
+        assertTrue(binding.contains("setPredicate(IndexPredicate(delegateHandle.pointer))"))
+    }
+
+    @Test
+    fun generates_runtime_lambda_overload_for_uint32_boolean_delegate_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "IndexPredicate",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "2f2f2f2f-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Boolean",
+                                    parameters = listOf(
+                                        WinMdParameter(name = "value", type = "UInt32"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "IndexSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetPredicate",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter(name = "callback", type = "Example.Runtime.IndexPredicate"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Example/Runtime/IndexSource.kt"
+        }.content
+
+        assertTrue(binding.contains("fun setPredicate(callback: IndexPredicate)"))
+        assertTrue(binding.contains("(UInt) -> Boolean"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUInt32ArgBooleanDelegate"))
+        assertTrue(binding.contains("IndexPredicate.iid"))
+        assertTrue(binding.contains("setPredicate(IndexPredicate(delegateHandle.pointer))"))
+    }
+
+    @Test
     fun generates_lambda_overload_for_float32_delegate_parameter() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

@@ -287,6 +287,39 @@ class WinRtDelegateBridgeTest {
     }
 
     @Test
+    fun creates_uint32_arg_boolean_delegate_handle() {
+        val iid = guidOf("dededede-bbbb-cccc-dddd-eeeeeeeeeeee")
+        var captured: UInt? = null
+
+        WinRtDelegateBridge.createUInt32ArgBooleanDelegate(iid) { value ->
+            captured = value
+            value == UInt.MAX_VALUE
+        }.use { handle ->
+            val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
+            val vtablePointer = callbackPointer.reinterpret(ValueLayout.ADDRESS.byteSize()).get(ValueLayout.ADDRESS, 0L)
+            val function = Linker.nativeLinker().downcallHandle(
+                vtablePointer.reinterpret(ValueLayout.ADDRESS.byteSize() * 4).getAtIndex(ValueLayout.ADDRESS, 3),
+                FunctionDescriptor.of(
+                    ValueLayout.JAVA_INT,
+                    ValueLayout.ADDRESS,
+                    ValueLayout.JAVA_INT,
+                    ValueLayout.ADDRESS,
+                ),
+            )
+            val result = Arena.ofConfined().use { arena ->
+                val out = arena.allocate(ValueLayout.JAVA_INT)
+                val hresult = function.invokeWithArguments(callbackPointer, -1, out) as Int
+                assertEquals(0, hresult)
+                out.get(ValueLayout.JAVA_INT, 0L)
+            }
+
+            assertEquals(UInt.MAX_VALUE, captured)
+            assertEquals(1, result)
+            assertFalse(handle.pointer.isNull)
+        }
+    }
+
+    @Test
     fun creates_boolean_arg_unit_delegate_handle() {
         val iid = guidOf("f0f0f0f0-bbbb-cccc-dddd-eeeeeeeeeeee")
         var captured: Boolean? = null

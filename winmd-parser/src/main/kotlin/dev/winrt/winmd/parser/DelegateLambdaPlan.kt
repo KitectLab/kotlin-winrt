@@ -61,6 +61,9 @@ internal class DelegateLambdaPlanResolver(
                 invokeMethod.returnType == "Boolean" -> directSingleArgPlan(String::class.asTypeName(), Boolean::class.asTypeName(), "createStringArgBooleanDelegate")
             invokeMethod.parameters.size == 1 &&
                 invokeMethod.parameters.single().type == "UInt32" &&
+                invokeMethod.returnType == "Boolean" -> directSingleArgPlan(UInt::class.asTypeName(), Boolean::class.asTypeName(), "createUInt32ArgBooleanDelegate")
+            invokeMethod.parameters.size == 1 &&
+                invokeMethod.parameters.single().type == "UInt32" &&
                 invokeMethod.returnType == "Unit" -> directSingleArgPlan(UInt::class.asTypeName(), Unit::class.asTypeName(), "createUInt32ArgUnitDelegate")
             invokeMethod.parameters.size == 1 &&
                 invokeMethod.parameters.single().type == "UInt64" &&
