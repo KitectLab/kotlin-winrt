@@ -228,6 +228,67 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_kotlin_mutable_list_shape_for_bindable_vector() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml.Interop",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Interop",
+                            name = "IBindableVector",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "393de7de-6fd0-4c0d-bb71-47244a113e93",
+                            methods = listOf(
+                                WinMdMethod(name = "First", returnType = "Microsoft.UI.Xaml.Interop.IBindableIterator", vtableIndex = 6),
+                                WinMdMethod(
+                                    name = "GetAt",
+                                    returnType = "Object",
+                                    parameters = listOf(WinMdParameter(name = "index", type = "UInt32")),
+                                    vtableIndex = 7,
+                                ),
+                                WinMdMethod(name = "get_Size", returnType = "UInt32", vtableIndex = 8),
+                                WinMdMethod(name = "GetView", returnType = "Microsoft.UI.Xaml.Interop.IBindableVectorView", vtableIndex = 9),
+                                WinMdMethod(
+                                    name = "Append",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter(name = "value", type = "Object")),
+                                    vtableIndex = 14,
+                                ),
+                                WinMdMethod(name = "Clear", returnType = "Unit", vtableIndex = 16),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Interop",
+                            name = "IBindableIterator",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "6a79e863-4300-459a-9966-cbb660963ee1",
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Interop",
+                            name = "IBindableVectorView",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "346dd6e7-976e-4bc3-815d-ece243bc0f33",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Microsoft/UI/Xaml/Interop/IBindableVector.kt" }.content
+
+        assertTrue(binding.contains("open class IBindableVector"))
+        assertTrue(binding.contains("MutableList<Inspectable> by"))
+        assertTrue(binding.contains("val winRtSize: UInt32"))
+        assertTrue(binding.contains("fun getAt(index: UInt32): Inspectable"))
+        assertTrue(binding.contains("invokeObjectSetter(pointer, 14,"))
+        assertTrue(binding.contains("invokeUnitMethod(pointer, 16).getOrThrow()"))
+        assertTrue(binding.contains("WinRtMutableListProjection<Inspectable>"))
+    }
+
+    @Test
     fun generates_runtime_class_projections_for_implemented_interfaces() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

@@ -5,6 +5,7 @@ import com.squareup.kotlinpoet.MemberName
 
 internal object PoetSymbols {
     val listClass = ClassName("kotlin.collections", "List")
+    val mutableListClass = ClassName("kotlin.collections", "MutableList")
     val dateTimeClass = ClassName("dev.winrt.core", "DateTime")
     val eventRegistrationTokenClass = ClassName("dev.winrt.core", "EventRegistrationToken")
     val float32Class = ClassName("dev.winrt.core", "Float32")
@@ -23,6 +24,7 @@ internal object PoetSymbols {
     val winRtInterfaceMetadataClass = ClassName("dev.winrt.core", "WinRtInterfaceMetadata")
     val winRtInterfaceProjectionClass = ClassName("dev.winrt.core", "WinRtInterfaceProjection")
     val winRtListProjectionClass = ClassName("dev.winrt.projection", "WinRtListProjection")
+    val winRtMutableListProjectionClass = ClassName("dev.winrt.projection", "WinRtMutableListProjection")
     val winRtRuntimeClassMetadataClass = ClassName("dev.winrt.core", "WinRtRuntimeClassMetadata")
     val winRtRuntimeClass = ClassName("dev.winrt.core", "WinRtRuntime")
     val winRtStringsClass = ClassName("dev.winrt.core", "WinRtStrings")
