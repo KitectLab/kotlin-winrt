@@ -5,21 +5,31 @@ import dev.winrt.core.UInt32
 
 class InspectableMutableList internal constructor(
     private val vector: IBindableVector,
-) {
-    val size: Int
+) : AbstractMutableList<Inspectable>() {
+    override val size: Int
         get() = vector.size.value.toInt()
 
-    operator fun get(index: Int): Inspectable {
+    override fun get(index: Int): Inspectable {
         require(index >= 0) { "index must be non-negative" }
         return vector.getAt(UInt32(index.toUInt()))
     }
 
-    fun add(value: Inspectable): Int {
-        vector.append(value)
-        return size - 1
+    override fun add(index: Int, element: Inspectable) {
+        if (index != size) {
+            throw UnsupportedOperationException("insert at arbitrary index is not implemented yet")
+        }
+        vector.append(element)
     }
 
-    fun clear() {
+    override fun set(index: Int, element: Inspectable): Inspectable {
+        throw UnsupportedOperationException("set is not implemented yet")
+    }
+
+    override fun removeAt(index: Int): Inspectable {
+        throw UnsupportedOperationException("removeAt is not implemented yet")
+    }
+
+    override fun clear() {
         vector.clear()
     }
 }

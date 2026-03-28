@@ -1,5 +1,6 @@
 package microsoft.ui.xaml.interop
 
+import dev.winrt.core.Inspectable
 import dev.winrt.kom.ComPtr
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -25,5 +26,13 @@ class InspectableMutableListTest {
 
         requireNotNull(error)
         assertEquals("index must be non-negative", error.message)
+    }
+
+    @Test
+    fun mutable_list_projection_exposes_mutable_list_api() {
+        val vector = IBindableVector(ComPtr.NULL)
+        val list: MutableList<Inspectable> = vector.asMutableList()
+
+        assertSame(vector.asMutableList(), list)
     }
 }
