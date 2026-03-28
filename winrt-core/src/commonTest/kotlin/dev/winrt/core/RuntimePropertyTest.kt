@@ -196,4 +196,29 @@ class RuntimePropertyTest {
 
         assertEquals(listOf("ABI.System.Collections.IList"), subject.requestedKeys)
     }
+
+    @Test
+    fun interface_projection_caches_projected_wrapper_by_projection_cache_key() {
+        WinRtProjectionRegistry.resetForTests()
+
+        val metadata = object : WinRtInterfaceMetadata {
+            override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
+            override val projectionTypeKey: String = "System.Collections.IList"
+            override val iid = Guid(0, 0, 0, byteArrayOf(2, 7, 1, 8, 2, 8, 1, 8))
+        }
+        val subject = object : Inspectable(ComPtr.NULL) {
+            var queryCount = 0
+
+            override fun queryInterface(iid: Guid): ComPtr {
+                queryCount += 1
+                return ComPtr.NULL
+            }
+        }
+
+        val first = subject.projectInterface(metadata, ::WinRtInterfaceProjection)
+        val second = subject.projectInterface(metadata, ::WinRtInterfaceProjection)
+
+        assertSame(first, second)
+        assertEquals(1, subject.queryCount)
+    }
 }

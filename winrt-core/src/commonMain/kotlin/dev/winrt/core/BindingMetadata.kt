@@ -10,6 +10,8 @@ interface WinRtInterfaceMetadata : WinRtTypeMetadata {
     val iid: Guid
     val projectionTypeKey: String
         get() = qualifiedName
+    val projectionCacheKey: String
+        get() = "projection:$projectionTypeKey:$qualifiedName"
     fun <T : WinRtObject> project(pointer: dev.winrt.kom.ComPtr, constructor: (dev.winrt.kom.ComPtr) -> T): T = constructor(pointer)
 }
 

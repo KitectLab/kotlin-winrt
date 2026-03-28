@@ -8,12 +8,14 @@ fun <T : WinRtObject> Inspectable.projectInterface(
     metadata: WinRtInterfaceMetadata,
     constructor: (ComPtr) -> T,
 ): T {
-    val projected = try {
-        getObjectReferenceForProjectedType(metadata.projectionTypeKey, metadata.iid)
-    } catch (error: Throwable) {
-        throw ProjectionException("Failed to project ${metadata.qualifiedName}: ${error.message}")
+    return getOrPutAdditionalTypeData(metadata.projectionCacheKey) {
+        val projected = try {
+            getObjectReferenceForProjectedType(metadata.projectionTypeKey, metadata.iid)
+        } catch (error: Throwable) {
+            throw ProjectionException("Failed to project ${metadata.qualifiedName}: ${error.message}")
+        }
+        metadata.project(projected, constructor)
     }
-    return metadata.project(projected, constructor)
 }
 
 class ProjectionException(message: String) : RuntimeException(message)
