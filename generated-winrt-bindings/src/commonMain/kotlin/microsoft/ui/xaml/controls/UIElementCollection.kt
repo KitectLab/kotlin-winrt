@@ -9,7 +9,6 @@ import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
 import microsoft.ui.xaml.UIElement
 import microsoft.ui.xaml.interop.IBindableVector
-import microsoft.ui.xaml.interop.InspectableMutableList
 
 open class UIElementCollection(
     pointer: ComPtr,
@@ -25,7 +24,10 @@ open class UIElementCollection(
 
     fun asIBindableVector(): IBindableVector = IBindableVector.from(this)
 
-    fun asMutableList(): InspectableMutableList = asIBindableVector().asMutableList()
+    fun asMutableList(): UIElementMutableList =
+        getOrPutHelperWrapper("kotlin.collections.MutableList<Microsoft.UI.Xaml.UIElement>") {
+            UIElementMutableList(this)
+        }
 
     companion object : WinRtRuntimeClassMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Controls.UIElementCollection"
