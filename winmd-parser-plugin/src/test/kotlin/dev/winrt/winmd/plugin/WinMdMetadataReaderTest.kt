@@ -233,7 +233,7 @@ class WinMdMetadataReaderTest {
             },
         )
         assertEquals(
-            6,
+            13,
             InterfaceVtableResolver.inferMethodSlot(
                 jsonArrayInterface,
                 model,
@@ -242,7 +242,7 @@ class WinMdMetadataReaderTest {
         )
 
         val jsonObjectGetNamedString = jsonObjectInterface.methods.first { it.name == "GetNamedString" }
-        assertEquals(10, InterfaceVtableResolver.inferMethodSlot(jsonObjectInterface, model, jsonObjectGetNamedString))
+        assertEquals(17, InterfaceVtableResolver.inferMethodSlot(jsonObjectInterface, model, jsonObjectGetNamedString))
 
         val calendar = model.namespaces
             .first { it.name == "Windows.Globalization" }
@@ -276,7 +276,7 @@ class WinMdMetadataReaderTest {
             .types.first { it.name == "IJsonValue" }
         val valueTypeProperty = jsonValueInterface.properties.first { it.name == "ValueType" }
 
-        assertEquals(6, getObjectAt.vtableIndex)
+        assertEquals(13, getObjectAt.vtableIndex)
         assertEquals(6, valueTypeProperty.getterVtableIndex)
     }
 
@@ -386,6 +386,9 @@ class WinMdMetadataReaderTest {
             listOf("GetAt", "get_Size", "GetView", "IndexOf", "SetAt", "InsertAt", "RemoveAt", "Append", "RemoveAtEnd", "Clear"),
             bindableVector.methods.map { it.name },
         )
+        assertEquals(6, InterfaceVtableResolver.inferMethodSlot(bindableIterable, model, bindableIterable.methods.first()))
+        assertEquals(7, InterfaceVtableResolver.inferMethodSlot(bindableVector, model, bindableVector.methods.first { it.name == "GetAt" }))
+        assertEquals(14, InterfaceVtableResolver.inferMethodSlot(bindableVector, model, bindableVector.methods.first { it.name == "Append" }))
     }
 
     private fun localWinUiXamlWinmdCandidates(): List<Path> {
