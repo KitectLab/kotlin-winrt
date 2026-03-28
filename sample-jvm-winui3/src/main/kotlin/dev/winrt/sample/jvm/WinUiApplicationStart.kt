@@ -1,7 +1,7 @@
 package dev.winrt.sample.jvm
 
-import dev.winrt.core.JvmWinRtObjectArgDelegate
-import dev.winrt.kom.HResult
+import dev.winrt.core.WinRtDelegateBridge
+import dev.winrt.core.WinRtDelegateHandle
 import dev.winrt.kom.JvmWinRtRuntime
 import dev.winrt.kom.PlatformComInterop
 import microsoft.ui.xaml.Application
@@ -16,7 +16,7 @@ import microsoft.ui.xaml.controls.TextBlock
 object WinUiApplicationStart {
     private var application: Application? = null
     private var window: Window? = null
-    private var activeCallback: JvmWinRtObjectArgDelegate? = null
+    private var activeCallback: WinRtDelegateHandle? = null
     @Volatile private var launchFailure: Throwable? = null
     @Volatile private var windowVisible: Boolean = false
 
@@ -27,14 +27,13 @@ object WinUiApplicationStart {
             PlatformComInterop.queryInterface(activationFactory, IApplicationStatics.iid).getOrThrow(),
         )
         try {
-            val callback = JvmWinRtObjectArgDelegate.create(ApplicationInitializationCallback.iid) {
+            val callback = WinRtDelegateBridge.createObjectArgUnitDelegate(ApplicationInitializationCallback.iid) {
                 callbackInvoked = true
                 val uiThreadId = WindowsMessageLoop.currentThreadId()
                 Thread.ofPlatform().daemon(true).start {
                     Thread.sleep(100L)
                     WindowsMessageLoop.postThreadQuit(uiThreadId)
                 }
-                HResult(0)
             }
             activeCallback?.close()
             activeCallback = callback
@@ -54,7 +53,7 @@ object WinUiApplicationStart {
             PlatformComInterop.queryInterface(activationFactory, IApplicationStatics.iid).getOrThrow(),
         )
         try {
-            val callback = JvmWinRtObjectArgDelegate.create(ApplicationInitializationCallback.iid) { arg ->
+            val callback = WinRtDelegateBridge.createObjectArgUnitDelegate(ApplicationInitializationCallback.iid) { arg ->
                 callbackInvoked = true
                 paramsSupported = runCatching {
                     val paramsPointer = PlatformComInterop.queryInterface(
@@ -69,7 +68,6 @@ object WinUiApplicationStart {
                     Thread.sleep(100L)
                     WindowsMessageLoop.postThreadQuit(uiThreadId)
                 }
-                HResult(0)
             }
             activeCallback?.close()
             activeCallback = callback
@@ -98,7 +96,7 @@ object WinUiApplicationStart {
             PlatformComInterop.queryInterface(activationFactory, IApplicationStatics.iid).getOrThrow(),
         )
         try {
-            val callback = JvmWinRtObjectArgDelegate.create(ApplicationInitializationCallback.iid) {
+            val callback = WinRtDelegateBridge.createObjectArgUnitDelegate(ApplicationInitializationCallback.iid) {
                 runCatching {
                     application = applicationStatics.get_Current()
                     window = Window()
@@ -121,10 +119,8 @@ object WinUiApplicationStart {
                             }
                         }
                     }
-                    HResult(0)
                 }.getOrElse { error ->
                     launchFailure = error
-                    HResult(0x80004005.toInt())
                 }
             }
             activeCallback = callback
