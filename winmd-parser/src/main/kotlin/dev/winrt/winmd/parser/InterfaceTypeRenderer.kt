@@ -634,7 +634,7 @@ internal class InterfaceTypeRenderer(
             return null
         }
         val invokeMethod = delegateType.methods.singleOrNull { it.name == "Invoke" } ?: return null
-        if (invokeMethod.returnType != "Unit") {
+        if (invokeMethod.returnType != "Unit" && invokeMethod.returnType != "Boolean") {
             return null
         }
 
@@ -642,7 +642,7 @@ internal class InterfaceTypeRenderer(
         val delegateClass = typeNameMapper.mapTypeName(method.parameters.single().type, currentNamespace, genericParameters)
         val lambdaParameterName = "callback"
         return when {
-            invokeMethod.parameters.isEmpty() -> {
+            invokeMethod.parameters.isEmpty() && invokeMethod.returnType == "Unit" -> {
                 FunSpec.builder(functionName)
                     .returns(PoetSymbols.winRtDelegateHandleClass)
                     .addParameter(lambdaParameterName, LambdaTypeName.get(returnType = Unit::class.asTypeName()))
@@ -656,7 +656,23 @@ internal class InterfaceTypeRenderer(
                     .addStatement("return delegateHandle")
                     .build()
             }
-            invokeMethod.parameters.size == 1 && supportsInterfaceObjectType(invokeMethod.parameters.single().type) -> {
+            invokeMethod.parameters.isEmpty() && invokeMethod.returnType == "Boolean" -> {
+                FunSpec.builder(functionName)
+                    .returns(PoetSymbols.winRtDelegateHandleClass)
+                    .addParameter(lambdaParameterName, LambdaTypeName.get(returnType = Boolean::class.asTypeName()))
+                    .addStatement(
+                        "val delegateHandle = %T.createNoArgBooleanDelegate(%T.iid, %N)",
+                        PoetSymbols.winRtDelegateBridgeClass,
+                        delegateClass,
+                        lambdaParameterName,
+                    )
+                    .addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
+                    .addStatement("return delegateHandle")
+                    .build()
+            }
+            invokeMethod.parameters.size == 1 &&
+                supportsInterfaceObjectType(invokeMethod.parameters.single().type) &&
+                invokeMethod.returnType == "Unit" -> {
                 val callbackArgType = typeNameMapper.mapTypeName(invokeMethod.parameters.single().type, currentNamespace, genericParameters)
                 FunSpec.builder(functionName)
                     .returns(PoetSymbols.winRtDelegateHandleClass)
@@ -669,6 +685,30 @@ internal class InterfaceTypeRenderer(
                     )
                     .addStatement(
                         "val delegateHandle = %T.createObjectArgUnitDelegate(%T.iid) { arg -> %N(%T(arg)) }",
+                        PoetSymbols.winRtDelegateBridgeClass,
+                        delegateClass,
+                        lambdaParameterName,
+                        callbackArgType,
+                    )
+                    .addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
+                    .addStatement("return delegateHandle")
+                    .build()
+            }
+            invokeMethod.parameters.size == 1 &&
+                supportsInterfaceObjectType(invokeMethod.parameters.single().type) &&
+                invokeMethod.returnType == "Boolean" -> {
+                val callbackArgType = typeNameMapper.mapTypeName(invokeMethod.parameters.single().type, currentNamespace, genericParameters)
+                FunSpec.builder(functionName)
+                    .returns(PoetSymbols.winRtDelegateHandleClass)
+                    .addParameter(
+                        lambdaParameterName,
+                        LambdaTypeName.get(
+                            parameters = arrayOf(callbackArgType),
+                            returnType = Boolean::class.asTypeName(),
+                        ),
+                    )
+                    .addStatement(
+                        "val delegateHandle = %T.createObjectArgBooleanDelegate(%T.iid) { arg -> %N(%T(arg)) }",
                         PoetSymbols.winRtDelegateBridgeClass,
                         delegateClass,
                         lambdaParameterName,

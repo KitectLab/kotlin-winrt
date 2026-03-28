@@ -144,14 +144,14 @@ internal class RuntimeMethodRenderer(
             return null
         }
         val invokeMethod = delegateType.methods.singleOrNull { it.name == "Invoke" } ?: return null
-        if (invokeMethod.returnType != "Unit") {
+        if (invokeMethod.returnType != "Unit" && invokeMethod.returnType != "Boolean") {
             return null
         }
 
         val functionName = method.name.replaceFirstChar(Char::lowercase)
         val delegateClass = typeNameMapper.mapTypeName(method.parameters.single().type, currentNamespace)
         return when {
-            invokeMethod.parameters.isEmpty() -> {
+            invokeMethod.parameters.isEmpty() && invokeMethod.returnType == "Unit" -> {
                 FunSpec.builder(functionName)
                     .returns(PoetSymbols.winRtDelegateHandleClass)
                     .addParameter("callback", LambdaTypeName.get(returnType = Unit::class.asTypeName()))
@@ -167,7 +167,25 @@ internal class RuntimeMethodRenderer(
                     .addStatement("return delegateHandle")
                     .build()
             }
-            invokeMethod.parameters.size == 1 && supportsRuntimeObjectType(invokeMethod.parameters.single().type) -> {
+            invokeMethod.parameters.isEmpty() && invokeMethod.returnType == "Boolean" -> {
+                FunSpec.builder(functionName)
+                    .returns(PoetSymbols.winRtDelegateHandleClass)
+                    .addParameter("callback", LambdaTypeName.get(returnType = Boolean::class.asTypeName()))
+                    .beginControlFlow("if (pointer.isNull)")
+                    .addStatement("error(%S)", "Null runtime object pointer: ${method.name}")
+                    .endControlFlow()
+                    .addStatement(
+                        "val delegateHandle = %T.createNoArgBooleanDelegate(%T.iid, callback)",
+                        PoetSymbols.winRtDelegateBridgeClass,
+                        delegateClass,
+                    )
+                    .addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
+                    .addStatement("return delegateHandle")
+                    .build()
+            }
+            invokeMethod.parameters.size == 1 &&
+                supportsRuntimeObjectType(invokeMethod.parameters.single().type) &&
+                invokeMethod.returnType == "Unit" -> {
                 val callbackArgType = typeNameMapper.mapTypeName(invokeMethod.parameters.single().type, currentNamespace)
                 FunSpec.builder(functionName)
                     .returns(PoetSymbols.winRtDelegateHandleClass)
@@ -180,6 +198,29 @@ internal class RuntimeMethodRenderer(
                     .endControlFlow()
                     .addStatement(
                         "val delegateHandle = %T.createObjectArgUnitDelegate(%T.iid) { arg -> callback(%T(arg)) }",
+                        PoetSymbols.winRtDelegateBridgeClass,
+                        delegateClass,
+                        callbackArgType,
+                    )
+                    .addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
+                    .addStatement("return delegateHandle")
+                    .build()
+            }
+            invokeMethod.parameters.size == 1 &&
+                supportsRuntimeObjectType(invokeMethod.parameters.single().type) &&
+                invokeMethod.returnType == "Boolean" -> {
+                val callbackArgType = typeNameMapper.mapTypeName(invokeMethod.parameters.single().type, currentNamespace)
+                FunSpec.builder(functionName)
+                    .returns(PoetSymbols.winRtDelegateHandleClass)
+                    .addParameter(
+                        "callback",
+                        LambdaTypeName.get(parameters = arrayOf(callbackArgType), returnType = Boolean::class.asTypeName()),
+                    )
+                    .beginControlFlow("if (pointer.isNull)")
+                    .addStatement("error(%S)", "Null runtime object pointer: ${method.name}")
+                    .endControlFlow()
+                    .addStatement(
+                        "val delegateHandle = %T.createObjectArgBooleanDelegate(%T.iid) { arg -> callback(%T(arg)) }",
                         PoetSymbols.winRtDelegateBridgeClass,
                         delegateClass,
                         callbackArgType,
