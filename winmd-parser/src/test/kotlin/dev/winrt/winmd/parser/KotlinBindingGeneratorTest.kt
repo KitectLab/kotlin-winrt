@@ -277,6 +277,34 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_kotlin_list_shape_for_string_vector_view() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "StringVectorView",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Windows/Foundation/Collections/StringVectorView.kt" }.content
+
+        assertTrue(binding.contains("open class StringVectorView"))
+        assertTrue(binding.contains("List<String> by"))
+        assertTrue(binding.contains("val winRtSize: UInt32"))
+        assertTrue(binding.contains("fun getAt(index: UInt32): String"))
+        assertTrue(binding.contains("WinRtListProjection<String>"))
+    }
+
+    @Test
     fun generates_json_array_uint32_object_call_from_real_metadata_model() {
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",
