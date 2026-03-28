@@ -255,7 +255,7 @@ internal class KotlinCollectionProjectionMapper {
                 "Windows.Foundation.Collections.IIterator",
                 "Windows.Foundation.Collections",
             ) as ClassName
-            val elementTypeName = typeNameMapper.mapTypeName(elementType, "Windows.Foundation.Collections")
+            val elementTypeName = collectionElementTypeName(elementType, typeNameMapper)
             val elementSignature = winRtSignatureMapper.signatureFor(elementType, "Windows.Foundation.Collections")
             val elementProjectionTypeKey = winRtProjectionTypeMapper.projectionTypeKeyFor(elementType, "Windows.Foundation.Collections")
             return RuntimeIterableProjection(
@@ -303,7 +303,7 @@ internal class KotlinCollectionProjectionMapper {
                 "Windows.Foundation.Collections.IIterator",
                 "Windows.Foundation.Collections",
             ) as ClassName
-            val elementTypeName = typeNameMapper.mapTypeName(elementType, "Windows.Foundation.Collections")
+            val elementTypeName = collectionElementTypeName(elementType, typeNameMapper)
             val elementSignature = winRtSignatureMapper.signatureFor(elementType, "Windows.Foundation.Collections")
             val elementProjectionTypeKey = winRtProjectionTypeMapper.projectionTypeKeyFor(elementType, "Windows.Foundation.Collections")
             return RuntimeIterableProjection(
@@ -337,7 +337,7 @@ internal class KotlinCollectionProjectionMapper {
     }
 
     private fun supportsClosedGenericIterableElement(typeName: String): Boolean {
-        return typeName == "String" || (
+        return typeName == "String" || typeName == "Boolean" || (
             (typeName == "Object" || typeName.contains('.')) &&
                 !typeName.contains('<') &&
                 !typeName.endsWith("[]")
@@ -369,6 +369,14 @@ internal class KotlinCollectionProjectionMapper {
                 PoetSymbols.winRtStringsClass,
                 PoetSymbols.winRtStringsClass,
             )
+        } else if (elementTypeName == Boolean::class.asTypeName()) {
+            CodeBlock.of(
+                "%T(%T.invokeBooleanGetter(%L, %L).getOrThrow()).value",
+                PoetSymbols.winRtBooleanClass,
+                PoetSymbols.platformComInteropClass,
+                pointerExpression,
+                slot,
+            )
         } else {
             CodeBlock.of(
                 "%T(%T.invokeObjectMethod(%L, %L).getOrThrow())",
@@ -377,6 +385,13 @@ internal class KotlinCollectionProjectionMapper {
                 pointerExpression,
                 slot,
             )
+        }
+    }
+
+    private fun collectionElementTypeName(typeName: String, typeNameMapper: TypeNameMapper): TypeName {
+        return when (typeName) {
+            "Boolean" -> Boolean::class.asTypeName()
+            else -> typeNameMapper.mapTypeName(typeName, "Windows.Foundation.Collections")
         }
     }
 }
