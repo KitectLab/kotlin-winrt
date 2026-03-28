@@ -71,6 +71,40 @@ internal class KotlinCollectionProjectionMapper {
         )
     }
 
+    fun runtimeClassIterableProjection(
+        type: WinMdType,
+        typeNameMapper: TypeNameMapper,
+    ): RuntimeIterableProjection? {
+        val iterableInterface = sequenceOf(type.defaultInterface)
+            .filterNotNull()
+            .plus(type.implementedInterfaces.asSequence())
+            .distinct()
+            .firstOrNull {
+                it == "Microsoft.UI.Xaml.Interop.IBindableIterable" ||
+                    it == "Microsoft.UI.Xaml.Interop.IBindableIterator"
+            }
+            ?: return null
+        return when (iterableInterface) {
+            "Microsoft.UI.Xaml.Interop.IBindableIterable" -> RuntimeIterableProjection(
+                superinterface = PoetSymbols.iterableClass.parameterizedBy(PoetSymbols.inspectableClass),
+                delegateFactory = CodeBlock.of(
+                    "%T.from(%T(pointer))",
+                    typeNameMapper.mapTypeName(iterableInterface, "Microsoft.UI.Xaml.Interop") as ClassName,
+                    PoetSymbols.inspectableClass,
+                ),
+            )
+            "Microsoft.UI.Xaml.Interop.IBindableIterator" -> RuntimeIterableProjection(
+                superinterface = PoetSymbols.iteratorClass.parameterizedBy(PoetSymbols.inspectableClass),
+                delegateFactory = CodeBlock.of(
+                    "%T.from(%T(pointer))",
+                    typeNameMapper.mapTypeName(iterableInterface, "Microsoft.UI.Xaml.Interop") as ClassName,
+                    PoetSymbols.inspectableClass,
+                ),
+            )
+            else -> null
+        }
+    }
+
     fun interfaceProjection(type: WinMdType): InterfaceCollectionProjection? {
         if (type.namespace == "Microsoft.UI.Xaml.Interop" && type.name == "IBindableVector") {
             return InterfaceCollectionProjection(
@@ -199,6 +233,11 @@ internal data class InterfaceCollectionProjection(
     val superinterface: TypeName,
     val delegateFactory: CodeBlock,
     val winRtSizeSlot: Int,
+)
+
+internal data class RuntimeIterableProjection(
+    val superinterface: TypeName,
+    val delegateFactory: CodeBlock,
 )
 
 internal data class CollectionInterfaceMetadata(
