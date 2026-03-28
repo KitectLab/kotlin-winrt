@@ -114,6 +114,32 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun projected_type_lookup_aliases_winrt_and_projection_keys_to_same_reference() {
+        WinRtProjectionRegistry.resetForTests()
+
+        val iid = Guid(0, 0, 0, byteArrayOf(4, 3, 2, 1, 0, 9, 8, 7))
+        val subject = object : Inspectable(ComPtr.NULL) {
+            var queryCount = 0
+
+            override fun queryInterface(iid: Guid): ComPtr {
+                queryCount += 1
+                return ComPtr.NULL
+            }
+        }
+
+        val first = subject.getObjectReferenceForProjectedType("Microsoft.UI.Xaml.Interop.IBindableVector", iid)
+        val second = subject.getObjectReferenceForType("System.Collections.IList", iid)
+        val third = subject.getObjectReferenceForType("ABI.System.Collections.IList", iid)
+        val fourth = subject.getObjectReferenceForType("Microsoft.UI.Xaml.Interop.IBindableVector", iid)
+
+        assertEquals(ComPtr.NULL, first)
+        assertEquals(ComPtr.NULL, second)
+        assertEquals(ComPtr.NULL, third)
+        assertEquals(ComPtr.NULL, fourth)
+        assertEquals(1, subject.queryCount)
+    }
+
+    @Test
     fun interface_projection_uses_helper_type_mapping_for_object_reference_lookup() {
         WinRtProjectionRegistry.resetForTests()
 

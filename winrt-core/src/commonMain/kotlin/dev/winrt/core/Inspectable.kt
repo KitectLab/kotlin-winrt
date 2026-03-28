@@ -44,10 +44,16 @@ open class Inspectable(pointer: ComPtr) : WinRtObject(pointer) {
 
     fun getObjectReferenceForProjectedType(typeKey: String, iid: Guid): ComPtr {
         val projectionTypeKey = WinRtProjectionRegistry.projectionTypeKeyFor(typeKey)
-        return getObjectReferenceForType(
-            typeKey = WinRtProjectionRegistry.abiHelperTypeKeyFor(projectionTypeKey),
+        val abiHelperTypeKey = WinRtProjectionRegistry.abiHelperTypeKeyFor(projectionTypeKey)
+        val reference = getObjectReferenceForType(
+            typeKey = abiHelperTypeKey,
             iid = iid,
         )
+        queryInterfaceCache.putIfAbsent(projectionTypeKey, reference)
+        if (typeKey != projectionTypeKey) {
+            queryInterfaceCache.putIfAbsent(typeKey, reference)
+        }
+        return reference
     }
 }
 
