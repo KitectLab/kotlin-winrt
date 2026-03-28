@@ -44,21 +44,29 @@ internal class KotlinCollectionProjectionMapper {
         return null
     }
 
-    fun runtimeClassInterfaceProjection(type: WinMdType, typeNameMapper: TypeNameMapper): RuntimeCollectionProjection? {
+    fun runtimeClassInterfaceProjection(
+        type: WinMdType,
+        typeNameMapper: TypeNameMapper,
+        winRtSignatureMapper: WinRtSignatureMapper,
+        winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
+    ): RuntimeCollectionProjection? {
         val collectionInterface = sequenceOf(type.defaultInterface)
             .filterNotNull()
             .plus(type.implementedInterfaces.asSequence())
             .distinct()
-            .mapNotNull { interfaceProjectionMetadata(it, typeNameMapper) }
+            .mapNotNull {
+                interfaceProjectionMetadata(
+                    qualifiedName = it,
+                    typeNameMapper = typeNameMapper,
+                    winRtSignatureMapper = winRtSignatureMapper,
+                    winRtProjectionTypeMapper = winRtProjectionTypeMapper,
+                )
+            }
             .firstOrNull()
             ?: return null
         return RuntimeCollectionProjection(
             superinterface = collectionInterface.collectionSuperinterface,
-            delegateFactory = CodeBlock.of(
-                "%T.from(%T(pointer))",
-                collectionInterface.interfaceClass,
-                PoetSymbols.inspectableClass,
-            ),
+            delegateFactory = collectionInterface.delegateFactory,
             winRtSizeSlot = collectionInterface.winRtSizeSlot,
         )
     }
@@ -115,16 +123,45 @@ internal class KotlinCollectionProjectionMapper {
     private fun interfaceProjectionMetadata(
         qualifiedName: String,
         typeNameMapper: TypeNameMapper,
+        winRtSignatureMapper: WinRtSignatureMapper,
+        winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     ): CollectionInterfaceMetadata? {
+        if (qualifiedName.startsWith("Windows.Foundation.Collections.IVectorView<") && qualifiedName.endsWith(">")) {
+            val elementType = qualifiedName.substringAfter('<').substringBeforeLast('>')
+            val rawInterfaceClass = typeNameMapper.mapTypeName(
+                "Windows.Foundation.Collections.IVectorView",
+                "Windows.Foundation.Collections",
+            ) as ClassName
+            val elementTypeName = typeNameMapper.mapTypeName(elementType, "Windows.Foundation.Collections")
+            return CollectionInterfaceMetadata(
+                collectionSuperinterface = PoetSymbols.listClass.parameterizedBy(elementTypeName),
+                delegateFactory = CodeBlock.of(
+                    "%T.from(%T(pointer), %S, %S)",
+                    rawInterfaceClass,
+                    PoetSymbols.inspectableClass,
+                    winRtSignatureMapper.signatureFor(elementType, "Windows.Foundation.Collections"),
+                    winRtProjectionTypeMapper.projectionTypeKeyFor(elementType, "Windows.Foundation.Collections"),
+                ),
+                winRtSizeSlot = 8,
+            )
+        }
         return when (qualifiedName) {
             "Microsoft.UI.Xaml.Interop.IBindableVector" -> CollectionInterfaceMetadata(
-                interfaceClass = typeNameMapper.mapTypeName(qualifiedName, qualifiedName.substringBeforeLast(".")) as ClassName,
                 collectionSuperinterface = PoetSymbols.mutableListClass.parameterizedBy(PoetSymbols.inspectableClass),
+                delegateFactory = CodeBlock.of(
+                    "%T.from(%T(pointer))",
+                    typeNameMapper.mapTypeName(qualifiedName, qualifiedName.substringBeforeLast(".")) as ClassName,
+                    PoetSymbols.inspectableClass,
+                ),
                 winRtSizeSlot = 8,
             )
             "Microsoft.UI.Xaml.Interop.IBindableVectorView" -> CollectionInterfaceMetadata(
-                interfaceClass = typeNameMapper.mapTypeName(qualifiedName, qualifiedName.substringBeforeLast(".")) as ClassName,
                 collectionSuperinterface = PoetSymbols.listClass.parameterizedBy(PoetSymbols.inspectableClass),
+                delegateFactory = CodeBlock.of(
+                    "%T.from(%T(pointer))",
+                    typeNameMapper.mapTypeName(qualifiedName, qualifiedName.substringBeforeLast(".")) as ClassName,
+                    PoetSymbols.inspectableClass,
+                ),
                 winRtSizeSlot = 8,
             )
             else -> null
@@ -146,7 +183,7 @@ internal data class InterfaceCollectionProjection(
 )
 
 internal data class CollectionInterfaceMetadata(
-    val interfaceClass: ClassName,
     val collectionSuperinterface: TypeName,
+    val delegateFactory: CodeBlock,
     val winRtSizeSlot: Int,
 )

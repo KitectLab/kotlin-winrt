@@ -24,6 +24,7 @@ internal class WinRtProjectionTypeMapper {
     }
 
     private fun normalizeTypeName(typeName: String, currentNamespace: String): String {
+        scalarProjectionTypeKey(typeName)?.let { return typeName }
         return when {
             '.' in typeName -> typeName
             else -> "$currentNamespace.$typeName"

@@ -21,6 +21,13 @@ class WinRtSignatureMapperTest {
                         guid = "913337e9-11a1-4345-a3a2-4e7f956e222d",
                         genericParameters = listOf("T"),
                     ),
+                    WinMdType(
+                        namespace = "Windows.Foundation.Collections",
+                        name = "IVectorView`1",
+                        kind = WinMdTypeKind.Interface,
+                        guid = "bbe1fa4c-b0e3-4583-baef-1f1b2e483e56",
+                        genericParameters = listOf("T"),
+                    ),
                 ),
             ),
             WinMdNamespace(
@@ -107,6 +114,24 @@ class WinRtSignatureMapperTest {
             projectionTypeMapper.projectionTypeKeyFor(
                 "Windows.Foundation.Collections.IVector`1<Microsoft.UI.Xaml.UIElement>",
                 "Microsoft.UI.Xaml.Controls",
+            ),
+        )
+    }
+
+    @Test
+    fun preserves_scalar_generic_arguments_in_signature_and_projection_keys() {
+        assertEquals(
+            "pinterface({bbe1fa4c-b0e3-4583-baef-1f1b2e483e56};string)",
+            mapper.signatureFor(
+                "Windows.Foundation.Collections.IVectorView`1<String>",
+                "Windows.Foundation.Collections",
+            ),
+        )
+        assertEquals(
+            "System.Collections.Generic.IReadOnlyList<String>",
+            projectionTypeMapper.projectionTypeKeyFor(
+                "Windows.Foundation.Collections.IVectorView`1<String>",
+                "Windows.Foundation.Collections",
             ),
         )
     }

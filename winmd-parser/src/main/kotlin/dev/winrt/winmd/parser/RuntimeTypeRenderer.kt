@@ -13,6 +13,8 @@ internal class RuntimeTypeRenderer(
     private val runtimeMethodRenderer: RuntimeMethodRenderer,
     private val runtimeCompanionRenderer: RuntimeCompanionRenderer,
     private val runtimeProjectionRenderer: RuntimeProjectionRenderer,
+    private val winRtSignatureMapper: WinRtSignatureMapper,
+    private val winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     private val kotlinCollectionProjectionMapper: KotlinCollectionProjectionMapper = KotlinCollectionProjectionMapper(),
 ) {
     fun render(type: WinMdType): TypeSpec {
@@ -38,7 +40,12 @@ internal class RuntimeTypeRenderer(
             builder.addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
             projection.extraFunctions.forEach(builder::addFunction)
         }
-        kotlinCollectionProjectionMapper.runtimeClassInterfaceProjection(type, typeNameMapper)?.let { projection ->
+        kotlinCollectionProjectionMapper.runtimeClassInterfaceProjection(
+            type = type,
+            typeNameMapper = typeNameMapper,
+            winRtSignatureMapper = winRtSignatureMapper,
+            winRtProjectionTypeMapper = winRtProjectionTypeMapper,
+        )?.let { projection ->
             builder.addSuperinterface(projection.superinterface, projection.delegateFactory)
             builder.addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
         }

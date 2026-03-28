@@ -61,6 +61,7 @@ internal class WinRtSignatureMapper(
     }
 
     private fun normalizeTypeName(typeName: String, currentNamespace: String): String {
+        scalarSignature(typeName)?.let { return typeName }
         return when {
             '.' in typeName -> typeName
             else -> "$currentNamespace.$typeName"

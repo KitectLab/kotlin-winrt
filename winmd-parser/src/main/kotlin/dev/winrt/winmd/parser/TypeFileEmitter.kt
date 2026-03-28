@@ -9,11 +9,13 @@ internal class TypeFileEmitter(
     typeRegistry: TypeRegistry,
 ) {
     private val typeNameMapper = TypeNameMapper()
+    private val winRtSignatureMapper = WinRtSignatureMapper(typeRegistry)
+    private val winRtProjectionTypeMapper = WinRtProjectionTypeMapper()
     private val interfaceTypeRenderer = InterfaceTypeRenderer(
         typeNameMapper,
         typeRegistry,
-        WinRtSignatureMapper(typeRegistry),
-        WinRtProjectionTypeMapper(),
+        winRtSignatureMapper,
+        winRtProjectionTypeMapper,
     )
     private val delegateTypeRenderer = DelegateTypeRenderer()
     private val runtimePropertyRenderer = RuntimePropertyRenderer(typeNameMapper)
@@ -27,6 +29,8 @@ internal class TypeFileEmitter(
         runtimeMethodRenderer,
         runtimeCompanionRenderer,
         runtimeProjectionRenderer,
+        winRtSignatureMapper,
+        winRtProjectionTypeMapper,
     )
 
     fun emit(namespace: WinMdNamespace, type: WinMdType): GeneratedFile {
