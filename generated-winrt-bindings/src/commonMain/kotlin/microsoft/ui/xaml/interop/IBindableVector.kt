@@ -19,9 +19,10 @@ open class IBindableVector(
         Inspectable(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 7, index.value).getOrThrow())
 
     override val size: Int
-        get() = get_Size().value.toInt()
+        get() = winRtSize.value.toInt()
 
-    fun get_Size(): UInt32 =
+    val winRtSize: UInt32
+        get() =
         UInt32(PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
 
     fun getView(): IBindableVectorView =
