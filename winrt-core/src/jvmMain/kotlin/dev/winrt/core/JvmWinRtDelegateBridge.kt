@@ -114,4 +114,18 @@ actual object WinRtDelegateBridge {
             }
         }
     }
+
+    actual fun createFloat64ArgUnitDelegate(iid: Guid, invoke: (Double) -> Unit): WinRtDelegateHandle {
+        val delegate = JvmWinRtFloat64ArgDelegate.create(iid) { value ->
+            invoke(value)
+            HResult(0)
+        }
+        return object : WinRtDelegateHandle {
+            override val pointer: ComPtr = delegate.pointer
+
+            override fun close() {
+                delegate.close()
+            }
+        }
+    }
 }
