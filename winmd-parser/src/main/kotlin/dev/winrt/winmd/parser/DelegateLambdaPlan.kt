@@ -44,7 +44,7 @@ private data class ScalarBridgeSpec(
     val booleanBridgeFactoryMethod: String? = null,
 )
 
-private data class DelegateSignatureShape(
+internal data class DelegateSignatureShape(
     val parameterCarriers: List<ParameterCarrier>,
     val lambdaParameterTypes: List<TypeName>,
     val returnCarrier: ReturnCarrier,
@@ -165,7 +165,7 @@ internal class DelegateLambdaPlanResolver(
         }
     }
 
-    private fun resolveSignatureShape(
+    internal fun resolveSignatureShape(
         invokeMethod: WinMdMethod,
         currentNamespace: String,
         genericParameters: Set<String>,
