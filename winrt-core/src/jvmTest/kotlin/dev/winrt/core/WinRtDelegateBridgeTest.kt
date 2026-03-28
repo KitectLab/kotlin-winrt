@@ -130,4 +130,30 @@ class WinRtDelegateBridgeTest {
             assertFalse(handle.pointer.isNull)
         }
     }
+
+    @Test
+    fun creates_int32_arg_unit_delegate_handle() {
+        val iid = guidOf("cccccccc-bbbb-cccc-dddd-eeeeeeeeeeee")
+        var captured: Int? = null
+
+        WinRtDelegateBridge.createInt32ArgUnitDelegate(iid) { value ->
+            captured = value
+        }.use { handle ->
+            val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
+            val vtablePointer = callbackPointer.reinterpret(ValueLayout.ADDRESS.byteSize()).get(ValueLayout.ADDRESS, 0L)
+            val function = Linker.nativeLinker().downcallHandle(
+                vtablePointer.reinterpret(ValueLayout.ADDRESS.byteSize() * 4).getAtIndex(ValueLayout.ADDRESS, 3),
+                FunctionDescriptor.of(
+                    ValueLayout.JAVA_INT,
+                    ValueLayout.ADDRESS,
+                    ValueLayout.JAVA_INT,
+                ),
+            )
+
+            val hresult = function.invokeWithArguments(callbackPointer, 123) as Int
+            assertEquals(0, hresult)
+            assertEquals(123, captured)
+            assertFalse(handle.pointer.isNull)
+        }
+    }
 }
