@@ -959,6 +959,78 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_kotlin_list_shape_for_runtime_class_implementing_closed_generic_boolean_vector_view() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IVectorView",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbe1fa4c-b0e3-4583-baef-1f1b2e483e56",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "BooleanVectorViewHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IVectorView<Boolean>",
+                            implementedInterfaces = listOf("Windows.Foundation.Collections.IVectorView<Boolean>"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Windows/Foundation/Collections/BooleanVectorViewHost.kt"
+        }.content
+
+        assertTrue(binding.contains("List<Boolean> by IVectorView.from(Inspectable(pointer), \"b1\", \"Boolean\")"))
+        assertTrue(binding.contains("val winRtSize: UInt32"))
+    }
+
+    @Test
+    fun generates_kotlin_mutable_list_shape_for_runtime_class_implementing_closed_generic_boolean_vector() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IVector",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "913337e9-11a1-4345-a3a2-4e7f956e222d",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "BooleanVectorHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IVector<Boolean>",
+                            implementedInterfaces = listOf("Windows.Foundation.Collections.IVector<Boolean>"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Windows/Foundation/Collections/BooleanVectorHost.kt"
+        }.content
+
+        assertTrue(binding.contains("MutableList<Boolean> by IVector.from(Inspectable(pointer), \"b1\", \"Boolean\")"))
+        assertTrue(binding.contains("val winRtSize: UInt32"))
+    }
+
+    @Test
     fun generates_kotlin_list_shape_for_string_vector_view() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

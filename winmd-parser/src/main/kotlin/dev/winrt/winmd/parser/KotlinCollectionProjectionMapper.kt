@@ -178,7 +178,7 @@ internal class KotlinCollectionProjectionMapper {
                 "Windows.Foundation.Collections.IVectorView",
                 "Windows.Foundation.Collections",
             ) as ClassName
-            val elementTypeName = typeNameMapper.mapTypeName(elementType, "Windows.Foundation.Collections")
+            val elementTypeName = collectionElementTypeName(elementType, typeNameMapper)
             return CollectionInterfaceMetadata(
                 collectionSuperinterface = PoetSymbols.listClass.parameterizedBy(elementTypeName),
                 delegateFactory = CodeBlock.of(
@@ -200,7 +200,7 @@ internal class KotlinCollectionProjectionMapper {
                 "Windows.Foundation.Collections.IVector",
                 "Windows.Foundation.Collections",
             ) as ClassName
-            val elementTypeName = typeNameMapper.mapTypeName(elementType, "Windows.Foundation.Collections")
+            val elementTypeName = collectionElementTypeName(elementType, typeNameMapper)
             return CollectionInterfaceMetadata(
                 collectionSuperinterface = PoetSymbols.mutableListClass.parameterizedBy(elementTypeName),
                 delegateFactory = CodeBlock.of(
