@@ -2,7 +2,6 @@ package dev.winrt.core
 
 import dev.winrt.kom.AbiIntPtr
 import dev.winrt.kom.ComPtr
-import dev.winrt.kom.HResult
 import java.lang.foreign.FunctionDescriptor
 import java.lang.foreign.Linker
 import java.lang.foreign.MemorySegment
@@ -17,9 +16,8 @@ class JvmWinRtObjectArgDelegateTest {
     fun delegate_supports_query_interface_and_invoke() {
         val seenPointer = AtomicLong(0L)
         val iid = guidOf("d8ea1239-1234-56f1-9963-45dd9c80a661")
-        JvmWinRtObjectArgDelegate.create(iid) { arg ->
+        WinRtDelegateBridge.createObjectArgUnitDelegate(iid) { arg ->
             seenPointer.set(arg.value.rawValue)
-            HResult(0)
         }.use { callback ->
             val callbackPointer = MemorySegment.ofAddress(callback.pointer.value.rawValue)
             val vtablePointer = callbackPointer.reinterpret(ValueLayout.ADDRESS.byteSize()).get(ValueLayout.ADDRESS, 0L)
