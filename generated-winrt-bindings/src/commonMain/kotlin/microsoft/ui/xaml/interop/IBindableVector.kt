@@ -16,6 +16,12 @@ open class IBindableVector(
     fun getAt(index: UInt32): Inspectable =
         Inspectable(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 7, index.value).getOrThrow())
 
+    val size: UInt32
+        get() = get_Size()
+
+    fun get_Size(): UInt32 =
+        UInt32(PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
+
     fun getView(): IBindableVectorView =
         IBindableVectorView(PlatformComInterop.invokeObjectMethod(pointer, 9).getOrThrow())
 
@@ -33,6 +39,9 @@ open class IBindableVector(
 
     fun first(): IBindableIterator =
         IBindableIterator(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
+
+    fun asListHelper(): IBindableVectorListHelper =
+        getOrPutHelperWrapper("System.Collections.IList") { IBindableVectorListHelper(this) }
 
     companion object : WinRtInterfaceMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
