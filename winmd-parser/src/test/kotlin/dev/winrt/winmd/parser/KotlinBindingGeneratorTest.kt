@@ -2388,6 +2388,117 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_lambda_overload_for_int32_boolean_delegate_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Callbacks",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Callbacks",
+                            name = "CountPredicate",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "27272727-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Boolean",
+                                    parameters = listOf(
+                                        WinMdParameter(name = "value", type = "Int32"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Callbacks",
+                            name = "ICountSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "28282828-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetPredicate",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter(name = "callback", type = "Example.Callbacks.CountPredicate"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Example/Callbacks/ICountSource.kt"
+        }.content
+
+        assertTrue(binding.contains("fun setPredicate(callback: CountPredicate)"))
+        assertTrue(binding.contains("(Int) -> Boolean"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createInt32ArgBooleanDelegate"))
+        assertTrue(binding.contains("CountPredicate.iid"))
+        assertTrue(binding.contains("setPredicate(CountPredicate(delegateHandle.pointer))"))
+    }
+
+    @Test
+    fun generates_runtime_lambda_overload_for_int32_boolean_delegate_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "CountPredicate",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "29292929-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Boolean",
+                                    parameters = listOf(
+                                        WinMdParameter(name = "value", type = "Int32"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "CountSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetPredicate",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter(name = "callback", type = "Example.Runtime.CountPredicate"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Example/Runtime/CountSource.kt"
+        }.content
+
+        assertTrue(binding.contains("fun setPredicate(callback: CountPredicate)"))
+        assertTrue(binding.contains("(Int) -> Boolean"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createInt32ArgBooleanDelegate"))
+        assertTrue(binding.contains("CountPredicate.iid"))
+        assertTrue(binding.contains("setPredicate(CountPredicate(delegateHandle.pointer))"))
+    }
+
+    @Test
     fun generates_lambda_overload_for_string_delegate_parameter() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

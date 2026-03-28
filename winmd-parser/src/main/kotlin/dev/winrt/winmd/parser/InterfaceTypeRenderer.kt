@@ -672,6 +672,28 @@ internal class InterfaceTypeRenderer(
             }
             invokeMethod.parameters.size == 1 &&
                 invokeMethod.parameters.single().type == "Int32" &&
+                invokeMethod.returnType == "Boolean" -> {
+                FunSpec.builder(functionName)
+                    .returns(PoetSymbols.winRtDelegateHandleClass)
+                    .addParameter(
+                        lambdaParameterName,
+                        LambdaTypeName.get(
+                            parameters = arrayOf(Int::class.asTypeName()),
+                            returnType = Boolean::class.asTypeName(),
+                        ),
+                    )
+                    .addStatement(
+                        "val delegateHandle = %T.createInt32ArgBooleanDelegate(%T.iid, %N)",
+                        PoetSymbols.winRtDelegateBridgeClass,
+                        delegateClass,
+                        lambdaParameterName,
+                    )
+                    .addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
+                    .addStatement("return delegateHandle")
+                    .build()
+            }
+            invokeMethod.parameters.size == 1 &&
+                invokeMethod.parameters.single().type == "Int32" &&
                 invokeMethod.returnType == "Unit" -> {
                 FunSpec.builder(functionName)
                     .returns(PoetSymbols.winRtDelegateHandleClass)
