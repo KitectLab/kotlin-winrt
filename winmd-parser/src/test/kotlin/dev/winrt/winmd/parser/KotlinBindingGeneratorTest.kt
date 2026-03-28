@@ -2388,6 +2388,115 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_lambda_overload_for_string_delegate_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Callbacks",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Callbacks",
+                            name = "LabelHandler",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "99999999-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter(name = "value", type = "String"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Callbacks",
+                            name = "ILabelSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetHandler",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter(name = "callback", type = "Example.Callbacks.LabelHandler"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Example/Callbacks/ILabelSource.kt"
+        }.content
+
+        assertTrue(binding.contains("fun setHandler(callback: LabelHandler)"))
+        assertTrue(binding.contains("(String) -> Unit"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createStringArgUnitDelegate(LabelHandler.iid, callback)"))
+        assertTrue(binding.contains("setHandler(LabelHandler(delegateHandle.pointer))"))
+    }
+
+    @Test
+    fun generates_runtime_lambda_overload_for_string_delegate_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "LabelHandler",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "bbbbbbbb-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter(name = "value", type = "String"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "LabelSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetHandler",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter(name = "callback", type = "Example.Runtime.LabelHandler"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Example/Runtime/LabelSource.kt"
+        }.content
+
+        assertTrue(binding.contains("fun setHandler(callback: LabelHandler)"))
+        assertTrue(binding.contains("(String) -> Unit"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createStringArgUnitDelegate(LabelHandler.iid, callback)"))
+        assertTrue(binding.contains("setHandler(LabelHandler(delegateHandle.pointer))"))
+    }
+
+    @Test
     fun reads_winui_ui_element_collection_runtime_class_when_available() {
         val winUiRoot = java.nio.file.Path.of("F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002")
         val xamlWinmd = winUiRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd")

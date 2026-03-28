@@ -2,6 +2,7 @@ package dev.winrt.core
 
 import dev.winrt.kom.AbiIntPtr
 import dev.winrt.kom.ComPtr
+import dev.winrt.kom.PlatformHStringBridge
 import java.lang.foreign.Arena
 import java.lang.foreign.FunctionDescriptor
 import java.lang.foreign.Linker
@@ -154,6 +155,37 @@ class WinRtDelegateBridgeTest {
             assertEquals(0, hresult)
             assertEquals(123, captured)
             assertFalse(handle.pointer.isNull)
+        }
+    }
+
+    @Test
+    fun creates_string_arg_unit_delegate_handle() {
+        val iid = guidOf("dddddddd-bbbb-cccc-dddd-eeeeeeeeeeee")
+        var captured: String? = null
+        val hString = PlatformHStringBridge.create("hello")
+
+        try {
+            WinRtDelegateBridge.createStringArgUnitDelegate(iid) { value ->
+                captured = value
+            }.use { handle ->
+                val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
+                val vtablePointer = callbackPointer.reinterpret(ValueLayout.ADDRESS.byteSize()).get(ValueLayout.ADDRESS, 0L)
+                val function = Linker.nativeLinker().downcallHandle(
+                    vtablePointer.reinterpret(ValueLayout.ADDRESS.byteSize() * 4).getAtIndex(ValueLayout.ADDRESS, 3),
+                    FunctionDescriptor.of(
+                        ValueLayout.JAVA_INT,
+                        ValueLayout.ADDRESS,
+                        ValueLayout.ADDRESS,
+                    ),
+                )
+
+                val hresult = function.invokeWithArguments(callbackPointer, MemorySegment.ofAddress(hString.raw)) as Int
+                assertEquals(0, hresult)
+                assertEquals("hello", captured)
+                assertFalse(handle.pointer.isNull)
+            }
+        } finally {
+            PlatformHStringBridge.release(hString)
         }
     }
 }
