@@ -43,8 +43,9 @@ open class Inspectable(pointer: ComPtr) : WinRtObject(pointer) {
     }
 
     fun getObjectReferenceForProjectedType(typeKey: String, iid: Guid): ComPtr {
+        val projectionTypeKey = WinRtProjectionRegistry.projectionTypeKeyFor(typeKey)
         return getObjectReferenceForType(
-            typeKey = WinRtProjectionRegistry.helperTypeKeyFor(typeKey),
+            typeKey = WinRtProjectionRegistry.abiHelperTypeKeyFor(projectionTypeKey),
             iid = iid,
         )
     }

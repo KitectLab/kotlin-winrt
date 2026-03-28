@@ -78,9 +78,17 @@ class RuntimePropertyTest {
 
         assertEquals(
             "System.Collections.IList",
-            WinRtProjectionRegistry.helperTypeKeyFor("Microsoft.UI.Xaml.Interop.IBindableVector"),
+            WinRtProjectionRegistry.projectionTypeKeyFor("Microsoft.UI.Xaml.Interop.IBindableVector"),
         )
-        assertNull(WinRtProjectionRegistry.findHelperTypeKey("Windows.Foundation.Collections.IVector<String>"))
+        assertNull(WinRtProjectionRegistry.findProjectionTypeKey("Windows.Foundation.Collections.IVector<String>"))
+        assertEquals(
+            "ABI.System.Collections.IList",
+            WinRtProjectionRegistry.abiHelperTypeKeyFor("System.Collections.IList"),
+        )
+        assertEquals(
+            "ABI.System.Collections.Generic.IList<Microsoft.UI.Xaml.UIElement>",
+            WinRtProjectionRegistry.abiHelperTypeKeyFor("System.Collections.Generic.IList<Microsoft.UI.Xaml.UIElement>"),
+        )
     }
 
     @Test
@@ -98,7 +106,7 @@ class RuntimePropertyTest {
         }
 
         val first = subject.getObjectReferenceForProjectedType("Microsoft.UI.Xaml.Interop.IBindableVector", iid)
-        val second = subject.getObjectReferenceForType("System.Collections.IList", iid)
+        val second = subject.getObjectReferenceForType("ABI.System.Collections.IList", iid)
 
         assertEquals(ComPtr.NULL, first)
         assertEquals(ComPtr.NULL, second)
@@ -131,15 +139,15 @@ class RuntimePropertyTest {
         }
 
         assertEquals(ComPtr.NULL, projection.pointer)
-        assertEquals(listOf("System.Collections.IList"), subject.requestedKeys)
+        assertEquals(listOf("ABI.System.Collections.IList"), subject.requestedKeys)
     }
 
     @Test
     fun interface_projection_uses_projection_type_key_when_provided() {
         WinRtProjectionRegistry.resetForTests()
-        WinRtProjectionRegistry.registerHelperTypeMapping(
-            publicTypeKey = "System.Collections.IList",
-            helperTypeKey = "ABI.System.Collections.IList",
+        WinRtProjectionRegistry.registerAbiHelperTypeMapping(
+            projectionTypeKey = "System.Collections.IList",
+            abiHelperTypeKey = "ABI.System.Collections.IList",
         )
 
         val metadata = object : WinRtInterfaceMetadata {
