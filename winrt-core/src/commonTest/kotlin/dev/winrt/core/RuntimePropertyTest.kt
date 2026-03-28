@@ -140,6 +140,25 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun inspectable_argument_pointer_uses_cached_iinspectable_reference() {
+        val subject = object : Inspectable(ComPtr.NULL) {
+            val requestedIids = mutableListOf<Guid>()
+
+            override fun queryInterface(iid: Guid): ComPtr {
+                requestedIids += iid
+                return ComPtr.NULL
+            }
+        }
+
+        val first = subject.getInspectableArgumentPointer()
+        val second = subject.getInspectableArgumentPointer()
+
+        assertEquals(ComPtr.NULL, first)
+        assertEquals(ComPtr.NULL, second)
+        assertEquals(listOf(Inspectable.iinspectableIid), subject.requestedIids)
+    }
+
+    @Test
     fun interface_projection_uses_helper_type_mapping_for_object_reference_lookup() {
         WinRtProjectionRegistry.resetForTests()
 

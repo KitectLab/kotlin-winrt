@@ -25,6 +25,10 @@ open class WinRtObject(
 }
 
 open class Inspectable(pointer: ComPtr) : WinRtObject(pointer) {
+    companion object {
+        val iinspectableIid: Guid = guidOf("af86e2e0-b12d-4c6a-9c5a-d7aa65101e90")
+    }
+
     open fun queryInterface(iid: Guid): ComPtr {
         return PlatformComInterop.queryInterface(pointer, iid)
             .getOrElse { throw KomException("QueryInterface failed: ${it.message}") }
@@ -54,6 +58,10 @@ open class Inspectable(pointer: ComPtr) : WinRtObject(pointer) {
             queryInterfaceCache.putIfAbsent(typeKey, reference)
         }
         return reference
+    }
+
+    fun getInspectableArgumentPointer(): ComPtr {
+        return getObjectReferenceForType("marshal:IInspectable", iinspectableIid)
     }
 }
 
