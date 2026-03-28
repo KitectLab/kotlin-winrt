@@ -10,6 +10,7 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.asTypeName
 import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdProperty
 import dev.winrt.winmd.plugin.WinMdType
@@ -33,6 +34,34 @@ internal class InterfaceTypeRenderer(
             .primaryConstructor(pointerConstructor())
             .superclass(PoetSymbols.winRtInterfaceProjectionClass)
             .addSuperclassConstructorParameter("pointer")
+            .apply {
+                if (type.namespace == "Microsoft.UI.Xaml.Interop" && type.name == "IBindableVectorView") {
+                    addSuperinterface(
+                        PoetSymbols.listClass.parameterizedBy(PoetSymbols.inspectableClass),
+                        CodeBlock.of(
+                            "%T(sizeProvider = { %T(%T.invokeUInt32Method(pointer, 8).getOrThrow()).value.toInt() }, getter = { index -> %T(%T.invokeObjectMethodWithUInt32Arg(pointer, 7, index.toUInt()).getOrThrow()) })",
+                            PoetSymbols.winRtListProjectionClass.parameterizedBy(PoetSymbols.inspectableClass),
+                            PoetSymbols.uint32Class,
+                            PoetSymbols.platformComInteropClass,
+                            PoetSymbols.inspectableClass,
+                            PoetSymbols.platformComInteropClass,
+                        ),
+                    )
+                    addProperty(
+                        PropertySpec.builder("winRtSize", PoetSymbols.uint32Class)
+                            .getter(
+                                FunSpec.getterBuilder()
+                                    .addStatement(
+                                        "return %T(%T.invokeUInt32Method(pointer, 8).getOrThrow())",
+                                        PoetSymbols.uint32Class,
+                                        PoetSymbols.platformComInteropClass,
+                                    )
+                                    .build(),
+                            )
+                            .build(),
+                    )
+                }
+            }
             .addProperties(type.properties.mapNotNull { renderProperty(it, type.namespace, genericParameters) })
             .addFunctions(type.methods.mapNotNull { renderMethod(it, type.namespace, genericParameters) })
             .addType(

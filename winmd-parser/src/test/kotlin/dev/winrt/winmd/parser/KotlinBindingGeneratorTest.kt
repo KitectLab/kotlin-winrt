@@ -305,6 +305,51 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_kotlin_list_shape_for_bindable_vector_view() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml.Interop",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Interop",
+                            name = "IBindableVectorView",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "346dd6e7-976e-4bc3-815d-ece243bc0f33",
+                            methods = listOf(
+                                WinMdMethod(name = "First", returnType = "Microsoft.UI.Xaml.Interop.IBindableIterator", vtableIndex = 6),
+                                WinMdMethod(
+                                    name = "GetAt",
+                                    returnType = "Object",
+                                    parameters = listOf(WinMdParameter(name = "index", type = "UInt32")),
+                                    vtableIndex = 7,
+                                ),
+                                WinMdMethod(name = "get_Size", returnType = "UInt32", vtableIndex = 8),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Interop",
+                            name = "IBindableIterator",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "6a79e863-4300-459a-9966-cbb660963ee1",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Microsoft/UI/Xaml/Interop/IBindableVectorView.kt" }.content
+
+        assertTrue(binding.contains("open class IBindableVectorView"))
+        assertTrue(binding.contains("List<Inspectable> by"))
+        assertTrue(binding.contains("val winRtSize: UInt32"))
+        assertTrue(binding.contains("fun getAt(index: UInt32): Inspectable"))
+        assertTrue(binding.contains("WinRtListProjection<Inspectable>"))
+    }
+
+    @Test
     fun generates_json_array_uint32_object_call_from_real_metadata_model() {
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",
