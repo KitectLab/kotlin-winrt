@@ -1031,6 +1031,124 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_kotlin_iterable_shape_for_runtime_class_implementing_closed_generic_int_iterable() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IIterable",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "faa585ea-6214-4217-afda-7f46de5869b3",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IIterator",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "6a79e863-4300-459a-9966-cbb660963ee1",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IntIterableHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IIterable<Int32>",
+                            implementedInterfaces = listOf("Windows.Foundation.Collections.IIterable<Int32>"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Windows/Foundation/Collections/IntIterableHost.kt"
+        }.content
+
+        assertTrue(binding.contains("Iterable<Int> by object : Iterable<Int>"))
+        assertTrue(binding.contains("invokeInt32Method("))
+        assertTrue(binding.contains("IIterable.from(Inspectable(pointer),"))
+        assertTrue(binding.contains("\"i4\""))
+        assertTrue(binding.contains("\"Int32\""))
+    }
+
+    @Test
+    fun generates_kotlin_list_shape_for_runtime_class_implementing_closed_generic_int_vector_view() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IVectorView",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbe1fa4c-b0e3-4583-baef-1f1b2e483e56",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IntVectorViewHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IVectorView<Int32>",
+                            implementedInterfaces = listOf("Windows.Foundation.Collections.IVectorView<Int32>"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Windows/Foundation/Collections/IntVectorViewHost.kt"
+        }.content
+
+        assertTrue(binding.contains("List<Int> by IVectorView.from(Inspectable(pointer), \"i4\", \"Int32\")"))
+        assertTrue(binding.contains("val winRtSize: UInt32"))
+    }
+
+    @Test
+    fun generates_kotlin_mutable_list_shape_for_runtime_class_implementing_closed_generic_int_vector() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IVector",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "913337e9-11a1-4345-a3a2-4e7f956e222d",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IntVectorHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IVector<Int32>",
+                            implementedInterfaces = listOf("Windows.Foundation.Collections.IVector<Int32>"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Windows/Foundation/Collections/IntVectorHost.kt"
+        }.content
+
+        assertTrue(binding.contains("MutableList<Int> by IVector.from(Inspectable(pointer), \"i4\", \"Int32\")"))
+        assertTrue(binding.contains("val winRtSize: UInt32"))
+    }
+
+    @Test
     fun generates_kotlin_list_shape_for_string_vector_view() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
