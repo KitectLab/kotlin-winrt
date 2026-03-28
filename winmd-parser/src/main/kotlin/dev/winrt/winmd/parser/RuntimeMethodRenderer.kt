@@ -1,10 +1,13 @@
 package dev.winrt.winmd.parser
 
 import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.asTypeName
 import dev.winrt.winmd.plugin.WinMdMethod
 
 internal class RuntimeMethodRenderer(
     private val typeNameMapper: TypeNameMapper,
+    private val typeRegistry: TypeRegistry,
 ) {
     fun canRenderRuntimeMethod(method: WinMdMethod): Boolean {
         if (!isKotlinIdentifier(method.name)) {
@@ -130,6 +133,63 @@ internal class RuntimeMethodRenderer(
         }
 
         return null
+    }
+
+    fun renderRuntimeLambdaOverload(method: WinMdMethod, currentNamespace: String): FunSpec? {
+        if (method.parameters.size != 1 || method.vtableIndex == null || method.returnType != "Unit") {
+            return null
+        }
+        val delegateType = typeRegistry.findType(method.parameters.single().type, currentNamespace) ?: return null
+        if (delegateType.kind != dev.winrt.winmd.plugin.WinMdTypeKind.Delegate) {
+            return null
+        }
+        val invokeMethod = delegateType.methods.singleOrNull { it.name == "Invoke" } ?: return null
+        if (invokeMethod.returnType != "Unit") {
+            return null
+        }
+
+        val functionName = method.name.replaceFirstChar(Char::lowercase)
+        val delegateClass = typeNameMapper.mapTypeName(method.parameters.single().type, currentNamespace)
+        return when {
+            invokeMethod.parameters.isEmpty() -> {
+                FunSpec.builder(functionName)
+                    .returns(PoetSymbols.winRtDelegateHandleClass)
+                    .addParameter("callback", LambdaTypeName.get(returnType = Unit::class.asTypeName()))
+                    .beginControlFlow("if (pointer.isNull)")
+                    .addStatement("error(%S)", "Null runtime object pointer: ${method.name}")
+                    .endControlFlow()
+                    .addStatement(
+                        "val delegateHandle = %T.createNoArgUnitDelegate(%T.iid, callback)",
+                        PoetSymbols.winRtDelegateBridgeClass,
+                        delegateClass,
+                    )
+                    .addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
+                    .addStatement("return delegateHandle")
+                    .build()
+            }
+            invokeMethod.parameters.size == 1 && supportsRuntimeObjectType(invokeMethod.parameters.single().type) -> {
+                val callbackArgType = typeNameMapper.mapTypeName(invokeMethod.parameters.single().type, currentNamespace)
+                FunSpec.builder(functionName)
+                    .returns(PoetSymbols.winRtDelegateHandleClass)
+                    .addParameter(
+                        "callback",
+                        LambdaTypeName.get(parameters = arrayOf(callbackArgType), returnType = Unit::class.asTypeName()),
+                    )
+                    .beginControlFlow("if (pointer.isNull)")
+                    .addStatement("error(%S)", "Null runtime object pointer: ${method.name}")
+                    .endControlFlow()
+                    .addStatement(
+                        "val delegateHandle = %T.createObjectArgUnitDelegate(%T.iid) { arg -> callback(%T(arg)) }",
+                        PoetSymbols.winRtDelegateBridgeClass,
+                        delegateClass,
+                        callbackArgType,
+                    )
+                    .addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
+                    .addStatement("return delegateHandle")
+                    .build()
+            }
+            else -> null
+        }
     }
 
     private fun supportsRuntimeObjectType(type: String): Boolean {

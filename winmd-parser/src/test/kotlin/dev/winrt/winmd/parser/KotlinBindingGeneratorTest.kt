@@ -2056,6 +2056,117 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_runtime_lambda_overload_for_no_arg_delegate_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "TickHandler",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Ticker",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetHandler",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter(name = "callback", type = "Example.Runtime.TickHandler"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Example/Runtime/Ticker.kt"
+        }.content
+
+        assertTrue(binding.contains("fun setHandler(callback: TickHandler)"))
+        assertTrue(binding.contains("fun setHandler("))
+        assertTrue(binding.contains("() -> Unit"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createNoArgUnitDelegate(TickHandler.iid, callback)"))
+        assertTrue(binding.contains("setHandler(TickHandler(delegateHandle.pointer))"))
+    }
+
+    @Test
+    fun generates_runtime_lambda_overload_for_object_arg_delegate_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Payload",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "PayloadHandler",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter(name = "value", type = "Example.Runtime.Payload"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "PayloadSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetHandler",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter(name = "callback", type = "Example.Runtime.PayloadHandler"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Example/Runtime/PayloadSource.kt"
+        }.content
+
+        assertTrue(binding.contains("fun setHandler(callback: PayloadHandler)"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createObjectArgUnitDelegate(PayloadHandler.iid)"))
+        assertTrue(binding.contains("callback(Payload(arg))"))
+        assertTrue(binding.contains("setHandler(PayloadHandler(delegateHandle.pointer))"))
+    }
+
+    @Test
     fun reads_winui_ui_element_collection_runtime_class_when_available() {
         val winUiRoot = java.nio.file.Path.of("F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002")
         val xamlWinmd = winUiRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd")

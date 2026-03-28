@@ -73,6 +73,9 @@ internal class RuntimeTypeRenderer(
         type.methods.filter(runtimeMethodRenderer::canRenderRuntimeMethod)
             .mapNotNull { runtimeMethodRenderer.renderRuntimeMethod(it, type.namespace) }
             .forEach(builder::addFunction)
+        type.methods
+            .mapNotNull { runtimeMethodRenderer.renderRuntimeLambdaOverload(it, type.namespace) }
+            .forEach(builder::addFunction)
         builder.addType(runtimeCompanionRenderer.render(type))
         type.defaultInterface?.let { defaultInterface ->
             runtimeProjectionRenderer.renderDefaultInterfaceProjection(defaultInterface)
