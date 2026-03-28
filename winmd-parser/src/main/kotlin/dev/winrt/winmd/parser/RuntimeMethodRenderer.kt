@@ -156,43 +156,37 @@ internal class RuntimeMethodRenderer(
             currentNamespace = currentNamespace,
             supportsObjectType = ::supportsRuntimeObjectType,
         ) ?: return null
-        return when (plan) {
-            is DelegateLambdaPlan.DirectBridge -> {
-                FunSpec.builder(functionName)
-                    .returns(PoetSymbols.winRtDelegateHandleClass)
-                    .addParameter("callback", plan.lambdaType)
-                    .beginControlFlow("if (pointer.isNull)")
-                    .addStatement("error(%S)", "Null runtime object pointer: ${method.name}")
-                    .endControlFlow()
-                    .addStatement(
-                        "val delegateHandle = %T.%L(%T.iid, callback)",
-                        PoetSymbols.winRtDelegateBridgeClass,
-                        plan.bridgeFactoryMethod,
-                        delegateClass,
-                    )
-                    .addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
-                    .addStatement("return delegateHandle")
-                    .build()
+        return FunSpec.builder(functionName)
+            .returns(PoetSymbols.winRtDelegateHandleClass)
+            .addParameter("callback", plan.lambdaType)
+            .beginControlFlow("if (pointer.isNull)")
+            .addStatement("error(%S)", "Null runtime object pointer: ${method.name}")
+            .endControlFlow()
+            .apply {
+                when (val carrier = plan.bridge.parameterCarriers.single()) {
+                    ParameterCarrier.NoArgs,
+                    is ParameterCarrier.Direct -> {
+                        addStatement(
+                            "val delegateHandle = %T.%L(%T.iid, callback)",
+                            PoetSymbols.winRtDelegateBridgeClass,
+                            plan.bridge.factoryMethod,
+                            delegateClass,
+                        )
+                    }
+                    is ParameterCarrier.ObjectWrapped -> {
+                        addStatement(
+                            "val delegateHandle = %T.%L(%T.iid) { arg -> callback(%T(arg)) }",
+                            PoetSymbols.winRtDelegateBridgeClass,
+                            plan.bridge.factoryMethod,
+                            delegateClass,
+                            carrier.callbackArgType,
+                        )
+                    }
+                }
+                addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
+                addStatement("return delegateHandle")
             }
-            is DelegateLambdaPlan.ObjectBridge -> {
-                FunSpec.builder(functionName)
-                    .returns(PoetSymbols.winRtDelegateHandleClass)
-                    .addParameter("callback", plan.lambdaType)
-                    .beginControlFlow("if (pointer.isNull)")
-                    .addStatement("error(%S)", "Null runtime object pointer: ${method.name}")
-                    .endControlFlow()
-                    .addStatement(
-                        "val delegateHandle = %T.%L(%T.iid) { arg -> callback(%T(arg)) }",
-                        PoetSymbols.winRtDelegateBridgeClass,
-                        plan.bridgeFactoryMethod,
-                        delegateClass,
-                        plan.callbackArgType,
-                    )
-                    .addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
-                    .addStatement("return delegateHandle")
-                    .build()
-            }
-        }
+            .build()
     }
 
     private fun supportsRuntimeObjectType(type: String): Boolean {

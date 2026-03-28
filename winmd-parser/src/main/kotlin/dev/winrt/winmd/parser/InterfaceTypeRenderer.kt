@@ -648,39 +648,36 @@ internal class InterfaceTypeRenderer(
             genericParameters = genericParameters,
             supportsObjectType = ::supportsInterfaceObjectType,
         ) ?: return null
-        return when (plan) {
-            is DelegateLambdaPlan.DirectBridge -> {
-                FunSpec.builder(functionName)
-                    .returns(PoetSymbols.winRtDelegateHandleClass)
-                    .addParameter(lambdaParameterName, plan.lambdaType)
-                    .addStatement(
-                        "val delegateHandle = %T.%L(%T.iid, %N)",
-                        PoetSymbols.winRtDelegateBridgeClass,
-                        plan.bridgeFactoryMethod,
-                        delegateClass,
-                        lambdaParameterName,
-                    )
-                    .addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
-                    .addStatement("return delegateHandle")
-                    .build()
+        return FunSpec.builder(functionName)
+            .returns(PoetSymbols.winRtDelegateHandleClass)
+            .addParameter(lambdaParameterName, plan.lambdaType)
+            .apply {
+                when (val carrier = plan.bridge.parameterCarriers.single()) {
+                    ParameterCarrier.NoArgs,
+                    is ParameterCarrier.Direct -> {
+                        addStatement(
+                            "val delegateHandle = %T.%L(%T.iid, %N)",
+                            PoetSymbols.winRtDelegateBridgeClass,
+                            plan.bridge.factoryMethod,
+                            delegateClass,
+                            lambdaParameterName,
+                        )
+                    }
+                    is ParameterCarrier.ObjectWrapped -> {
+                        addStatement(
+                            "val delegateHandle = %T.%L(%T.iid) { arg -> %N(%T(arg)) }",
+                            PoetSymbols.winRtDelegateBridgeClass,
+                            plan.bridge.factoryMethod,
+                            delegateClass,
+                            lambdaParameterName,
+                            carrier.callbackArgType,
+                        )
+                    }
+                }
+                addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
+                addStatement("return delegateHandle")
             }
-            is DelegateLambdaPlan.ObjectBridge -> {
-                FunSpec.builder(functionName)
-                    .returns(PoetSymbols.winRtDelegateHandleClass)
-                    .addParameter(lambdaParameterName, plan.lambdaType)
-                    .addStatement(
-                        "val delegateHandle = %T.%L(%T.iid) { arg -> %N(%T(arg)) }",
-                        PoetSymbols.winRtDelegateBridgeClass,
-                        plan.bridgeFactoryMethod,
-                        delegateClass,
-                        lambdaParameterName,
-                        plan.callbackArgType,
-                    )
-                    .addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
-                    .addStatement("return delegateHandle")
-                    .build()
-            }
-        }
+            .build()
     }
 
     private fun kotlinMethodName(methodName: String): String {

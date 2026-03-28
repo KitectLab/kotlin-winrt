@@ -7,17 +7,35 @@ import dev.winrt.winmd.plugin.WinMdMethod
 
 internal sealed interface DelegateLambdaPlan {
     val lambdaType: LambdaTypeName
+    val bridge: BridgeSpec
 
-    data class DirectBridge(
+    data class PlannedBridge(
         override val lambdaType: LambdaTypeName,
-        val bridgeFactoryMethod: String,
+        override val bridge: BridgeSpec,
     ) : DelegateLambdaPlan
+}
 
-    data class ObjectBridge(
-        override val lambdaType: LambdaTypeName,
-        val bridgeFactoryMethod: String,
+internal data class BridgeSpec(
+    val factoryMethod: String,
+    val parameterCarriers: List<ParameterCarrier>,
+    val returnCarrier: ReturnCarrier,
+)
+
+internal sealed interface ParameterCarrier {
+    data object NoArgs : ParameterCarrier
+
+    data class Direct(
+        val kotlinType: TypeName,
+    ) : ParameterCarrier
+
+    data class ObjectWrapped(
         val callbackArgType: TypeName,
-    ) : DelegateLambdaPlan
+    ) : ParameterCarrier
+}
+
+internal enum class ReturnCarrier {
+    UNIT,
+    BOOLEAN,
 }
 
 private data class ScalarBridgeSpec(
@@ -81,43 +99,57 @@ internal class DelegateLambdaPlanResolver(
 
         return when {
             invokeMethod.parameters.isEmpty() && invokeMethod.returnType == "Unit" -> {
-                DelegateLambdaPlan.DirectBridge(
+                DelegateLambdaPlan.PlannedBridge(
                     lambdaType = LambdaTypeName.get(returnType = Unit::class.asTypeName()),
-                    bridgeFactoryMethod = "createNoArgUnitDelegate",
+                    bridge = BridgeSpec(
+                        factoryMethod = "createNoArgUnitDelegate",
+                        parameterCarriers = listOf(ParameterCarrier.NoArgs),
+                        returnCarrier = ReturnCarrier.UNIT,
+                    ),
                 )
             }
             invokeMethod.parameters.isEmpty() && invokeMethod.returnType == "Boolean" -> {
-                DelegateLambdaPlan.DirectBridge(
+                DelegateLambdaPlan.PlannedBridge(
                     lambdaType = LambdaTypeName.get(returnType = Boolean::class.asTypeName()),
-                    bridgeFactoryMethod = "createNoArgBooleanDelegate",
+                    bridge = BridgeSpec(
+                        factoryMethod = "createNoArgBooleanDelegate",
+                        parameterCarriers = listOf(ParameterCarrier.NoArgs),
+                        returnCarrier = ReturnCarrier.BOOLEAN,
+                    ),
                 )
             }
-            invokeMethod.parameters.size == 1 -> resolveScalarPlan(invokeMethod.parameters.single().type, invokeMethod.returnType)
             invokeMethod.parameters.size == 1 &&
                 supportsObjectType(invokeMethod.parameters.single().type) &&
                 invokeMethod.returnType == "Unit" -> {
                 val callbackArgType = typeNameMapper.mapTypeName(invokeMethod.parameters.single().type, currentNamespace, genericParameters)
-                DelegateLambdaPlan.ObjectBridge(
+                DelegateLambdaPlan.PlannedBridge(
                     lambdaType = LambdaTypeName.get(parameters = arrayOf(callbackArgType), returnType = Unit::class.asTypeName()),
-                    bridgeFactoryMethod = "createObjectArgUnitDelegate",
-                    callbackArgType = callbackArgType,
+                    bridge = BridgeSpec(
+                        factoryMethod = "createObjectArgUnitDelegate",
+                        parameterCarriers = listOf(ParameterCarrier.ObjectWrapped(callbackArgType)),
+                        returnCarrier = ReturnCarrier.UNIT,
+                    ),
                 )
             }
             invokeMethod.parameters.size == 1 &&
                 supportsObjectType(invokeMethod.parameters.single().type) &&
                 invokeMethod.returnType == "Boolean" -> {
                 val callbackArgType = typeNameMapper.mapTypeName(invokeMethod.parameters.single().type, currentNamespace, genericParameters)
-                DelegateLambdaPlan.ObjectBridge(
+                DelegateLambdaPlan.PlannedBridge(
                     lambdaType = LambdaTypeName.get(parameters = arrayOf(callbackArgType), returnType = Boolean::class.asTypeName()),
-                    bridgeFactoryMethod = "createObjectArgBooleanDelegate",
-                    callbackArgType = callbackArgType,
+                    bridge = BridgeSpec(
+                        factoryMethod = "createObjectArgBooleanDelegate",
+                        parameterCarriers = listOf(ParameterCarrier.ObjectWrapped(callbackArgType)),
+                        returnCarrier = ReturnCarrier.BOOLEAN,
+                    ),
                 )
             }
+            invokeMethod.parameters.size == 1 -> resolveScalarPlan(invokeMethod.parameters.single().type, invokeMethod.returnType)
             else -> null
         }
     }
 
-    private fun resolveScalarPlan(parameterTypeName: String, returnTypeName: String): DelegateLambdaPlan.DirectBridge? {
+    private fun resolveScalarPlan(parameterTypeName: String, returnTypeName: String): DelegateLambdaPlan.PlannedBridge? {
         val spec = scalarBridgeSpecs[parameterTypeName] ?: return null
         return when (returnTypeName) {
             "Unit" -> spec.unitBridgeFactoryMethod?.let {
@@ -130,10 +162,14 @@ internal class DelegateLambdaPlanResolver(
         }
     }
 
-    private fun directSingleArgPlan(parameterType: TypeName, returnType: TypeName, bridgeFactoryMethod: String): DelegateLambdaPlan.DirectBridge {
-        return DelegateLambdaPlan.DirectBridge(
+    private fun directSingleArgPlan(parameterType: TypeName, returnType: TypeName, bridgeFactoryMethod: String): DelegateLambdaPlan.PlannedBridge {
+        return DelegateLambdaPlan.PlannedBridge(
             lambdaType = LambdaTypeName.get(parameters = arrayOf(parameterType), returnType = returnType),
-            bridgeFactoryMethod = bridgeFactoryMethod,
+            bridge = BridgeSpec(
+                factoryMethod = bridgeFactoryMethod,
+                parameterCarriers = listOf(ParameterCarrier.Direct(parameterType)),
+                returnCarrier = if (returnType == Boolean::class.asTypeName()) ReturnCarrier.BOOLEAN else ReturnCarrier.UNIT,
+            ),
         )
     }
 
