@@ -226,6 +226,27 @@ internal class RuntimeMethodRenderer(
                     .build()
             }
             invokeMethod.parameters.size == 1 &&
+                invokeMethod.parameters.single().type == "UInt32" &&
+                invokeMethod.returnType == "Unit" -> {
+                FunSpec.builder(functionName)
+                    .returns(PoetSymbols.winRtDelegateHandleClass)
+                    .addParameter(
+                        "callback",
+                        LambdaTypeName.get(parameters = arrayOf(UInt::class.asTypeName()), returnType = Unit::class.asTypeName()),
+                    )
+                    .beginControlFlow("if (pointer.isNull)")
+                    .addStatement("error(%S)", "Null runtime object pointer: ${method.name}")
+                    .endControlFlow()
+                    .addStatement(
+                        "val delegateHandle = %T.createUInt32ArgUnitDelegate(%T.iid, callback)",
+                        PoetSymbols.winRtDelegateBridgeClass,
+                        delegateClass,
+                    )
+                    .addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
+                    .addStatement("return delegateHandle")
+                    .build()
+            }
+            invokeMethod.parameters.size == 1 &&
                 supportsRuntimeObjectType(invokeMethod.parameters.single().type) &&
                 invokeMethod.returnType == "Unit" -> {
                 val callbackArgType = typeNameMapper.mapTypeName(invokeMethod.parameters.single().type, currentNamespace)
