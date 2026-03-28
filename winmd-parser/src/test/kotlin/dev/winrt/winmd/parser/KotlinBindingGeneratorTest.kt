@@ -202,6 +202,32 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_projection_type_keys_for_interface_metadata() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml.Interop",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Interop",
+                            name = "IBindableVector",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "393de7de-6fd0-4c0d-bb71-47244a113e93",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Microsoft/UI/Xaml/Interop/IBindableVector.kt" }.content
+
+        assertTrue(binding.contains("override val qualifiedName: String = \"Microsoft.UI.Xaml.Interop.IBindableVector\""))
+        assertTrue(binding.contains("override val projectionTypeKey: String = \"System.Collections.IList\""))
+    }
+
+    @Test
     fun generates_json_array_uint32_object_call_from_real_metadata_model() {
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",

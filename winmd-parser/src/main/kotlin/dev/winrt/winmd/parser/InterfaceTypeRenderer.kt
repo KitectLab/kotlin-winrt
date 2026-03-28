@@ -18,6 +18,7 @@ internal class InterfaceTypeRenderer(
     private val typeNameMapper: TypeNameMapper,
     private val typeRegistry: TypeRegistry,
     private val winRtSignatureMapper: WinRtSignatureMapper,
+    private val winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
 ) {
     fun render(type: WinMdType): TypeSpec {
         val rawTypeClass = ClassName(type.namespace.lowercase(), type.name)
@@ -38,6 +39,12 @@ internal class InterfaceTypeRenderer(
                 TypeSpec.companionObjectBuilder()
                     .addSuperinterface(PoetSymbols.winRtInterfaceMetadataClass)
                     .addProperty(overrideStringProperty("qualifiedName", "${type.namespace}.${type.name}"))
+                    .addProperty(
+                        overrideStringProperty(
+                            "projectionTypeKey",
+                            winRtProjectionTypeMapper.projectionTypeKeyFor("${type.namespace}.${type.name}", type.namespace),
+                        ),
+                    )
                     .addProperty(
                         PropertySpec.builder("iid", PoetSymbols.guidClass)
                             .addModifiers(KModifier.OVERRIDE)
@@ -107,16 +114,17 @@ internal class InterfaceTypeRenderer(
                     ParameterSpec.builder("arg${index}Signature", String::class).build()
                 },
             )
-            .addCode(
-                CodeBlock.builder()
-                    .add("return object : %T {\n", metadataType)
-                    .indent()
-                    .add("override val qualifiedName: String = %S\n", "${type.namespace}.${type.name}")
-                    .add("override val iid: %T = iidOf($argumentSignatureVars)\n", PoetSymbols.guidClass)
-                    .unindent()
-                    .add("}\n")
-                    .build(),
-            )
+                    .addCode(
+                        CodeBlock.builder()
+                            .add("return object : %T {\n", metadataType)
+                            .indent()
+                            .add("override val qualifiedName: String = %S\n", "${type.namespace}.${type.name}")
+                            .add("override val projectionTypeKey: String = %S\n", "${type.namespace}.${type.name}")
+                            .add("override val iid: %T = iidOf($argumentSignatureVars)\n", PoetSymbols.guidClass)
+                            .unindent()
+                            .add("}\n")
+                            .build(),
+                    )
             .build()
     }
 

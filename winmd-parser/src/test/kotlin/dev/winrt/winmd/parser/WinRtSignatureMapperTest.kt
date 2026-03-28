@@ -57,6 +57,7 @@ class WinRtSignatureMapperTest {
     )
 
     private val mapper = WinRtSignatureMapper(TypeRegistry(model))
+    private val projectionTypeMapper = WinRtProjectionTypeMapper()
 
     @Test
     fun maps_runtime_class_to_rc_signature_using_default_interface() {
@@ -82,6 +83,28 @@ class WinRtSignatureMapperTest {
         assertEquals(
             "344089a3-ea12-587e-aa3f-cfefad439688",
             mapper.interfaceIdFor(
+                "Windows.Foundation.Collections.IVector`1<Microsoft.UI.Xaml.UIElement>",
+                "Microsoft.UI.Xaml.Controls",
+            ),
+        )
+    }
+
+    @Test
+    fun maps_bindable_vector_to_cswinrt_projection_type_key() {
+        assertEquals(
+            "System.Collections.IList",
+            projectionTypeMapper.projectionTypeKeyFor(
+                "Microsoft.UI.Xaml.Interop.IBindableVector",
+                "Microsoft.UI.Xaml.Interop",
+            ),
+        )
+    }
+
+    @Test
+    fun maps_specialized_vector_to_generic_list_projection_type_key() {
+        assertEquals(
+            "System.Collections.Generic.IList<Microsoft.UI.Xaml.UIElement>",
+            projectionTypeMapper.projectionTypeKeyFor(
                 "Windows.Foundation.Collections.IVector`1<Microsoft.UI.Xaml.UIElement>",
                 "Microsoft.UI.Xaml.Controls",
             ),
