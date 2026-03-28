@@ -238,7 +238,7 @@ internal class KotlinCollectionProjectionMapper {
     ): RuntimeIterableProjection? {
         if (qualifiedName.startsWith("Windows.Foundation.Collections.IIterable<") && qualifiedName.endsWith(">")) {
             val elementType = qualifiedName.substringAfter('<').substringBeforeLast('>')
-            if (!supportsClosedGenericObjectElement(elementType)) {
+            if (!supportsClosedGenericIterableElement(elementType)) {
                 return null
             }
             val rawIterableClass = typeNameMapper.mapTypeName(
@@ -261,7 +261,7 @@ internal class KotlinCollectionProjectionMapper {
                         "    override fun hasNext(): Boolean = %T(%T.invokeBooleanGetter(iteratorProjection.pointer, 7).getOrThrow()).value\n" +
                         "    override fun next(): %T {\n" +
                         "      if (!hasNext()) throw %T()\n" +
-                        "      val current = %T(%T.invokeObjectMethod(iteratorProjection.pointer, 6).getOrThrow())\n" +
+                        "      val current = %L\n" +
                         "      %T.invokeBooleanGetter(iteratorProjection.pointer, 8).getOrThrow()\n" +
                         "      return current\n" +
                         "    }\n" +
@@ -283,15 +283,14 @@ internal class KotlinCollectionProjectionMapper {
                     PoetSymbols.platformComInteropClass,
                     elementTypeName,
                     NoSuchElementException::class,
-                    elementTypeName,
-                    PoetSymbols.platformComInteropClass,
+                    elementReadExpression(elementTypeName, "iteratorProjection.pointer", 6),
                     PoetSymbols.platformComInteropClass,
                 ),
             )
         }
         if (qualifiedName.startsWith("Windows.Foundation.Collections.IIterator<") && qualifiedName.endsWith(">")) {
             val elementType = qualifiedName.substringAfter('<').substringBeforeLast('>')
-            if (!supportsClosedGenericObjectElement(elementType)) {
+            if (!supportsClosedGenericIterableElement(elementType)) {
                 return null
             }
             val rawIteratorClass = typeNameMapper.mapTypeName(
@@ -309,7 +308,7 @@ internal class KotlinCollectionProjectionMapper {
                         "  override fun hasNext(): Boolean = %T(%T.invokeBooleanGetter(iteratorProjection.pointer, 7).getOrThrow()).value\n" +
                         "  override fun next(): %T {\n" +
                         "    if (!hasNext()) throw %T()\n" +
-                        "    val current = %T(%T.invokeObjectMethod(iteratorProjection.pointer, 6).getOrThrow())\n" +
+                        "    val current = %L\n" +
                         "    %T.invokeBooleanGetter(iteratorProjection.pointer, 8).getOrThrow()\n" +
                         "    return current\n" +
                         "  }\n" +
@@ -323,8 +322,7 @@ internal class KotlinCollectionProjectionMapper {
                     PoetSymbols.platformComInteropClass,
                     elementTypeName,
                     NoSuchElementException::class,
-                    elementTypeName,
-                    PoetSymbols.platformComInteropClass,
+                    elementReadExpression(elementTypeName, "iteratorProjection.pointer", 6),
                     PoetSymbols.platformComInteropClass,
                 ),
             )
@@ -332,10 +330,44 @@ internal class KotlinCollectionProjectionMapper {
         return null
     }
 
-    private fun supportsClosedGenericObjectElement(typeName: String): Boolean {
-        return (typeName == "Object" || typeName.contains('.')) &&
-            !typeName.contains('<') &&
-            !typeName.endsWith("[]")
+    private fun supportsClosedGenericIterableElement(typeName: String): Boolean {
+        return typeName == "String" || (
+            (typeName == "Object" || typeName.contains('.')) &&
+                !typeName.contains('<') &&
+                !typeName.endsWith("[]")
+            )
+    }
+
+    private fun elementReadExpression(
+        elementTypeName: TypeName,
+        pointerExpression: String,
+        slot: Int,
+    ): CodeBlock {
+        return if (elementTypeName == String::class.asTypeName()) {
+            CodeBlock.of(
+                "run {\n" +
+                    "        val value = %T.invokeHStringMethod(%L, %L).getOrThrow()\n" +
+                    "        try {\n" +
+                    "          %T.toKotlin(value)\n" +
+                    "        } finally {\n" +
+                    "          %T.release(value)\n" +
+                    "        }\n" +
+                    "      }",
+                PoetSymbols.platformComInteropClass,
+                pointerExpression,
+                slot,
+                PoetSymbols.winRtStringsClass,
+                PoetSymbols.winRtStringsClass,
+            )
+        } else {
+            CodeBlock.of(
+                "%T(%T.invokeObjectMethod(%L, %L).getOrThrow())",
+                elementTypeName,
+                PoetSymbols.platformComInteropClass,
+                pointerExpression,
+                slot,
+            )
+        }
     }
 }
 

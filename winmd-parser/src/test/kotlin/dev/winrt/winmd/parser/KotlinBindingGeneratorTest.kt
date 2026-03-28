@@ -564,6 +564,87 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_kotlin_iterable_shape_for_runtime_class_implementing_closed_generic_string_iterable() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IIterable",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "faa585ea-6214-4217-afda-7f46de5869b3",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IIterator",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "6a79e863-4300-459a-9966-cbb660963ee1",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "StringIterableHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IIterable<String>",
+                            implementedInterfaces = listOf("Windows.Foundation.Collections.IIterable<String>"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Windows/Foundation/Collections/StringIterableHost.kt"
+        }.content
+
+        assertTrue(binding.contains("Iterable<String> by object : Iterable<String>"))
+        assertTrue(binding.contains("invokeHStringMethod("))
+        assertTrue(binding.contains("WinRtStrings.toKotlin(value)"))
+    }
+
+    @Test
+    fun generates_kotlin_iterator_shape_for_runtime_class_implementing_closed_generic_string_iterator() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IIterator",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "6a79e863-4300-459a-9966-cbb660963ee1",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "StringIteratorHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IIterator<String>",
+                            implementedInterfaces = listOf("Windows.Foundation.Collections.IIterator<String>"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Windows/Foundation/Collections/StringIteratorHost.kt"
+        }.content
+
+        assertTrue(binding.contains("Iterator<String> by object : Iterator<String>"))
+        assertTrue(binding.contains("invokeHStringMethod("))
+        assertTrue(binding.contains("WinRtStrings.release(value)"))
+    }
+
+    @Test
     fun generates_runtime_class_projections_for_implemented_interfaces() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
