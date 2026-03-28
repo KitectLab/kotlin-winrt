@@ -9,11 +9,11 @@ import kotlin.test.assertSame
 
 class InspectableMutableListTest {
     @Test
-    fun mutable_list_projection_is_cached_per_bindable_vector_instance() {
+    fun bindable_vector_implements_mutable_list() {
         val vector = IBindableVector(ComPtr.NULL)
 
-        val first = vector.asMutableList()
-        val second = vector.asMutableList()
+        val first: MutableList<Inspectable> = vector
+        val second: MutableList<Inspectable> = vector
 
         assertSame(first, second)
     }
@@ -21,20 +21,12 @@ class InspectableMutableListTest {
     @Test
     fun mutable_list_projection_rejects_negative_indices_before_com_invocation() {
         val vector = IBindableVector(ComPtr.NULL)
-        val list = vector.asMutableList()
+        val list: MutableList<Inspectable> = vector
 
         val error = runCatching { list[-1] }.exceptionOrNull()
 
         requireNotNull(error)
         assertEquals("index must be non-negative", error.message)
-    }
-
-    @Test
-    fun mutable_list_projection_exposes_mutable_list_api() {
-        val vector = IBindableVector(ComPtr.NULL)
-        val list: MutableList<Inspectable> = vector.asMutableList()
-
-        assertSame(vector.asMutableList(), list)
     }
 
     @Test

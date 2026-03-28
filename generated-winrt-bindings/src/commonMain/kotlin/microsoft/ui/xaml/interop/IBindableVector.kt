@@ -13,12 +13,13 @@ import dev.winrt.kom.PlatformComInterop
 
 open class IBindableVector(
     pointer: ComPtr,
-) : WinRtInterfaceProjection(pointer) {
+) : WinRtInterfaceProjection(pointer),
+    MutableList<Inspectable> by createMutableListDelegate(pointer) {
     fun getAt(index: UInt32): Inspectable =
         Inspectable(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 7, index.value).getOrThrow())
 
-    val size: UInt32
-        get() = get_Size()
+    override val size: Int
+        get() = get_Size().value.toInt()
 
     fun get_Size(): UInt32 =
         UInt32(PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
@@ -34,7 +35,7 @@ open class IBindableVector(
         PlatformComInterop.invokeUnitMethod(pointer, 15).getOrThrow()
     }
 
-    fun clear() {
+    override fun clear() {
         PlatformComInterop.invokeUnitMethod(pointer, 16).getOrThrow()
     }
 
@@ -52,24 +53,39 @@ open class IBindableVector(
         getter: (Int) -> T,
         append: (T) -> Unit,
     ): MutableList<T> =
-        createMutableListProjection(
-            sizeProvider = { size.value.toInt() },
+        Companion.createMutableListProjection(
+            sizeProvider = { size },
             getter = getter,
             append = append,
             clearer = ::clear,
-        )
-
-    fun asMutableList(): MutableList<Inspectable> =
-        projectMutableList(
-            cacheKey = "kotlin.collections.MutableList",
-            getter = { index -> getAt(UInt32(index.toUInt())) },
-            append = ::append,
         )
 
     companion object : WinRtInterfaceMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
         override val projectionTypeKey: String = "System.Collections.IList"
         override val iid: Guid = guidOf("393de7de-6fd0-4c0d-bb71-47244a113e93")
+
+        private fun createMutableListDelegate(pointer: ComPtr): MutableList<Inspectable> {
+            val rawVector = object : WinRtInterfaceProjection(pointer) {}
+            return rawVector.getOrPutHelperWrapper("kotlin.collections.MutableList") {
+                createMutableListProjection(
+                    sizeProvider = {
+                        UInt32(PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow()).value.toInt()
+                    },
+                    getter = { index: Int ->
+                        Inspectable(
+                            PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 7, index.toUInt()).getOrThrow(),
+                        )
+                    },
+                    append = { value: Inspectable ->
+                        PlatformComInterop.invokeObjectSetter(pointer, 14, value.pointer).getOrThrow()
+                    },
+                    clearer = {
+                        PlatformComInterop.invokeUnitMethod(pointer, 16).getOrThrow()
+                    },
+                )
+            }
+        }
 
         internal fun <T> createMutableListProjection(
             sizeProvider: () -> Int,

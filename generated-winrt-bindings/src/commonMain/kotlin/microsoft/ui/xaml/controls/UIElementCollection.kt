@@ -34,18 +34,18 @@ open class UIElementCollection(
 
         private fun createMutableListDelegate(pointer: ComPtr): MutableList<UIElement> {
             val inspectable = Inspectable(pointer)
-            val bindableVector by lazy { IBindableVector.from(inspectable) }
-            return IBindableVector.createMutableListProjection(
-                sizeProvider = { bindableVector.size.value.toInt() },
-                getter = { index ->
+            val bindableVector: Lazy<IBindableVector> = lazy { IBindableVector.from(inspectable) }
+            return IBindableVector.Companion.createMutableListProjection(
+                sizeProvider = { bindableVector.value.size },
+                getter = { index: Int ->
                     UIElement(
                         PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 6, index.toUInt()).getOrThrow(),
                     )
                 },
-                append = { value ->
+                append = { value: UIElement ->
                     PlatformComInterop.invokeObjectSetter(pointer, 13, value.pointer).getOrThrow()
                 },
-                clearer = { bindableVector.clear() },
+                clearer = { bindableVector.value.clear() },
             )
         }
 
