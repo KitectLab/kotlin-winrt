@@ -74,6 +74,8 @@ internal class WinRtSignatureMapper(
         "Boolean" -> "b1"
         "Int32" -> "i4"
         "UInt32" -> "u4"
+        "Int64" -> "i8"
+        "UInt64" -> "u8"
         "Float32" -> "f4"
         "Float64" -> "f8"
         "Guid" -> "g16"

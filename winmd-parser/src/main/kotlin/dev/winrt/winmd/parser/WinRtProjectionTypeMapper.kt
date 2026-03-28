@@ -37,6 +37,8 @@ internal class WinRtProjectionTypeMapper {
         "Boolean" -> "Boolean"
         "Int32" -> "Int32"
         "UInt32" -> "UInt32"
+        "Int64" -> "Int64"
+        "UInt64" -> "UInt64"
         "Float32" -> "Float32"
         "Float64" -> "Float64"
         "Guid" -> "Guid"
