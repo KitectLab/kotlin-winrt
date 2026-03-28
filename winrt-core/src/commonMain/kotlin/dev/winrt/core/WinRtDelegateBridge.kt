@@ -11,4 +11,8 @@ expect object WinRtDelegateBridge {
     fun createNoArgUnitDelegate(iid: Guid, invoke: () -> Unit): WinRtDelegateHandle
 
     fun createObjectArgUnitDelegate(iid: Guid, invoke: (ComPtr) -> Unit): WinRtDelegateHandle
+
+    fun createNoArgBooleanDelegate(iid: Guid, invoke: () -> Boolean): WinRtDelegateHandle
+
+    fun createObjectArgBooleanDelegate(iid: Guid, invoke: (ComPtr) -> Boolean): WinRtDelegateHandle
 }
