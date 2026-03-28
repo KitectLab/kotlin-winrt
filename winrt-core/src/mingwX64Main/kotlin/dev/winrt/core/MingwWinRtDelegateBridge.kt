@@ -35,4 +35,8 @@ actual object WinRtDelegateBridge {
     actual fun createUInt32ArgUnitDelegate(iid: Guid, invoke: (UInt) -> Unit): WinRtDelegateHandle {
         error("WinRtDelegateBridge is not implemented for mingwX64 yet")
     }
+
+    actual fun createFloat32ArgUnitDelegate(iid: Guid, invoke: (Float) -> Unit): WinRtDelegateHandle {
+        error("WinRtDelegateBridge is not implemented for mingwX64 yet")
+    }
 }
