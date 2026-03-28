@@ -36,6 +36,10 @@ actual object WinRtDelegateBridge {
         error("WinRtDelegateBridge is not implemented for mingwX64 yet")
     }
 
+    actual fun createStringArgBooleanDelegate(iid: Guid, invoke: (String) -> Boolean): WinRtDelegateHandle {
+        error("WinRtDelegateBridge is not implemented for mingwX64 yet")
+    }
+
     actual fun createUInt32ArgUnitDelegate(iid: Guid, invoke: (UInt) -> Unit): WinRtDelegateHandle {
         error("WinRtDelegateBridge is not implemented for mingwX64 yet")
     }

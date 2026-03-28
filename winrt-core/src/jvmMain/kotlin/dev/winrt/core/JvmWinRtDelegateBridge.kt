@@ -98,6 +98,17 @@ actual object WinRtDelegateBridge {
         }
     }
 
+    actual fun createStringArgBooleanDelegate(iid: Guid, invoke: (String) -> Boolean): WinRtDelegateHandle {
+        val delegate = JvmWinRtStringArgBooleanDelegate.create(iid, invoke)
+        return object : WinRtDelegateHandle {
+            override val pointer: ComPtr = delegate.pointer
+
+            override fun close() {
+                delegate.close()
+            }
+        }
+    }
+
     actual fun createUInt32ArgUnitDelegate(iid: Guid, invoke: (UInt) -> Unit): WinRtDelegateHandle {
         val delegate = JvmWinRtUInt32ArgDelegate.create(iid) { value ->
             invoke(value)
