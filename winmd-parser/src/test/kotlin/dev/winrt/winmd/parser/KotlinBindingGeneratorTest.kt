@@ -3383,6 +3383,117 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_lambda_overload_for_int64_boolean_delegate_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Callbacks",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Callbacks",
+                            name = "TimestampPredicate",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "30303030-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Boolean",
+                                    parameters = listOf(
+                                        WinMdParameter(name = "value", type = "Int64"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Callbacks",
+                            name = "ITimestampSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "31313131-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetPredicate",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter(name = "callback", type = "Example.Callbacks.TimestampPredicate"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Example/Callbacks/ITimestampSource.kt"
+        }.content
+
+        assertTrue(binding.contains("fun setPredicate(callback: TimestampPredicate)"))
+        assertTrue(binding.contains("(Long) -> Boolean"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createInt64ArgBooleanDelegate"))
+        assertTrue(binding.contains("TimestampPredicate.iid"))
+        assertTrue(binding.contains("setPredicate(TimestampPredicate(delegateHandle.pointer))"))
+    }
+
+    @Test
+    fun generates_runtime_lambda_overload_for_int64_boolean_delegate_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "TimestampPredicate",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "32323232-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Boolean",
+                                    parameters = listOf(
+                                        WinMdParameter(name = "value", type = "Int64"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "TimestampSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetPredicate",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter(name = "callback", type = "Example.Runtime.TimestampPredicate"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Example/Runtime/TimestampSource.kt"
+        }.content
+
+        assertTrue(binding.contains("fun setPredicate(callback: TimestampPredicate)"))
+        assertTrue(binding.contains("(Long) -> Boolean"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createInt64ArgBooleanDelegate"))
+        assertTrue(binding.contains("TimestampPredicate.iid"))
+        assertTrue(binding.contains("setPredicate(TimestampPredicate(delegateHandle.pointer))"))
+    }
+
+    @Test
     fun generates_lambda_overload_for_uint64_delegate_parameter() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
