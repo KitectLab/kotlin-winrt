@@ -65,6 +65,7 @@ internal class InterfaceTypeRenderer(
                             )
                         } else {
                             addFunction(renderGenericSignatureOf(type))
+                            addFunction(renderGenericProjectionTypeKeyOf(type))
                             addFunction(renderGenericIidOf())
                             addFunction(renderGenericMetadataOf(type))
                             addFunction(renderGenericFrom(type, typeClass, typeVariables))
@@ -104,27 +105,50 @@ internal class InterfaceTypeRenderer(
             .build()
     }
 
+    private fun renderGenericProjectionTypeKeyOf(type: WinMdType): FunSpec {
+        val argumentTypeKeyVars = type.genericParameters.indices.joinToString(", ") { index -> "arg${index}ProjectionTypeKey" }
+        val mappedRawType = winRtProjectionTypeMapper.projectionTypeKeyFor("${type.namespace}.${type.name}", type.namespace)
+        return FunSpec.builder("projectionTypeKeyOf")
+            .returns(String::class)
+            .addParameters(
+                type.genericParameters.indices.map { index ->
+                    ParameterSpec.builder("arg${index}ProjectionTypeKey", String::class).build()
+                },
+            )
+            .addStatement(
+                "return %S + %S + listOf($argumentTypeKeyVars).joinToString(%S) + %S",
+                "$mappedRawType<",
+                "",
+                ", ",
+                ">",
+            )
+            .build()
+    }
+
     private fun renderGenericMetadataOf(type: WinMdType): FunSpec {
         val metadataType = PoetSymbols.winRtInterfaceMetadataClass
         val argumentSignatureVars = type.genericParameters.indices.joinToString(", ") { index -> "arg${index}Signature" }
+        val argumentTypeKeyVars = type.genericParameters.indices.joinToString(", ") { index -> "arg${index}ProjectionTypeKey" }
         return FunSpec.builder("metadataOf")
             .returns(metadataType)
             .addParameters(
                 type.genericParameters.indices.map { index ->
                     ParameterSpec.builder("arg${index}Signature", String::class).build()
-                },
+                } + type.genericParameters.indices.map { index ->
+                    ParameterSpec.builder("arg${index}ProjectionTypeKey", String::class).build()
+                }
             )
-                    .addCode(
-                        CodeBlock.builder()
-                            .add("return object : %T {\n", metadataType)
-                            .indent()
-                            .add("override val qualifiedName: String = %S\n", "${type.namespace}.${type.name}")
-                            .add("override val projectionTypeKey: String = %S\n", "${type.namespace}.${type.name}")
-                            .add("override val iid: %T = iidOf($argumentSignatureVars)\n", PoetSymbols.guidClass)
-                            .unindent()
-                            .add("}\n")
-                            .build(),
-                    )
+            .addCode(
+                CodeBlock.builder()
+                    .add("return object : %T {\n", metadataType)
+                    .indent()
+                    .add("override val qualifiedName: String = %S\n", "${type.namespace}.${type.name}")
+                    .add("override val projectionTypeKey: String = projectionTypeKeyOf($argumentTypeKeyVars)\n")
+                    .add("override val iid: %T = iidOf($argumentSignatureVars)\n", PoetSymbols.guidClass)
+                    .unindent()
+                    .add("}\n")
+                    .build(),
+            )
             .build()
     }
 
@@ -136,7 +160,10 @@ internal class InterfaceTypeRenderer(
         val argumentParameters = type.genericParameters.indices.map { index ->
             ParameterSpec.builder("arg${index}Signature", String::class).build()
         }
-        val argumentNames = argumentParameters.joinToString(", ") { it.name }
+        val projectionTypeKeyParameters = type.genericParameters.indices.map { index ->
+            ParameterSpec.builder("arg${index}ProjectionTypeKey", String::class).build()
+        }
+        val metadataArgumentNames = (argumentParameters + projectionTypeKeyParameters).joinToString(", ") { it.name }
         return FunSpec.builder("from")
             .apply {
                 typeVariables.forEach(::addTypeVariable)
@@ -144,8 +171,9 @@ internal class InterfaceTypeRenderer(
             .returns(typeClass)
             .addParameter("inspectable", PoetSymbols.inspectableClass)
             .addParameters(argumentParameters)
+            .addParameters(projectionTypeKeyParameters)
             .addStatement(
-                "return inspectable.%M(metadataOf($argumentNames), ::%L)",
+                "return inspectable.%M(metadataOf($metadataArgumentNames), ::%L)",
                 PoetSymbols.projectInterfaceMember,
                 type.name,
             )
