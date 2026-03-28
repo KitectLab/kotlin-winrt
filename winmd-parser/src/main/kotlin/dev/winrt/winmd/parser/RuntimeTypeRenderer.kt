@@ -52,6 +52,12 @@ internal class RuntimeTypeRenderer(
             runtimeProjectionRenderer.renderDefaultInterfaceProjection(defaultInterface)
                 ?.let(builder::addFunction)
         }
+        type.implementedInterfaces
+            .asSequence()
+            .filter { it != type.defaultInterface }
+            .mapNotNull(runtimeProjectionRenderer::renderImplementedInterfaceProjection)
+            .distinctBy { it.name }
+            .forEach(builder::addFunction)
         return builder.build()
     }
 }

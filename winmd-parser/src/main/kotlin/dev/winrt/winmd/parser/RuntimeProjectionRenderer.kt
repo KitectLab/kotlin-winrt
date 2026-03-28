@@ -5,14 +5,22 @@ import com.squareup.kotlinpoet.FunSpec
 
 internal class RuntimeProjectionRenderer {
     fun renderDefaultInterfaceProjection(defaultInterface: String): FunSpec? {
+        return renderInterfaceProjection(defaultInterface)
+    }
+
+    fun renderImplementedInterfaceProjection(interfaceName: String): FunSpec? {
+        return renderInterfaceProjection(interfaceName)
+    }
+
+    private fun renderInterfaceProjection(interfaceName: String): FunSpec? {
         if (
-            defaultInterface.contains('<') ||
-            defaultInterface.contains('`') ||
-            defaultInterface.endsWith("[]")
+            interfaceName.contains('<') ||
+            interfaceName.contains('`') ||
+            interfaceName.endsWith("[]")
         ) {
             return null
         }
-        val simpleName = defaultInterface.substringAfterLast('.')
+        val simpleName = interfaceName.substringAfterLast('.')
             .substringBefore('<')
             .substringBefore('`')
             .removeSuffix("[]")
@@ -20,7 +28,7 @@ internal class RuntimeProjectionRenderer {
             return null
         }
         return FunSpec.builder("as$simpleName")
-            .returns(ClassName(defaultInterface.substringBeforeLast('.').lowercase(), simpleName))
+            .returns(ClassName(interfaceName.substringBeforeLast('.').lowercase(), simpleName))
             .addStatement("return %L.from(this)", simpleName)
             .build()
     }

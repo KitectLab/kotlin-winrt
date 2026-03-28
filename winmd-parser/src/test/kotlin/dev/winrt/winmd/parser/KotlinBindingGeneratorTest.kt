@@ -228,6 +228,55 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_runtime_class_projections_for_implemented_interfaces() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml.Interop",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Interop",
+                            name = "IBindableVector",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "393de7de-6fd0-4c0d-bb71-47244a113e93",
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml.Controls",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Controls",
+                            name = "IUIElementCollection",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Controls",
+                            name = "UIElementCollection",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Microsoft.UI.Xaml.Controls.IUIElementCollection",
+                            implementedInterfaces = listOf(
+                                "Microsoft.UI.Xaml.Controls.IUIElementCollection",
+                                "Microsoft.UI.Xaml.Interop.IBindableVector",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Microsoft/UI/Xaml/Controls/UIElementCollection.kt"
+        }.content
+
+        assertTrue(binding.contains("fun asIUIElementCollection(): IUIElementCollection = IUIElementCollection.from(this)"))
+        assertTrue(binding.contains("fun asIBindableVector(): IBindableVector = IBindableVector.from(this)"))
+    }
+
+    @Test
     fun generates_json_array_uint32_object_call_from_real_metadata_model() {
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",
