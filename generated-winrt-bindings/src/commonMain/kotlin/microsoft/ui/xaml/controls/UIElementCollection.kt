@@ -8,6 +8,7 @@ import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
 import microsoft.ui.xaml.UIElement
+import microsoft.ui.xaml.interop.IBindableVector
 
 open class UIElementCollection(
     pointer: ComPtr,
@@ -20,6 +21,8 @@ open class UIElementCollection(
     fun append(value: UIElement) {
         PlatformComInterop.invokeObjectSetter(pointer, 13, value.pointer).getOrThrow()
     }
+
+    fun asIBindableVector(): IBindableVector = IBindableVector.from(this)
 
     companion object : WinRtRuntimeClassMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Controls.UIElementCollection"
