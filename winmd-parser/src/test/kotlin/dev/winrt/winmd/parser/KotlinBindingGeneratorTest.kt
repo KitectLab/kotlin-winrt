@@ -2278,4 +2278,47 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("typealias DispatcherQueueHandlerHandler = () -> Unit"))
         assertTrue(binding.contains("class DispatcherQueueHandler("))
     }
+
+    @Test
+    fun generates_kotlin_lambda_alias_for_scalar_delegate_signature() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Callbacks",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Callbacks",
+                            name = "ScalarCallback",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "11111111-2222-3333-4444-555555555555",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Boolean",
+                                    parameters = listOf(
+                                        WinMdParameter(name = "count", type = "Int32"),
+                                        WinMdParameter(name = "progress", type = "Float32"),
+                                        WinMdParameter(name = "label", type = "String"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Example/Callbacks/ScalarCallback.kt"
+        }.content
+
+        assertTrue(binding.contains("typealias ScalarCallbackHandler ="))
+        assertTrue(binding.contains("Int"))
+        assertTrue(binding.contains("Float"))
+        assertTrue(binding.contains("String"))
+        assertTrue(binding.contains("-> Boolean"))
+        assertTrue(binding.contains("class ScalarCallback("))
+    }
 }

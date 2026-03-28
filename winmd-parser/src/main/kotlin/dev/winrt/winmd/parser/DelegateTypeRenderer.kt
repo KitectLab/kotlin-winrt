@@ -65,6 +65,7 @@ internal class DelegateTypeRenderer(
             "UInt32" -> UInt::class.asTypeName()
             "Int64" -> Long::class.asTypeName()
             "UInt64" -> ULong::class.asTypeName()
+            "Float32" -> Float::class.asTypeName()
             "Float64" -> Double::class.asTypeName()
             "Object" -> PoetSymbols.inspectableClass
             else -> typeNameMapper.mapTypeName(typeName, typeName.substringBeforeLast('.', missingDelimiterValue = ""))
