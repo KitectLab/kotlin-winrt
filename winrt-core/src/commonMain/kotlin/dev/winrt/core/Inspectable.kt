@@ -63,6 +63,11 @@ open class Inspectable(pointer: ComPtr) : WinRtObject(pointer) {
     fun getInspectableArgumentPointer(): ComPtr {
         return getObjectReferenceForType("marshal:IInspectable", iinspectableIid)
     }
+
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Any> getOrPutHelperWrapper(typeKey: String, factory: () -> T): T {
+        return additionalTypeData.getOrPut("helper-wrapper:$typeKey", factory) as T
+    }
 }
 
 data class RuntimeClassId(

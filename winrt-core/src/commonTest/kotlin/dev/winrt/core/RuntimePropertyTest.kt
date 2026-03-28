@@ -159,6 +159,17 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun inspectable_can_cache_helper_wrappers_by_type_key() {
+        val subject = Inspectable(ComPtr.NULL)
+
+        val first = subject.getOrPutHelperWrapper("System.Collections.IList") { mutableListOf("cached") }
+        val second = subject.getOrPutHelperWrapper("System.Collections.IList") { mutableListOf("new") }
+
+        assertSame(first, second)
+        assertEquals(listOf("cached"), first)
+    }
+
+    @Test
     fun interface_projection_uses_helper_type_mapping_for_object_reference_lookup() {
         WinRtProjectionRegistry.resetForTests()
 
