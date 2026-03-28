@@ -74,11 +74,7 @@ class RuntimePropertyTest {
 
     @Test
     fun projection_registry_maps_projected_types_to_helper_keys() {
-        WinRtProjectionRegistry.clearForTests()
-        WinRtProjectionRegistry.registerHelperTypeMapping(
-            publicTypeKey = "Microsoft.UI.Xaml.Interop.IBindableVector",
-            helperTypeKey = "System.Collections.IList",
-        )
+        WinRtProjectionRegistry.resetForTests()
 
         assertEquals(
             "System.Collections.IList",
@@ -89,11 +85,7 @@ class RuntimePropertyTest {
 
     @Test
     fun inspectable_can_cache_object_references_by_projected_type_key() {
-        WinRtProjectionRegistry.clearForTests()
-        WinRtProjectionRegistry.registerHelperTypeMapping(
-            publicTypeKey = "Microsoft.UI.Xaml.Interop.IBindableVector",
-            helperTypeKey = "System.Collections.IList",
-        )
+        WinRtProjectionRegistry.resetForTests()
 
         val iid = Guid(0, 0, 0, byteArrayOf(8, 7, 6, 5, 4, 3, 2, 1))
         val subject = object : Inspectable(ComPtr.NULL) {
@@ -115,11 +107,7 @@ class RuntimePropertyTest {
 
     @Test
     fun interface_projection_uses_helper_type_mapping_for_object_reference_lookup() {
-        WinRtProjectionRegistry.clearForTests()
-        WinRtProjectionRegistry.registerHelperTypeMapping(
-            publicTypeKey = "Microsoft.UI.Xaml.Interop.IBindableVector",
-            helperTypeKey = "System.Collections.IList",
-        )
+        WinRtProjectionRegistry.resetForTests()
 
         val metadata = object : WinRtInterfaceMetadata {
             override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
@@ -148,7 +136,7 @@ class RuntimePropertyTest {
 
     @Test
     fun interface_projection_uses_projection_type_key_when_provided() {
-        WinRtProjectionRegistry.clearForTests()
+        WinRtProjectionRegistry.resetForTests()
         WinRtProjectionRegistry.registerHelperTypeMapping(
             publicTypeKey = "System.Collections.IList",
             helperTypeKey = "ABI.System.Collections.IList",
