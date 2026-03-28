@@ -737,6 +737,28 @@ internal class InterfaceTypeRenderer(
                     .build()
             }
             invokeMethod.parameters.size == 1 &&
+                invokeMethod.parameters.single().type == "UInt64" &&
+                invokeMethod.returnType == "Unit" -> {
+                FunSpec.builder(functionName)
+                    .returns(PoetSymbols.winRtDelegateHandleClass)
+                    .addParameter(
+                        lambdaParameterName,
+                        LambdaTypeName.get(
+                            parameters = arrayOf(ULong::class.asTypeName()),
+                            returnType = Unit::class.asTypeName(),
+                        ),
+                    )
+                    .addStatement(
+                        "val delegateHandle = %T.createUInt64ArgUnitDelegate(%T.iid, %N)",
+                        PoetSymbols.winRtDelegateBridgeClass,
+                        delegateClass,
+                        lambdaParameterName,
+                    )
+                    .addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
+                    .addStatement("return delegateHandle")
+                    .build()
+            }
+            invokeMethod.parameters.size == 1 &&
                 invokeMethod.parameters.single().type == "Int64" &&
                 invokeMethod.returnType == "Unit" -> {
                 FunSpec.builder(functionName)
