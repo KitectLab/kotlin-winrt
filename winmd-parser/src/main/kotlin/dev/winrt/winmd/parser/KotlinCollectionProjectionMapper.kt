@@ -145,6 +145,25 @@ internal class KotlinCollectionProjectionMapper {
                 winRtSizeSlot = 8,
             )
         }
+        if (qualifiedName.startsWith("Windows.Foundation.Collections.IVector<") && qualifiedName.endsWith(">")) {
+            val elementType = qualifiedName.substringAfter('<').substringBeforeLast('>')
+            val rawInterfaceClass = typeNameMapper.mapTypeName(
+                "Windows.Foundation.Collections.IVector",
+                "Windows.Foundation.Collections",
+            ) as ClassName
+            val elementTypeName = typeNameMapper.mapTypeName(elementType, "Windows.Foundation.Collections")
+            return CollectionInterfaceMetadata(
+                collectionSuperinterface = PoetSymbols.mutableListClass.parameterizedBy(elementTypeName),
+                delegateFactory = CodeBlock.of(
+                    "%T.from(%T(pointer), %S, %S)",
+                    rawInterfaceClass,
+                    PoetSymbols.inspectableClass,
+                    winRtSignatureMapper.signatureFor(elementType, "Windows.Foundation.Collections"),
+                    winRtProjectionTypeMapper.projectionTypeKeyFor(elementType, "Windows.Foundation.Collections"),
+                ),
+                winRtSizeSlot = 8,
+            )
+        }
         return when (qualifiedName) {
             "Microsoft.UI.Xaml.Interop.IBindableVector" -> CollectionInterfaceMetadata(
                 collectionSuperinterface = PoetSymbols.mutableListClass.parameterizedBy(PoetSymbols.inspectableClass),

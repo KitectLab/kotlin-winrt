@@ -414,6 +414,42 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_kotlin_mutable_list_shape_for_runtime_class_implementing_closed_generic_vector() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IVector",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "913337e9-11a1-4345-a3a2-4e7f956e222d",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "StringVectorLike",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IVector<String>",
+                            implementedInterfaces = listOf("Windows.Foundation.Collections.IVector<String>"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Windows/Foundation/Collections/StringVectorLike.kt"
+        }.content
+
+        assertTrue(binding.contains("MutableList<String> by IVector.from(Inspectable(pointer), \"string\", \"String\")"))
+        assertTrue(binding.contains("val winRtSize: UInt32"))
+    }
+
+    @Test
     fun generates_kotlin_list_shape_for_string_vector_view() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
