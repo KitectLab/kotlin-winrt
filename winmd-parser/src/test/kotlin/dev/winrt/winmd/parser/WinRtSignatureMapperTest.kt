@@ -2,6 +2,7 @@ package dev.winrt.winmd.parser
 
 import dev.winrt.winmd.plugin.WinMdModel
 import dev.winrt.winmd.plugin.WinMdNamespace
+import dev.winrt.winmd.plugin.WinMdField
 import dev.winrt.winmd.plugin.WinMdType
 import dev.winrt.winmd.plugin.WinMdTypeKind
 import org.junit.Assert.assertEquals
@@ -60,6 +61,20 @@ class WinRtSignatureMapperTest {
                     ),
                 ),
             ),
+            WinMdNamespace(
+                name = "Windows.Foundation",
+                types = listOf(
+                    WinMdType(
+                        namespace = "Windows.Foundation",
+                        name = "Point",
+                        kind = WinMdTypeKind.Struct,
+                        fields = listOf(
+                            WinMdField("X", "Float64"),
+                            WinMdField("Y", "Float64"),
+                        ),
+                    ),
+                ),
+            ),
         ),
     )
 
@@ -93,6 +108,14 @@ class WinRtSignatureMapperTest {
                 "Windows.Foundation.Collections.IVector`1<Microsoft.UI.Xaml.UIElement>",
                 "Microsoft.UI.Xaml.Controls",
             ),
+        )
+    }
+
+    @Test
+    fun maps_struct_to_struct_signature_using_field_signatures() {
+        assertEquals(
+            "struct(Windows.Foundation.Point;f8;f8)",
+            mapper.signatureFor("Windows.Foundation.Point", "Windows.Foundation"),
         )
     }
 

@@ -30,7 +30,12 @@ internal class WinRtSignatureMapper(
                 )
             }
             WinMdTypeKind.Enum -> "enum($qualifiedName;i4)"
-            WinMdTypeKind.Struct -> error("Struct signatures are not implemented yet for $qualifiedName")
+            WinMdTypeKind.Struct -> {
+                val fieldSignatures = type.fields
+                    .map { field -> signatureFor(field.type, type.namespace) }
+                    .joinToString(";")
+                "struct($qualifiedName;$fieldSignatures)"
+            }
         }
     }
 
