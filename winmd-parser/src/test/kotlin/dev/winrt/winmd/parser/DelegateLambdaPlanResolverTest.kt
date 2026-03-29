@@ -29,8 +29,6 @@ class DelegateLambdaPlanResolverTest {
         requireNotNull(shape)
         assertEquals(ReturnCarrier.BOOLEAN, shape.returnCarrier)
         assertEquals(listOf("kotlin.Int", "kotlin.String"), shape.lambdaParameterTypes.map(TypeName::toString))
-        assertTrue(shape.parameterCarriers[0] is ParameterCarrier.Direct)
-        assertTrue(shape.parameterCarriers[1] is ParameterCarrier.Direct)
     }
 
     @Test
@@ -55,8 +53,6 @@ class DelegateLambdaPlanResolverTest {
             listOf("example.callbacks.Payload", "kotlin.UInt"),
             shape.lambdaParameterTypes.map(TypeName::toString),
         )
-        assertTrue(shape.parameterCarriers[0] is ParameterCarrier.ObjectWrapped)
-        assertTrue(shape.parameterCarriers[1] is ParameterCarrier.Direct)
     }
 
     @Test
@@ -82,8 +78,5 @@ class DelegateLambdaPlanResolverTest {
             listOf("example.callbacks.Payload", "kotlin.Int", "kotlin.Boolean"),
             shape.lambdaParameterTypes.map(TypeName::toString),
         )
-        assertTrue(shape.parameterCarriers[0] is ParameterCarrier.ObjectWrapped)
-        assertTrue(shape.parameterCarriers[1] is ParameterCarrier.Direct)
-        assertTrue(shape.parameterCarriers[2] is ParameterCarrier.Direct)
     }
 }

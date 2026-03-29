@@ -56,7 +56,6 @@ private data class ScalarBridgeSpec(
 )
 
 internal data class DelegateSignatureShape(
-    val parameterCarriers: List<ParameterCarrier>,
     val argumentKinds: List<DelegateArgumentKind>,
     val lambdaParameterTypes: List<TypeName>,
     val returnCarrier: ReturnCarrier,
@@ -173,7 +172,6 @@ internal class DelegateLambdaPlanResolver(
             }
         }
         return DelegateSignatureShape(
-            parameterCarriers = normalizedCarriers,
             argumentKinds = argumentKinds,
             lambdaParameterTypes = lambdaParameterTypes,
             returnCarrier = returnCarrier,
@@ -197,24 +195,5 @@ internal class DelegateLambdaPlanResolver(
             )
         }
         return null
-    }
-
-    private fun kotlinScalarType(typeName: String, currentNamespace: String, genericParameters: Set<String>): TypeName? {
-        return when (typeName) {
-            "Unit" -> Unit::class.asTypeName()
-            "String" -> String::class.asTypeName()
-            "Boolean" -> Boolean::class.asTypeName()
-            "Int32" -> Int::class.asTypeName()
-            "UInt32" -> UInt::class.asTypeName()
-            "Int64" -> Long::class.asTypeName()
-            "UInt64" -> ULong::class.asTypeName()
-            "Float32" -> Float::class.asTypeName()
-            "Float64" -> Double::class.asTypeName()
-            else -> if (typeName == "Object" || typeName.contains('.')) {
-                typeNameMapper.mapTypeName(typeName, currentNamespace, genericParameters)
-            } else {
-                null
-            }
-        }
     }
 }
