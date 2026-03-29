@@ -22,6 +22,14 @@ internal class TypeRegistry(
         return findType(typeName, currentNamespace)?.kind == WinMdTypeKind.Enum
     }
 
+    fun findRuntimeClassStaticsType(typeName: String, currentNamespace: String): WinMdType? {
+        val runtimeClass = findType(typeName, currentNamespace) ?: return null
+        if (runtimeClass.kind != WinMdTypeKind.RuntimeClass) {
+            return null
+        }
+        return findType("I${runtimeClass.name}Statics", runtimeClass.namespace)
+    }
+
     private fun canonicalQualifiedName(typeName: String): String {
         return typeName.substringBefore('<')
             .substringBefore('`')

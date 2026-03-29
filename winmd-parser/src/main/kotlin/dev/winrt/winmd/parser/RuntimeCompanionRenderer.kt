@@ -60,7 +60,7 @@ internal class RuntimeCompanionRenderer(
     }
 
     private fun renderStatics(type: WinMdType): List<Any> {
-        val staticsType = typeRegistry.findType("I${type.name}Statics", type.namespace) ?: return emptyList()
+        val staticsType = typeRegistry.findRuntimeClassStaticsType(type.name, type.namespace) ?: return emptyList()
         val staticsClass = ClassName(staticsType.namespace.lowercase(), staticsType.name)
         val members = mutableListOf<Any>()
 

@@ -78,4 +78,37 @@ class TypeRegistryTest {
     fun returns_null_for_unknown_types() {
         assertNull(registry.findType("Windows.Foundation.Missing"))
     }
+
+    @Test
+    fun finds_runtime_class_statics_by_runtime_class_name() {
+        val runtimeRegistry = TypeRegistry(
+            WinMdModel(
+                files = emptyList(),
+                namespaces = listOf(
+                    WinMdNamespace(
+                        name = "Windows.Globalization",
+                        types = listOf(
+                            WinMdType(
+                                namespace = "Windows.Globalization",
+                                name = "ApplicationLanguages",
+                                kind = WinMdTypeKind.RuntimeClass,
+                                defaultInterface = "Windows.Globalization.IApplicationLanguages",
+                            ),
+                            WinMdType(
+                                namespace = "Windows.Globalization",
+                                name = "IApplicationLanguagesStatics",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals(
+            "IApplicationLanguagesStatics",
+            runtimeRegistry.findRuntimeClassStaticsType("ApplicationLanguages", "Windows.Globalization")?.name,
+        )
+    }
 }
