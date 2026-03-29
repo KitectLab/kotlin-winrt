@@ -1,6 +1,7 @@
 package windows.foundation.collections
 
 import dev.winrt.core.UInt32
+import dev.winrt.core.WinRtObject
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
 import dev.winrt.projection.WinRtListProjection
@@ -8,8 +9,8 @@ import kotlin.io.use
 
 public open class StringVectorView(
   pointer: ComPtr,
-) : List<String> by createListDelegate(pointer) {
-  public val pointer: ComPtr = pointer
+) : WinRtObject(pointer),
+  List<String> by createListDelegate(pointer) {
 
   public val winRtSize: UInt32
     get() = UInt32(PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow())
