@@ -3,6 +3,7 @@ package dev.winrt.winmd.parser
 import dev.winrt.winmd.plugin.WinMdModelFactory
 import dev.winrt.winmd.plugin.WinMdNamespace
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Path
@@ -391,6 +392,9 @@ class CheckedInBindingsParityTest {
 
         assertTrue(runtimeClass.contains("qualifiedName: String = \"Windows.Globalization.ApplicationLanguages\""))
         assertTrue(runtimeClass.contains("defaultInterfaceName: String? = null"))
+        assertTrue(runtimeClass.contains("private val statics: IApplicationLanguagesStatics by lazy"))
+        assertTrue(runtimeClass.contains("WinRtRuntime.projectActivationFactory(this, IApplicationLanguagesStatics"))
+        assertTrue(runtimeClass.contains("::IApplicationLanguagesStatics)"))
         assertTrue(statics.contains("val primaryLanguageOverride: String"))
         assertTrue(statics.contains("invokeHStringMethod(pointer, 6).getOrThrow()"))
         assertTrue(statics.contains("val languages: StringVectorView"))
@@ -399,6 +403,7 @@ class CheckedInBindingsParityTest {
         assertTrue(statics.contains("invokeObjectMethod(pointer, 9).getOrThrow()"))
         assertTrue(statics.contains("qualifiedName: String = \"Windows.Globalization.IApplicationLanguagesStatics\""))
         assertTrue(statics.contains("75b40847-0a4c-4a92-9565-fd63c95f7aed"))
+        assertFalse(runtimeClass.contains("languageFactory"))
     }
 
     @Test
