@@ -5082,4 +5082,66 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("suspend fun readAsyncAwait(name: String): String"))
         assertTrue(runtimeBinding.contains("readAsync(name).await()"))
     }
+
+    @Test
+    fun generates_suspend_async_progress_method_projections() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncActionWithProgress`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "1f6db258-e803-48a1-9546-eb7353398884",
+                            genericParameters = listOf("TProgress"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperationWithProgress`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "b5d036d7-e297-498f-ba60-0289e76e23dd",
+                            genericParameters = listOf("TResult", "TProgress"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Async",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IProgressSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "UploadAsync",
+                                    returnType = "Windows.Foundation.IAsyncActionWithProgress<UInt32>",
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "DownloadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperationWithProgress<String, UInt32>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Async/IProgressSource.kt" }.content
+
+        assertTrue(interfaceBinding.contains("fun uploadAsync(): IAsyncActionWithProgress<UInt32>"))
+        assertTrue(interfaceBinding.contains("suspend fun uploadAsyncAwait(onProgress: (UInt32) -> Unit = { _ -> }): Unit"))
+        assertTrue(interfaceBinding.contains("uploadAsync().await(onProgress = onProgress)"))
+        assertTrue(interfaceBinding.contains("fun downloadAsync(name: String)"))
+        assertTrue(interfaceBinding.contains("suspend fun downloadAsyncAwait(name: String, onProgress: (UInt32) -> Unit = { _ -> })"))
+        assertTrue(interfaceBinding.contains("downloadAsync(name).await(onProgress = onProgress)"))
+    }
 }
