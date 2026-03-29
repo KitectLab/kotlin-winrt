@@ -680,21 +680,21 @@ internal class InterfaceTypeRenderer(
     }
 
     private fun plannedStringMethod(parameterTypes: List<String>): PlannedInterfaceMethod? {
-        return when (parameterTypes) {
-            emptyList<String>() -> PlannedInterfaceMethod(
+        return when (methodSignatureShape(parameterTypes, ::supportsInterfaceObjectInput)) {
+            MethodSignatureShape.EMPTY -> PlannedInterfaceMethod(
                 statement = "return %L",
                 args = { method, _ ->
                     arrayOf(HStringSupport.toKotlinString("pointer", method.vtableIndex!!))
                 },
             )
-            listOf("String") -> PlannedInterfaceMethod(
+            MethodSignatureShape.STRING -> PlannedInterfaceMethod(
                 statement = "return %L",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
                     arrayOf(HStringSupport.toKotlinStringWithStringArg("pointer", method.vtableIndex!!, argumentName))
                 },
             )
-            listOf("UInt32") -> PlannedInterfaceMethod(
+            MethodSignatureShape.UINT32 -> PlannedInterfaceMethod(
                 statement = "return %L",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
@@ -706,21 +706,21 @@ internal class InterfaceTypeRenderer(
     }
 
     private fun plannedFloat64Method(parameterTypes: List<String>): PlannedInterfaceMethod? {
-        return when (parameterTypes) {
-            emptyList<String>() -> PlannedInterfaceMethod(
+        return when (methodSignatureShape(parameterTypes, ::supportsInterfaceObjectInput)) {
+            MethodSignatureShape.EMPTY -> PlannedInterfaceMethod(
                 statement = "return %T(%T.invokeFloat64Method(pointer, %L).getOrThrow())",
                 args = { method, _ ->
                     arrayOf(PoetSymbols.float64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!)
                 },
             )
-            listOf("String") -> PlannedInterfaceMethod(
+            MethodSignatureShape.STRING -> PlannedInterfaceMethod(
                 statement = "return %T(%T.invokeFloat64MethodWithStringArg(pointer, %L, %N).getOrThrow())",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
                     arrayOf(PoetSymbols.float64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
                 },
             )
-            listOf("UInt32") -> PlannedInterfaceMethod(
+            MethodSignatureShape.UINT32 -> PlannedInterfaceMethod(
                 statement = "return %T(%T.invokeFloat64MethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow())",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
@@ -732,28 +732,28 @@ internal class InterfaceTypeRenderer(
     }
 
     private fun plannedBooleanMethod(parameterTypes: List<String>): PlannedInterfaceMethod? {
-        return when {
-            parameterTypes.isEmpty() -> PlannedInterfaceMethod(
+        return when (methodSignatureShape(parameterTypes, ::supportsInterfaceObjectInput)) {
+            MethodSignatureShape.EMPTY -> PlannedInterfaceMethod(
                 statement = "return %T(%T.invokeBooleanGetter(pointer, %L).getOrThrow())",
                 args = { method, _ ->
                     arrayOf(PoetSymbols.winRtBooleanClass, PoetSymbols.platformComInteropClass, method.vtableIndex!!)
                 },
             )
-            parameterTypes == listOf("String") -> PlannedInterfaceMethod(
+            MethodSignatureShape.STRING -> PlannedInterfaceMethod(
                 statement = "return %T(%T.invokeBooleanMethodWithStringArg(pointer, %L, %N).getOrThrow())",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
                     arrayOf(PoetSymbols.winRtBooleanClass, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
                 },
             )
-            parameterTypes == listOf("UInt32") -> PlannedInterfaceMethod(
+            MethodSignatureShape.UINT32 -> PlannedInterfaceMethod(
                 statement = "return %T(%T.invokeBooleanMethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow())",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
                     arrayOf(PoetSymbols.winRtBooleanClass, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
                 },
             )
-            parameterTypes.size == 1 && supportsInterfaceObjectInput(parameterTypes.single()) -> PlannedInterfaceMethod(
+            MethodSignatureShape.OBJECT -> PlannedInterfaceMethod(
                 statement = "return %T(%T.invokeBooleanMethodWithObjectArg(pointer, %L, %N.pointer).getOrThrow())",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
@@ -768,8 +768,8 @@ internal class InterfaceTypeRenderer(
         genericParameters: Set<String>,
         parameterTypes: List<String>,
     ): PlannedInterfaceMethod? {
-        return when (parameterTypes) {
-            emptyList<String>() -> PlannedInterfaceMethod(
+        return when (methodSignatureShape(parameterTypes, ::supportsInterfaceObjectInput)) {
+            MethodSignatureShape.EMPTY -> PlannedInterfaceMethod(
                 statement = "return %T(%T.invokeObjectMethod(pointer, %L).getOrThrow())",
                 args = { method, namespace ->
                     arrayOf(
@@ -779,7 +779,7 @@ internal class InterfaceTypeRenderer(
                     )
                 },
             )
-            listOf("String") -> PlannedInterfaceMethod(
+            MethodSignatureShape.STRING -> PlannedInterfaceMethod(
                 statement = "return %T(%T.invokeObjectMethodWithStringArg(pointer, %L, %N).getOrThrow())",
                 args = { method, namespace ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
@@ -791,7 +791,7 @@ internal class InterfaceTypeRenderer(
                     )
                 },
             )
-            listOf("UInt32") -> PlannedInterfaceMethod(
+            MethodSignatureShape.UINT32 -> PlannedInterfaceMethod(
                 statement = "return %T(%T.invokeObjectMethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow())",
                 args = { method, namespace ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
@@ -808,28 +808,28 @@ internal class InterfaceTypeRenderer(
     }
 
     private fun plannedUnitMethod(parameterTypes: List<String>): PlannedInterfaceMethod? {
-        return when {
-            parameterTypes.isEmpty() -> PlannedInterfaceMethod(
+        return when (methodSignatureShape(parameterTypes, ::supportsInterfaceObjectInput)) {
+            MethodSignatureShape.EMPTY -> PlannedInterfaceMethod(
                 statement = "%T.invokeUnitMethod(pointer, %L).getOrThrow()",
                 args = { method, _ ->
                     arrayOf(PoetSymbols.platformComInteropClass, method.vtableIndex!!)
                 },
             )
-            parameterTypes == listOf("String") -> PlannedInterfaceMethod(
+            MethodSignatureShape.STRING -> PlannedInterfaceMethod(
                 statement = "%T.invokeStringSetter(pointer, %L, %N).getOrThrow()",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
                     arrayOf(PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
                 },
             )
-            parameterTypes == listOf("Int32") -> PlannedInterfaceMethod(
+            MethodSignatureShape.INT32 -> PlannedInterfaceMethod(
                 statement = "%T.invokeUnitMethodWithInt32Arg(pointer, %L, %N.value).getOrThrow()",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
                     arrayOf(PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
                 },
             )
-            parameterTypes.size == 1 && supportsInterfaceObjectInput(parameterTypes.single()) -> PlannedInterfaceMethod(
+            MethodSignatureShape.OBJECT -> PlannedInterfaceMethod(
                 statement = "%T.invokeObjectSetter(pointer, %L, %N.pointer).getOrThrow()",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
