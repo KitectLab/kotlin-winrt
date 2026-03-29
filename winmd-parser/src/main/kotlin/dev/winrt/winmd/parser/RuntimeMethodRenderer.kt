@@ -62,9 +62,14 @@ internal class RuntimeMethodRenderer(
         }
         val parameterTypes = method.parameters.map { it.type }
         val signatureKey = methodSignatureKey(method.returnType, parameterTypes, ::supportsRuntimeObjectType)
+        val scalarPlan = scalarRuntimeReturnPlan(method.returnType)
         return when {
-            scalarRuntimeReturnPlan(method.returnType)?.supports(parameterTypes) == true ->
-                scalarRuntimePlan(scalarRuntimeReturnPlan(method.returnType)!!)
+            signatureKey != null && signatureKey.returnKind in setOf(
+                MethodReturnKind.STRING,
+                MethodReturnKind.FLOAT64,
+                MethodReturnKind.BOOLEAN,
+            ) -> runtimeMethodPlanForKey(signatureKey)
+            scalarPlan?.supports(parameterTypes) == true -> scalarRuntimePlan(scalarPlan)
             signatureKey != null -> runtimeMethodPlanForKey(signatureKey)
             else -> null
         }
@@ -72,6 +77,69 @@ internal class RuntimeMethodRenderer(
 
     private fun runtimeMethodPlanForKey(signatureKey: MethodSignatureKey): RuntimeMethodPlan? {
         return when (signatureKey) {
+            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %S", arrayOf("")) },
+                returnStatement = "return %L",
+                statementArgs = { method, _, _ ->
+                    arrayOf(HStringSupport.toKotlinString("pointer", method.vtableIndex!!))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %S", arrayOf("")) },
+                returnStatement = "return %L",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(HStringSupport.toKotlinStringWithStringArg("pointer", method.vtableIndex!!, parameterBindings.single().name))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.UINT32) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %S", arrayOf("")) },
+                returnStatement = "return %L",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(HStringSupport.toKotlinStringWithUInt32Arg("pointer", method.vtableIndex!!, "${parameterBindings.single().name}.value"))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %T(0.0)", arrayOf(PoetSymbols.float64Class)) },
+                returnStatement = "return %T(%T.invokeFloat64Method(pointer, %L).getOrThrow())",
+                statementArgs = { method, _, _ ->
+                    arrayOf(PoetSymbols.float64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!)
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %T(0.0)", arrayOf(PoetSymbols.float64Class)) },
+                returnStatement = "return %T(%T.invokeFloat64MethodWithStringArg(pointer, %L, %N).getOrThrow())",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(PoetSymbols.float64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!, parameterBindings.single().name)
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.UINT32) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %T(0.0)", arrayOf(PoetSymbols.float64Class)) },
+                returnStatement = "return %T(%T.invokeFloat64MethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow())",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(PoetSymbols.float64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!, parameterBindings.single().name)
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %T.FALSE", arrayOf(PoetSymbols.winRtBooleanClass)) },
+                returnStatement = "return %T(%T.invokeBooleanGetter(pointer, %L).getOrThrow())",
+                statementArgs = { method, _, _ ->
+                    arrayOf(PoetSymbols.winRtBooleanClass, PoetSymbols.platformComInteropClass, method.vtableIndex!!)
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %T.FALSE", arrayOf(PoetSymbols.winRtBooleanClass)) },
+                returnStatement = "return %T(%T.invokeBooleanMethodWithStringArg(pointer, %L, %N).getOrThrow())",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(PoetSymbols.winRtBooleanClass, PoetSymbols.platformComInteropClass, method.vtableIndex!!, parameterBindings.single().name)
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.UINT32) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %T.FALSE", arrayOf(PoetSymbols.winRtBooleanClass)) },
+                returnStatement = "return %T(%T.invokeBooleanMethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow())",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(PoetSymbols.winRtBooleanClass, PoetSymbols.platformComInteropClass, method.vtableIndex!!, parameterBindings.single().name)
+                },
+            )
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return") },
                 returnStatement = "%T.invokeUnitMethod(pointer, %L).getOrThrow()",
