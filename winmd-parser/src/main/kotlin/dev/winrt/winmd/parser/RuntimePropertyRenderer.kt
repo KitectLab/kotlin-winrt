@@ -12,10 +12,7 @@ internal class RuntimePropertyRenderer(
     private val typeNameMapper: TypeNameMapper,
 ) {
     fun canRenderRuntimeProperty(property: WinMdProperty): Boolean {
-        val supportsGetter = scalarRuntimePropertyPlan(property.type) != null || property.type == "IReference<String>"
-        val supportsSetter = property.type == "String" || property.type == "Int32"
-        return (supportsGetter && property.getterVtableIndex != null) ||
-            (supportsSetter && property.setterVtableIndex != null)
+        return runtimePropertyPlan(property) != null
     }
 
     fun renderBackingProperty(property: WinMdProperty, currentNamespace: String): PropertySpec {
@@ -41,77 +38,40 @@ internal class RuntimePropertyRenderer(
     }
 
     private fun renderRuntimeGetter(property: WinMdProperty): FunSpec {
+        val plan = runtimePropertyPlan(property)
         val backingName = "backing_${property.name}"
         val builder = FunSpec.getterBuilder()
-        val scalarPlan = scalarRuntimePropertyPlan(property.type)
-        if (scalarPlan != null && property.getterVtableIndex != null) {
-            val getterVtableIndex = property.getterVtableIndex!!
+        val getterPlan = plan?.getter
+        if (getterPlan == null || property.getterVtableIndex == null) {
             return builder
-                .beginControlFlow("if (pointer.isNull)")
-                .addStatement("return %N.get()", backingName)
-                .endControlFlow()
-                .addStatement("return %L", scalarPlan.renderGetter(getterVtableIndex))
-                .build()
-        }
-        return when {
-            property.type == "IReference<String>" && property.getterVtableIndex != null -> {
-                val getterVtableIndex = property.getterVtableIndex!!
-                builder
-                    .beginControlFlow("if (pointer.isNull)")
-                    .addStatement("return %N.get()", backingName)
-                    .endControlFlow()
-                    .addStatement("return %T(%L)", PoetSymbols.iReferenceClass.parameterizedBy(String::class.asTypeName()), hStringToKotlinString("pointer", getterVtableIndex))
-                    .build()
-            }
-            property.type == "String" && property.getterVtableIndex != null -> {
-                val getterVtableIndex = property.getterVtableIndex!!
-                builder
-                    .beginControlFlow("if (pointer.isNull)")
-                    .addStatement("return %N.get()", backingName)
-                    .endControlFlow()
-                    .addStatement("return %L", hStringToKotlinString("pointer", getterVtableIndex))
-                    .build()
-            }
-            property.type == "Int32" && property.getterVtableIndex != null -> {
-                val getterVtableIndex = property.getterVtableIndex!!
-                builder
-                    .beginControlFlow("if (pointer.isNull)")
-                    .addStatement("return %N.get()", backingName)
-                    .endControlFlow()
-                    .addStatement("return %T(%T.invokeInt32Method(pointer, %L).getOrThrow())", PoetSymbols.int32Class, PoetSymbols.platformComInteropClass, getterVtableIndex)
-                    .build()
-            }
-            else -> builder
                 .addStatement("return %N.get()", backingName)
                 .build()
         }
+        return builder
+            .beginControlFlow("if (pointer.isNull)")
+            .addStatement("return %N.get()", backingName)
+            .endControlFlow()
+            .addStatement("return %L", getterPlan.render(property.getterVtableIndex!!))
+            .build()
     }
 
     private fun renderRuntimeSetter(property: WinMdProperty, currentNamespace: String): FunSpec {
+        val plan = runtimePropertyPlan(property)
         val backingName = "backing_${property.name}"
         val builder = FunSpec.setterBuilder()
             .addParameter("value", typeNameMapper.mapTypeName(property.type, currentNamespace))
-        return if (property.type == "String" && property.setterVtableIndex != null) {
-            val setterVtableIndex = property.setterVtableIndex!!
+        val setterPlan = plan?.setter
+        return if (setterPlan == null || property.setterVtableIndex == null) {
             builder
-                .beginControlFlow("if (pointer.isNull)")
                 .addStatement("%N.set(value)", backingName)
-                .addStatement("return")
-                .endControlFlow()
-                .addStatement("%T.invokeStringSetter(pointer, %L, value).getOrThrow()", PoetSymbols.platformComInteropClass, setterVtableIndex)
-                .build()
-        } else if (property.type == "Int32" && property.setterVtableIndex != null) {
-            val setterVtableIndex = property.setterVtableIndex!!
-            builder
-                .beginControlFlow("if (pointer.isNull)")
-                .addStatement("%N.set(value)", backingName)
-                .addStatement("return")
-                .endControlFlow()
-                .addStatement("%T.invokeInt32Setter(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, setterVtableIndex)
                 .build()
         } else {
             builder
+                .beginControlFlow("if (pointer.isNull)")
                 .addStatement("%N.set(value)", backingName)
+                .addStatement("return")
+                .endControlFlow()
+                .addStatement(setterPlan.statement, *setterPlan.args(property.setterVtableIndex!!))
                 .build()
         }
     }
@@ -180,7 +140,54 @@ internal class RuntimePropertyRenderer(
         }
     }
 
+    private fun runtimePropertyPlan(property: WinMdProperty): RuntimePropertyPlan? {
+        val getterPlan = when {
+            property.getterVtableIndex == null -> null
+            property.type == "IReference<String>" -> RuntimePropertyGetterPlan { getterVtableIndex ->
+                CodeBlock.of(
+                    "%T(%L)",
+                    PoetSymbols.iReferenceClass.parameterizedBy(String::class.asTypeName()),
+                    hStringToKotlinString("pointer", getterVtableIndex),
+                )
+            }
+            else -> scalarRuntimePropertyPlan(property.type)?.let { scalarPlan ->
+                RuntimePropertyGetterPlan { getterVtableIndex -> scalarPlan.renderGetter(getterVtableIndex) }
+            }
+        }
+        val setterPlan = when {
+            property.setterVtableIndex == null -> null
+            property.type == "String" -> RuntimePropertySetterPlan(
+                statement = "%T.invokeStringSetter(pointer, %L, value).getOrThrow()",
+                args = { setterVtableIndex -> arrayOf(PoetSymbols.platformComInteropClass, setterVtableIndex) },
+            )
+            property.type == "Int32" -> RuntimePropertySetterPlan(
+                statement = "%T.invokeInt32Setter(pointer, %L, value.value).getOrThrow()",
+                args = { setterVtableIndex -> arrayOf(PoetSymbols.platformComInteropClass, setterVtableIndex) },
+            )
+            else -> null
+        }
+        return if (getterPlan != null || setterPlan != null) {
+            RuntimePropertyPlan(getter = getterPlan, setter = setterPlan)
+        } else {
+            null
+        }
+    }
+
     private data class ScalarRuntimePropertyPlan(
         val renderGetter: (Int) -> CodeBlock,
+    )
+
+    private data class RuntimePropertyPlan(
+        val getter: RuntimePropertyGetterPlan?,
+        val setter: RuntimePropertySetterPlan?,
+    )
+
+    private data class RuntimePropertyGetterPlan(
+        val render: (Int) -> CodeBlock,
+    )
+
+    private data class RuntimePropertySetterPlan(
+        val statement: String,
+        val args: (Int) -> Array<Any>,
     )
 }
