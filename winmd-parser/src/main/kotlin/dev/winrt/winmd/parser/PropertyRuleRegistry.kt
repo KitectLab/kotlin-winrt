@@ -20,6 +20,10 @@ internal enum class InterfacePropertyRuleFamily {
     ENUM,
     STRING,
     BOOLEAN,
+    GUID,
+    DATE_TIME,
+    TIME_SPAN,
+    EVENT_REGISTRATION_TOKEN,
     INT32,
 }
 
@@ -48,6 +52,10 @@ internal object PropertyRuleRegistry {
             isEnumType -> InterfacePropertyRuleFamily.ENUM
             type == "String" -> InterfacePropertyRuleFamily.STRING
             type == "Boolean" -> InterfacePropertyRuleFamily.BOOLEAN
+            type == "Guid" -> InterfacePropertyRuleFamily.GUID
+            type == "DateTime" -> InterfacePropertyRuleFamily.DATE_TIME
+            type == "TimeSpan" -> InterfacePropertyRuleFamily.TIME_SPAN
+            type == "EventRegistrationToken" -> InterfacePropertyRuleFamily.EVENT_REGISTRATION_TOKEN
             type == "Int32" -> InterfacePropertyRuleFamily.INT32
             else -> null
         }

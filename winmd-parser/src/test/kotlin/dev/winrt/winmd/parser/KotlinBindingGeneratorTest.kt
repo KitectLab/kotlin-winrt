@@ -4376,6 +4376,64 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_guid_and_time_interface_properties() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "ITimestamped",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "66666666-7777-8888-9999-aaaaaaaaaaaa",
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "StableId",
+                                    type = "Guid",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "CreatedAt",
+                                    type = "DateTime",
+                                    mutable = false,
+                                    getterVtableIndex = 7,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Lifetime",
+                                    type = "TimeSpan",
+                                    mutable = false,
+                                    getterVtableIndex = 8,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Token",
+                                    type = "EventRegistrationToken",
+                                    mutable = false,
+                                    getterVtableIndex = 9,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Contracts/ITimestamped.kt" }.content
+
+        assertTrue(binding.contains("val stableId: GuidValue"))
+        assertTrue(binding.contains("GuidValue(PlatformComInterop.invokeGuidGetter(pointer, 6).getOrThrow().toString())"))
+        assertTrue(binding.contains("val createdAt: DateTime"))
+        assertTrue(binding.contains("DateTime(PlatformComInterop.invokeInt64Getter(pointer, 7).getOrThrow())"))
+        assertTrue(binding.contains("val lifetime: TimeSpan"))
+        assertTrue(binding.contains("TimeSpan(PlatformComInterop.invokeInt64Getter(pointer, 8).getOrThrow())"))
+        assertTrue(binding.contains("val token: EventRegistrationToken"))
+        assertTrue(binding.contains("EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer, 9).getOrThrow())"))
+    }
+
+    @Test
     fun generates_winui_unit_interface_methods() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

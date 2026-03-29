@@ -286,6 +286,34 @@ internal class InterfaceTypeRenderer(
                     PoetSymbols.platformComInteropClass,
                     getterVtableIndex,
                 )
+            InterfacePropertyRuleFamily.GUID ->
+                getterBuilder.addStatement(
+                    "return %T(%T.invokeGuidGetter(pointer, %L).getOrThrow().toString())",
+                    PoetSymbols.guidValueClass,
+                    PoetSymbols.platformComInteropClass,
+                    getterVtableIndex,
+                )
+            InterfacePropertyRuleFamily.DATE_TIME ->
+                getterBuilder.addStatement(
+                    "return %T(%T.invokeInt64Getter(pointer, %L).getOrThrow())",
+                    PoetSymbols.dateTimeClass,
+                    PoetSymbols.platformComInteropClass,
+                    getterVtableIndex,
+                )
+            InterfacePropertyRuleFamily.TIME_SPAN ->
+                getterBuilder.addStatement(
+                    "return %T(%T.invokeInt64Getter(pointer, %L).getOrThrow())",
+                    PoetSymbols.timeSpanClass,
+                    PoetSymbols.platformComInteropClass,
+                    getterVtableIndex,
+                )
+            InterfacePropertyRuleFamily.EVENT_REGISTRATION_TOKEN ->
+                getterBuilder.addStatement(
+                    "return %T(%T.invokeInt64Getter(pointer, %L).getOrThrow())",
+                    PoetSymbols.eventRegistrationTokenClass,
+                    PoetSymbols.platformComInteropClass,
+                    getterVtableIndex,
+                )
             InterfacePropertyRuleFamily.INT32 ->
                 getterBuilder.addStatement(
                     "return %T(%T.invokeInt32Method(pointer, %L).getOrThrow())",
