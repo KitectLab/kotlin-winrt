@@ -14,6 +14,11 @@ internal enum class MethodReturnKind {
     STRING,
     FLOAT64,
     BOOLEAN,
+    INT32,
+    UINT32,
+    INT64,
+    UINT64,
+    GUID,
     OBJECT,
 }
 
@@ -48,6 +53,11 @@ internal fun methodSignatureKey(
         "String" -> MethodReturnKind.STRING
         "Float64" -> MethodReturnKind.FLOAT64
         "Boolean" -> MethodReturnKind.BOOLEAN
+        "Int32" -> MethodReturnKind.INT32
+        "UInt32" -> MethodReturnKind.UINT32
+        "Int64" -> MethodReturnKind.INT64
+        "UInt64" -> MethodReturnKind.UINT64
+        "Guid" -> MethodReturnKind.GUID
         else -> if (supportsObjectType(returnType)) MethodReturnKind.OBJECT else null
     } ?: return null
     return MethodSignatureKey(returnKind = returnKind, shape = shape)

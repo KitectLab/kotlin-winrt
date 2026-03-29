@@ -62,14 +62,7 @@ internal class RuntimeMethodRenderer(
         }
         val parameterTypes = method.parameters.map { it.type }
         val signatureKey = methodSignatureKey(method.returnType, parameterTypes, ::supportsRuntimeObjectType)
-        val scalarPlan = scalarRuntimeReturnPlan(method.returnType)
         return when {
-            signatureKey != null && signatureKey.returnKind in setOf(
-                MethodReturnKind.STRING,
-                MethodReturnKind.FLOAT64,
-                MethodReturnKind.BOOLEAN,
-            ) -> runtimeMethodPlanForKey(signatureKey)
-            scalarPlan?.supports(parameterTypes) == true -> scalarRuntimePlan(scalarPlan)
             signatureKey != null -> runtimeMethodPlanForKey(signatureKey)
             else -> null
         }
@@ -138,6 +131,41 @@ internal class RuntimeMethodRenderer(
                 returnStatement = "return %T(%T.invokeBooleanMethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow())",
                 statementArgs = { method, _, parameterBindings ->
                     arrayOf(PoetSymbols.winRtBooleanClass, PoetSymbols.platformComInteropClass, method.vtableIndex!!, parameterBindings.single().name)
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %T(0)", arrayOf(PoetSymbols.int32Class)) },
+                returnStatement = "return %T(%T.invokeInt32Method(pointer, %L).getOrThrow())",
+                statementArgs = { method, _, _ ->
+                    arrayOf(PoetSymbols.int32Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!)
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %T(0u)", arrayOf(PoetSymbols.uint32Class)) },
+                returnStatement = "return %T(%T.invokeUInt32Method(pointer, %L).getOrThrow())",
+                statementArgs = { method, _, _ ->
+                    arrayOf(PoetSymbols.uint32Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!)
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %T(0L)", arrayOf(PoetSymbols.int64Class)) },
+                returnStatement = "return %T(%T.invokeInt64Getter(pointer, %L).getOrThrow())",
+                statementArgs = { method, _, _ ->
+                    arrayOf(PoetSymbols.int64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!)
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %T(0uL)", arrayOf(PoetSymbols.uint64Class)) },
+                returnStatement = "return %T(%T.invokeInt64Getter(pointer, %L).getOrThrow().toULong())",
+                statementArgs = { method, _, _ ->
+                    arrayOf(PoetSymbols.uint64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!)
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %T(%S)", arrayOf(PoetSymbols.guidValueClass, "")) },
+                returnStatement = "return %T(%T.invokeGuidGetter(pointer, %L).getOrThrow().toString())",
+                statementArgs = { method, _, _ ->
+                    arrayOf(PoetSymbols.guidValueClass, PoetSymbols.platformComInteropClass, method.vtableIndex!!)
                 },
             )
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
@@ -212,22 +240,6 @@ internal class RuntimeMethodRenderer(
             )
             else -> null
         }
-    }
-
-    private fun scalarRuntimePlan(plan: ScalarRuntimeReturnPlan): RuntimeMethodPlan {
-        return RuntimeMethodPlan(
-            nullPointerReturn = { PlannedStatement("return %L", arrayOf(plan.nullReturn)) },
-            returnStatement = "return %L",
-            statementArgs = { method, _, parameterBindings ->
-                arrayOf(
-                    plan.returnExpression(
-                        method.vtableIndex!!,
-                        parameterBindings.map { it.name },
-                        parameterBindings.map { it.type },
-                    ),
-                )
-            },
-        )
     }
 
     fun renderRuntimeLambdaOverload(method: WinMdMethod, currentNamespace: String): FunSpec? {
@@ -305,154 +317,6 @@ internal class RuntimeMethodRenderer(
             !type.endsWith("[]")
     }
 
-    private fun scalarRuntimeReturnPlan(type: String): ScalarRuntimeReturnPlan? {
-        return when (type) {
-            "String" -> ScalarRuntimeReturnPlan(
-                nullReturn = CodeBlock.of("%S", ""),
-                returnExpression = { vtableIndex, argumentNames, parameterTypes ->
-                    when (parameterTypes) {
-                        emptyList<String>() -> HStringSupport.toKotlinString("pointer", vtableIndex)
-                        listOf("String") -> HStringSupport.toKotlinStringWithStringArg("pointer", vtableIndex, argumentNames.single())
-                        listOf("UInt32") -> HStringSupport.toKotlinStringWithUInt32Arg("pointer", vtableIndex, "${argumentNames.single()}.value")
-                        else -> error("Unsupported String runtime method parameters: $parameterTypes")
-                    }
-                },
-                supportedParameterTypes = setOf(
-                    emptyList<String>(),
-                    listOf("String"),
-                    listOf("UInt32"),
-                ),
-            )
-            "Boolean" -> ScalarRuntimeReturnPlan(
-                nullReturn = CodeBlock.of("%T.FALSE", PoetSymbols.winRtBooleanClass),
-                returnExpression = { vtableIndex, argumentNames, parameterTypes ->
-                    when (parameterTypes) {
-                        emptyList<String>() -> CodeBlock.of(
-                            "%T(%T.invokeBooleanGetter(pointer, %L).getOrThrow())",
-                            PoetSymbols.winRtBooleanClass,
-                            PoetSymbols.platformComInteropClass,
-                            vtableIndex,
-                        )
-                        listOf("String") -> CodeBlock.of(
-                            "%T(%T.invokeBooleanMethodWithStringArg(pointer, %L, %N).getOrThrow())",
-                            PoetSymbols.winRtBooleanClass,
-                            PoetSymbols.platformComInteropClass,
-                            vtableIndex,
-                            argumentNames.single(),
-                        )
-                        listOf("UInt32") -> CodeBlock.of(
-                            "%T(%T.invokeBooleanMethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow())",
-                            PoetSymbols.winRtBooleanClass,
-                            PoetSymbols.platformComInteropClass,
-                            vtableIndex,
-                            argumentNames.single(),
-                        )
-                        else -> error("Unsupported Boolean runtime method parameters: $parameterTypes")
-                    }
-                },
-                supportedParameterTypes = setOf(emptyList<String>(), listOf("String"), listOf("UInt32")),
-            )
-            "Int32" -> ScalarRuntimeReturnPlan(
-                nullReturn = CodeBlock.of("%T(0)", PoetSymbols.int32Class),
-                returnExpression = { vtableIndex, _, _ ->
-                    CodeBlock.of(
-                        "%T(%T.invokeInt32Method(pointer, %L).getOrThrow())",
-                        PoetSymbols.int32Class,
-                        PoetSymbols.platformComInteropClass,
-                        vtableIndex,
-                    )
-                },
-                supportedParameterTypes = setOf(emptyList<String>()),
-            )
-            "UInt32" -> ScalarRuntimeReturnPlan(
-                nullReturn = CodeBlock.of("%T(0u)", PoetSymbols.uint32Class),
-                returnExpression = { vtableIndex, _, _ ->
-                    CodeBlock.of(
-                        "%T(%T.invokeUInt32Method(pointer, %L).getOrThrow())",
-                        PoetSymbols.uint32Class,
-                        PoetSymbols.platformComInteropClass,
-                        vtableIndex,
-                    )
-                },
-                supportedParameterTypes = setOf(emptyList<String>()),
-            )
-            "Int64" -> ScalarRuntimeReturnPlan(
-                nullReturn = CodeBlock.of("%T(0L)", PoetSymbols.int64Class),
-                returnExpression = { vtableIndex, _, _ ->
-                    CodeBlock.of(
-                        "%T(%T.invokeInt64Getter(pointer, %L).getOrThrow())",
-                        PoetSymbols.int64Class,
-                        PoetSymbols.platformComInteropClass,
-                        vtableIndex,
-                    )
-                },
-                supportedParameterTypes = setOf(emptyList<String>()),
-            )
-            "UInt64" -> ScalarRuntimeReturnPlan(
-                nullReturn = CodeBlock.of("%T(0uL)", PoetSymbols.uint64Class),
-                returnExpression = { vtableIndex, _, _ ->
-                    CodeBlock.of(
-                        "%T(%T.invokeInt64Getter(pointer, %L).getOrThrow().toULong())",
-                        PoetSymbols.uint64Class,
-                        PoetSymbols.platformComInteropClass,
-                        vtableIndex,
-                    )
-                },
-                supportedParameterTypes = setOf(emptyList<String>()),
-            )
-            "Float64" -> ScalarRuntimeReturnPlan(
-                nullReturn = CodeBlock.of("%T(0.0)", PoetSymbols.float64Class),
-                returnExpression = { vtableIndex, argumentNames, parameterTypes ->
-                    when (parameterTypes) {
-                        emptyList<String>() -> CodeBlock.of(
-                            "%T(%T.invokeFloat64Method(pointer, %L).getOrThrow())",
-                            PoetSymbols.float64Class,
-                            PoetSymbols.platformComInteropClass,
-                            vtableIndex,
-                        )
-                        listOf("String") -> CodeBlock.of(
-                            "%T(%T.invokeFloat64MethodWithStringArg(pointer, %L, %N).getOrThrow())",
-                            PoetSymbols.float64Class,
-                            PoetSymbols.platformComInteropClass,
-                            vtableIndex,
-                            argumentNames.single(),
-                        )
-                        listOf("UInt32") -> CodeBlock.of(
-                            "%T(%T.invokeFloat64MethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow())",
-                            PoetSymbols.float64Class,
-                            PoetSymbols.platformComInteropClass,
-                            vtableIndex,
-                            argumentNames.single(),
-                        )
-                        else -> error("Unsupported Float64 runtime method parameters: $parameterTypes")
-                    }
-                },
-                supportedParameterTypes = setOf(emptyList<String>(), listOf("String"), listOf("UInt32")),
-            )
-            "Guid" -> ScalarRuntimeReturnPlan(
-                nullReturn = CodeBlock.of("%T(%S)", PoetSymbols.guidValueClass, ""),
-                returnExpression = { vtableIndex, _, _ ->
-                    CodeBlock.of(
-                        "%T(%T.invokeGuidGetter(pointer, %L).getOrThrow().toString())",
-                        PoetSymbols.guidValueClass,
-                        PoetSymbols.platformComInteropClass,
-                        vtableIndex,
-                    )
-                },
-                supportedParameterTypes = setOf(emptyList<String>()),
-            )
-            else -> null
-        }
-    }
-
-    private data class ScalarRuntimeReturnPlan(
-        val nullReturn: CodeBlock,
-        val returnExpression: (Int, List<String>, List<String>) -> CodeBlock,
-        val supportedParameterTypes: Set<List<String>>,
-    ) {
-        fun supports(parameterTypes: List<String>): Boolean =
-            parameterTypes in supportedParameterTypes
-    }
 
     private data class RuntimeMethodPlan(
         val nullPointerReturn: (WinMdMethod) -> PlannedStatement,
