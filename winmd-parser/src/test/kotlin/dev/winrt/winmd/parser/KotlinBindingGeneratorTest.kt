@@ -4434,6 +4434,56 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_numeric_interface_properties() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "ICounters",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Count",
+                                    type = "UInt32",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Ticks",
+                                    type = "Int64",
+                                    mutable = false,
+                                    getterVtableIndex = 7,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Version",
+                                    type = "UInt64",
+                                    mutable = false,
+                                    getterVtableIndex = 8,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Contracts/ICounters.kt" }.content
+
+        assertTrue(binding.contains("val count: UInt32"))
+        assertTrue(binding.contains("UInt32(PlatformComInterop.invokeUInt32Method(pointer, 6).getOrThrow())"))
+        assertTrue(binding.contains("val ticks: Int64"))
+        assertTrue(binding.contains("Int64(PlatformComInterop.invokeInt64Getter(pointer, 7).getOrThrow())"))
+        assertTrue(binding.contains("val version: UInt64"))
+        assertTrue(binding.contains("UInt64(PlatformComInterop.invokeInt64Getter(pointer, 8).getOrThrow().toULong())"))
+    }
+
+    @Test
     fun generates_winui_unit_interface_methods() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

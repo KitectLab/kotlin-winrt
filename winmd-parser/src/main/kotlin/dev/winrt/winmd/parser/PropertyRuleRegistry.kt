@@ -25,6 +25,9 @@ internal enum class InterfacePropertyRuleFamily {
     TIME_SPAN,
     EVENT_REGISTRATION_TOKEN,
     INT32,
+    UINT32,
+    INT64,
+    UINT64,
 }
 
 internal object PropertyRuleRegistry {
@@ -57,6 +60,9 @@ internal object PropertyRuleRegistry {
             type == "TimeSpan" -> InterfacePropertyRuleFamily.TIME_SPAN
             type == "EventRegistrationToken" -> InterfacePropertyRuleFamily.EVENT_REGISTRATION_TOKEN
             type == "Int32" -> InterfacePropertyRuleFamily.INT32
+            type == "UInt32" -> InterfacePropertyRuleFamily.UINT32
+            type == "Int64" -> InterfacePropertyRuleFamily.INT64
+            type == "UInt64" -> InterfacePropertyRuleFamily.UINT64
             else -> null
         }
     }

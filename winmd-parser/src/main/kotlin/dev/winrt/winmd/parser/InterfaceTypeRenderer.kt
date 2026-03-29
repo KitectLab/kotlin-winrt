@@ -321,6 +321,27 @@ internal class InterfaceTypeRenderer(
                     PoetSymbols.platformComInteropClass,
                     getterVtableIndex,
                 )
+            InterfacePropertyRuleFamily.UINT32 ->
+                getterBuilder.addStatement(
+                    "return %T(%T.invokeUInt32Method(pointer, %L).getOrThrow())",
+                    PoetSymbols.uint32Class,
+                    PoetSymbols.platformComInteropClass,
+                    getterVtableIndex,
+                )
+            InterfacePropertyRuleFamily.INT64 ->
+                getterBuilder.addStatement(
+                    "return %T(%T.invokeInt64Getter(pointer, %L).getOrThrow())",
+                    PoetSymbols.int64Class,
+                    PoetSymbols.platformComInteropClass,
+                    getterVtableIndex,
+                )
+            InterfacePropertyRuleFamily.UINT64 ->
+                getterBuilder.addStatement(
+                    "return %T(%T.invokeInt64Getter(pointer, %L).getOrThrow().toULong())",
+                    PoetSymbols.uint64Class,
+                    PoetSymbols.platformComInteropClass,
+                    getterVtableIndex,
+                )
             else -> return null
         }
         val propertyBuilder = PropertySpec.builder(propertyName, propertyType)
