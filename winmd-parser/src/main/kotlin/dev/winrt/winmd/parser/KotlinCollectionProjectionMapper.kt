@@ -48,7 +48,7 @@ internal class KotlinCollectionProjectionMapper {
                         .returns(String::class)
                         .addStatement(
                             "return %L",
-                            HStringSupport.toKotlinStringWithUInt32Arg("pointer", 6, "index.value"),
+                            HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithUInt32(6, "index.value")),
                         )
                         .build(),
                 ),

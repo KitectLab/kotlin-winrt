@@ -80,21 +80,21 @@ internal class RuntimeMethodRenderer(
                 nullPointerReturn = { PlannedStatement("return %S", arrayOf("")) },
                 returnStatement = "return %L",
                 statementArgs = { method, _, _ ->
-                    arrayOf(HStringSupport.toKotlinString("pointer", method.vtableIndex!!))
+                    arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethod(method.vtableIndex!!)))
                 },
             )
             MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %S", arrayOf("")) },
                 returnStatement = "return %L",
                 statementArgs = { method, _, parameterBindings ->
-                    arrayOf(HStringSupport.toKotlinStringWithStringArg("pointer", method.vtableIndex!!, parameterBindings.single().name))
+                    arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithString(method.vtableIndex!!, parameterBindings.single().name)))
                 },
             )
             MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.UINT32) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %S", arrayOf("")) },
                 returnStatement = "return %L",
                 statementArgs = { method, _, parameterBindings ->
-                    arrayOf(HStringSupport.toKotlinStringWithUInt32Arg("pointer", method.vtableIndex!!, "${parameterBindings.single().name}.value"))
+                    arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithUInt32(method.vtableIndex!!, "${parameterBindings.single().name}.value")))
                 },
             )
             MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(

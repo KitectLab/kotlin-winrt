@@ -347,7 +347,7 @@ internal class InterfaceTypeRenderer(
                 val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
                 val vtableIndex = method.vtableIndex!!
                 builder
-                    .addStatement("return %L", HStringSupport.toKotlinStringWithStringArg("pointer", vtableIndex, argumentName))
+                    .addStatement("return %L", HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithString(vtableIndex, argumentName)))
                     .build()
             }
             method.returnType == "String" &&
@@ -357,7 +357,7 @@ internal class InterfaceTypeRenderer(
                 val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
                 val vtableIndex = method.vtableIndex!!
                 builder
-                    .addStatement("return %L", HStringSupport.toKotlinStringWithInt32Arg("pointer", vtableIndex, "$argumentName.value"))
+                    .addStatement("return %L", HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithInt32(vtableIndex, "$argumentName.value")))
                     .build()
             }
             method.returnType == "String" &&
@@ -367,7 +367,7 @@ internal class InterfaceTypeRenderer(
                 val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
                 val vtableIndex = method.vtableIndex!!
                 builder
-                    .addStatement("return %L", HStringSupport.toKotlinStringWithUInt32Arg("pointer", vtableIndex, "$argumentName.value"))
+                    .addStatement("return %L", HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithUInt32(vtableIndex, "$argumentName.value")))
                     .build()
             }
             method.returnType == "Float64" && method.parameters.isEmpty() && method.vtableIndex != null -> {
@@ -689,21 +689,21 @@ internal class InterfaceTypeRenderer(
             MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
                 statement = "return %L",
                 args = { method, _ ->
-                    arrayOf(HStringSupport.toKotlinString("pointer", method.vtableIndex!!))
+                    arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethod(method.vtableIndex!!)))
                 },
             )
             MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING) -> PlannedInterfaceMethod(
                 statement = "return %L",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(HStringSupport.toKotlinStringWithStringArg("pointer", method.vtableIndex!!, argumentName))
+                    arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithString(method.vtableIndex!!, argumentName)))
                 },
             )
             MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.UINT32) -> PlannedInterfaceMethod(
                 statement = "return %L",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(HStringSupport.toKotlinStringWithUInt32Arg("pointer", method.vtableIndex!!, "$argumentName.value"))
+                    arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithUInt32(method.vtableIndex!!, "$argumentName.value")))
                 },
             )
             MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
