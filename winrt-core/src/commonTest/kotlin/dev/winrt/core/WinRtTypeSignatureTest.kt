@@ -39,4 +39,16 @@ class WinRtTypeSignatureTest {
             ),
         )
     }
+
+    @Test
+    fun builds_struct_signature_using_field_signatures() {
+        assertEquals(
+            "struct(Windows.Foundation.Point;f8;f8)",
+            WinRtTypeSignature.struct(
+                "Windows.Foundation.Point",
+                "f8",
+                "f8",
+            ),
+        )
+    }
 }

@@ -33,8 +33,8 @@ internal class WinRtSignatureMapper(
             WinMdTypeKind.Struct -> {
                 val fieldSignatures = type.fields
                     .map { field -> signatureFor(field.type, type.namespace) }
-                    .joinToString(";")
-                "struct($qualifiedName;$fieldSignatures)"
+                    .toTypedArray()
+                WinRtTypeSignature.struct(qualifiedName, *fieldSignatures)
             }
         }
     }

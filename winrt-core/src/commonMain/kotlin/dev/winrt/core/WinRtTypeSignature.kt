@@ -10,6 +10,9 @@ object WinRtTypeSignature {
     fun runtimeClass(qualifiedName: String, defaultInterfaceSignature: String): String =
         "rc($qualifiedName;$defaultInterfaceSignature)"
 
+    fun struct(qualifiedName: String, vararg fieldSignatures: String): String =
+        "struct($qualifiedName;${fieldSignatures.joinToString(";")})"
+
     fun parameterizedInterface(interfaceIid: String, vararg argumentSignatures: String): String =
         "pinterface(${guid(interfaceIid)};${argumentSignatures.joinToString(";")})"
 }
