@@ -431,6 +431,44 @@ class WinRtDelegateBridgeTest {
     }
 
     @Test
+    fun creates_multi_parameter_unit_delegate_handle() {
+        val iid = guidOf("eeeeeeee-1111-2222-3333-444444444444")
+        var capturedInt: Int? = null
+        var capturedString: String? = null
+        val hString = PlatformHStringBridge.create("alpha")
+
+        try {
+            WinRtDelegateBridge.createUnitDelegate(
+                iid = iid,
+                parameterKinds = listOf(WinRtDelegateValueKind.INT32, WinRtDelegateValueKind.STRING),
+            ) { args ->
+                capturedInt = args[0] as Int
+                capturedString = args[1] as String
+            }.use { handle ->
+                val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
+                val vtablePointer = callbackPointer.reinterpret(ValueLayout.ADDRESS.byteSize()).get(ValueLayout.ADDRESS, 0L)
+                val function = Linker.nativeLinker().downcallHandle(
+                    vtablePointer.reinterpret(ValueLayout.ADDRESS.byteSize() * 4).getAtIndex(ValueLayout.ADDRESS, 3),
+                    FunctionDescriptor.of(
+                        ValueLayout.JAVA_INT,
+                        ValueLayout.ADDRESS,
+                        ValueLayout.JAVA_INT,
+                        ValueLayout.ADDRESS,
+                    ),
+                )
+
+                val hresult = function.invokeWithArguments(callbackPointer, 7, MemorySegment.ofAddress(hString.raw)) as Int
+                assertEquals(0, hresult)
+                assertEquals(7, capturedInt)
+                assertEquals("alpha", capturedString)
+                assertFalse(handle.pointer.isNull)
+            }
+        } finally {
+            PlatformHStringBridge.release(hString)
+        }
+    }
+
+    @Test
     fun creates_float32_arg_unit_delegate_handle() {
         val iid = guidOf("ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee")
         var captured: Float? = null

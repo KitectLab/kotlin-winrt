@@ -18,6 +18,24 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 internal object JvmWinRtBooleanResultDelegates {
+    fun createDelegate(
+        iid: Guid,
+        parameterKinds: List<WinRtDelegateValueKind>,
+        invoke: (Array<Any?>) -> Boolean,
+    ): WinRtDelegateHandle {
+        val invoker = object : BooleanInvoker {
+            override fun invoke(state: State, args: Array<out Any?>): Boolean {
+                return invoke(decodeArguments(parameterKinds, args))
+            }
+        }
+        return createDelegate(
+            iid = iid,
+            methodType = booleanAbiMethodType(parameterKinds),
+            descriptor = booleanDescriptor(parameterKinds),
+            invoker = invoker,
+        )
+    }
+
     fun createNoArg(iid: Guid, invoke: () -> Boolean): WinRtDelegateHandle {
         val callback = invoke
         return createDelegate(
@@ -33,7 +51,7 @@ internal object JvmWinRtBooleanResultDelegates {
     fun <T> createInt32Arg(iid: Guid, decode: (Int) -> T, invoke: (T) -> Boolean): WinRtDelegateHandle {
         return createDelegate(
             iid = iid,
-            methodType = MethodType.methodType(Int::class.javaPrimitiveType, MemorySegment::class.java, Int::class.javaPrimitiveType, MemorySegment::class.java),
+            methodType = MethodType.methodType(Int::class.javaPrimitiveType, MemorySegment::class.java, Int::class.javaObjectType, MemorySegment::class.java),
             descriptor = FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS),
             invoker = object : BooleanInvoker {
                 override fun invoke(state: State, args: Array<out Any?>): Boolean = invoke(decode(args[0] as Int))
@@ -44,7 +62,7 @@ internal object JvmWinRtBooleanResultDelegates {
     fun <T> createInt64Arg(iid: Guid, decode: (Long) -> T, invoke: (T) -> Boolean): WinRtDelegateHandle {
         return createDelegate(
             iid = iid,
-            methodType = MethodType.methodType(Int::class.javaPrimitiveType, MemorySegment::class.java, Long::class.javaPrimitiveType, MemorySegment::class.java),
+            methodType = MethodType.methodType(Int::class.javaPrimitiveType, MemorySegment::class.java, Long::class.javaObjectType, MemorySegment::class.java),
             descriptor = FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS),
             invoker = object : BooleanInvoker {
                 override fun invoke(state: State, args: Array<out Any?>): Boolean = invoke(decode(args[0] as Long))
@@ -55,7 +73,7 @@ internal object JvmWinRtBooleanResultDelegates {
     fun <T> createFloat32Arg(iid: Guid, decode: (Float) -> T, invoke: (T) -> Boolean): WinRtDelegateHandle {
         return createDelegate(
             iid = iid,
-            methodType = MethodType.methodType(Int::class.javaPrimitiveType, MemorySegment::class.java, Float::class.javaPrimitiveType, MemorySegment::class.java),
+            methodType = MethodType.methodType(Int::class.javaPrimitiveType, MemorySegment::class.java, Float::class.javaObjectType, MemorySegment::class.java),
             descriptor = FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_FLOAT, ValueLayout.ADDRESS),
             invoker = object : BooleanInvoker {
                 override fun invoke(state: State, args: Array<out Any?>): Boolean = invoke(decode(args[0] as Float))
@@ -66,7 +84,7 @@ internal object JvmWinRtBooleanResultDelegates {
     fun <T> createFloat64Arg(iid: Guid, decode: (Double) -> T, invoke: (T) -> Boolean): WinRtDelegateHandle {
         return createDelegate(
             iid = iid,
-            methodType = MethodType.methodType(Int::class.javaPrimitiveType, MemorySegment::class.java, Double::class.javaPrimitiveType, MemorySegment::class.java),
+            methodType = MethodType.methodType(Int::class.javaPrimitiveType, MemorySegment::class.java, Double::class.javaObjectType, MemorySegment::class.java),
             descriptor = FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_DOUBLE, ValueLayout.ADDRESS),
             invoker = object : BooleanInvoker {
                 override fun invoke(state: State, args: Array<out Any?>): Boolean = invoke(decode(args[0] as Double))
@@ -93,6 +111,100 @@ internal object JvmWinRtBooleanResultDelegates {
         return createAddressArg(iid, decode = { arg -> ComPtr(AbiIntPtr(arg.address())) }, invoke = invoke)
     }
 
+    private fun booleanGenericMethodType(arity: Int): MethodType {
+        val parameterTypes = Array(arity) { Any::class.java }
+        return MethodType.methodType(Int::class.javaPrimitiveType, MemorySegment::class.java, *parameterTypes, MemorySegment::class.java)
+    }
+
+    private fun booleanAbiMethodType(parameterKinds: List<WinRtDelegateValueKind>): MethodType {
+        val parameterTypes = parameterKinds.map { kind ->
+            when (kind) {
+                WinRtDelegateValueKind.OBJECT,
+                WinRtDelegateValueKind.STRING,
+                -> MemorySegment::class.java
+                WinRtDelegateValueKind.INT32,
+                WinRtDelegateValueKind.UINT32,
+                WinRtDelegateValueKind.BOOLEAN,
+                -> Int::class.javaPrimitiveType
+                WinRtDelegateValueKind.INT64,
+                WinRtDelegateValueKind.UINT64,
+                -> Long::class.javaPrimitiveType
+                WinRtDelegateValueKind.FLOAT32 -> Float::class.javaPrimitiveType
+                WinRtDelegateValueKind.FLOAT64 -> Double::class.javaPrimitiveType
+            }
+        }
+        return MethodType.methodType(Int::class.javaPrimitiveType, MemorySegment::class.java, *parameterTypes.toTypedArray(), MemorySegment::class.java)
+    }
+
+    private fun booleanDescriptor(parameterKinds: List<WinRtDelegateValueKind>): FunctionDescriptor {
+        val layouts = parameterKinds.map { layoutFor(it) }.toTypedArray()
+        return FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, *layouts, ValueLayout.ADDRESS)
+    }
+
+    private fun decodeArguments(parameterKinds: List<WinRtDelegateValueKind>, args: Array<out Any?>): Array<Any?> {
+        return parameterKinds.mapIndexed { index, kind -> decodeArgument(kind, args[index]) }.toTypedArray()
+    }
+
+    private fun layoutFor(kind: WinRtDelegateValueKind): ValueLayout {
+        return when (kind) {
+            WinRtDelegateValueKind.OBJECT,
+            WinRtDelegateValueKind.STRING,
+            -> ValueLayout.ADDRESS
+            WinRtDelegateValueKind.INT32,
+            WinRtDelegateValueKind.UINT32,
+            WinRtDelegateValueKind.BOOLEAN,
+            -> ValueLayout.JAVA_INT
+            WinRtDelegateValueKind.INT64,
+            WinRtDelegateValueKind.UINT64,
+            -> ValueLayout.JAVA_LONG
+            WinRtDelegateValueKind.FLOAT32 -> ValueLayout.JAVA_FLOAT
+            WinRtDelegateValueKind.FLOAT64 -> ValueLayout.JAVA_DOUBLE
+        }
+    }
+
+    private fun decodeArgument(kind: WinRtDelegateValueKind, raw: Any?): Any? {
+        return when (kind) {
+            WinRtDelegateValueKind.OBJECT -> ComPtr(AbiIntPtr((raw as MemorySegment).address()))
+            WinRtDelegateValueKind.STRING -> PlatformHStringBridge.toKotlinString(HString((raw as MemorySegment).address()))
+            WinRtDelegateValueKind.INT32 -> when (raw) {
+                is Int -> raw
+                is Number -> raw.toInt()
+                else -> error("Expected Int32 delegate argument, got ${raw?.javaClass?.name ?: "null"}")
+            }
+            WinRtDelegateValueKind.UINT32 -> when (raw) {
+                is Int -> raw.toUInt()
+                is Number -> raw.toInt().toUInt()
+                else -> error("Expected UInt32 delegate argument, got ${raw?.javaClass?.name ?: "null"}")
+            }
+            WinRtDelegateValueKind.BOOLEAN -> when (raw) {
+                is Int -> raw != 0
+                is Boolean -> raw
+                is Number -> raw.toInt() != 0
+                else -> error("Expected Boolean delegate argument, got ${raw?.javaClass?.name ?: "null"}")
+            }
+            WinRtDelegateValueKind.INT64 -> when (raw) {
+                is Long -> raw
+                is Number -> raw.toLong()
+                else -> error("Expected Int64 delegate argument, got ${raw?.javaClass?.name ?: "null"}")
+            }
+            WinRtDelegateValueKind.UINT64 -> when (raw) {
+                is Long -> raw.toULong()
+                is Number -> raw.toLong().toULong()
+                else -> error("Expected UInt64 delegate argument, got ${raw?.javaClass?.name ?: "null"}")
+            }
+            WinRtDelegateValueKind.FLOAT32 -> when (raw) {
+                is Float -> raw
+                is Number -> raw.toFloat()
+                else -> error("Expected Float32 delegate argument, got ${raw?.javaClass?.name ?: "null"}")
+            }
+            WinRtDelegateValueKind.FLOAT64 -> when (raw) {
+                is Double -> raw
+                is Number -> raw.toDouble()
+                else -> error("Expected Float64 delegate argument, got ${raw?.javaClass?.name ?: "null"}")
+            }
+        }
+    }
+
     private fun createDelegate(
         iid: Guid,
         methodType: MethodType,
@@ -104,8 +216,11 @@ internal object JvmWinRtBooleanResultDelegates {
         val instance = arena.allocate(ValueLayout.ADDRESS)
         val state = State(iid, invoker)
         states[instance.address()] = state
+        val invokeMethod = lookup.findVirtual(BooleanInvoker::class.java, "invokeRaw", booleanGenericMethodType(methodType.parameterCount() - 2))
+            .bindTo(invoker)
+            .asType(methodType)
         val invokeStub = linker.upcallStub(
-            lookup.findVirtual(BooleanInvoker::class.java, "invokeRaw", methodType).bindTo(invoker),
+            invokeMethod,
             descriptor,
             libraryArena,
         )
@@ -210,29 +325,15 @@ internal object JvmWinRtBooleanResultDelegates {
     private interface BooleanInvoker {
         fun invoke(state: State, args: Array<out Any?>): Boolean
 
-        fun invokeRaw(thisPointer: MemorySegment, result: MemorySegment): Int {
-            return writeBooleanResult(thisPointer, result)
-        }
-
-        fun invokeRaw(thisPointer: MemorySegment, arg0: Int, result: MemorySegment): Int {
-            return writeBooleanResult(thisPointer, result, arg0)
-        }
-
-        fun invokeRaw(thisPointer: MemorySegment, arg0: Long, result: MemorySegment): Int {
-            return writeBooleanResult(thisPointer, result, arg0)
-        }
-
-        fun invokeRaw(thisPointer: MemorySegment, arg0: Float, result: MemorySegment): Int {
-            return writeBooleanResult(thisPointer, result, arg0)
-        }
-
-        fun invokeRaw(thisPointer: MemorySegment, arg0: Double, result: MemorySegment): Int {
-            return writeBooleanResult(thisPointer, result, arg0)
-        }
-
-        fun invokeRaw(thisPointer: MemorySegment, arg0: MemorySegment, result: MemorySegment): Int {
-            return writeBooleanResult(thisPointer, result, arg0)
-        }
+        fun invokeRaw(thisPointer: MemorySegment, result: MemorySegment): Int = writeBooleanResult(thisPointer, result)
+        fun invokeRaw(thisPointer: MemorySegment, arg0: Any?, result: MemorySegment): Int = writeBooleanResult(thisPointer, result, arg0)
+        fun invokeRaw(thisPointer: MemorySegment, arg0: Any?, arg1: Any?, result: MemorySegment): Int = writeBooleanResult(thisPointer, result, arg0, arg1)
+        fun invokeRaw(thisPointer: MemorySegment, arg0: Any?, arg1: Any?, arg2: Any?, result: MemorySegment): Int = writeBooleanResult(thisPointer, result, arg0, arg1, arg2)
+        fun invokeRaw(thisPointer: MemorySegment, arg0: Any?, arg1: Any?, arg2: Any?, arg3: Any?, result: MemorySegment): Int = writeBooleanResult(thisPointer, result, arg0, arg1, arg2, arg3)
+        fun invokeRaw(thisPointer: MemorySegment, arg0: Any?, arg1: Any?, arg2: Any?, arg3: Any?, arg4: Any?, result: MemorySegment): Int = writeBooleanResult(thisPointer, result, arg0, arg1, arg2, arg3, arg4)
+        fun invokeRaw(thisPointer: MemorySegment, arg0: Any?, arg1: Any?, arg2: Any?, arg3: Any?, arg4: Any?, arg5: Any?, result: MemorySegment): Int = writeBooleanResult(thisPointer, result, arg0, arg1, arg2, arg3, arg4, arg5)
+        fun invokeRaw(thisPointer: MemorySegment, arg0: Any?, arg1: Any?, arg2: Any?, arg3: Any?, arg4: Any?, arg5: Any?, arg6: Any?, result: MemorySegment): Int = writeBooleanResult(thisPointer, result, arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+        fun invokeRaw(thisPointer: MemorySegment, arg0: Any?, arg1: Any?, arg2: Any?, arg3: Any?, arg4: Any?, arg5: Any?, arg6: Any?, arg7: Any?, result: MemorySegment): Int = writeBooleanResult(thisPointer, result, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 
         private fun writeBooleanResult(thisPointer: MemorySegment, result: MemorySegment, vararg args: Any?): Int {
             val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value

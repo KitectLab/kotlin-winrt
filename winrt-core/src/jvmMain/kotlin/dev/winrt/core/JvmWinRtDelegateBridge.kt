@@ -14,18 +14,7 @@ actual object WinRtDelegateBridge {
         parameterKinds: List<WinRtDelegateValueKind>,
         invoke: (Array<Any?>) -> Unit,
     ): WinRtDelegateHandle {
-        return when (parameterKinds.singleOrNull()) {
-            null -> JvmWinRtUnitResultDelegates.createNoArg(iid) { invoke(emptyArray()) }
-            WinRtDelegateValueKind.OBJECT -> JvmWinRtUnitResultDelegates.createObjectArg(iid) { arg -> invoke(arrayOf(arg)) }
-            WinRtDelegateValueKind.INT32 -> JvmWinRtUnitResultDelegates.createInt32Arg(iid, decode = { it }, invoke = { value -> invoke(arrayOf(value)) })
-            WinRtDelegateValueKind.UINT32 -> JvmWinRtUnitResultDelegates.createInt32Arg(iid, decode = Int::toUInt, invoke = { value -> invoke(arrayOf(value)) })
-            WinRtDelegateValueKind.BOOLEAN -> JvmWinRtUnitResultDelegates.createInt32Arg(iid, decode = { it != 0 }, invoke = { value -> invoke(arrayOf(value)) })
-            WinRtDelegateValueKind.INT64 -> JvmWinRtUnitResultDelegates.createInt64Arg(iid, decode = { it }, invoke = { value -> invoke(arrayOf(value)) })
-            WinRtDelegateValueKind.UINT64 -> JvmWinRtUnitResultDelegates.createInt64Arg(iid, decode = Long::toULong, invoke = { value -> invoke(arrayOf(value)) })
-            WinRtDelegateValueKind.FLOAT32 -> JvmWinRtUnitResultDelegates.createFloat32Arg(iid, decode = { it }, invoke = { value -> invoke(arrayOf(value)) })
-            WinRtDelegateValueKind.FLOAT64 -> JvmWinRtUnitResultDelegates.createFloat64Arg(iid, decode = { it }, invoke = { value -> invoke(arrayOf(value)) })
-            WinRtDelegateValueKind.STRING -> JvmWinRtUnitResultDelegates.createStringArg(iid) { value -> invoke(arrayOf(value)) }
-        }
+        return JvmWinRtUnitResultDelegates.createDelegate(iid, parameterKinds, invoke)
     }
 
     actual fun createBooleanDelegate(
@@ -33,18 +22,7 @@ actual object WinRtDelegateBridge {
         parameterKinds: List<WinRtDelegateValueKind>,
         invoke: (Array<Any?>) -> Boolean,
     ): WinRtDelegateHandle {
-        return when (parameterKinds.singleOrNull()) {
-            null -> JvmWinRtBooleanResultDelegates.createNoArg(iid) { invoke(emptyArray()) }
-            WinRtDelegateValueKind.OBJECT -> JvmWinRtBooleanResultDelegates.createObjectArg(iid) { arg -> invoke(arrayOf(arg)) }
-            WinRtDelegateValueKind.INT32 -> JvmWinRtBooleanResultDelegates.createInt32Arg(iid, decode = { it }, invoke = { value -> invoke(arrayOf(value)) })
-            WinRtDelegateValueKind.UINT32 -> JvmWinRtBooleanResultDelegates.createInt32Arg(iid, decode = Int::toUInt, invoke = { value -> invoke(arrayOf(value)) })
-            WinRtDelegateValueKind.BOOLEAN -> JvmWinRtBooleanResultDelegates.createInt32Arg(iid, decode = { it != 0 }, invoke = { value -> invoke(arrayOf(value)) })
-            WinRtDelegateValueKind.INT64 -> JvmWinRtBooleanResultDelegates.createInt64Arg(iid, decode = { it }, invoke = { value -> invoke(arrayOf(value)) })
-            WinRtDelegateValueKind.UINT64 -> JvmWinRtBooleanResultDelegates.createInt64Arg(iid, decode = Long::toULong, invoke = { value -> invoke(arrayOf(value)) })
-            WinRtDelegateValueKind.FLOAT32 -> JvmWinRtBooleanResultDelegates.createFloat32Arg(iid, decode = { it }, invoke = { value -> invoke(arrayOf(value)) })
-            WinRtDelegateValueKind.FLOAT64 -> JvmWinRtBooleanResultDelegates.createFloat64Arg(iid, decode = { it }, invoke = { value -> invoke(arrayOf(value)) })
-            WinRtDelegateValueKind.STRING -> JvmWinRtBooleanResultDelegates.createStringArg(iid) { value -> invoke(arrayOf(value)) }
-        }
+        return JvmWinRtBooleanResultDelegates.createDelegate(iid, parameterKinds, invoke)
     }
 
     actual fun createNoArgUnitDelegate(iid: Guid, invoke: () -> Unit): WinRtDelegateHandle {
