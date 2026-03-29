@@ -26,6 +26,8 @@ public open class IStringable(
   public companion object : WinRtInterfaceMetadata {
     override val qualifiedName: String = "Windows.Foundation.IStringable"
 
+    override val projectionTypeKey: String = "Windows.Foundation.IStringable"
+
     override val iid: Guid = guidOf("96369f54-8eb6-48f0-abce-c1b211e627c3")
 
     public fun from(inspectable: Inspectable): IStringable = inspectable.projectInterface(this,

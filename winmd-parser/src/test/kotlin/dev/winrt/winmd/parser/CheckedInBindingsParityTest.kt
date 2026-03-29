@@ -379,7 +379,7 @@ class CheckedInBindingsParityTest {
         val checkedIn = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/foundation/collections/StringVectorView.kt").readText()
 
         assertTrue(checkedIn.contains("class StringVectorView"))
-        assertTrue(checkedIn.contains("val size: UInt32"))
+        assertTrue(checkedIn.contains("val winRtSize: UInt32"))
         assertTrue(checkedIn.contains("invokeUInt32Method(pointer, 7).getOrThrow()"))
         assertTrue(checkedIn.contains("fun getAt(index: UInt32): String"))
         assertTrue(checkedIn.contains("invokeHStringMethodWithUInt32Arg(pointer, 6, index.value).getOrThrow()"))

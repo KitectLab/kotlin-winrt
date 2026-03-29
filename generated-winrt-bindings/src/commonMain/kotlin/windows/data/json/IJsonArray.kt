@@ -46,6 +46,8 @@ public open class IJsonArray(
   public companion object : WinRtInterfaceMetadata {
     override val qualifiedName: String = "Windows.Data.Json.IJsonArray"
 
+    override val projectionTypeKey: String = "Windows.Data.Json.IJsonArray"
+
     override val iid: Guid = guidOf("08c1ddb6-0cbd-4a9a-b5d3-2f852dc37e81")
 
     public fun from(inspectable: Inspectable): IJsonArray = inspectable.projectInterface(this,
