@@ -43,6 +43,7 @@ internal class TypeFileEmitter(
     private val runtimeTypeRenderer = RuntimeTypeRenderer(
         typeNameMapper,
         typeRegistry,
+        delegateLambdaPlanResolver,
         runtimePropertyRenderer,
         runtimeMethodRenderer,
         runtimeCompanionRenderer,

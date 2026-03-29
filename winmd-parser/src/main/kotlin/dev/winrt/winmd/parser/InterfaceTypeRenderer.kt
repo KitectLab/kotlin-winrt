@@ -181,29 +181,52 @@ internal class InterfaceTypeRenderer(
         genericParameters: Set<String>,
     ): List<TypeSpec> {
         return eventSlotPlans(type, currentNamespace, genericParameters).map { plan ->
-            TypeSpec.classBuilder(plan.typeName)
-                .addFunction(
-                    FunSpec.builder("subscribe")
-                        .addParameter("handler", plan.delegateType)
-                        .returns(PoetSymbols.eventRegistrationTokenClass)
-                        .addStatement("return %N(handler)", plan.addFunctionName)
+                TypeSpec.classBuilder(plan.typeName)
+                    .addModifiers(KModifier.INNER)
+                    .addFunction(
+                        FunSpec.builder("subscribe")
+                            .addParameter("handler", plan.delegateType)
+                            .returns(PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement(
+                                "return %T(%L)",
+                                PoetSymbols.eventRegistrationTokenClass,
+                                AbiCallCatalog.int64MethodWithObject(plan.addVtableIndex, "handler.pointer"),
+                            )
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("subscribe")
+                            .addParameter("handler", plan.lambdaType)
+                            .returns(PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement(
+                                "val delegateHandle = %T.createUnitDelegate(%M(%S), listOf(%T.OBJECT, %T.OBJECT)) { args -> handler(args[0] as %T, %T(args[1] as %T)) }",
+                                PoetSymbols.winRtDelegateBridgeClass,
+                                PoetSymbols.guidOfMember,
+                                plan.delegateGuid,
+                                PoetSymbols.winRtDelegateValueKindClass,
+                                PoetSymbols.winRtDelegateValueKindClass,
+                                PoetSymbols.comPtrClass,
+                                plan.eventArgsType,
+                                PoetSymbols.comPtrClass,
+                            )
+                            .addStatement("return subscribe(%T(delegateHandle.pointer))", plan.delegateType)
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("plusAssign")
+                            .addModifiers(KModifier.OPERATOR)
+                            .addParameter("handler", plan.delegateType)
+                            .addStatement("subscribe(handler)")
                         .build(),
                 )
-                .addFunction(
-                    FunSpec.builder("plusAssign")
-                        .addModifiers(KModifier.OPERATOR)
-                        .addParameter("handler", plan.delegateType)
-                        .addStatement("subscribe(handler)")
-                        .build(),
-                )
-                .addFunction(
-                    FunSpec.builder("minusAssign")
-                        .addModifiers(KModifier.OPERATOR)
-                        .addParameter("token", PoetSymbols.eventRegistrationTokenClass)
-                        .addStatement("%N(token)", plan.removeFunctionName)
-                        .build(),
-                )
-                .build()
+                    .addFunction(
+                        FunSpec.builder("minusAssign")
+                            .addModifiers(KModifier.OPERATOR)
+                            .addParameter("token", PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement("%T.invokeUnitMethodWithInt64Arg(pointer, %L, token.value).getOrThrow()", PoetSymbols.platformComInteropClass, plan.removeVtableIndex)
+                            .build(),
+                    )
+                    .build()
         }
     }
 
@@ -223,16 +246,40 @@ internal class InterfaceTypeRenderer(
                 return@mapNotNull null
             }
             val delegateTypeName = addMethod.parameters.single().type
-            if (!delegateTypeName.startsWith("Windows.Foundation.EventHandler<")) {
+            if (!isEventHandlerDelegate(delegateTypeName)) {
                 return@mapNotNull null
             }
+            val eventArgsTypeName = eventHandlerArgumentType(delegateTypeName) ?: return@mapNotNull null
+            val delegateType = typeRegistry.findType(delegateTypeName, currentNamespace) ?: return@mapNotNull null
             InterfaceEventSlotPlan(
                 propertyName = eventName.replaceFirstChar(Char::lowercase),
                 typeName = "${eventName}Event",
-                addFunctionName = kotlinMethodName(addMethod.name),
-                removeFunctionName = kotlinMethodName(removeMethod.name),
                 delegateType = typeNameMapper.mapTypeName(delegateTypeName, currentNamespace, genericParameters),
+                lambdaType = LambdaTypeName.get(
+                    parameters = arrayOf(
+                        PoetSymbols.comPtrClass,
+                        typeNameMapper.mapTypeName(eventArgsTypeName, currentNamespace, genericParameters),
+                    ),
+                    returnType = Unit::class.asTypeName(),
+                ),
+                eventArgsType = typeNameMapper.mapTypeName(eventArgsTypeName, currentNamespace, genericParameters),
+                delegateGuid = delegateType.guid ?: "00000000-0000-0000-0000-000000000000",
+                addVtableIndex = addMethod.vtableIndex ?: return@mapNotNull null,
+                removeVtableIndex = removeMethod.vtableIndex ?: return@mapNotNull null,
             )
+        }
+    }
+
+    private fun isEventHandlerDelegate(typeName: String): Boolean {
+        val rawType = typeName.substringBefore('<').substringBefore('`')
+        return rawType == "Windows.Foundation.EventHandler"
+    }
+
+    private fun eventHandlerArgumentType(typeName: String): String? {
+        return if ('<' in typeName && typeName.endsWith(">")) {
+            typeName.substringAfter('<').substringBeforeLast('>')
+        } else {
+            null
         }
     }
 
@@ -1243,9 +1290,12 @@ internal class InterfaceTypeRenderer(
     private data class InterfaceEventSlotPlan(
         val propertyName: String,
         val typeName: String,
-        val addFunctionName: String,
-        val removeFunctionName: String,
         val delegateType: TypeName,
+        val lambdaType: LambdaTypeName,
+        val eventArgsType: TypeName,
+        val delegateGuid: String,
+        val addVtableIndex: Int,
+        val removeVtableIndex: Int,
     )
 
 }

@@ -30,6 +30,13 @@ internal object AbiCallCatalog {
     fun objectSetter(vtableIndex: Int, argumentName: String): CodeBlock =
         CodeBlock.of("%T.invokeObjectSetter(pointer, %L, %N.pointer).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
 
+    fun int64MethodWithObject(vtableIndex: Int, argumentExpression: String, pointerExpression: String = "pointer"): CodeBlock =
+        CodeBlock.of(
+            "%T.invokeInt64MethodWithObjectArg($pointerExpression, $vtableIndex, %L).getOrThrow()",
+            PoetSymbols.platformComInteropClass,
+            argumentExpression,
+        )
+
     fun objectMethod(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeObjectMethod(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 

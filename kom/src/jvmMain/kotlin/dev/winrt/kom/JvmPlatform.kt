@@ -329,6 +329,18 @@ actual object PlatformComInterop : ComInterop {
         }
     }
 
+    override fun invokeInt64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Long> {
+        return JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeInt64MethodWithObjectArg",
+            handle = Jdk22Foreign.int64MethodWithObjectHandle,
+            allocator = { arena -> arena.allocate(ValueLayout.JAVA_LONG) },
+            reader = { segment -> segment.get(ValueLayout.JAVA_LONG, 0L) },
+            if (value.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(value),
+        )
+    }
+
     override fun invokeInt32Setter(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit> {
         if (instance.isNull) {
             return Result.failure(KomException("Method invocation requires a non-null COM pointer"))

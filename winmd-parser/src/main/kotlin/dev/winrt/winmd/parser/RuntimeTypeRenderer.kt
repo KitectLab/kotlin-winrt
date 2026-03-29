@@ -6,6 +6,8 @@ import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.asTypeName
 import dev.winrt.winmd.plugin.WinMdActivationKind
 import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdType
@@ -13,6 +15,7 @@ import dev.winrt.winmd.plugin.WinMdType
 internal class RuntimeTypeRenderer(
     private val typeNameMapper: TypeNameMapper,
     private val typeRegistry: TypeRegistry,
+    private val delegateLambdaPlanResolver: DelegateLambdaPlanResolver,
     private val runtimePropertyRenderer: RuntimePropertyRenderer,
     private val runtimeMethodRenderer: RuntimeMethodRenderer,
     private val runtimeCompanionRenderer: RuntimeCompanionRenderer,
@@ -155,15 +158,26 @@ internal class RuntimeTypeRenderer(
                 return@mapNotNull null
             }
             val delegateTypeName = addMethod.parameters.single().type
-            if (!delegateTypeName.startsWith("Windows.Foundation.EventHandler<")) {
+            if (!isEventHandlerDelegate(delegateTypeName)) {
                 return@mapNotNull null
             }
+            val eventArgsTypeName = eventHandlerArgumentType(delegateTypeName) ?: return@mapNotNull null
+            val delegateType = typeRegistry.findType(delegateTypeName, currentNamespace) ?: return@mapNotNull null
             RuntimeEventSlotPlan(
                 propertyName = eventName.replaceFirstChar(Char::lowercase),
                 typeName = "${eventName}Event",
-                addFunctionName = addMethod.name.replaceFirstChar(Char::lowercase),
-                removeFunctionName = removeMethod.name.replaceFirstChar(Char::lowercase),
                 delegateType = typeNameMapper.mapTypeName(delegateTypeName, currentNamespace),
+                lambdaType = LambdaTypeName.get(
+                    parameters = arrayOf(
+                        PoetSymbols.comPtrClass,
+                        typeNameMapper.mapTypeName(eventArgsTypeName, currentNamespace),
+                    ),
+                    returnType = Unit::class.asTypeName(),
+                ),
+                eventArgsType = typeNameMapper.mapTypeName(eventArgsTypeName, currentNamespace),
+                delegateGuid = delegateType.guid ?: "00000000-0000-0000-0000-000000000000",
+                addVtableIndex = addMethod.vtableIndex ?: return@mapNotNull null,
+                removeVtableIndex = removeMethod.vtableIndex ?: return@mapNotNull null,
             )
         }
         return RuntimeEventMembers(
@@ -178,11 +192,34 @@ internal class RuntimeTypeRenderer(
             },
             types = plans.map { plan ->
                 TypeSpec.classBuilder(plan.typeName)
+                    .addModifiers(KModifier.INNER)
                     .addFunction(
                         FunSpec.builder("subscribe")
                             .addParameter("handler", plan.delegateType)
                             .returns(PoetSymbols.eventRegistrationTokenClass)
-                            .addStatement("return %N(handler)", plan.addFunctionName)
+                            .addStatement(
+                                "return %T(%L)",
+                                PoetSymbols.eventRegistrationTokenClass,
+                                AbiCallCatalog.int64MethodWithObject(plan.addVtableIndex, "handler.pointer"),
+                            )
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("subscribe")
+                            .addParameter("handler", plan.lambdaType)
+                            .returns(PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement(
+                                "val delegateHandle = %T.createUnitDelegate(%M(%S), listOf(%T.OBJECT, %T.OBJECT)) { args -> handler(args[0] as %T, %T(args[1] as %T)) }",
+                                PoetSymbols.winRtDelegateBridgeClass,
+                                PoetSymbols.guidOfMember,
+                                plan.delegateGuid,
+                                PoetSymbols.winRtDelegateValueKindClass,
+                                PoetSymbols.winRtDelegateValueKindClass,
+                                PoetSymbols.comPtrClass,
+                                plan.eventArgsType,
+                                PoetSymbols.comPtrClass,
+                            )
+                            .addStatement("return subscribe(%T(delegateHandle.pointer))", plan.delegateType)
                             .build(),
                     )
                     .addFunction(
@@ -196,7 +233,7 @@ internal class RuntimeTypeRenderer(
                         FunSpec.builder("minusAssign")
                             .addModifiers(KModifier.OPERATOR)
                             .addParameter("token", PoetSymbols.eventRegistrationTokenClass)
-                            .addStatement("%N(token)", plan.removeFunctionName)
+                            .addStatement("%T.invokeUnitMethodWithInt64Arg(pointer, %L, token.value).getOrThrow()", PoetSymbols.platformComInteropClass, plan.removeVtableIndex)
                             .build(),
                     )
                     .build()
@@ -227,8 +264,24 @@ internal class RuntimeTypeRenderer(
     private data class RuntimeEventSlotPlan(
         val propertyName: String,
         val typeName: String,
-        val addFunctionName: String,
-        val removeFunctionName: String,
         val delegateType: com.squareup.kotlinpoet.TypeName,
+        val lambdaType: LambdaTypeName,
+        val eventArgsType: com.squareup.kotlinpoet.TypeName,
+        val delegateGuid: String,
+        val addVtableIndex: Int,
+        val removeVtableIndex: Int,
     )
+
+    private fun isEventHandlerDelegate(typeName: String): Boolean {
+        val rawType = typeName.substringBefore('<').substringBefore('`')
+        return rawType == "Windows.Foundation.EventHandler"
+    }
+
+    private fun eventHandlerArgumentType(typeName: String): String? {
+        return if ('<' in typeName && typeName.endsWith(">")) {
+            typeName.substringAfter('<').substringBeforeLast('>')
+        } else {
+            null
+        }
+    }
 }

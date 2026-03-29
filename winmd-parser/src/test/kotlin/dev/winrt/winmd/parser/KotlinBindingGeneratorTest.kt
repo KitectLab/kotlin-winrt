@@ -5556,16 +5556,20 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val interfaceBinding = files.first { it.relativePath == "Example/Events/IWidget.kt" }.content
         val runtimeBinding = files.first { it.relativePath == "Example/Events/Widget.kt" }.content
+        val normalizedInterfaceBinding = interfaceBinding.replace("\n", "").replace(" ", "")
+        val normalizedRuntimeBinding = runtimeBinding.replace("\n", "").replace(" ", "")
 
         assertTrue(interfaceBinding.contains("val closedEvent: ClosedEvent"))
         assertTrue(interfaceBinding.contains("class ClosedEvent"))
         assertTrue(interfaceBinding.contains("fun subscribe(handler: EventHandler<IWidgetClosedEventArgs>): EventRegistrationToken"))
+        assertTrue(normalizedInterfaceBinding.contains("funsubscribe(handler:(ComPtr,IWidgetClosedEventArgs)->Unit):EventRegistrationToken"))
         assertTrue(interfaceBinding.contains("operator fun plusAssign(handler: EventHandler<IWidgetClosedEventArgs>)"))
         assertTrue(interfaceBinding.contains("operator fun minusAssign(token: EventRegistrationToken)"))
 
         assertTrue(runtimeBinding.contains("val closedEvent: ClosedEvent"))
         assertTrue(runtimeBinding.contains("class ClosedEvent"))
         assertTrue(runtimeBinding.contains("fun subscribe(handler: EventHandler<IWidgetClosedEventArgs>): EventRegistrationToken"))
+        assertTrue(normalizedRuntimeBinding.contains("funsubscribe(handler:(ComPtr,IWidgetClosedEventArgs)->Unit):EventRegistrationToken"))
         assertTrue(runtimeBinding.contains("operator fun plusAssign(handler: EventHandler<IWidgetClosedEventArgs>)"))
         assertTrue(runtimeBinding.contains("operator fun minusAssign(token: EventRegistrationToken)"))
     }
