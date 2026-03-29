@@ -3,6 +3,8 @@ package microsoft.ui.xaml
 import dev.winrt.core.Inspectable
 import dev.winrt.core.RuntimeClassId
 import dev.winrt.core.UInt32
+import dev.winrt.core.WinRtDelegateBridge
+import dev.winrt.core.WinRtDelegateHandle
 import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
@@ -31,6 +33,24 @@ open class Application(pointer: ComPtr) : Inspectable(pointer) {
         override val defaultInterfaceName: String? = "Windows.Foundation.IStringable"
         override val activationKind = WinRtActivationKind.Factory
 
+        val current: Application
+            get() = __statics().get_Current()
+
         fun activate(): Application = WinRtRuntime.activate(this, ::Application)
+
+        fun start(callback: ApplicationInitializationCallback) {
+            __statics().start(callback)
+        }
+
+        fun start(callback: (IApplicationInitializationCallbackParams) -> Unit): WinRtDelegateHandle {
+            val delegateHandle = WinRtDelegateBridge.createObjectArgUnitDelegate(ApplicationInitializationCallback.iid) { arg ->
+                callback(IApplicationInitializationCallbackParams(arg))
+            }
+            __statics().start(ApplicationInitializationCallback(delegateHandle.pointer))
+            return delegateHandle
+        }
+
+        private fun __statics(): IApplicationStatics =
+            WinRtRuntime.projectActivationFactory(this, IApplicationStatics, ::IApplicationStatics)
     }
 }
