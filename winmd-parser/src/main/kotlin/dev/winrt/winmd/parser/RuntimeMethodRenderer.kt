@@ -72,10 +72,12 @@ internal class RuntimeMethodRenderer(
             .endControlFlow()
         when {
             method.returnType == "Windows.Foundation.IAsyncAction" ->
-                builder.addStatement("return %T($invocation)", PoetSymbols.asyncActionClass, PoetSymbols.platformComInteropClass)
+                AsyncTaskCallCatalog.asyncAction(returnType, invocation, PoetSymbols.platformComInteropClass)
+                    .let { plan -> builder.addStatement(plan.statementFormat, *plan.args) }
             method.returnType.startsWith("Windows.Foundation.IAsyncOperation<") -> {
                 val resultSignature = asyncMethodProjectionPlanner.asyncOperationResultSignature(method.returnType, currentNamespace) ?: return null
-                builder.addStatement("return %T($invocation, %S)", returnType, PoetSymbols.platformComInteropClass, resultSignature)
+                AsyncTaskCallCatalog.asyncOperation(returnType, invocation, resultSignature, PoetSymbols.platformComInteropClass)
+                    .let { plan -> builder.addStatement(plan.statementFormat, *plan.args) }
             }
         }
         return builder.build()

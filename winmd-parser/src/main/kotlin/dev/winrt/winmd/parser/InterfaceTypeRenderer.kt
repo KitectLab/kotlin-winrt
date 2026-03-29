@@ -700,35 +700,22 @@ internal class InterfaceTypeRenderer(
         }
         when {
             method.returnType == "Windows.Foundation.IAsyncAction" ->
-                builder.addStatement("return %T($invocation)", PoetSymbols.asyncActionClass, PoetSymbols.platformComInteropClass)
+                AsyncTaskCallCatalog.asyncAction(returnType, invocation, PoetSymbols.platformComInteropClass)
+                    .let { plan -> builder.addStatement(plan.statementFormat, *plan.args) }
             method.returnType.startsWith("Windows.Foundation.IAsyncOperation<") -> {
                 val resultSignature = asyncMethodProjectionPlanner.asyncOperationResultSignature(method.returnType, currentNamespace) ?: return null
-                builder.addStatement("return %T($invocation, %S)", returnType, PoetSymbols.platformComInteropClass, resultSignature)
+                AsyncTaskCallCatalog.asyncOperation(returnType, invocation, resultSignature, PoetSymbols.platformComInteropClass)
+                    .let { plan -> builder.addStatement(plan.statementFormat, *plan.args) }
             }
             method.returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") -> {
                 val progressPlan = asyncMethodProjectionPlanner.asyncProgressPlan(method.returnType, currentNamespace) ?: return null
-                builder.addStatement(
-                    "return %T($invocation, %S, %T.%L, %L)",
-                    returnType,
-                    PoetSymbols.platformComInteropClass,
-                    progressPlan.progressSignature,
-                    PoetSymbols.winRtDelegateValueKindClass,
-                    progressPlan.valueKind,
-                    progressPlan.decodeLambda,
-                )
+                AsyncTaskCallCatalog.asyncActionWithProgress(returnType, invocation, progressPlan, PoetSymbols.platformComInteropClass)
+                    .let { plan -> builder.addStatement(plan.statementFormat, *plan.args) }
             }
             method.returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") -> {
                 val progressPlan = asyncMethodProjectionPlanner.asyncOperationWithProgressPlan(method.returnType, currentNamespace) ?: return null
-                builder.addStatement(
-                    "return %T($invocation, %S, %S, %T.%L, %L)",
-                    returnType,
-                    PoetSymbols.platformComInteropClass,
-                    progressPlan.resultSignature,
-                    progressPlan.progressSignature,
-                    PoetSymbols.winRtDelegateValueKindClass,
-                    progressPlan.valueKind,
-                    progressPlan.decodeLambda,
-                )
+                AsyncTaskCallCatalog.asyncOperationWithProgress(returnType, invocation, progressPlan, PoetSymbols.platformComInteropClass)
+                    .let { plan -> builder.addStatement(plan.statementFormat, *plan.args) }
             }
         }
         return builder.build()
