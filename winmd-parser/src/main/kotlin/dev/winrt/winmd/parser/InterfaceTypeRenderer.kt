@@ -274,6 +274,18 @@ internal class InterfaceTypeRenderer(
                     PoetSymbols.platformComInteropClass,
                     getterVtableIndex,
                 )
+            InterfacePropertyRuleFamily.STRING ->
+                getterBuilder.addStatement(
+                    "return %L",
+                    HStringSupport.toKotlinString("pointer", getterVtableIndex),
+                )
+            InterfacePropertyRuleFamily.BOOLEAN ->
+                getterBuilder.addStatement(
+                    "return %T(%T.invokeBooleanGetter(pointer, %L).getOrThrow())",
+                    PoetSymbols.winRtBooleanClass,
+                    PoetSymbols.platformComInteropClass,
+                    getterVtableIndex,
+                )
             InterfacePropertyRuleFamily.INT32 ->
                 getterBuilder.addStatement(
                     "return %T(%T.invokeInt32Method(pointer, %L).getOrThrow())",
@@ -286,7 +298,7 @@ internal class InterfaceTypeRenderer(
         val propertyBuilder = PropertySpec.builder(propertyName, propertyType)
             .getter(getterBuilder.build())
         if (property.mutable &&
-            PropertyRuleRegistry.interfaceSetterRuleFamily(property.type) == InterfacePropertyRuleFamily.INT32 &&
+            PropertyRuleRegistry.interfaceSetterRuleFamily(property.type) != null &&
             property.setterVtableIndex != null
         ) {
             val setterVtableIndex = property.setterVtableIndex!!
@@ -294,11 +306,13 @@ internal class InterfaceTypeRenderer(
             propertyBuilder.setter(
                 FunSpec.setterBuilder()
                     .addParameter("value", propertyType)
-                    .addStatement(
-                        "%T.invokeInt32Setter(pointer, %L, value.value).getOrThrow()",
-                        PoetSymbols.platformComInteropClass,
-                        setterVtableIndex,
-                    )
+                    .apply {
+                        when (PropertyRuleRegistry.interfaceSetterRuleFamily(property.type)) {
+                            InterfacePropertyRuleFamily.STRING -> addStatement("%L", AbiCallCatalog.stringSetter(setterVtableIndex))
+                            InterfacePropertyRuleFamily.INT32 -> addStatement("%L", AbiCallCatalog.int32Setter(setterVtableIndex))
+                            else -> return null
+                        }
+                    }
                     .build(),
             )
         }

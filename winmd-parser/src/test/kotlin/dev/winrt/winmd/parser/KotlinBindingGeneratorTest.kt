@@ -4332,6 +4332,50 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_string_and_boolean_interface_properties() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "IPropertyHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "11111111-2222-3333-4444-555555555555",
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Title",
+                                    type = "String",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Enabled",
+                                    type = "Boolean",
+                                    mutable = false,
+                                    getterVtableIndex = 8,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Contracts/IPropertyHost.kt" }.content
+
+        assertTrue(binding.contains("var title: String"))
+        assertTrue(binding.contains("PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()"))
+        assertTrue(binding.contains("PlatformComInterop.invokeStringSetter(pointer, 7, value).getOrThrow()"))
+        assertTrue(binding.contains("val enabled: WinRtBoolean"))
+        assertTrue(binding.contains("WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 8).getOrThrow())"))
+    }
+
+    @Test
     fun generates_winui_unit_interface_methods() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
