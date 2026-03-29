@@ -9,19 +9,25 @@ import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 
-public open class IApplicationOverrides(
-  pointer: ComPtr,
-) : WinRtInterfaceProjection(pointer) {
-  public fun onLaunched(args: LaunchActivatedEventArgs) {
-    PlatformComInterop.invokeObjectSetter(pointer, 6, args.pointer).getOrThrow()
-  }
+public interface IApplicationOverrides {
+  public fun onLaunched(args: LaunchActivatedEventArgs)
 
   public companion object : WinRtInterfaceMetadata {
     override val qualifiedName: String = "Microsoft.UI.Xaml.IApplicationOverrides"
 
+    override val projectionTypeKey: String = "Microsoft.UI.Xaml.IApplicationOverrides"
+
     override val iid: Guid = guidOf("a33e81ef-c665-503b-8827-d27ef1720a06")
 
-    public fun from(inspectable: Inspectable): IApplicationOverrides =
-        inspectable.projectInterface(this, ::IApplicationOverrides)
+    public fun from(inspectable: Inspectable): IApplicationOverrides = inspectable.projectInterface(
+        this, ::IApplicationOverridesProjection)
+  }
+}
+
+private class IApplicationOverridesProjection(
+  pointer: ComPtr,
+) : WinRtInterfaceProjection(pointer), IApplicationOverrides {
+  override fun onLaunched(args: LaunchActivatedEventArgs) {
+    PlatformComInterop.invokeObjectSetter(pointer, 6, args.pointer).getOrThrow()
   }
 }
