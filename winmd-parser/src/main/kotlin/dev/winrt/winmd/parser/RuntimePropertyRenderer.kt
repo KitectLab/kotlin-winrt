@@ -87,42 +87,37 @@ internal class RuntimePropertyRenderer(
         return when (type) {
             "Boolean" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 CodeBlock.of(
-                    "%T(%T.invokeBooleanGetter(pointer, %L).getOrThrow())",
+                    "%T(%L)",
                     PoetSymbols.winRtBooleanClass,
-                    PoetSymbols.platformComInteropClass,
-                    getterVtableIndex,
+                    AbiCallCatalog.booleanMethod(getterVtableIndex),
                 )
             }
             "Guid" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 CodeBlock.of(
-                    "%T(%T.invokeGuidGetter(pointer, %L).getOrThrow().toString())",
+                    "%T(%L.toString())",
                     PoetSymbols.guidValueClass,
-                    PoetSymbols.platformComInteropClass,
-                    getterVtableIndex,
+                    AbiCallCatalog.guidGetter(getterVtableIndex),
                 )
             }
             "DateTime" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 CodeBlock.of(
-                    "%T(%T.invokeInt64Getter(pointer, %L).getOrThrow())",
+                    "%T(%L)",
                     PoetSymbols.dateTimeClass,
-                    PoetSymbols.platformComInteropClass,
-                    getterVtableIndex,
+                    AbiCallCatalog.int64Getter(getterVtableIndex),
                 )
             }
             "TimeSpan" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 CodeBlock.of(
-                    "%T(%T.invokeInt64Getter(pointer, %L).getOrThrow())",
+                    "%T(%L)",
                     PoetSymbols.timeSpanClass,
-                    PoetSymbols.platformComInteropClass,
-                    getterVtableIndex,
+                    AbiCallCatalog.int64Getter(getterVtableIndex),
                 )
             }
             "EventRegistrationToken" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 CodeBlock.of(
-                    "%T(%T.invokeInt64Getter(pointer, %L).getOrThrow())",
+                    "%T(%L)",
                     PoetSymbols.eventRegistrationTokenClass,
-                    PoetSymbols.platformComInteropClass,
-                    getterVtableIndex,
+                    AbiCallCatalog.int64Getter(getterVtableIndex),
                 )
             }
             "String" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
@@ -130,10 +125,9 @@ internal class RuntimePropertyRenderer(
             }
             "Int32" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 CodeBlock.of(
-                    "%T(%T.invokeInt32Method(pointer, %L).getOrThrow())",
+                    "%T(%L)",
                     PoetSymbols.int32Class,
-                    PoetSymbols.platformComInteropClass,
-                    getterVtableIndex,
+                    AbiCallCatalog.int32Method(getterVtableIndex),
                 )
             }
             else -> null
@@ -157,12 +151,12 @@ internal class RuntimePropertyRenderer(
         val setterPlan = when {
             property.setterVtableIndex == null -> null
             property.type == "String" -> RuntimePropertySetterPlan(
-                statement = "%T.invokeStringSetter(pointer, %L, value).getOrThrow()",
-                args = { setterVtableIndex -> arrayOf(PoetSymbols.platformComInteropClass, setterVtableIndex) },
+                statement = "%L",
+                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.stringSetter(setterVtableIndex)) },
             )
             property.type == "Int32" -> RuntimePropertySetterPlan(
-                statement = "%T.invokeInt32Setter(pointer, %L, value.value).getOrThrow()",
-                args = { setterVtableIndex -> arrayOf(PoetSymbols.platformComInteropClass, setterVtableIndex) },
+                statement = "%L",
+                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.int32Setter(setterVtableIndex)) },
             )
             else -> null
         }

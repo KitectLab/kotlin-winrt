@@ -44,4 +44,19 @@ internal object AbiCallCatalog {
 
     fun float64MethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
         CodeBlock.of("%T.invokeFloat64MethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+
+    fun int32Method(vtableIndex: Int): CodeBlock =
+        CodeBlock.of("%T.invokeInt32Method(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
+
+    fun int64Getter(vtableIndex: Int): CodeBlock =
+        CodeBlock.of("%T.invokeInt64Getter(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
+
+    fun guidGetter(vtableIndex: Int): CodeBlock =
+        CodeBlock.of("%T.invokeGuidGetter(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
+
+    fun stringSetter(vtableIndex: Int): CodeBlock =
+        CodeBlock.of("%T.invokeStringSetter(pointer, %L, value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
+
+    fun int32Setter(vtableIndex: Int): CodeBlock =
+        CodeBlock.of("%T.invokeInt32Setter(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 }
