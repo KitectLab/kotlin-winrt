@@ -109,8 +109,10 @@ internal class InterfaceTypeRenderer(
                 }
             }
             .addProperties(type.properties.mapNotNull { renderProperty(it, type.namespace, genericParameters) })
+            .addProperties(renderEventSlotProperties(type, type.namespace, genericParameters))
             .addFunctions(type.methods.flatMap { renderMethods(it, type.namespace, genericParameters) })
             .addFunctions(type.methods.mapNotNull { renderLambdaOverload(it, type.namespace, genericParameters) })
+            .addTypes(renderEventSlotTypes(type, type.namespace, genericParameters))
             .addType(
                 TypeSpec.companionObjectBuilder()
                     .addSuperinterface(PoetSymbols.winRtInterfaceMetadataClass)
@@ -155,6 +157,83 @@ internal class InterfaceTypeRenderer(
                     .build(),
             )
             .build()
+    }
+
+    private fun renderEventSlotProperties(
+        type: WinMdType,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): List<PropertySpec> {
+        return eventSlotPlans(type, currentNamespace, genericParameters).map { plan ->
+            PropertySpec.builder("${plan.propertyName}Event", ClassName("", plan.typeName))
+                .getter(
+                    FunSpec.getterBuilder()
+                        .addStatement("return %L()", plan.typeName)
+                        .build(),
+                )
+                .build()
+        }
+    }
+
+    private fun renderEventSlotTypes(
+        type: WinMdType,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): List<TypeSpec> {
+        return eventSlotPlans(type, currentNamespace, genericParameters).map { plan ->
+            TypeSpec.classBuilder(plan.typeName)
+                .addFunction(
+                    FunSpec.builder("subscribe")
+                        .addParameter("handler", plan.delegateType)
+                        .returns(PoetSymbols.eventRegistrationTokenClass)
+                        .addStatement("return %N(handler)", plan.addFunctionName)
+                        .build(),
+                )
+                .addFunction(
+                    FunSpec.builder("plusAssign")
+                        .addModifiers(KModifier.OPERATOR)
+                        .addParameter("handler", plan.delegateType)
+                        .addStatement("subscribe(handler)")
+                        .build(),
+                )
+                .addFunction(
+                    FunSpec.builder("minusAssign")
+                        .addModifiers(KModifier.OPERATOR)
+                        .addParameter("token", PoetSymbols.eventRegistrationTokenClass)
+                        .addStatement("%N(token)", plan.removeFunctionName)
+                        .build(),
+                )
+                .build()
+        }
+    }
+
+    private fun eventSlotPlans(
+        type: WinMdType,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): List<InterfaceEventSlotPlan> {
+        val methodsByName = type.methods.associateBy { it.name }
+        return type.methods.mapNotNull { addMethod ->
+            if (!addMethod.name.startsWith("add_") || addMethod.parameters.size != 1 || addMethod.returnType != "EventRegistrationToken") {
+                return@mapNotNull null
+            }
+            val eventName = addMethod.name.removePrefix("add_")
+            val removeMethod = methodsByName["remove_$eventName"] ?: return@mapNotNull null
+            if (removeMethod.parameters.size != 1 || removeMethod.parameters.single().type != "EventRegistrationToken" || removeMethod.returnType != "Unit") {
+                return@mapNotNull null
+            }
+            val delegateTypeName = addMethod.parameters.single().type
+            if (!delegateTypeName.startsWith("Windows.Foundation.EventHandler<")) {
+                return@mapNotNull null
+            }
+            InterfaceEventSlotPlan(
+                propertyName = eventName.replaceFirstChar(Char::lowercase),
+                typeName = "${eventName}Event",
+                addFunctionName = kotlinMethodName(addMethod.name),
+                removeFunctionName = kotlinMethodName(removeMethod.name),
+                delegateType = typeNameMapper.mapTypeName(delegateTypeName, currentNamespace, genericParameters),
+            )
+        }
     }
 
     private fun renderAsyncResultDescriptorProperty(
@@ -1160,5 +1239,13 @@ internal class InterfaceTypeRenderer(
         val mapped = typeNameMapper.mapTypeName(baseInterface, currentNamespace, genericParameters)
         return if (mapped.toString().startsWith("kotlin.collections.")) mapped else null
     }
+
+    private data class InterfaceEventSlotPlan(
+        val propertyName: String,
+        val typeName: String,
+        val addFunctionName: String,
+        val removeFunctionName: String,
+        val delegateType: TypeName,
+    )
 
 }

@@ -57,4 +57,5 @@ internal object PoetSymbols {
     val asyncActionWithProgressMember = MemberName("windows.foundation", "asyncActionWithProgress")
     val asyncOperationWithProgressMember = MemberName("windows.foundation", "asyncOperationWithProgress")
     val awaitMember = MemberName("windows.foundation", "await")
+    val eventHandlerRawClass = ClassName("windows.foundation", "EventHandler")
 }

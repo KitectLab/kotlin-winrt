@@ -5471,4 +5471,102 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("statics.loadAsync().await()"))
         assertTrue(runtimeBinding.contains("statics.downloadAsync(name).await(onProgress = onProgress)"))
     }
+
+    @Test
+    fun generates_event_handler_slot_helpers_for_interface_and_runtime() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "EventHandler`1",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "9de1c534-6ae1-11e0-84e1-18a905bcc53f",
+                            genericParameters = listOf("T"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("sender", "Object"),
+                                        WinMdParameter("args", "T"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Events",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetClosedEventArgs",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_Closed",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(WinMdParameter("handler", "Windows.Foundation.EventHandler<Example.Events.IWidgetClosedEventArgs>")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_Closed",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("token", "EventRegistrationToken")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Events.IWidget",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_Closed",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(WinMdParameter("handler", "Windows.Foundation.EventHandler<Example.Events.IWidgetClosedEventArgs>")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_Closed",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("token", "EventRegistrationToken")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Events/IWidget.kt" }.content
+        val runtimeBinding = files.first { it.relativePath == "Example/Events/Widget.kt" }.content
+
+        assertTrue(interfaceBinding.contains("val closedEvent: ClosedEvent"))
+        assertTrue(interfaceBinding.contains("class ClosedEvent"))
+        assertTrue(interfaceBinding.contains("fun subscribe(handler: EventHandler<IWidgetClosedEventArgs>): EventRegistrationToken"))
+        assertTrue(interfaceBinding.contains("operator fun plusAssign(handler: EventHandler<IWidgetClosedEventArgs>)"))
+        assertTrue(interfaceBinding.contains("operator fun minusAssign(token: EventRegistrationToken)"))
+
+        assertTrue(runtimeBinding.contains("val closedEvent: ClosedEvent"))
+        assertTrue(runtimeBinding.contains("class ClosedEvent"))
+        assertTrue(runtimeBinding.contains("fun subscribe(handler: EventHandler<IWidgetClosedEventArgs>): EventRegistrationToken"))
+        assertTrue(runtimeBinding.contains("operator fun plusAssign(handler: EventHandler<IWidgetClosedEventArgs>)"))
+        assertTrue(runtimeBinding.contains("operator fun minusAssign(token: EventRegistrationToken)"))
+    }
 }
