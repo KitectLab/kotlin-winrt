@@ -4,6 +4,7 @@ internal enum class MethodSignatureShape {
     EMPTY,
     STRING,
     INT32,
+    BOOLEAN,
     INT64,
     UINT32,
     EVENT_REGISTRATION_TOKEN,
@@ -38,6 +39,7 @@ internal fun methodSignatureShape(
         parameterTypes.isEmpty() -> MethodSignatureShape.EMPTY
         parameterTypes == listOf("String") -> MethodSignatureShape.STRING
         parameterTypes == listOf("Int32") -> MethodSignatureShape.INT32
+        parameterTypes == listOf("Boolean") -> MethodSignatureShape.BOOLEAN
         parameterTypes == listOf("Int64") -> MethodSignatureShape.INT64
         parameterTypes == listOf("UInt32") -> MethodSignatureShape.UINT32
         parameterTypes == listOf("EventRegistrationToken") -> MethodSignatureShape.EVENT_REGISTRATION_TOKEN

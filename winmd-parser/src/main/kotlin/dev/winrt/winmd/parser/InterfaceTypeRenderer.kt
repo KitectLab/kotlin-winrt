@@ -1049,6 +1049,10 @@ internal class InterfaceTypeRenderer(
                 method.vtableIndex != null) ||
             (method.returnType == "Unit" &&
                 method.parameters.size == 1 &&
+                method.parameters[0].type == "Boolean" &&
+                method.vtableIndex != null) ||
+            (method.returnType == "Unit" &&
+                method.parameters.size == 1 &&
                 supportsInterfaceObjectInput(method.parameters[0].type) &&
                 method.vtableIndex != null)
     }
@@ -1103,6 +1107,13 @@ internal class InterfaceTypeRenderer(
                     arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithUInt32(method.vtableIndex!!, "$argumentName.value")))
                 },
             )
+            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.BOOLEAN) -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithUInt32(method.vtableIndex!!, "if (${argumentName}.value) 1u else 0u")))
+                },
+            )
             MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
                 statement = "return %T(%L)",
                 args = { method, _ ->
@@ -1121,6 +1132,13 @@ internal class InterfaceTypeRenderer(
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
                     arrayOf(PoetSymbols.float32Class, AbiCallCatalog.float32MethodWithUInt32(method.vtableIndex!!, argumentName))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.BOOLEAN) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.float32Class, AbiCallCatalog.float32MethodWithUInt32(method.vtableIndex!!, "if (${argumentName}.value) 1u else 0u"))
                 },
             )
             MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
@@ -1143,6 +1161,13 @@ internal class InterfaceTypeRenderer(
                     arrayOf(PoetSymbols.float64Class, AbiCallCatalog.float64MethodWithUInt32(method.vtableIndex!!, argumentName))
                 },
             )
+            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.BOOLEAN) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.float64Class, AbiCallCatalog.float64MethodWithUInt32(method.vtableIndex!!, "if (${argumentName}.value) 1u else 0u"))
+                },
+            )
             MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
                 statement = "return %T(%L)",
                 args = { method, _ ->
@@ -1161,6 +1186,13 @@ internal class InterfaceTypeRenderer(
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
                     arrayOf(PoetSymbols.winRtBooleanClass, AbiCallCatalog.booleanMethodWithUInt32(method.vtableIndex!!, argumentName))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.BOOLEAN) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.winRtBooleanClass, AbiCallCatalog.booleanMethodWithUInt32(method.vtableIndex!!, "if (${argumentName}.value) 1u else 0u"))
                 },
             )
             MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
@@ -1205,6 +1237,16 @@ internal class InterfaceTypeRenderer(
                     )
                 },
             )
+            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.BOOLEAN) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, namespace ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(
+                        typeNameMapper.mapTypeName(method.returnType, namespace, genericParameters),
+                        AbiCallCatalog.objectMethodWithUInt32(method.vtableIndex!!, "if (${argumentName}.value) 1u else 0u"),
+                    )
+                },
+            )
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
                 statement = "%L",
                 args = { method, _ ->
@@ -1223,6 +1265,13 @@ internal class InterfaceTypeRenderer(
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
                     arrayOf(AbiCallCatalog.unitMethodWithInt32(method.vtableIndex!!, argumentName))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN) -> PlannedInterfaceMethod(
+                statement = "%L",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(AbiCallCatalog.unitMethodWithInt32Expression(method.vtableIndex!!, "if (${argumentName}.value) 1 else 0"))
                 },
             )
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64) -> PlannedInterfaceMethod(
