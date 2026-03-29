@@ -63,49 +63,83 @@ internal class RuntimeMethodRenderer(
         val parameterTypes = method.parameters.map { it.type }
         val signatureKey = methodSignatureKey(method.returnType, parameterTypes, ::supportsRuntimeObjectType)
         return when {
-            signatureKey?.returnKind == MethodReturnKind.UNIT -> unitRuntimePlan(signatureKey.shape)
             scalarRuntimeReturnPlan(method.returnType)?.supports(parameterTypes) == true ->
                 scalarRuntimePlan(scalarRuntimeReturnPlan(method.returnType)!!)
-            signatureKey?.returnKind == MethodReturnKind.OBJECT -> objectRuntimePlan(signatureKey.shape)
+            signatureKey != null -> runtimeMethodPlanForKey(signatureKey)
             else -> null
         }
     }
 
-    private fun unitRuntimePlan(shape: MethodSignatureShape): RuntimeMethodPlan? {
-        return when (shape) {
-            MethodSignatureShape.EMPTY -> RuntimeMethodPlan(
+    private fun runtimeMethodPlanForKey(signatureKey: MethodSignatureKey): RuntimeMethodPlan? {
+        return when (signatureKey) {
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return") },
                 returnStatement = "%T.invokeUnitMethod(pointer, %L).getOrThrow()",
                 statementArgs = { method, _, _ ->
                     arrayOf(PoetSymbols.platformComInteropClass, method.vtableIndex!!)
                 },
             )
-            MethodSignatureShape.INT32 -> RuntimeMethodPlan(
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return") },
                 returnStatement = "%T.invokeUnitMethodWithInt32Arg(pointer, %L, %N.value).getOrThrow()",
                 statementArgs = { method, _, parameterBindings ->
                     arrayOf(PoetSymbols.platformComInteropClass, method.vtableIndex!!, parameterBindings.single().name)
                 },
             )
-            MethodSignatureShape.INT64 -> RuntimeMethodPlan(
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return") },
                 returnStatement = "%T.invokeUnitMethodWithInt64Arg(pointer, %L, %N.value).getOrThrow()",
                 statementArgs = { method, _, parameterBindings ->
                     arrayOf(PoetSymbols.platformComInteropClass, method.vtableIndex!!, parameterBindings.single().name)
                 },
             )
-            MethodSignatureShape.STRING -> RuntimeMethodPlan(
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return") },
                 returnStatement = "%T.invokeUnitMethodWithStringArg(pointer, %L, %N).getOrThrow()",
                 statementArgs = { method, _, parameterBindings ->
                     arrayOf(PoetSymbols.platformComInteropClass, method.vtableIndex!!, parameterBindings.single().name)
                 },
             )
-            MethodSignatureShape.OBJECT -> RuntimeMethodPlan(
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return") },
                 returnStatement = "%T.invokeObjectSetter(pointer, %L, %N.pointer).getOrThrow()",
                 statementArgs = { method, _, parameterBindings ->
                     arrayOf(PoetSymbols.platformComInteropClass, method.vtableIndex!!, parameterBindings.single().name)
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
+                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
+                returnStatement = "return %T(%T.invokeObjectMethod(pointer, %L).getOrThrow())",
+                statementArgs = { method, currentNamespace, _ ->
+                    arrayOf(
+                        typeNameMapper.mapTypeName(method.returnType, currentNamespace),
+                        PoetSymbols.platformComInteropClass,
+                        method.vtableIndex!!,
+                    )
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
+                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
+                returnStatement = "return %T(%T.invokeObjectMethodWithStringArg(pointer, %L, %N).getOrThrow())",
+                statementArgs = { method, currentNamespace, parameterBindings ->
+                    arrayOf(
+                        typeNameMapper.mapTypeName(method.returnType, currentNamespace),
+                        PoetSymbols.platformComInteropClass,
+                        method.vtableIndex!!,
+                        parameterBindings.single().name,
+                    )
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.UINT32) -> RuntimeMethodPlan(
+                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
+                returnStatement = "return %T(%T.invokeObjectMethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow())",
+                statementArgs = { method, currentNamespace, parameterBindings ->
+                    arrayOf(
+                        typeNameMapper.mapTypeName(method.returnType, currentNamespace),
+                        PoetSymbols.platformComInteropClass,
+                        method.vtableIndex!!,
+                        parameterBindings.single().name,
+                    )
                 },
             )
             else -> null
@@ -126,47 +160,6 @@ internal class RuntimeMethodRenderer(
                 )
             },
         )
-    }
-
-    private fun objectRuntimePlan(shape: MethodSignatureShape): RuntimeMethodPlan? {
-        return when (shape) {
-            MethodSignatureShape.EMPTY -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
-                returnStatement = "return %T(%T.invokeObjectMethod(pointer, %L).getOrThrow())",
-                statementArgs = { method, currentNamespace, _ ->
-                    arrayOf(
-                        typeNameMapper.mapTypeName(method.returnType, currentNamespace),
-                        PoetSymbols.platformComInteropClass,
-                        method.vtableIndex!!,
-                    )
-                },
-            )
-            MethodSignatureShape.STRING -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
-                returnStatement = "return %T(%T.invokeObjectMethodWithStringArg(pointer, %L, %N).getOrThrow())",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(
-                        typeNameMapper.mapTypeName(method.returnType, currentNamespace),
-                        PoetSymbols.platformComInteropClass,
-                        method.vtableIndex!!,
-                        parameterBindings.single().name,
-                    )
-                },
-            )
-            MethodSignatureShape.UINT32 -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
-                returnStatement = "return %T(%T.invokeObjectMethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow())",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(
-                        typeNameMapper.mapTypeName(method.returnType, currentNamespace),
-                        PoetSymbols.platformComInteropClass,
-                        method.vtableIndex!!,
-                        parameterBindings.single().name,
-                    )
-                },
-            )
-            else -> null
-        }
     }
 
     fun renderRuntimeLambdaOverload(method: WinMdMethod, currentNamespace: String): FunSpec? {
