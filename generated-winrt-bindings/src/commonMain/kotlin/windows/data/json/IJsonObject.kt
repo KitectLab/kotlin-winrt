@@ -13,6 +13,7 @@ import dev.winrt.kom.PlatformComInterop
 import kotlin.String
 
 public interface IJsonObject {
+  public val pointer: ComPtr
 
   public fun getNamedValue(name: String): IJsonValue =
       IJsonValue.from(Inspectable(PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 6,
@@ -53,6 +54,3 @@ public interface IJsonObject {
 private class IJsonObjectProjection(
   pointer: ComPtr,
 ) : dev.winrt.core.WinRtInterfaceProjection(pointer), IJsonObject
-
-private val IJsonObject.pointer: ComPtr
-  get() = (this as dev.winrt.core.WinRtObject).pointer

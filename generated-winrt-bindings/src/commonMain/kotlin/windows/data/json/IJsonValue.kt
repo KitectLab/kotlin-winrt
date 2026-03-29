@@ -13,6 +13,7 @@ import dev.winrt.kom.PlatformComInterop
 import kotlin.String
 
 public interface IJsonValue {
+  public val pointer: ComPtr
 
   public val valueType: JsonValueType
     get() = get_ValueType()
@@ -63,6 +64,3 @@ public interface IJsonValue {
 private class IJsonValueProjection(
   pointer: ComPtr,
 ) : dev.winrt.core.WinRtInterfaceProjection(pointer), IJsonValue
-
-private val IJsonValue.pointer: ComPtr
-  get() = (this as dev.winrt.core.WinRtObject).pointer

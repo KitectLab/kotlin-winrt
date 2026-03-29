@@ -11,8 +11,8 @@ import kotlin.String
 public open class JsonObject(
   pointer: ComPtr,
 ) : Inspectable(pointer),
-  IJsonValue by IJsonValue.from(Inspectable(pointer)),
-  IJsonObject by IJsonObject.from(Inspectable(pointer)) {
+  IJsonValue,
+  IJsonObject {
 
   override fun toString(): String = stringify()
 
