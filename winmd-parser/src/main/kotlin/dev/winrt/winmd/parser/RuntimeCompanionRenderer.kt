@@ -145,25 +145,48 @@ internal class RuntimeCompanionRenderer(
         val builder = FunSpec.builder(method.name.replaceFirstChar { it.lowercase() })
             .returns(PoetSymbols.winRtDelegateHandleClass)
             .addParameter(method.parameters.single().name, plan.lambdaType)
-        when (val carrier = plan.bridge.parameterCarriers.single()) {
-            ParameterCarrier.NoArgs,
-            is ParameterCarrier.Direct -> {
+        val argumentKindsLiteral = if (plan.bridge.argumentKinds.isEmpty()) {
+            "emptyList()"
+        } else {
+            plan.bridge.argumentKinds.joinToString(
+                prefix = "listOf(",
+                postfix = ")",
+            ) { kind -> "${PoetSymbols.winRtDelegateValueKindClass.canonicalName}.${kind.name}" }
+        }
+        when (plan.bridge.argumentKinds.singleOrNull()) {
+            null -> {
                 builder.addStatement(
-                    "val delegateHandle = %T.%L(%T.iid, %N)",
+                    "val delegateHandle = %T.%L(%T.iid, %L) { _ -> %N() }",
                     PoetSymbols.winRtDelegateBridgeClass,
                     plan.bridge.factoryMethod,
                     delegateClass,
+                    argumentKindsLiteral,
                     method.parameters.single().name,
                 )
             }
-            is ParameterCarrier.ObjectWrapped -> {
+            DelegateArgumentKind.OBJECT -> {
+                val callbackType = plan.lambdaType.parameters.single()
                 builder.addStatement(
-                    "val delegateHandle = %T.%L(%T.iid) { arg -> %N(%T(arg)) }",
+                    "val delegateHandle = %T.%L(%T.iid, %L) { args -> %N(%L(args.single() as %T)) }",
                     PoetSymbols.winRtDelegateBridgeClass,
                     plan.bridge.factoryMethod,
                     delegateClass,
+                    argumentKindsLiteral,
                     method.parameters.single().name,
-                    carrier.callbackArgType,
+                    callbackType,
+                    PoetSymbols.comPtrClass,
+                )
+            }
+            else -> {
+                val callbackType = plan.lambdaType.parameters.single()
+                builder.addStatement(
+                    "val delegateHandle = %T.%L(%T.iid, %L) { args -> %N(args.single() as %T) }",
+                    PoetSymbols.winRtDelegateBridgeClass,
+                    plan.bridge.factoryMethod,
+                    delegateClass,
+                    argumentKindsLiteral,
+                    method.parameters.single().name,
+                    callbackType,
                 )
             }
         }

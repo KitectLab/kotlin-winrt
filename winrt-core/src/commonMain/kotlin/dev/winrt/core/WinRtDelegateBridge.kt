@@ -7,7 +7,31 @@ expect interface WinRtDelegateHandle : AutoCloseable {
     val pointer: ComPtr
 }
 
+enum class WinRtDelegateValueKind {
+    OBJECT,
+    INT32,
+    UINT32,
+    BOOLEAN,
+    INT64,
+    UINT64,
+    FLOAT32,
+    FLOAT64,
+    STRING,
+}
+
 expect object WinRtDelegateBridge {
+    fun createUnitDelegate(
+        iid: Guid,
+        parameterKinds: List<WinRtDelegateValueKind>,
+        invoke: (Array<Any?>) -> Unit,
+    ): WinRtDelegateHandle
+
+    fun createBooleanDelegate(
+        iid: Guid,
+        parameterKinds: List<WinRtDelegateValueKind>,
+        invoke: (Array<Any?>) -> Boolean,
+    ): WinRtDelegateHandle
+
     fun createNoArgUnitDelegate(iid: Guid, invoke: () -> Unit): WinRtDelegateHandle
 
     fun createObjectArgUnitDelegate(iid: Guid, invoke: (ComPtr) -> Unit): WinRtDelegateHandle

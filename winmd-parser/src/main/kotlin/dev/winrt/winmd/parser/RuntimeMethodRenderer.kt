@@ -163,24 +163,47 @@ internal class RuntimeMethodRenderer(
             .addStatement("error(%S)", "Null runtime object pointer: ${method.name}")
             .endControlFlow()
             .apply {
-                when (val carrier = plan.bridge.parameterCarriers.single()) {
-                    ParameterCarrier.NoArgs,
-                    is ParameterCarrier.Direct -> {
-                        addStatement(
-                            "val delegateHandle = %T.%L(%T.iid, callback)",
-                            PoetSymbols.winRtDelegateBridgeClass,
-                            plan.bridge.factoryMethod,
-                            delegateClass,
-                        )
-                    }
-                    is ParameterCarrier.ObjectWrapped -> {
-                        addStatement(
-                            "val delegateHandle = %T.%L(%T.iid) { arg -> callback(%T(arg)) }",
-                            PoetSymbols.winRtDelegateBridgeClass,
-                            plan.bridge.factoryMethod,
-                            delegateClass,
-                            carrier.callbackArgType,
-                        )
+                val argumentKindsLiteral = if (plan.bridge.argumentKinds.isEmpty()) {
+                    "emptyList()"
+                } else {
+                    plan.bridge.argumentKinds.joinToString(
+                        prefix = "listOf(",
+                        postfix = ")",
+                    ) { kind -> "${PoetSymbols.winRtDelegateValueKindClass.canonicalName}.${kind.name}" }
+                }
+                if (plan.bridge.argumentKinds.isEmpty()) {
+                    addStatement(
+                        "val delegateHandle = %T.%L(%T.iid, %L) { _ -> callback() }",
+                        PoetSymbols.winRtDelegateBridgeClass,
+                        plan.bridge.factoryMethod,
+                        delegateClass,
+                        argumentKindsLiteral,
+                    )
+                } else {
+                    when (plan.bridge.argumentKinds.single()) {
+                        DelegateArgumentKind.OBJECT -> {
+                            val parameterType = plan.lambdaType.parameters.single()
+                            addStatement(
+                                "val delegateHandle = %T.%L(%T.iid, %L) { args -> callback(%L(args.single() as %T)) }",
+                                PoetSymbols.winRtDelegateBridgeClass,
+                                plan.bridge.factoryMethod,
+                                delegateClass,
+                                argumentKindsLiteral,
+                                parameterType,
+                                PoetSymbols.comPtrClass,
+                            )
+                        }
+                        else -> {
+                            val parameterType = plan.lambdaType.parameters.single()
+                            addStatement(
+                                "val delegateHandle = %T.%L(%T.iid, %L) { args -> callback(args.single() as %T) }",
+                                PoetSymbols.winRtDelegateBridgeClass,
+                                plan.bridge.factoryMethod,
+                                delegateClass,
+                                argumentKindsLiteral,
+                                parameterType,
+                            )
+                        }
                     }
                 }
                 addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)

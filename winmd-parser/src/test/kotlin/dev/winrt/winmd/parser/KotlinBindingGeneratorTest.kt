@@ -77,7 +77,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding, binding.contains("fun start(callback: ApplicationInitializationCallback)"))
         assertTrue(binding, binding.contains("statics.start(callback)"))
         assertTrue(binding, binding.contains("fun start(callback: (IApplicationInitializationCallbackParams) -> Unit)"))
-        assertTrue(binding, binding.contains("WinRtDelegateBridge.createObjectArgUnitDelegate"))
+        assertTrue(binding, binding.contains("WinRtDelegateBridge.createUnitDelegate"))
     }
 
     @Test
@@ -2135,7 +2135,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(dispatcherQueueBinding.contains("fun tryEnqueue(callback: DispatcherQueueHandler): WinRtBoolean"))
         assertTrue(dispatcherQueueBinding.contains("fun tryEnqueue("))
         assertTrue(dispatcherQueueBinding.contains("() -> Unit"))
-        assertTrue(dispatcherQueueBinding.contains("WinRtDelegateBridge.createNoArgUnitDelegate"))
+        assertTrue(dispatcherQueueBinding.contains("WinRtDelegateBridge.createUnitDelegate"))
         assertTrue(dispatcherQueueBinding.contains("DispatcherQueueHandler.iid"))
         assertTrue(dispatcherQueueBinding.contains("invokeBooleanMethodWithObjectArg(pointer, 7,"))
         assertTrue(dispatcherQueueBinding.contains("callback.pointer"))
@@ -2206,9 +2206,8 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("fun start("))
         assertTrue(binding.contains("IApplicationInitializationCallbackParams"))
         assertTrue(binding.contains("-> Unit"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createObjectArgUnitDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate"))
         assertTrue(binding.contains("ApplicationInitializationCallback.iid"))
-        assertTrue(binding.contains("callback(IApplicationInitializationCallbackParams(arg))"))
         assertTrue(binding.contains("start(ApplicationInitializationCallback(delegateHandle.pointer))"))
     }
 
@@ -2260,7 +2259,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("fun setHandler(callback: TickHandler)"))
         assertTrue(binding.contains("fun setHandler("))
         assertTrue(binding.contains("() -> Unit"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createNoArgUnitDelegate(TickHandler.iid, callback)"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate(TickHandler.iid, emptyList())"))
         assertTrue(binding.contains("setHandler(TickHandler(delegateHandle.pointer))"))
     }
 
@@ -2318,7 +2317,7 @@ class KotlinBindingGeneratorTest {
         }.content
 
         assertTrue(binding.contains("fun setHandler(callback: PayloadHandler)"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createObjectArgUnitDelegate(PayloadHandler.iid)"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate(PayloadHandler.iid"))
         assertTrue(binding.contains("callback(Payload(arg))"))
         assertTrue(binding.contains("setHandler(PayloadHandler(delegateHandle.pointer))"))
     }
@@ -2371,7 +2370,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setHandler(callback: ShouldContinueHandler)"))
         assertTrue(binding.contains("() -> Boolean"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createNoArgBooleanDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createBooleanDelegate"))
         assertTrue(binding.contains("ShouldContinueHandler.iid"))
         assertTrue(binding.contains("setHandler(ShouldContinueHandler(delegateHandle.pointer))"))
     }
@@ -2430,7 +2429,7 @@ class KotlinBindingGeneratorTest {
         }.content
 
         assertTrue(binding.contains("fun setPredicate(callback: PayloadPredicate)"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createObjectArgBooleanDelegate(PayloadPredicate.iid)"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createBooleanDelegate(PayloadPredicate.iid"))
         assertTrue(binding.contains("callback(Payload(arg))"))
         assertTrue(binding.contains("setPredicate(PayloadPredicate(delegateHandle.pointer))"))
     }
@@ -2486,7 +2485,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setHandler(callback: CountHandler)"))
         assertTrue(binding.contains("(Int) -> Unit"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createInt32ArgUnitDelegate(CountHandler.iid, callback)"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate(CountHandler.iid"))
         assertTrue(binding.contains("setHandler(CountHandler(delegateHandle.pointer))"))
     }
 
@@ -2540,7 +2539,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setHandler(callback: CountHandler)"))
         assertTrue(binding.contains("(Int) -> Unit"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createInt32ArgUnitDelegate(CountHandler.iid, callback)"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate(CountHandler.iid"))
         assertTrue(binding.contains("setHandler(CountHandler(delegateHandle.pointer))"))
     }
 
@@ -2595,7 +2594,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setPredicate(callback: CountPredicate)"))
         assertTrue(binding.contains("(Int) -> Boolean"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createInt32ArgBooleanDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createBooleanDelegate"))
         assertTrue(binding.contains("CountPredicate.iid"))
         assertTrue(binding.contains("setPredicate(CountPredicate(delegateHandle.pointer))"))
     }
@@ -2650,7 +2649,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setPredicate(callback: CountPredicate)"))
         assertTrue(binding.contains("(Int) -> Boolean"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createInt32ArgBooleanDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createBooleanDelegate"))
         assertTrue(binding.contains("CountPredicate.iid"))
         assertTrue(binding.contains("setPredicate(CountPredicate(delegateHandle.pointer))"))
     }
@@ -2706,7 +2705,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setHandler(callback: LabelHandler)"))
         assertTrue(binding.contains("(String) -> Unit"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createStringArgUnitDelegate(LabelHandler.iid, callback)"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate(LabelHandler.iid"))
         assertTrue(binding.contains("setHandler(LabelHandler(delegateHandle.pointer))"))
     }
 
@@ -2760,7 +2759,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setHandler(callback: LabelHandler)"))
         assertTrue(binding.contains("(String) -> Unit"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createStringArgUnitDelegate(LabelHandler.iid, callback)"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate(LabelHandler.iid"))
         assertTrue(binding.contains("setHandler(LabelHandler(delegateHandle.pointer))"))
     }
 
@@ -2815,7 +2814,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setPredicate(callback: LabelPredicate)"))
         assertTrue(binding.contains("(String) -> Boolean"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createStringArgBooleanDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createBooleanDelegate"))
         assertTrue(binding.contains("LabelPredicate.iid"))
         assertTrue(binding.contains("setPredicate(LabelPredicate(delegateHandle.pointer))"))
     }
@@ -2870,7 +2869,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setPredicate(callback: LabelPredicate)"))
         assertTrue(binding.contains("(String) -> Boolean"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createStringArgBooleanDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createBooleanDelegate"))
         assertTrue(binding.contains("LabelPredicate.iid"))
         assertTrue(binding.contains("setPredicate(LabelPredicate(delegateHandle.pointer))"))
     }
@@ -2926,7 +2925,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setHandler(callback: IndexHandler)"))
         assertTrue(binding.contains("(UInt) -> Unit"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createUInt32ArgUnitDelegate(IndexHandler.iid, callback)"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate(IndexHandler.iid"))
         assertTrue(binding.contains("setHandler(IndexHandler(delegateHandle.pointer))"))
     }
 
@@ -2980,7 +2979,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setHandler(callback: IndexHandler)"))
         assertTrue(binding.contains("(UInt) -> Unit"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createUInt32ArgUnitDelegate(IndexHandler.iid, callback)"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate(IndexHandler.iid"))
         assertTrue(binding.contains("setHandler(IndexHandler(delegateHandle.pointer))"))
     }
 
@@ -3035,7 +3034,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setPredicate(callback: IndexPredicate)"))
         assertTrue(binding.contains("(UInt) -> Boolean"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createUInt32ArgBooleanDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createBooleanDelegate"))
         assertTrue(binding.contains("IndexPredicate.iid"))
         assertTrue(binding.contains("setPredicate(IndexPredicate(delegateHandle.pointer))"))
     }
@@ -3090,7 +3089,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setPredicate(callback: IndexPredicate)"))
         assertTrue(binding.contains("(UInt) -> Boolean"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createUInt32ArgBooleanDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createBooleanDelegate"))
         assertTrue(binding.contains("IndexPredicate.iid"))
         assertTrue(binding.contains("setPredicate(IndexPredicate(delegateHandle.pointer))"))
     }
@@ -3146,7 +3145,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setHandler(callback: ProgressHandler)"))
         assertTrue(binding.contains("(Float) -> Unit"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createFloat32ArgUnitDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate"))
         assertTrue(binding.contains("ProgressHandler.iid"))
         assertTrue(binding.contains("setHandler(ProgressHandler(delegateHandle.pointer))"))
     }
@@ -3201,7 +3200,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setHandler(callback: ProgressHandler)"))
         assertTrue(binding.contains("(Float) -> Unit"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createFloat32ArgUnitDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate"))
         assertTrue(binding.contains("ProgressHandler.iid"))
         assertTrue(binding.contains("setHandler(ProgressHandler(delegateHandle.pointer))"))
     }
@@ -3257,7 +3256,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setHandler(callback: DistanceHandler)"))
         assertTrue(binding.contains("(Double) -> Unit"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createFloat64ArgUnitDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate"))
         assertTrue(binding.contains("DistanceHandler.iid"))
         assertTrue(binding.contains("setHandler(DistanceHandler(delegateHandle.pointer))"))
     }
@@ -3312,7 +3311,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setHandler(callback: DistanceHandler)"))
         assertTrue(binding.contains("(Double) -> Unit"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createFloat64ArgUnitDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate"))
         assertTrue(binding.contains("DistanceHandler.iid"))
         assertTrue(binding.contains("setHandler(DistanceHandler(delegateHandle.pointer))"))
     }
@@ -3368,7 +3367,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setHandler(callback: ToggleHandler)"))
         assertTrue(binding.contains("(Boolean) -> Unit"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createBooleanArgUnitDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate"))
         assertTrue(binding.contains("ToggleHandler.iid"))
         assertTrue(binding.contains("setHandler(ToggleHandler(delegateHandle.pointer))"))
     }
@@ -3423,7 +3422,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setHandler(callback: ToggleHandler)"))
         assertTrue(binding.contains("(Boolean) -> Unit"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createBooleanArgUnitDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate"))
         assertTrue(binding.contains("ToggleHandler.iid"))
         assertTrue(binding.contains("setHandler(ToggleHandler(delegateHandle.pointer))"))
     }
@@ -3479,7 +3478,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setHandler(callback: TimestampHandler)"))
         assertTrue(binding.contains("(Long) -> Unit"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createInt64ArgUnitDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate"))
         assertTrue(binding.contains("TimestampHandler.iid"))
         assertTrue(binding.contains("setHandler(TimestampHandler(delegateHandle.pointer))"))
     }
@@ -3534,7 +3533,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setHandler(callback: TimestampHandler)"))
         assertTrue(binding.contains("(Long) -> Unit"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createInt64ArgUnitDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate"))
         assertTrue(binding.contains("TimestampHandler.iid"))
         assertTrue(binding.contains("setHandler(TimestampHandler(delegateHandle.pointer))"))
     }
@@ -3590,7 +3589,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setPredicate(callback: TimestampPredicate)"))
         assertTrue(binding.contains("(Long) -> Boolean"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createInt64ArgBooleanDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createBooleanDelegate"))
         assertTrue(binding.contains("TimestampPredicate.iid"))
         assertTrue(binding.contains("setPredicate(TimestampPredicate(delegateHandle.pointer))"))
     }
@@ -3645,7 +3644,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setPredicate(callback: TimestampPredicate)"))
         assertTrue(binding.contains("(Long) -> Boolean"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createInt64ArgBooleanDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createBooleanDelegate"))
         assertTrue(binding.contains("TimestampPredicate.iid"))
         assertTrue(binding.contains("setPredicate(TimestampPredicate(delegateHandle.pointer))"))
     }
@@ -3701,7 +3700,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setHandler(callback: OffsetHandler)"))
         assertTrue(binding.contains("(ULong) -> Unit"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createUInt64ArgUnitDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate"))
         assertTrue(binding.contains("OffsetHandler.iid"))
         assertTrue(binding.contains("setHandler(OffsetHandler(delegateHandle.pointer))"))
     }
@@ -3756,7 +3755,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setHandler(callback: OffsetHandler)"))
         assertTrue(binding.contains("(ULong) -> Unit"))
-        assertTrue(binding.contains("WinRtDelegateBridge.createUInt64ArgUnitDelegate"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate"))
         assertTrue(binding.contains("OffsetHandler.iid"))
         assertTrue(binding.contains("setHandler(OffsetHandler(delegateHandle.pointer))"))
     }

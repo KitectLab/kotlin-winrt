@@ -21,6 +21,7 @@ internal object PoetSymbols {
     val runtimePropertyClass = ClassName("dev.winrt.core", "RuntimeProperty")
     val timeSpanClass = ClassName("dev.winrt.core", "TimeSpan")
     val uint32Class = ClassName("dev.winrt.core", "UInt32")
+    val winRtDelegateValueKindClass = ClassName("dev.winrt.core", "WinRtDelegateValueKind")
     val winRtActivationKindClass = ClassName("dev.winrt.core", "WinRtActivationKind")
     val winRtBooleanClass = ClassName("dev.winrt.core", "WinRtBoolean")
     val winRtInterfaceMetadataClass = ClassName("dev.winrt.core", "WinRtInterfaceMetadata")

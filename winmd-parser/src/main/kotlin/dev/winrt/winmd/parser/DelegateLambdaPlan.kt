@@ -17,9 +17,21 @@ internal sealed interface DelegateLambdaPlan {
 
 internal data class BridgeSpec(
     val factoryMethod: String,
-    val parameterCarriers: List<ParameterCarrier>,
+    val argumentKinds: List<DelegateArgumentKind>,
     val returnCarrier: ReturnCarrier,
 )
+
+internal enum class DelegateArgumentKind {
+    OBJECT,
+    INT32,
+    UINT32,
+    BOOLEAN,
+    INT64,
+    UINT64,
+    FLOAT32,
+    FLOAT64,
+    STRING,
+}
 
 internal sealed interface ParameterCarrier {
     data object NoArgs : ParameterCarrier
@@ -40,12 +52,12 @@ internal enum class ReturnCarrier {
 
 private data class ScalarBridgeSpec(
     val parameterType: TypeName,
-    val unitBridgeFactoryMethod: String? = null,
-    val booleanBridgeFactoryMethod: String? = null,
+    val argumentKind: DelegateArgumentKind,
 )
 
 internal data class DelegateSignatureShape(
     val parameterCarriers: List<ParameterCarrier>,
+    val argumentKinds: List<DelegateArgumentKind>,
     val lambdaParameterTypes: List<TypeName>,
     val returnCarrier: ReturnCarrier,
     val lambdaReturnType: TypeName,
@@ -57,39 +69,35 @@ internal class DelegateLambdaPlanResolver(
     private val scalarBridgeSpecs = mapOf(
         "Int32" to ScalarBridgeSpec(
             parameterType = Int::class.asTypeName(),
-            unitBridgeFactoryMethod = "createInt32ArgUnitDelegate",
-            booleanBridgeFactoryMethod = "createInt32ArgBooleanDelegate",
+            argumentKind = DelegateArgumentKind.INT32,
         ),
         "String" to ScalarBridgeSpec(
             parameterType = String::class.asTypeName(),
-            unitBridgeFactoryMethod = "createStringArgUnitDelegate",
-            booleanBridgeFactoryMethod = "createStringArgBooleanDelegate",
+            argumentKind = DelegateArgumentKind.STRING,
         ),
         "UInt32" to ScalarBridgeSpec(
             parameterType = UInt::class.asTypeName(),
-            unitBridgeFactoryMethod = "createUInt32ArgUnitDelegate",
-            booleanBridgeFactoryMethod = "createUInt32ArgBooleanDelegate",
+            argumentKind = DelegateArgumentKind.UINT32,
         ),
         "Boolean" to ScalarBridgeSpec(
             parameterType = Boolean::class.asTypeName(),
-            unitBridgeFactoryMethod = "createBooleanArgUnitDelegate",
+            argumentKind = DelegateArgumentKind.BOOLEAN,
         ),
         "Int64" to ScalarBridgeSpec(
             parameterType = Long::class.asTypeName(),
-            unitBridgeFactoryMethod = "createInt64ArgUnitDelegate",
-            booleanBridgeFactoryMethod = "createInt64ArgBooleanDelegate",
+            argumentKind = DelegateArgumentKind.INT64,
         ),
         "UInt64" to ScalarBridgeSpec(
             parameterType = ULong::class.asTypeName(),
-            unitBridgeFactoryMethod = "createUInt64ArgUnitDelegate",
+            argumentKind = DelegateArgumentKind.UINT64,
         ),
         "Float32" to ScalarBridgeSpec(
             parameterType = Float::class.asTypeName(),
-            unitBridgeFactoryMethod = "createFloat32ArgUnitDelegate",
+            argumentKind = DelegateArgumentKind.FLOAT32,
         ),
         "Float64" to ScalarBridgeSpec(
             parameterType = Double::class.asTypeName(),
-            unitBridgeFactoryMethod = "createFloat64ArgUnitDelegate",
+            argumentKind = DelegateArgumentKind.FLOAT64,
         ),
     )
 
@@ -112,8 +120,8 @@ internal class DelegateLambdaPlanResolver(
                 DelegateLambdaPlan.PlannedBridge(
                     lambdaType = LambdaTypeName.get(returnType = signatureShape.lambdaReturnType),
                     bridge = BridgeSpec(
-                        factoryMethod = "createNoArgUnitDelegate",
-                        parameterCarriers = signatureShape.parameterCarriers,
+                        factoryMethod = "createUnitDelegate",
+                        argumentKinds = signatureShape.argumentKinds,
                         returnCarrier = signatureShape.returnCarrier,
                     ),
                 )
@@ -123,8 +131,8 @@ internal class DelegateLambdaPlanResolver(
                 DelegateLambdaPlan.PlannedBridge(
                     lambdaType = LambdaTypeName.get(returnType = signatureShape.lambdaReturnType),
                     bridge = BridgeSpec(
-                        factoryMethod = "createNoArgBooleanDelegate",
-                        parameterCarriers = signatureShape.parameterCarriers,
+                        factoryMethod = "createBooleanDelegate",
+                        argumentKinds = signatureShape.argumentKinds,
                         returnCarrier = signatureShape.returnCarrier,
                     ),
                 )
@@ -137,8 +145,8 @@ internal class DelegateLambdaPlanResolver(
                         returnType = signatureShape.lambdaReturnType,
                     ),
                     bridge = BridgeSpec(
-                        factoryMethod = "createObjectArgUnitDelegate",
-                        parameterCarriers = signatureShape.parameterCarriers,
+                        factoryMethod = "createUnitDelegate",
+                        argumentKinds = signatureShape.argumentKinds,
                         returnCarrier = signatureShape.returnCarrier,
                     ),
                 )
@@ -151,16 +159,13 @@ internal class DelegateLambdaPlanResolver(
                         returnType = signatureShape.lambdaReturnType,
                     ),
                     bridge = BridgeSpec(
-                        factoryMethod = "createObjectArgBooleanDelegate",
-                        parameterCarriers = signatureShape.parameterCarriers,
+                        factoryMethod = "createBooleanDelegate",
+                        argumentKinds = signatureShape.argumentKinds,
                         returnCarrier = signatureShape.returnCarrier,
                     ),
                 )
             }
-            signatureShape.parameterCarriers.size == 1 &&
-                signatureShape.parameterCarriers.single() is ParameterCarrier.Direct -> {
-                resolveScalarPlan(signatureShape)
-            }
+            signatureShape.parameterCarriers.singleOrNull() is ParameterCarrier.Direct -> resolveScalarPlan(signatureShape)
             else -> null
         }
     }
@@ -196,8 +201,16 @@ internal class DelegateLambdaPlanResolver(
             }
         }
         val normalizedCarriers = if (carriers.isEmpty()) listOf(ParameterCarrier.NoArgs) else carriers
+        val argumentKinds = carriers.mapNotNull {
+            when (it) {
+                ParameterCarrier.NoArgs -> null
+                is ParameterCarrier.Direct -> scalarBridgeSpecs.entries.firstOrNull { entry -> entry.value.parameterType == it.kotlinType }?.value?.argumentKind
+                is ParameterCarrier.ObjectWrapped -> DelegateArgumentKind.OBJECT
+            }
+        }
         return DelegateSignatureShape(
             parameterCarriers = normalizedCarriers,
+            argumentKinds = argumentKinds,
             lambdaParameterTypes = lambdaParameterTypes,
             returnCarrier = returnCarrier,
             lambdaReturnType = lambdaReturnType,
@@ -227,21 +240,17 @@ internal class DelegateLambdaPlanResolver(
         val parameterTypeName = scalarBridgeSpecs.entries.firstOrNull { it.value.parameterType == parameterCarrier.kotlinType }?.key ?: return null
         val spec = scalarBridgeSpecs[parameterTypeName] ?: return null
         return when (signatureShape.returnCarrier) {
-            ReturnCarrier.UNIT -> spec.unitBridgeFactoryMethod?.let {
-                directSingleArgPlan(spec.parameterType, signatureShape.lambdaReturnType, it)
-            }
-            ReturnCarrier.BOOLEAN -> spec.booleanBridgeFactoryMethod?.let {
-                directSingleArgPlan(spec.parameterType, signatureShape.lambdaReturnType, it)
-            }
+            ReturnCarrier.UNIT -> directSingleArgPlan(spec.parameterType, signatureShape.lambdaReturnType, "createUnitDelegate", spec.argumentKind)
+            ReturnCarrier.BOOLEAN -> directSingleArgPlan(spec.parameterType, signatureShape.lambdaReturnType, "createBooleanDelegate", spec.argumentKind)
         }
     }
 
-    private fun directSingleArgPlan(parameterType: TypeName, returnType: TypeName, bridgeFactoryMethod: String): DelegateLambdaPlan.PlannedBridge {
+    private fun directSingleArgPlan(parameterType: TypeName, returnType: TypeName, bridgeFactoryMethod: String, argumentKind: DelegateArgumentKind): DelegateLambdaPlan.PlannedBridge {
         return DelegateLambdaPlan.PlannedBridge(
             lambdaType = LambdaTypeName.get(parameters = arrayOf(parameterType), returnType = returnType),
             bridge = BridgeSpec(
                 factoryMethod = bridgeFactoryMethod,
-                parameterCarriers = listOf(ParameterCarrier.Direct(parameterType)),
+                argumentKinds = listOf(argumentKind),
                 returnCarrier = if (returnType == Boolean::class.asTypeName()) ReturnCarrier.BOOLEAN else ReturnCarrier.UNIT,
             ),
         )
