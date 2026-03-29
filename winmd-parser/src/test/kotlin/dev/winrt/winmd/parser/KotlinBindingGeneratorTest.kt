@@ -5129,6 +5129,25 @@ class KotlinBindingGeneratorTest {
                                 ),
                             ),
                         ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "ProgressSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Async.IProgressSource",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "UploadAsync",
+                                    returnType = "Windows.Foundation.IAsyncActionWithProgress<UInt32>",
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "DownloadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperationWithProgress<String, UInt32>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
                     ),
                 ),
             ),
@@ -5136,6 +5155,7 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val interfaceBinding = files.first { it.relativePath == "Example/Async/IProgressSource.kt" }.content
+        val runtimeBinding = files.first { it.relativePath == "Example/Async/ProgressSource.kt" }.content
 
         assertTrue(interfaceBinding.contains("fun uploadAsync(): IAsyncActionWithProgress<UInt32>"))
         assertTrue(interfaceBinding.contains("suspend fun uploadAsyncAwait(onProgress: (UInt32) -> Unit = { _ -> }): Unit"))
@@ -5143,5 +5163,12 @@ class KotlinBindingGeneratorTest {
         assertTrue(interfaceBinding.contains("fun downloadAsync(name: String)"))
         assertTrue(interfaceBinding.contains("suspend fun downloadAsyncAwait(name: String, onProgress: (UInt32) -> Unit = { _ -> })"))
         assertTrue(interfaceBinding.contains("downloadAsync(name).await(onProgress = onProgress)"))
+
+        assertTrue(runtimeBinding.contains("fun uploadAsync(): IAsyncActionWithProgress<UInt32>"))
+        assertTrue(runtimeBinding.contains("suspend fun uploadAsyncAwait(onProgress: (UInt32) -> Unit = { _ -> }): Unit"))
+        assertTrue(runtimeBinding.contains("uploadAsync().await(onProgress = onProgress)"))
+        assertTrue(runtimeBinding.contains("fun downloadAsync(name: String)"))
+        assertTrue(runtimeBinding.contains("suspend fun downloadAsyncAwait(name: String, onProgress: (UInt32) -> Unit = { _ -> })"))
+        assertTrue(runtimeBinding.contains("downloadAsync(name).await(onProgress = onProgress)"))
     }
 }
