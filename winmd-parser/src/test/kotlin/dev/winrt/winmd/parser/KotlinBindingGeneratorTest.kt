@@ -124,6 +124,54 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun does_not_fold_runtime_class_factory_into_companion_object() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Globalization",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Globalization",
+                            name = "Language",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Globalization.ILanguage",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Globalization",
+                            name = "ILanguage",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Globalization",
+                            name = "ILanguageFactory",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "ffffffff-ffff-ffff-ffff-ffffffffffff",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateLanguage",
+                                    returnType = "Windows.Globalization.Language",
+                                    parameters = listOf(WinMdParameter("languageTag", "String")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Windows/Globalization/Language.kt" }.content
+
+        assertTrue(binding, binding.contains("override val activationKind: WinRtActivationKind = WinRtActivationKind.Factory"))
+        assertFalse(binding, binding.contains("private val languageFactory: ILanguageFactory by lazy"))
+        assertFalse(binding, binding.contains("fun createLanguage(languageTag: String): Language"))
+        assertFalse(binding, binding.contains("constructor(languageTag: String)"))
+    }
+
+    @Test
     fun generates_bindings_for_known_namespaces() {
         val tempFile = Files.createTempFile("sample", ".winmd")
         Files.write(tempFile, byteArrayOf('M'.code.toByte(), 'Z'.code.toByte()))
