@@ -149,6 +149,7 @@ internal class InterfaceTypeRenderer(
                         type.methods.forEach { method ->
                             renderAsyncResultDescriptorProperty(method, type.namespace, genericParameters)?.let(::addProperty)
                             renderAsyncProgressDescriptorProperty(method, type.namespace, genericParameters)?.let(::addProperty)
+                            renderAsyncAuthoringHelper(method, type.namespace, genericParameters)?.let(::addFunction)
                         }
                     }
                     .build(),
@@ -183,6 +184,91 @@ internal class InterfaceTypeRenderer(
         return PropertySpec.builder("${kotlinMethodName(method.name)}ProgressType", PoetSymbols.asyncProgressTypeClass.parameterizedBy(progressType))
             .initializer("%L", descriptorExpression)
             .build()
+    }
+
+    private fun renderAsyncAuthoringHelper(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): FunSpec? {
+        val asyncPlan = asyncMethodRuleRegistry.plan(method, currentNamespace, genericParameters) ?: return null
+        val functionName = "${kotlinMethodName(method.name)}Task"
+        val builder = FunSpec.builder(functionName)
+            .addParameter("scope", PoetSymbols.coroutineScopeClass)
+            .returns(asyncPlan.rawReturnType)
+        when {
+            method.returnType == "Windows.Foundation.IAsyncAction" -> {
+                builder.addParameter(
+                    "block",
+                    LambdaTypeName.get(
+                        receiver = PoetSymbols.coroutineScopeClass,
+                        returnType = Unit::class.asTypeName(),
+                    ).copy(suspending = true),
+                )
+                builder.addStatement("return scope.%M(block = block)", PoetSymbols.asyncActionMember)
+            }
+            method.returnType.startsWith("Windows.Foundation.IAsyncOperation<") -> {
+                val resultType = asyncMethodProjectionPlanner.asyncResultTypeName(method.returnType, currentNamespace, genericParameters)
+                    ?: return null
+                builder.addParameter(
+                    "block",
+                    LambdaTypeName.get(
+                        receiver = PoetSymbols.coroutineScopeClass,
+                        returnType = resultType,
+                    ).copy(suspending = true),
+                )
+                builder.addStatement(
+                    "return scope.%M(resultType = %N, block = block)",
+                    PoetSymbols.asyncOperationMember,
+                    "${kotlinMethodName(method.name)}ResultType",
+                )
+            }
+            method.returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") -> {
+                val progressType = asyncMethodProjectionPlanner.asyncProgressTypeName(method.returnType, currentNamespace, genericParameters)
+                    ?: return null
+                builder.addParameter(
+                    "block",
+                    LambdaTypeName.get(
+                        receiver = PoetSymbols.coroutineScopeClass,
+                        LambdaTypeName.get(
+                            progressType,
+                            returnType = Unit::class.asTypeName(),
+                        ),
+                        returnType = Unit::class.asTypeName(),
+                    ).copy(suspending = true),
+                )
+                builder.addStatement(
+                    "return scope.%M(progressType = %N, block = block)",
+                    PoetSymbols.asyncActionWithProgressMember,
+                    "${kotlinMethodName(method.name)}ProgressType",
+                )
+            }
+            method.returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") -> {
+                val resultType = asyncMethodProjectionPlanner.asyncResultTypeName(method.returnType, currentNamespace, genericParameters)
+                    ?: return null
+                val progressType = asyncMethodProjectionPlanner.asyncProgressTypeName(method.returnType, currentNamespace, genericParameters)
+                    ?: return null
+                builder.addParameter(
+                    "block",
+                    LambdaTypeName.get(
+                        receiver = PoetSymbols.coroutineScopeClass,
+                        LambdaTypeName.get(
+                            progressType,
+                            returnType = Unit::class.asTypeName(),
+                        ),
+                        returnType = resultType,
+                    ).copy(suspending = true),
+                )
+                builder.addStatement(
+                    "return scope.%M(resultType = %N, progressType = %N, block = block)",
+                    PoetSymbols.asyncOperationWithProgressMember,
+                    "${kotlinMethodName(method.name)}ResultType",
+                    "${kotlinMethodName(method.name)}ProgressType",
+                )
+            }
+            else -> return null
+        }
+        return builder.build()
     }
 
     private fun renderMethods(

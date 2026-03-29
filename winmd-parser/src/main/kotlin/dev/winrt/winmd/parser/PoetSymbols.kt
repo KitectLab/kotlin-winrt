@@ -42,6 +42,7 @@ internal object PoetSymbols {
     val guidOfMember = MemberName("dev.winrt.core", "guidOf")
     val projectInterfaceMember = MemberName("dev.winrt.core", "projectInterface")
     val comPtrClass = ClassName("dev.winrt.kom", "ComPtr")
+    val coroutineScopeClass = ClassName("kotlinx.coroutines", "CoroutineScope")
     val platformComInteropClass = ClassName("dev.winrt.kom", "PlatformComInterop")
     val asyncActionClass = ClassName("windows.foundation", "IAsyncAction")
     val asyncResultTypeClass = ClassName("windows.foundation", "AsyncResultType")
@@ -51,5 +52,9 @@ internal object PoetSymbols {
     val asyncOperationWithProgressClass = ClassName("windows.foundation", "IAsyncOperationWithProgress")
     val asyncResultTypesClass = ClassName("windows.foundation", "AsyncResultTypes")
     val asyncProgressTypesClass = ClassName("windows.foundation", "AsyncProgressTypes")
+    val asyncActionMember = MemberName("windows.foundation", "asyncAction")
+    val asyncOperationMember = MemberName("windows.foundation", "asyncOperation")
+    val asyncActionWithProgressMember = MemberName("windows.foundation", "asyncActionWithProgress")
+    val asyncOperationWithProgressMember = MemberName("windows.foundation", "asyncOperationWithProgress")
     val awaitMember = MemberName("windows.foundation", "await")
 }
