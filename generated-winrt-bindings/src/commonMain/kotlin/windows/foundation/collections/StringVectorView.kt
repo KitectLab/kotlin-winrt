@@ -4,14 +4,13 @@ import dev.winrt.core.UInt32
 import dev.winrt.core.WinRtObject
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
-import dev.winrt.projection.WinRtListProjection
+import kotlin.collections.Collection
 import kotlin.io.use
 
 public open class StringVectorView(
   pointer: ComPtr,
 ) : WinRtObject(pointer),
   List<String> {
-  private val listDelegate: List<String> = createListDelegate(pointer)
 
   public val winRtSize: UInt32
     get() = UInt32(PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow())
@@ -23,39 +22,52 @@ public open class StringVectorView(
   }
 
   override val size: Int
-    get() = listDelegate.size
+    get() = winRtSize.value.toInt()
 
-  override fun contains(element: String): Boolean = listDelegate.contains(element)
+  override fun contains(element: String): Boolean = indexOf(element) >= 0
 
-  override fun containsAll(elements: Collection<String>): Boolean = listDelegate.containsAll(elements)
+  override fun containsAll(elements: Collection<String>): Boolean = elements.all { contains(it) }
 
-  override fun get(index: Int): String = listDelegate[index]
+  override fun get(index: Int): String = getAt(UInt32(index.toUInt()))
 
-  override fun indexOf(element: String): Int = listDelegate.indexOf(element)
-
-  override fun isEmpty(): Boolean = listDelegate.isEmpty()
-
-  override fun iterator(): Iterator<String> = listDelegate.iterator()
-
-  override fun lastIndexOf(element: String): Int = listDelegate.lastIndexOf(element)
-
-  override fun listIterator(): ListIterator<String> = listDelegate.listIterator()
-
-  override fun listIterator(index: Int): ListIterator<String> = listDelegate.listIterator(index)
-
-  override fun subList(fromIndex: Int, toIndex: Int): List<String> = listDelegate.subList(fromIndex, toIndex)
-
-  public companion object {
-    private fun createListDelegate(pointer: ComPtr): List<String> =
-        WinRtListProjection(
-            sizeProvider = {
-              UInt32(PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow()).value.toInt()
-            },
-            getter = { index ->
-              PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 6, index.toUInt()).getOrThrow().use {
-                it.toKotlinString()
-              }
-            },
-        )
+  override fun indexOf(element: String): Int {
+    for (index in 0 until size) {
+      if (get(index) == element) {
+        return index
+      }
+    }
+    return -1
   }
+
+  override fun isEmpty(): Boolean = size == 0
+
+  override fun iterator(): Iterator<String> = object : Iterator<String> {
+    private var index = 0
+    override fun hasNext(): Boolean = index < size
+    override fun next(): String = get(index++)
+  }
+
+  override fun lastIndexOf(element: String): Int {
+    for (index in size - 1 downTo 0) {
+      if (get(index) == element) {
+        return index
+      }
+    }
+    return -1
+  }
+
+  override fun listIterator(): ListIterator<String> = listIterator(0)
+
+  override fun listIterator(index: Int): ListIterator<String> = object : ListIterator<String> {
+    private var current = index
+    override fun hasNext(): Boolean = current < size
+    override fun next(): String = get(current++)
+    override fun hasPrevious(): Boolean = current > 0
+    override fun previous(): String = get(--current)
+    override fun nextIndex(): Int = current
+    override fun previousIndex(): Int = current - 1
+  }
+
+  override fun subList(fromIndex: Int, toIndex: Int): List<String> =
+      (fromIndex until toIndex).map { get(it) }
 }
