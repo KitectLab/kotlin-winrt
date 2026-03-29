@@ -16,6 +16,11 @@ internal enum class RuntimePropertySetterRuleFamily {
     INT32,
 }
 
+internal enum class InterfacePropertyRuleFamily {
+    ENUM,
+    INT32,
+}
+
 internal object PropertyRuleRegistry {
     private val getterRules: Map<String, RuntimePropertyGetterRuleFamily> = mapOf(
         "IReference<String>" to RuntimePropertyGetterRuleFamily.IREFERENCE_STRING,
@@ -32,6 +37,24 @@ internal object PropertyRuleRegistry {
         "String" to RuntimePropertySetterRuleFamily.STRING,
         "Int32" to RuntimePropertySetterRuleFamily.INT32,
     )
+
+    fun interfaceGetterRuleFamily(
+        type: String,
+        isEnumType: Boolean,
+    ): InterfacePropertyRuleFamily? {
+        return when {
+            isEnumType -> InterfacePropertyRuleFamily.ENUM
+            type == "Int32" -> InterfacePropertyRuleFamily.INT32
+            else -> null
+        }
+    }
+
+    fun interfaceSetterRuleFamily(type: String): InterfacePropertyRuleFamily? {
+        return when (type) {
+            "Int32" -> InterfacePropertyRuleFamily.INT32
+            else -> null
+        }
+    }
 
     fun getterRuleFamily(type: String): RuntimePropertyGetterRuleFamily? = getterRules[type]
 

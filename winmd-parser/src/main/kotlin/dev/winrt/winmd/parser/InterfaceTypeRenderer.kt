@@ -266,15 +266,15 @@ internal class InterfaceTypeRenderer(
         val propertyType = typeNameMapper.mapTypeName(property.type, currentNamespace, genericParameters)
         val getterVtableIndex = property.getterVtableIndex!!
         val getterBuilder = FunSpec.getterBuilder()
-        when {
-            typeRegistry.isEnumType(property.type, currentNamespace) ->
+        when (PropertyRuleRegistry.interfaceGetterRuleFamily(property.type, typeRegistry.isEnumType(property.type, currentNamespace))) {
+            InterfacePropertyRuleFamily.ENUM ->
                 getterBuilder.addStatement(
                     "return %T.fromValue(%T.invokeUInt32Method(pointer, %L).getOrThrow().toInt())",
                     propertyType,
                     PoetSymbols.platformComInteropClass,
                     getterVtableIndex,
                 )
-            property.type == "Int32" ->
+            InterfacePropertyRuleFamily.INT32 ->
                 getterBuilder.addStatement(
                     "return %T(%T.invokeInt32Method(pointer, %L).getOrThrow())",
                     PoetSymbols.int32Class,
@@ -285,7 +285,10 @@ internal class InterfaceTypeRenderer(
         }
         val propertyBuilder = PropertySpec.builder(propertyName, propertyType)
             .getter(getterBuilder.build())
-        if (property.mutable && property.type == "Int32" && property.setterVtableIndex != null) {
+        if (property.mutable &&
+            PropertyRuleRegistry.interfaceSetterRuleFamily(property.type) == InterfacePropertyRuleFamily.INT32 &&
+            property.setterVtableIndex != null
+        ) {
             val setterVtableIndex = property.setterVtableIndex!!
             propertyBuilder.mutable()
             propertyBuilder.setter(
@@ -835,10 +838,10 @@ internal class InterfaceTypeRenderer(
         genericParameters: Set<String>,
     ): Boolean {
         return property.getterVtableIndex != null &&
-            (
-                typeRegistry.isEnumType(property.type, currentNamespace) ||
-                    property.type == "Int32"
-                )
+            PropertyRuleRegistry.interfaceGetterRuleFamily(
+                type = property.type,
+                isEnumType = typeRegistry.isEnumType(property.type, currentNamespace),
+            ) != null
     }
 
     private fun collectionSuperinterface(
