@@ -96,7 +96,7 @@ internal class RuntimeTypeRenderer(
     }
 
     private fun renderDefaultInterfaceMembers(type: WinMdType): RuntimeProjectionMembers {
-        val defaultInterface = type.defaultInterface?.let { typeRegistry.findType(it, type.namespace) }
+        val defaultInterface = typeRegistry.findDefaultInterfaceType(type.name, type.namespace)
             ?: return RuntimeProjectionMembers(emptyList(), emptyList())
         val methods = defaultInterface.methods
             .filter(runtimeMethodRenderer::canRenderRuntimeMethod)
@@ -115,10 +115,7 @@ internal class RuntimeTypeRenderer(
     private fun renderBaseInterfaceMembers(type: WinMdType): RuntimeProjectionMembers {
         val methods = mutableListOf<FunSpec>()
         val properties = mutableListOf<PropertySpec>()
-        type.baseInterfaces
-            .asSequence()
-            .filterNot { it == type.defaultInterface }
-            .mapNotNull { typeRegistry.findType(it, type.namespace) }
+        typeRegistry.findImplementedInterfaceTypes(type.name, type.namespace)
             .forEach { baseInterface ->
                 methods += baseInterface.methods
                     .filter(runtimeMethodRenderer::canRenderRuntimeMethod)

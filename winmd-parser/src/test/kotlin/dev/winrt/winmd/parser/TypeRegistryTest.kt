@@ -111,4 +111,80 @@ class TypeRegistryTest {
             runtimeRegistry.findRuntimeClassStaticsType("ApplicationLanguages", "Windows.Globalization")?.name,
         )
     }
+
+    @Test
+    fun finds_default_interface_by_runtime_class_name() {
+        val runtimeRegistry = TypeRegistry(
+            WinMdModel(
+                files = emptyList(),
+                namespaces = listOf(
+                    WinMdNamespace(
+                        name = "Microsoft.UI.Xaml",
+                        types = listOf(
+                            WinMdType(
+                                namespace = "Microsoft.UI.Xaml",
+                                name = "Window",
+                                kind = WinMdTypeKind.RuntimeClass,
+                                defaultInterface = "Microsoft.UI.Xaml.IWindow",
+                            ),
+                            WinMdType(
+                                namespace = "Microsoft.UI.Xaml",
+                                name = "IWindow",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals(
+            "IWindow",
+            runtimeRegistry.findDefaultInterfaceType("Window", "Microsoft.UI.Xaml")?.name,
+        )
+    }
+
+    @Test
+    fun finds_implemented_interfaces_by_runtime_class_name_without_default_interface_duplication() {
+        val runtimeRegistry = TypeRegistry(
+            WinMdModel(
+                files = emptyList(),
+                namespaces = listOf(
+                    WinMdNamespace(
+                        name = "Windows.Globalization",
+                        types = listOf(
+                            WinMdType(
+                                namespace = "Windows.Globalization",
+                                name = "Calendar",
+                                kind = WinMdTypeKind.RuntimeClass,
+                                defaultInterface = "Windows.Globalization.ICalendar",
+                                baseInterfaces = listOf(
+                                    "Windows.Globalization.ICalendar",
+                                    "Windows.Foundation.IStringable",
+                                ),
+                            ),
+                            WinMdType(
+                                namespace = "Windows.Globalization",
+                                name = "ICalendar",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                            ),
+                            WinMdType(
+                                namespace = "Windows.Foundation",
+                                name = "IStringable",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "96369f54-8eb6-48f0-abce-c1b211e627c3",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals(
+            listOf("IStringable"),
+            runtimeRegistry.findImplementedInterfaceTypes("Calendar", "Windows.Globalization").map { it.name },
+        )
+    }
 }

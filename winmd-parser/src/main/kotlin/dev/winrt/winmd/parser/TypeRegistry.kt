@@ -30,6 +30,21 @@ internal class TypeRegistry(
         return findType("I${runtimeClass.name}Statics", runtimeClass.namespace)
     }
 
+    fun findDefaultInterfaceType(typeName: String, currentNamespace: String): WinMdType? {
+        val runtimeClass = findType(typeName, currentNamespace) ?: return null
+        val defaultInterfaceName = runtimeClass.defaultInterface ?: return null
+        return findType(defaultInterfaceName, runtimeClass.namespace)
+    }
+
+    fun findImplementedInterfaceTypes(typeName: String, currentNamespace: String): List<WinMdType> {
+        val runtimeClass = findType(typeName, currentNamespace) ?: return emptyList()
+        return runtimeClass.baseInterfaces
+            .asSequence()
+            .filterNot { it == runtimeClass.defaultInterface }
+            .mapNotNull { findType(it, runtimeClass.namespace) }
+            .toList()
+    }
+
     private fun canonicalQualifiedName(typeName: String): String {
         return typeName.substringBefore('<')
             .substringBefore('`')
