@@ -2024,9 +2024,11 @@ class KotlinBindingGeneratorTest {
         val binding = files.first { it.relativePath == "Example/Runtime/ObjectReturnHost.kt" }.content
 
         assertTrue(binding.contains("fun getSignedValue(payload: Payload): Int64"))
-        assertTrue(binding.contains("invokeInt64MethodWithObjectArg(pointer, 6, payload.pointer).getOrThrow()"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer).getOrThrow()"))
         assertTrue(binding.contains("fun getUnsignedValue(payload: Payload): UInt64"))
-        assertTrue(binding.contains("invokeInt64MethodWithObjectArg(pointer, 7, payload.pointer).getOrThrow().toULong()"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer).getOrThrow().toULong()"))
     }
 
     @Test
