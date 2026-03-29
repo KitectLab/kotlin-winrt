@@ -64,7 +64,6 @@ internal class RuntimeMethodRenderer(
         val signatureKey = methodSignatureKey(method.returnType, parameterTypes, ::supportsRuntimeObjectType)
         return when {
             signatureKey != null && MethodRuleRegistry.sharedMethodRuleFamily(signatureKey) != null -> runtimeMethodPlanForKey(signatureKey)
-            signatureKey == MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64) -> runtimeMethodPlanForKey(signatureKey)
             signatureKey == MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.EMPTY) -> runtimeMethodPlanForKey(signatureKey)
             signatureKey == MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.EMPTY) -> runtimeMethodPlanForKey(signatureKey)
             signatureKey == MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.EMPTY) -> runtimeMethodPlanForKey(signatureKey)

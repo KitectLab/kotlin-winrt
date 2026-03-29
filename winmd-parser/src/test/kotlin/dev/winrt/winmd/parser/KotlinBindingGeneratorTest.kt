@@ -4558,6 +4558,40 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_int64_unit_interface_methods() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "IClock",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "87654321-4321-6789-abcd-ef0123456789",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetTicks",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter(name = "ticks", type = "Int64")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Contracts/IClock.kt" }.content
+
+        assertTrue(binding.contains("fun setTicks(ticks: Int64)"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 6, ticks.value).getOrThrow()"))
+    }
+
+    @Test
     fun generates_winui_unit_interface_methods() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
