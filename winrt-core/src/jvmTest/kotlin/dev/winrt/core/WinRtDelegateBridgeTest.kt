@@ -571,6 +571,87 @@ class WinRtDelegateBridgeTest {
     }
 
     @Test
+    fun creates_four_parameter_unit_delegate_handle() {
+        val iid = guidOf("12341234-1111-2222-3333-444444444444")
+        val captured = mutableListOf<Int>()
+
+        WinRtDelegateBridge.createUnitDelegate(
+            iid = iid,
+            parameterKinds = listOf(
+                WinRtDelegateValueKind.INT32,
+                WinRtDelegateValueKind.INT32,
+                WinRtDelegateValueKind.INT32,
+                WinRtDelegateValueKind.INT32,
+            ),
+        ) { args ->
+            captured += args.map { it as Int }
+        }.use { handle ->
+            val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
+            val vtablePointer = callbackPointer.reinterpret(ValueLayout.ADDRESS.byteSize()).get(ValueLayout.ADDRESS, 0L)
+            val function = Linker.nativeLinker().downcallHandle(
+                vtablePointer.reinterpret(ValueLayout.ADDRESS.byteSize() * 4).getAtIndex(ValueLayout.ADDRESS, 3),
+                FunctionDescriptor.of(
+                    ValueLayout.JAVA_INT,
+                    ValueLayout.ADDRESS,
+                    ValueLayout.JAVA_INT,
+                    ValueLayout.JAVA_INT,
+                    ValueLayout.JAVA_INT,
+                    ValueLayout.JAVA_INT,
+                ),
+            )
+
+            val hresult = function.invokeWithArguments(callbackPointer, 1, 2, 3, 4) as Int
+            assertEquals(0, hresult)
+            assertEquals(listOf(1, 2, 3, 4), captured)
+            assertFalse(handle.pointer.isNull)
+        }
+    }
+
+    @Test
+    fun creates_four_parameter_boolean_delegate_handle() {
+        val iid = guidOf("56785678-1111-2222-3333-444444444444")
+        val captured = mutableListOf<Int>()
+
+        WinRtDelegateBridge.createBooleanDelegate(
+            iid = iid,
+            parameterKinds = listOf(
+                WinRtDelegateValueKind.INT32,
+                WinRtDelegateValueKind.INT32,
+                WinRtDelegateValueKind.INT32,
+                WinRtDelegateValueKind.INT32,
+            ),
+        ) { args ->
+            captured += args.map { it as Int }
+            true
+        }.use { handle ->
+            val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
+            val vtablePointer = callbackPointer.reinterpret(ValueLayout.ADDRESS.byteSize()).get(ValueLayout.ADDRESS, 0L)
+            val function = Linker.nativeLinker().downcallHandle(
+                vtablePointer.reinterpret(ValueLayout.ADDRESS.byteSize() * 4).getAtIndex(ValueLayout.ADDRESS, 3),
+                FunctionDescriptor.of(
+                    ValueLayout.JAVA_INT,
+                    ValueLayout.ADDRESS,
+                    ValueLayout.JAVA_INT,
+                    ValueLayout.JAVA_INT,
+                    ValueLayout.JAVA_INT,
+                    ValueLayout.JAVA_INT,
+                    ValueLayout.ADDRESS,
+                ),
+            )
+            val result = Arena.ofConfined().use { arena ->
+                val out = arena.allocate(ValueLayout.JAVA_INT)
+                val hresult = function.invokeWithArguments(callbackPointer, 1, 2, 3, 4, out) as Int
+                assertEquals(0, hresult)
+                out.get(ValueLayout.JAVA_INT, 0L)
+            }
+
+            assertEquals(listOf(1, 2, 3, 4), captured)
+            assertEquals(1, result)
+            assertFalse(handle.pointer.isNull)
+        }
+    }
+
+    @Test
     fun creates_float32_arg_unit_delegate_handle() {
         val iid = guidOf("ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee")
         var captured: Float? = null
