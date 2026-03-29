@@ -41,6 +41,14 @@ class WinRtTypeSignatureTest {
     }
 
     @Test
+    fun builds_enum_signature_using_default_underlying_type() {
+        assertEquals(
+            "enum(Windows.Foundation.AsyncStatus;i4)",
+            WinRtTypeSignature.enum("Windows.Foundation.AsyncStatus"),
+        )
+    }
+
+    @Test
     fun builds_struct_signature_using_field_signatures() {
         assertEquals(
             "struct(Windows.Foundation.Point;f8;f8)",

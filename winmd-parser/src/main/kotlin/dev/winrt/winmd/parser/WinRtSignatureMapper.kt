@@ -29,7 +29,7 @@ internal class WinRtSignatureMapper(
                     defaultInterfaceSignature = signatureFor(defaultInterfaceName, type.namespace),
                 )
             }
-            WinMdTypeKind.Enum -> "enum($qualifiedName;i4)"
+            WinMdTypeKind.Enum -> WinRtTypeSignature.enum(qualifiedName)
             WinMdTypeKind.Struct -> {
                 val fieldSignatures = type.fields
                     .map { field -> signatureFor(field.type, type.namespace) }

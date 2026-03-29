@@ -10,6 +10,9 @@ object WinRtTypeSignature {
     fun runtimeClass(qualifiedName: String, defaultInterfaceSignature: String): String =
         "rc($qualifiedName;$defaultInterfaceSignature)"
 
+    fun enum(qualifiedName: String, underlyingTypeSignature: String = "i4"): String =
+        "enum($qualifiedName;$underlyingTypeSignature)"
+
     fun struct(qualifiedName: String, vararg fieldSignatures: String): String =
         "struct($qualifiedName;${fieldSignatures.joinToString(";")})"
 
