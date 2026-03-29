@@ -3,7 +3,6 @@ package windows.globalization.numberformatting
 import dev.winrt.core.Inspectable
 import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.WinRtInterfaceProjection
-import dev.winrt.core.WinRtStrings
 import dev.winrt.core.guidOf
 import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
@@ -29,18 +28,18 @@ public open class INumeralSystemTranslator(
   public fun get_ResolvedLanguage(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
   public fun get_NumeralSystem(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -48,9 +47,9 @@ public open class INumeralSystemTranslator(
     val translated = PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 10,
         value).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(translated)
+      translated.toKotlinString()
     } finally {
-      WinRtStrings.release(translated)
+      translated.close()
     }
   }
 

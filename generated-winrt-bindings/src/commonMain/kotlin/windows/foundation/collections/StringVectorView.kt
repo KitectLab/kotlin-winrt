@@ -1,7 +1,6 @@
 package windows.foundation.collections
 
 import dev.winrt.core.UInt32
-import dev.winrt.core.WinRtStrings
 import dev.winrt.projection.WinRtListProjection
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
@@ -17,7 +16,7 @@ public open class StringVectorView(
 
   public fun getAt(index: UInt32): String {
     return PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 6, index.value).getOrThrow().use {
-      WinRtStrings.toKotlin(it)
+      it.toKotlinString()
     }
   }
 
@@ -29,7 +28,7 @@ public open class StringVectorView(
             },
             getter = { index ->
               PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 6, index.toUInt()).getOrThrow().use {
-                WinRtStrings.toKotlin(it)
+                it.toKotlinString()
               }
             },
         )

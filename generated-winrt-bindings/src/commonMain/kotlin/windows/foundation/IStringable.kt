@@ -3,7 +3,6 @@ package windows.foundation
 import dev.winrt.core.Inspectable
 import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.WinRtInterfaceProjection
-import dev.winrt.core.WinRtStrings
 import dev.winrt.core.guidOf
 import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
@@ -32,7 +31,7 @@ private class IStringableProjection(
 ) : WinRtInterfaceProjection(pointer), IStringable {
   override fun toString(): String {
     return PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow().use {
-      WinRtStrings.toKotlin(it)
+      it.toKotlinString()
     }
   }
 }

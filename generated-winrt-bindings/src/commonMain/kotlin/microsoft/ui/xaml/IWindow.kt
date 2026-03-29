@@ -4,7 +4,6 @@ import dev.winrt.core.Inspectable
 import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.WinRtInterfaceProjection
-import dev.winrt.core.WinRtStrings
 import dev.winrt.core.guidOf
 import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
@@ -19,9 +18,9 @@ open class IWindow(pointer: ComPtr) : WinRtInterfaceProjection(pointer) {
         get() {
             val value = PlatformComInterop.invokeHStringMethod(pointer, 14).getOrThrow()
             return try {
-                WinRtStrings.toKotlin(value)
+                value.toKotlinString()
             } finally {
-                WinRtStrings.release(value)
+                value.close()
             }
         }
         set(value) {

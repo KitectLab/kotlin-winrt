@@ -5,7 +5,6 @@ import dev.winrt.core.RuntimeProperty
 import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
-import dev.winrt.core.WinRtStrings
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
 import microsoft.ui.xaml.FrameworkElement
@@ -20,9 +19,9 @@ open class TextBlock(pointer: ComPtr) : FrameworkElement(pointer) {
             if (pointer.isNull) return backingText.get()
             val value = PlatformComInterop.invokeHStringMethod(pointer, 26).getOrThrow()
             return try {
-                WinRtStrings.toKotlin(value)
+                value.toKotlinString()
             } finally {
-                WinRtStrings.release(value)
+                value.close()
             }
         }
         set(value) {

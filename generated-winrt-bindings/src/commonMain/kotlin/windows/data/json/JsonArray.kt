@@ -6,7 +6,6 @@ import dev.winrt.core.UInt32
 import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
-import dev.winrt.core.WinRtStrings
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
@@ -28,9 +27,9 @@ public open class JsonArray(
     val value = PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 8,
         index.value).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 

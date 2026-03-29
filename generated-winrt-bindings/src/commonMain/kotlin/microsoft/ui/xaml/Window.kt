@@ -50,9 +50,9 @@ open class Window(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
             if (pointer.isNull) return backingOptionalTitle.get()
             val value = dev.winrt.kom.PlatformComInterop.invokeHStringMethod(pointer, 14).getOrThrow()
             return try {
-                IReference(dev.winrt.core.WinRtStrings.toKotlin(value))
+                IReference(value.toKotlinString())
             } finally {
-                dev.winrt.core.WinRtStrings.release(value)
+                value.close()
             }
         }
 

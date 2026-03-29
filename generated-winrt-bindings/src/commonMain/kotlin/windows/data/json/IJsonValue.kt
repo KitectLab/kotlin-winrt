@@ -49,18 +49,18 @@ private class IJsonValueProjection(
   override fun stringify(): String {
     val value = dev.winrt.kom.PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow()
     return try {
-      dev.winrt.core.WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      dev.winrt.core.WinRtStrings.release(value)
+      value.close()
     }
   }
 
   override fun getString(): String {
     val value = dev.winrt.kom.PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow()
     return try {
-      dev.winrt.core.WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      dev.winrt.core.WinRtStrings.release(value)
+      value.close()
     }
   }
 

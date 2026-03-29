@@ -6,7 +6,6 @@ import dev.winrt.core.UInt32
 import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.WinRtInterfaceProjection
-import dev.winrt.core.WinRtStrings
 import dev.winrt.core.guidOf
 import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
@@ -52,9 +51,9 @@ private class IJsonArrayProjection(
     val value = PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 8,
         index.value).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 

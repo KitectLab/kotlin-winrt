@@ -6,7 +6,6 @@ import dev.winrt.core.DateTime
 import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.WinRtInterfaceProjection
-import dev.winrt.core.WinRtStrings
 import dev.winrt.core.guidOf
 import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
@@ -199,9 +198,9 @@ public open class ICalendar(
   public fun eraAsString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 25).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -209,9 +208,9 @@ public open class ICalendar(
     val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 26,
         idealLength.value).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -249,9 +248,9 @@ public open class ICalendar(
   public fun yearAsString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 33).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -259,9 +258,9 @@ public open class ICalendar(
     val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 34,
         remainingDigits.value).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -269,9 +268,9 @@ public open class ICalendar(
     val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 35,
         minDigits.value).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -294,9 +293,9 @@ public open class ICalendar(
   public fun monthAsString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 42).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -304,18 +303,18 @@ public open class ICalendar(
     val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 43,
         idealLength.value).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
   public fun monthAsSoloString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 44).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -323,18 +322,18 @@ public open class ICalendar(
     val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 45,
         idealLength.value).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
   public fun monthAsNumericString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 46).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -342,9 +341,9 @@ public open class ICalendar(
     val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 47,
         minDigits.value).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -371,9 +370,9 @@ public open class ICalendar(
   public fun dayAsString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 55).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -381,9 +380,9 @@ public open class ICalendar(
     val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 56,
         minDigits.value).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -397,9 +396,9 @@ public open class ICalendar(
   public fun hourAsString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 76).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -407,9 +406,9 @@ public open class ICalendar(
     val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 77,
         minDigits.value).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -423,9 +422,9 @@ public open class ICalendar(
   public fun minuteAsString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 81).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -433,9 +432,9 @@ public open class ICalendar(
     val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 82,
         minDigits.value).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -449,9 +448,9 @@ public open class ICalendar(
   public fun secondAsString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 86).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -459,9 +458,9 @@ public open class ICalendar(
     val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 87,
         minDigits.value).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -475,9 +474,9 @@ public open class ICalendar(
   public fun nanosecondAsString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 91).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -485,27 +484,27 @@ public open class ICalendar(
     val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 92,
         minDigits.value).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
   public fun get_NumeralSystem(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 10).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
   public fun get_CalendarSystem(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 12).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -516,9 +515,9 @@ public open class ICalendar(
   public fun get_Clock(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 14).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -532,9 +531,9 @@ public open class ICalendar(
   public fun dayOfWeekAsString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 58).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -542,18 +541,18 @@ public open class ICalendar(
     val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 59,
         idealLength.value).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
   public fun dayOfWeekAsSoloString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 60).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -561,9 +560,9 @@ public open class ICalendar(
     val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 61,
         idealLength.value).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -586,9 +585,9 @@ public open class ICalendar(
   public fun periodAsString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 68).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -596,9 +595,9 @@ public open class ICalendar(
     val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 69,
         idealLength.value).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
@@ -632,9 +631,9 @@ public open class ICalendar(
   public fun get_ResolvedLanguage(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 102).getOrThrow()
     return try {
-      WinRtStrings.toKotlin(value)
+      value.toKotlinString()
     } finally {
-      WinRtStrings.release(value)
+      value.close()
     }
   }
 
