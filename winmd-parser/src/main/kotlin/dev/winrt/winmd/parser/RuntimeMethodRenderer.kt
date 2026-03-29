@@ -13,44 +13,11 @@ internal class RuntimeMethodRenderer(
     private val typeRegistry: TypeRegistry,
 ) {
     fun canRenderRuntimeMethod(method: WinMdMethod): Boolean {
-        if (!isKotlinIdentifier(method.name)) {
-            return false
-        }
-        return (method.returnType == "Unit" && method.parameters.isEmpty() && method.vtableIndex != null) ||
-            (method.returnType == "Unit" &&
-                method.parameters.size == 1 &&
-                method.parameters[0].type == "Int32" &&
-                method.vtableIndex != null) ||
-            (method.returnType == "Unit" &&
-                method.parameters.size == 1 &&
-                method.parameters[0].type == "Int64" &&
-                method.vtableIndex != null) ||
-            (method.returnType == "Unit" &&
-                method.parameters.size == 1 &&
-                method.parameters[0].type == "String" &&
-                method.vtableIndex != null) ||
-            (method.returnType == "Unit" &&
-                method.parameters.size == 1 &&
-                supportsRuntimeObjectType(method.parameters[0].type) &&
-                method.vtableIndex != null) ||
-            (scalarRuntimeReturnPlan(method.returnType) != null &&
-                scalarRuntimeReturnPlan(method.returnType)!!.supports(method) &&
-                method.vtableIndex != null) ||
-            (supportsRuntimeObjectType(method.returnType) && method.parameters.isEmpty() && method.vtableIndex != null) ||
-            (supportsRuntimeObjectType(method.returnType) &&
-                method.parameters.size == 1 &&
-                method.parameters[0].type == "String" &&
-                method.vtableIndex != null) ||
-            (supportsRuntimeObjectType(method.returnType) &&
-                method.parameters.size == 1 &&
-                method.parameters[0].type == "UInt32" &&
-                method.vtableIndex != null)
+        return runtimeMethodPlan(method) != null
     }
 
     fun renderRuntimeMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
-        if (!canRenderRuntimeMethod(method)) {
-            return null
-        }
+        val plan = runtimeMethodPlan(method) ?: return null
         val functionName = if (method.name == "ToString" && method.returnType == "String" && method.parameters.isEmpty()) {
             "toString"
         } else {
@@ -61,158 +28,144 @@ internal class RuntimeMethodRenderer(
         if (method.name == "ToString" && method.returnType == "String" && method.parameters.isEmpty()) {
             builder.addModifiers(KModifier.OVERRIDE)
         }
+        val parameterBindings = bindParameters(builder, method, currentNamespace)
+        return builder
+            .beginControlFlow("if (pointer.isNull)")
+            .addPlannedStatement(plan.nullPointerReturn(method))
+            .endControlFlow()
+            .addStatement(
+                plan.returnStatement,
+                *plan.statementArgs(method, currentNamespace, parameterBindings),
+            )
+            .build()
+    }
 
-        if (method.returnType == "Unit" && method.parameters.isEmpty() && method.vtableIndex != null) {
-            val vtableIndex = method.vtableIndex!!
-            return builder
-                .beginControlFlow("if (pointer.isNull)")
-                .addStatement("return")
-                .endControlFlow()
-                .addStatement("%T.invokeUnitMethod(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
-                .build()
+    private fun bindParameters(
+        builder: FunSpec.Builder,
+        method: WinMdMethod,
+        currentNamespace: String,
+    ): List<RuntimeMethodParameterBinding> {
+        return method.parameters.map { parameter ->
+            val parameterName = parameter.name.replaceFirstChar(Char::lowercase)
+            val parameterType = typeNameMapper.mapTypeName(parameter.type, currentNamespace)
+            builder.addParameter(parameterName, parameterType)
+            RuntimeMethodParameterBinding(
+                type = parameter.type,
+                name = parameterName,
+            )
         }
-        if (method.returnType == "Unit" &&
-            method.parameters.size == 1 &&
-            method.parameters[0].type == "Int32" &&
-            method.vtableIndex != null
-        ) {
-            val vtableIndex = method.vtableIndex!!
-            val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-            return builder
-                .addParameter(argumentName, PoetSymbols.int32Class)
-                .beginControlFlow("if (pointer.isNull)")
-                .addStatement("return")
-                .endControlFlow()
-                .addStatement("%T.invokeUnitMethodWithInt32Arg(pointer, %L, %N.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
-                .build()
+    }
+
+    private fun runtimeMethodPlan(method: WinMdMethod): RuntimeMethodPlan? {
+        if (!isKotlinIdentifier(method.name) || method.vtableIndex == null) {
+            return null
         }
-        if (method.returnType == "Unit" &&
-            method.parameters.size == 1 &&
-            method.parameters[0].type == "Int64" &&
-            method.vtableIndex != null
-        ) {
-            val vtableIndex = method.vtableIndex!!
-            val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-            return builder
-                .addParameter(argumentName, PoetSymbols.int64Class)
-                .beginControlFlow("if (pointer.isNull)")
-                .addStatement("return")
-                .endControlFlow()
-                .addStatement("%T.invokeUnitMethodWithInt64Arg(pointer, %L, %N.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
-                .build()
+        val parameterTypes = method.parameters.map { it.type }
+        return when {
+            method.returnType == "Unit" -> unitRuntimePlan(parameterTypes)
+            scalarRuntimeReturnPlan(method.returnType)?.supports(parameterTypes) == true ->
+                scalarRuntimePlan(scalarRuntimeReturnPlan(method.returnType)!!)
+            supportsRuntimeObjectType(method.returnType) -> objectRuntimePlan(parameterTypes)
+            else -> null
         }
-        if (method.returnType == "Unit" &&
-            method.parameters.size == 1 &&
-            method.parameters[0].type == "String" &&
-            method.vtableIndex != null
-        ) {
-            val vtableIndex = method.vtableIndex!!
-            val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-            return builder
-                .addParameter(argumentName, String::class.asTypeName())
-                .beginControlFlow("if (pointer.isNull)")
-                .addStatement("return")
-                .endControlFlow()
-                .addStatement("%T.invokeUnitMethodWithStringArg(pointer, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
-                .build()
+    }
+
+    private fun unitRuntimePlan(parameterTypes: List<String>): RuntimeMethodPlan? {
+        return when {
+            parameterTypes.isEmpty() -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return") },
+                returnStatement = "%T.invokeUnitMethod(pointer, %L).getOrThrow()",
+                statementArgs = { method, _, _ ->
+                    arrayOf(PoetSymbols.platformComInteropClass, method.vtableIndex!!)
+                },
+            )
+            parameterTypes == listOf("Int32") -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return") },
+                returnStatement = "%T.invokeUnitMethodWithInt32Arg(pointer, %L, %N.value).getOrThrow()",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(PoetSymbols.platformComInteropClass, method.vtableIndex!!, parameterBindings.single().name)
+                },
+            )
+            parameterTypes == listOf("Int64") -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return") },
+                returnStatement = "%T.invokeUnitMethodWithInt64Arg(pointer, %L, %N.value).getOrThrow()",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(PoetSymbols.platformComInteropClass, method.vtableIndex!!, parameterBindings.single().name)
+                },
+            )
+            parameterTypes == listOf("String") -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return") },
+                returnStatement = "%T.invokeUnitMethodWithStringArg(pointer, %L, %N).getOrThrow()",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(PoetSymbols.platformComInteropClass, method.vtableIndex!!, parameterBindings.single().name)
+                },
+            )
+            parameterTypes.size == 1 && supportsRuntimeObjectType(parameterTypes.single()) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return") },
+                returnStatement = "%T.invokeObjectSetter(pointer, %L, %N.pointer).getOrThrow()",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(PoetSymbols.platformComInteropClass, method.vtableIndex!!, parameterBindings.single().name)
+                },
+            )
+            else -> null
         }
-        if (method.returnType == "Unit" &&
-            method.parameters.size == 1 &&
-            supportsRuntimeObjectType(method.parameters[0].type) &&
-            method.vtableIndex != null
-        ) {
-            val vtableIndex = method.vtableIndex!!
-            val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-            return builder
-                .addParameter(argumentName, typeNameMapper.mapTypeName(method.parameters[0].type, currentNamespace))
-                .beginControlFlow("if (pointer.isNull)")
-                .addStatement("return")
-                .endControlFlow()
-                .addStatement("%T.invokeObjectSetter(pointer, %L, %N.pointer).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
-                .build()
-        }
-        val scalarPlan = scalarRuntimeReturnPlan(method.returnType)
-        if (scalarPlan != null && scalarPlan.supports(method) && method.vtableIndex != null) {
-            val vtableIndex = method.vtableIndex!!
-            method.parameters.forEach { parameter ->
-                builder.addParameter(
-                    parameter.name.replaceFirstChar(Char::lowercase),
-                    typeNameMapper.mapTypeName(parameter.type, currentNamespace),
-                )
-            }
-            return builder
-                .beginControlFlow("if (pointer.isNull)")
-                .addStatement("return %L", scalarPlan.nullReturn)
-                .endControlFlow()
-                .addStatement(
-                    "return %L",
-                    scalarPlan.returnExpression(
-                        vtableIndex,
-                        method.parameters.map { it.name.replaceFirstChar(Char::lowercase) },
-                        method.parameters.map { it.type },
+    }
+
+    private fun scalarRuntimePlan(plan: ScalarRuntimeReturnPlan): RuntimeMethodPlan {
+        return RuntimeMethodPlan(
+            nullPointerReturn = { PlannedStatement("return %L", arrayOf(plan.nullReturn)) },
+            returnStatement = "return %L",
+            statementArgs = { method, _, parameterBindings ->
+                arrayOf(
+                    plan.returnExpression(
+                        method.vtableIndex!!,
+                        parameterBindings.map { it.name },
+                        parameterBindings.map { it.type },
                     ),
                 )
-                .build()
-        }
-        if (supportsRuntimeObjectType(method.returnType) &&
-            method.parameters.isEmpty() &&
-            method.vtableIndex != null
-        ) {
-            val vtableIndex = method.vtableIndex!!
-            val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
-            return builder
-                .beginControlFlow("if (pointer.isNull)")
-                .addStatement("error(%S)", "Null runtime object pointer: ${method.name}")
-                .endControlFlow()
-                .addStatement("return %T(%T.invokeObjectMethod(pointer, %L).getOrThrow())", returnType, PoetSymbols.platformComInteropClass, vtableIndex)
-                .build()
-        }
-        if (supportsRuntimeObjectType(method.returnType) &&
-            method.parameters.size == 1 &&
-            method.parameters[0].type == "String" &&
-            method.vtableIndex != null
-        ) {
-            val vtableIndex = method.vtableIndex!!
-            val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-            val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
-            return builder
-                .addParameter(argumentName, String::class.asTypeName())
-                .beginControlFlow("if (pointer.isNull)")
-                .addStatement("error(%S)", "Null runtime object pointer: ${method.name}")
-                .endControlFlow()
-                .addStatement(
-                    "return %T(%T.invokeObjectMethodWithStringArg(pointer, %L, %N).getOrThrow())",
-                    returnType,
-                    PoetSymbols.platformComInteropClass,
-                    vtableIndex,
-                    argumentName,
-                )
-                .build()
-        }
-        if (supportsRuntimeObjectType(method.returnType) &&
-            method.parameters.size == 1 &&
-            method.parameters[0].type == "UInt32" &&
-            method.vtableIndex != null
-        ) {
-            val vtableIndex = method.vtableIndex!!
-            val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-            val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
-            return builder
-                .addParameter(argumentName, PoetSymbols.uint32Class)
-                .beginControlFlow("if (pointer.isNull)")
-                .addStatement("error(%S)", "Null runtime object pointer: ${method.name}")
-                .endControlFlow()
-                .addStatement(
-                    "return %T(%T.invokeObjectMethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow())",
-                    returnType,
-                    PoetSymbols.platformComInteropClass,
-                    vtableIndex,
-                    argumentName,
-                )
-                .build()
-        }
+            },
+        )
+    }
 
-        return null
+    private fun objectRuntimePlan(parameterTypes: List<String>): RuntimeMethodPlan? {
+        return when (parameterTypes) {
+            emptyList<String>() -> RuntimeMethodPlan(
+                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
+                returnStatement = "return %T(%T.invokeObjectMethod(pointer, %L).getOrThrow())",
+                statementArgs = { method, currentNamespace, _ ->
+                    arrayOf(
+                        typeNameMapper.mapTypeName(method.returnType, currentNamespace),
+                        PoetSymbols.platformComInteropClass,
+                        method.vtableIndex!!,
+                    )
+                },
+            )
+            listOf("String") -> RuntimeMethodPlan(
+                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
+                returnStatement = "return %T(%T.invokeObjectMethodWithStringArg(pointer, %L, %N).getOrThrow())",
+                statementArgs = { method, currentNamespace, parameterBindings ->
+                    arrayOf(
+                        typeNameMapper.mapTypeName(method.returnType, currentNamespace),
+                        PoetSymbols.platformComInteropClass,
+                        method.vtableIndex!!,
+                        parameterBindings.single().name,
+                    )
+                },
+            )
+            listOf("UInt32") -> RuntimeMethodPlan(
+                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
+                returnStatement = "return %T(%T.invokeObjectMethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow())",
+                statementArgs = { method, currentNamespace, parameterBindings ->
+                    arrayOf(
+                        typeNameMapper.mapTypeName(method.returnType, currentNamespace),
+                        PoetSymbols.platformComInteropClass,
+                        method.vtableIndex!!,
+                        parameterBindings.single().name,
+                    )
+                },
+            )
+            else -> null
+        }
     }
 
     fun renderRuntimeLambdaOverload(method: WinMdMethod, currentNamespace: String): FunSpec? {
@@ -435,7 +388,27 @@ internal class RuntimeMethodRenderer(
         val returnExpression: (Int, List<String>, List<String>) -> CodeBlock,
         val supportedParameterTypes: Set<List<String>>,
     ) {
-        fun supports(method: WinMdMethod): Boolean =
-            method.parameters.map { it.type } in supportedParameterTypes
+        fun supports(parameterTypes: List<String>): Boolean =
+            parameterTypes in supportedParameterTypes
+    }
+
+    private data class RuntimeMethodPlan(
+        val nullPointerReturn: (WinMdMethod) -> PlannedStatement,
+        val returnStatement: String,
+        val statementArgs: (WinMdMethod, String, List<RuntimeMethodParameterBinding>) -> Array<Any>,
+    )
+
+    private data class RuntimeMethodParameterBinding(
+        val type: String,
+        val name: String,
+    )
+
+    private data class PlannedStatement(
+        val format: String,
+        val args: Array<Any> = emptyArray(),
+    )
+
+    private fun FunSpec.Builder.addPlannedStatement(statement: PlannedStatement): FunSpec.Builder {
+        return addStatement(statement.format, *statement.args)
     }
 }
