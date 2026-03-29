@@ -10,6 +10,7 @@ import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
+import kotlin.io.use
 
 public interface IStringable {
   public override fun toString(): String
@@ -30,11 +31,8 @@ private class IStringableProjection(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer), IStringable {
   override fun toString(): String {
-    val value = PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()
-    return try {
-      WinRtStrings.toKotlin(value)
-    } finally {
-      WinRtStrings.release(value)
+    return PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow().use {
+      WinRtStrings.toKotlin(it)
     }
   }
 }
