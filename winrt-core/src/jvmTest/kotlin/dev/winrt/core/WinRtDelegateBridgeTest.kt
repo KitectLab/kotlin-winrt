@@ -19,7 +19,11 @@ class WinRtDelegateBridgeTest {
         val iid = guidOf("11111111-2222-3333-4444-555555555555")
         var invoked = false
 
-        WinRtDelegateBridge.createNoArgUnitDelegate(iid) {
+        WinRtDelegateBridge.createUnitDelegate(
+            iid = iid,
+            parameterKinds = emptyList(),
+        ) { args ->
+            assertTrue(args.isEmpty())
             invoked = true
         }.use { handle ->
             val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
@@ -45,8 +49,11 @@ class WinRtDelegateBridgeTest {
         var captured: ComPtr? = null
         val arg = ComPtr(AbiIntPtr(0x1234L))
 
-        WinRtDelegateBridge.createObjectArgUnitDelegate(iid) { value ->
-            captured = value
+        WinRtDelegateBridge.createUnitDelegate(
+            iid = iid,
+            parameterKinds = listOf(WinRtDelegateValueKind.OBJECT),
+        ) { args ->
+            captured = args[0] as ComPtr
         }.use { handle ->
             val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
             val vtablePointer = callbackPointer.reinterpret(ValueLayout.ADDRESS.byteSize()).get(ValueLayout.ADDRESS, 0L)
@@ -71,7 +78,11 @@ class WinRtDelegateBridgeTest {
         val iid = guidOf("99999999-2222-3333-4444-555555555555")
         var invoked = false
 
-        WinRtDelegateBridge.createNoArgBooleanDelegate(iid) {
+        WinRtDelegateBridge.createBooleanDelegate(
+            iid = iid,
+            parameterKinds = emptyList(),
+        ) { args ->
+            assertTrue(args.isEmpty())
             invoked = true
             true
         }.use { handle ->
@@ -104,8 +115,11 @@ class WinRtDelegateBridgeTest {
         var captured: ComPtr? = null
         val arg = ComPtr(AbiIntPtr(0x1234L))
 
-        WinRtDelegateBridge.createObjectArgBooleanDelegate(iid) { value ->
-            captured = value
+        WinRtDelegateBridge.createBooleanDelegate(
+            iid = iid,
+            parameterKinds = listOf(WinRtDelegateValueKind.OBJECT),
+        ) { args ->
+            captured = args[0] as ComPtr
             true
         }.use { handle ->
             val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
@@ -137,8 +151,11 @@ class WinRtDelegateBridgeTest {
         val iid = guidOf("cccccccc-bbbb-cccc-dddd-eeeeeeeeeeee")
         var captured: Int? = null
 
-        WinRtDelegateBridge.createInt32ArgUnitDelegate(iid) { value ->
-            captured = value
+        WinRtDelegateBridge.createUnitDelegate(
+            iid = iid,
+            parameterKinds = listOf(WinRtDelegateValueKind.INT32),
+        ) { args ->
+            captured = args[0] as Int
         }.use { handle ->
             val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
             val vtablePointer = callbackPointer.reinterpret(ValueLayout.ADDRESS.byteSize()).get(ValueLayout.ADDRESS, 0L)
@@ -163,7 +180,11 @@ class WinRtDelegateBridgeTest {
         val iid = guidOf("acacacac-bbbb-cccc-dddd-eeeeeeeeeeee")
         var captured: Int? = null
 
-        WinRtDelegateBridge.createInt32ArgBooleanDelegate(iid) { value ->
+        WinRtDelegateBridge.createBooleanDelegate(
+            iid = iid,
+            parameterKinds = listOf(WinRtDelegateValueKind.INT32),
+        ) { args ->
+            val value = args[0] as Int
             captured = value
             value > 0
         }.use { handle ->
@@ -198,8 +219,11 @@ class WinRtDelegateBridgeTest {
         val hString = PlatformHStringBridge.create("hello")
 
         try {
-            WinRtDelegateBridge.createStringArgUnitDelegate(iid) { value ->
-                captured = value
+            WinRtDelegateBridge.createUnitDelegate(
+                iid = iid,
+                parameterKinds = listOf(WinRtDelegateValueKind.STRING),
+            ) { args ->
+                captured = args[0] as String
             }.use { handle ->
                 val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
                 val vtablePointer = callbackPointer.reinterpret(ValueLayout.ADDRESS.byteSize()).get(ValueLayout.ADDRESS, 0L)
@@ -229,7 +253,11 @@ class WinRtDelegateBridgeTest {
         val hString = PlatformHStringBridge.create("hello")
 
         try {
-            WinRtDelegateBridge.createStringArgBooleanDelegate(iid) { value ->
+            WinRtDelegateBridge.createBooleanDelegate(
+                iid = iid,
+                parameterKinds = listOf(WinRtDelegateValueKind.STRING),
+            ) { args ->
+                val value = args[0] as String
                 captured = value
                 value == "hello"
             }.use { handle ->
@@ -265,8 +293,11 @@ class WinRtDelegateBridgeTest {
         val iid = guidOf("eeeeeeee-bbbb-cccc-dddd-eeeeeeeeeeee")
         var captured: UInt? = null
 
-        WinRtDelegateBridge.createUInt32ArgUnitDelegate(iid) { value ->
-            captured = value
+        WinRtDelegateBridge.createUnitDelegate(
+            iid = iid,
+            parameterKinds = listOf(WinRtDelegateValueKind.UINT32),
+        ) { args ->
+            captured = args[0] as UInt
         }.use { handle ->
             val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
             val vtablePointer = callbackPointer.reinterpret(ValueLayout.ADDRESS.byteSize()).get(ValueLayout.ADDRESS, 0L)
@@ -291,7 +322,11 @@ class WinRtDelegateBridgeTest {
         val iid = guidOf("dededede-bbbb-cccc-dddd-eeeeeeeeeeee")
         var captured: UInt? = null
 
-        WinRtDelegateBridge.createUInt32ArgBooleanDelegate(iid) { value ->
+        WinRtDelegateBridge.createBooleanDelegate(
+            iid = iid,
+            parameterKinds = listOf(WinRtDelegateValueKind.UINT32),
+        ) { args ->
+            val value = args[0] as UInt
             captured = value
             value == UInt.MAX_VALUE
         }.use { handle ->
@@ -324,8 +359,11 @@ class WinRtDelegateBridgeTest {
         val iid = guidOf("f0f0f0f0-bbbb-cccc-dddd-eeeeeeeeeeee")
         var captured: Boolean? = null
 
-        WinRtDelegateBridge.createBooleanArgUnitDelegate(iid) { value ->
-            captured = value
+        WinRtDelegateBridge.createUnitDelegate(
+            iid = iid,
+            parameterKinds = listOf(WinRtDelegateValueKind.BOOLEAN),
+        ) { args ->
+            captured = args[0] as Boolean
         }.use { handle ->
             val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
             val vtablePointer = callbackPointer.reinterpret(ValueLayout.ADDRESS.byteSize()).get(ValueLayout.ADDRESS, 0L)
@@ -350,8 +388,11 @@ class WinRtDelegateBridgeTest {
         val iid = guidOf("abababab-bbbb-cccc-dddd-eeeeeeeeeeee")
         var captured: Long? = null
 
-        WinRtDelegateBridge.createInt64ArgUnitDelegate(iid) { value ->
-            captured = value
+        WinRtDelegateBridge.createUnitDelegate(
+            iid = iid,
+            parameterKinds = listOf(WinRtDelegateValueKind.INT64),
+        ) { args ->
+            captured = args[0] as Long
         }.use { handle ->
             val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
             val vtablePointer = callbackPointer.reinterpret(ValueLayout.ADDRESS.byteSize()).get(ValueLayout.ADDRESS, 0L)
@@ -376,7 +417,11 @@ class WinRtDelegateBridgeTest {
         val iid = guidOf("edededed-bbbb-cccc-dddd-eeeeeeeeeeee")
         var captured: Long? = null
 
-        WinRtDelegateBridge.createInt64ArgBooleanDelegate(iid) { value ->
+        WinRtDelegateBridge.createBooleanDelegate(
+            iid = iid,
+            parameterKinds = listOf(WinRtDelegateValueKind.INT64),
+        ) { args ->
+            val value = args[0] as Long
             captured = value
             value > 0
         }.use { handle ->
@@ -409,8 +454,11 @@ class WinRtDelegateBridgeTest {
         val iid = guidOf("cdcdcdcd-bbbb-cccc-dddd-eeeeeeeeeeee")
         var captured: ULong? = null
 
-        WinRtDelegateBridge.createUInt64ArgUnitDelegate(iid) { value ->
-            captured = value
+        WinRtDelegateBridge.createUnitDelegate(
+            iid = iid,
+            parameterKinds = listOf(WinRtDelegateValueKind.UINT64),
+        ) { args ->
+            captured = args[0] as ULong
         }.use { handle ->
             val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
             val vtablePointer = callbackPointer.reinterpret(ValueLayout.ADDRESS.byteSize()).get(ValueLayout.ADDRESS, 0L)
@@ -527,8 +575,11 @@ class WinRtDelegateBridgeTest {
         val iid = guidOf("ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee")
         var captured: Float? = null
 
-        WinRtDelegateBridge.createFloat32ArgUnitDelegate(iid) { value ->
-            captured = value
+        WinRtDelegateBridge.createUnitDelegate(
+            iid = iid,
+            parameterKinds = listOf(WinRtDelegateValueKind.FLOAT32),
+        ) { args ->
+            captured = args[0] as Float
         }.use { handle ->
             val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
             val vtablePointer = callbackPointer.reinterpret(ValueLayout.ADDRESS.byteSize()).get(ValueLayout.ADDRESS, 0L)
@@ -553,8 +604,11 @@ class WinRtDelegateBridgeTest {
         val iid = guidOf("10101010-bbbb-cccc-dddd-eeeeeeeeeeee")
         var captured: Double? = null
 
-        WinRtDelegateBridge.createFloat64ArgUnitDelegate(iid) { value ->
-            captured = value
+        WinRtDelegateBridge.createUnitDelegate(
+            iid = iid,
+            parameterKinds = listOf(WinRtDelegateValueKind.FLOAT64),
+        ) { args ->
+            captured = args[0] as Double
         }.use { handle ->
             val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
             val vtablePointer = callbackPointer.reinterpret(ValueLayout.ADDRESS.byteSize()).get(ValueLayout.ADDRESS, 0L)
