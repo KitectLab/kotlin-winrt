@@ -1939,6 +1939,51 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_scalar_runtime_methods_for_common_value_types() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "ScalarMethodHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(name = "GetFlag", returnType = "Boolean", vtableIndex = 6),
+                                WinMdMethod(name = "GetRatio", returnType = "Float64", vtableIndex = 7),
+                                WinMdMethod(name = "GetStableId", returnType = "Guid", vtableIndex = 8),
+                                WinMdMethod(name = "GetSignedValue", returnType = "Int64", vtableIndex = 9),
+                                WinMdMethod(name = "GetUnsignedValue", returnType = "UInt64", vtableIndex = 10),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/ScalarMethodHost.kt" }.content
+
+        assertTrue(binding.contains("fun getFlag(): WinRtBoolean"))
+        assertTrue(binding.contains("return WinRtBoolean.FALSE"))
+        assertTrue(binding.contains("return WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 6).getOrThrow())"))
+        assertTrue(binding.contains("fun getRatio(): Float64"))
+        assertTrue(binding.contains("return Float64(0.0)"))
+        assertTrue(binding.contains("return Float64(PlatformComInterop.invokeFloat64Method(pointer, 7).getOrThrow())"))
+        assertTrue(binding.contains("fun getStableId(): GuidValue"))
+        assertTrue(binding.contains("return GuidValue(\"\")"))
+        assertTrue(binding.contains("return GuidValue(PlatformComInterop.invokeGuidGetter(pointer, 8).getOrThrow().toString())"))
+        assertTrue(binding.contains("fun getSignedValue(): Int64"))
+        assertTrue(binding.contains("return Int64(0L)"))
+        assertTrue(binding.contains("return Int64(PlatformComInterop.invokeInt64Getter(pointer, 9).getOrThrow())"))
+        assertTrue(binding.contains("fun getUnsignedValue(): UInt64"))
+        assertTrue(binding.contains("return UInt64(0uL)"))
+        assertTrue(binding.contains("return UInt64(PlatformComInterop.invokeInt64Getter(pointer, 10).getOrThrow().toULong())"))
+    }
+
+    @Test
     fun generates_json_array_uint32_object_call_from_real_metadata_model() {
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",

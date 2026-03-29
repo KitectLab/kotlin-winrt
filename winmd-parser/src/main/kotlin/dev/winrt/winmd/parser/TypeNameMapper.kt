@@ -22,6 +22,8 @@ internal class TypeNameMapper {
             typeName == "Int" -> Int::class.asTypeName()
             typeName == "Int32" -> PoetSymbols.int32Class
             typeName == "UInt32" -> PoetSymbols.uint32Class
+            typeName == "Int64" -> PoetSymbols.int64Class
+            typeName == "UInt64" -> PoetSymbols.uint64Class
             typeName == "Float32" -> PoetSymbols.float32Class
             typeName == "Float64" -> PoetSymbols.float64Class
             typeName == "Guid" -> PoetSymbols.guidValueClass
@@ -46,6 +48,8 @@ internal class TypeNameMapper {
             rendered.endsWith(".WinRtBoolean") -> CodeBlock.of("%T.FALSE", PoetSymbols.winRtBooleanClass)
             rendered.endsWith(".Int32") -> CodeBlock.of("%T(0)", PoetSymbols.int32Class)
             rendered.endsWith(".UInt32") -> CodeBlock.of("%T(0u)", PoetSymbols.uint32Class)
+            rendered.endsWith(".Int64") -> CodeBlock.of("%T(0L)", PoetSymbols.int64Class)
+            rendered.endsWith(".UInt64") -> CodeBlock.of("%T(0uL)", PoetSymbols.uint64Class)
             rendered.endsWith(".Float32") -> CodeBlock.of("%T(0f)", PoetSymbols.float32Class)
             rendered.endsWith(".Float64") -> CodeBlock.of("%T(0.0)", PoetSymbols.float64Class)
             rendered.endsWith(".DateTime") -> CodeBlock.of("%T(0)", PoetSymbols.dateTimeClass)

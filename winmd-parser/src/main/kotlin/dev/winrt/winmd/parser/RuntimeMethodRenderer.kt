@@ -1,6 +1,7 @@
 package dev.winrt.winmd.parser
 
 import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.asTypeName
@@ -24,14 +25,12 @@ internal class RuntimeMethodRenderer(
                 method.parameters.size == 1 &&
                 supportsRuntimeObjectType(method.parameters[0].type) &&
                 method.vtableIndex != null) ||
-            (method.returnType == "UInt32" && method.parameters.isEmpty() && method.vtableIndex != null) ||
-            (method.returnType == "Int32" && method.parameters.isEmpty() && method.vtableIndex != null) ||
+            (scalarRuntimeReturnPlan(method.returnType) != null && method.parameters.isEmpty() && method.vtableIndex != null) ||
             (supportsRuntimeObjectType(method.returnType) && method.parameters.isEmpty() && method.vtableIndex != null) ||
             (supportsRuntimeObjectType(method.returnType) &&
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "UInt32" &&
                 method.vtableIndex != null)
-            || (method.returnType == "String" && method.parameters.isEmpty() && method.vtableIndex != null)
     }
 
     fun renderRuntimeMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
@@ -88,22 +87,14 @@ internal class RuntimeMethodRenderer(
                 .addStatement("%T.invokeObjectSetter(pointer, %L, %N.pointer).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
                 .build()
         }
-        if (method.returnType == "UInt32" && method.parameters.isEmpty() && method.vtableIndex != null) {
+        val scalarPlan = scalarRuntimeReturnPlan(method.returnType)
+        if (scalarPlan != null && method.parameters.isEmpty() && method.vtableIndex != null) {
             val vtableIndex = method.vtableIndex!!
             return builder
                 .beginControlFlow("if (pointer.isNull)")
-                .addStatement("return %T(0u)", PoetSymbols.uint32Class)
+                .addStatement("return %L", scalarPlan.nullReturn)
                 .endControlFlow()
-                .addStatement("return %T(%T.invokeUInt32Method(pointer, %L).getOrThrow())", PoetSymbols.uint32Class, PoetSymbols.platformComInteropClass, vtableIndex)
-                .build()
-        }
-        if (method.returnType == "Int32" && method.parameters.isEmpty() && method.vtableIndex != null) {
-            val vtableIndex = method.vtableIndex!!
-            return builder
-                .beginControlFlow("if (pointer.isNull)")
-                .addStatement("return %T(0)", PoetSymbols.int32Class)
-                .endControlFlow()
-                .addStatement("return %T(%T.invokeInt32Method(pointer, %L).getOrThrow())", PoetSymbols.int32Class, PoetSymbols.platformComInteropClass, vtableIndex)
+                .addStatement("return %L", scalarPlan.returnExpression(vtableIndex))
                 .build()
         }
         if (supportsRuntimeObjectType(method.returnType) &&
@@ -117,15 +108,6 @@ internal class RuntimeMethodRenderer(
                 .addStatement("error(%S)", "Null runtime object pointer: ${method.name}")
                 .endControlFlow()
                 .addStatement("return %T(%T.invokeObjectMethod(pointer, %L).getOrThrow())", returnType, PoetSymbols.platformComInteropClass, vtableIndex)
-                .build()
-        }
-        if (method.returnType == "String" && method.parameters.isEmpty() && method.vtableIndex != null) {
-            val vtableIndex = method.vtableIndex!!
-            return builder
-                .beginControlFlow("if (pointer.isNull)")
-                .addStatement("return %S", "")
-                .endControlFlow()
-                .addStatement("return %L", HStringSupport.toKotlinString("pointer", vtableIndex))
                 .build()
         }
         if (supportsRuntimeObjectType(method.returnType) &&
@@ -228,4 +210,96 @@ internal class RuntimeMethodRenderer(
             !type.contains('<') &&
             !type.endsWith("[]")
     }
+
+    private fun scalarRuntimeReturnPlan(type: String): ScalarRuntimeReturnPlan? {
+        return when (type) {
+            "String" -> ScalarRuntimeReturnPlan(
+                nullReturn = CodeBlock.of("%S", ""),
+                returnExpression = { vtableIndex -> HStringSupport.toKotlinString("pointer", vtableIndex) },
+            )
+            "Boolean" -> ScalarRuntimeReturnPlan(
+                nullReturn = CodeBlock.of("%T.FALSE", PoetSymbols.winRtBooleanClass),
+                returnExpression = { vtableIndex ->
+                    CodeBlock.of(
+                        "%T(%T.invokeBooleanGetter(pointer, %L).getOrThrow())",
+                        PoetSymbols.winRtBooleanClass,
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                    )
+                },
+            )
+            "Int32" -> ScalarRuntimeReturnPlan(
+                nullReturn = CodeBlock.of("%T(0)", PoetSymbols.int32Class),
+                returnExpression = { vtableIndex ->
+                    CodeBlock.of(
+                        "%T(%T.invokeInt32Method(pointer, %L).getOrThrow())",
+                        PoetSymbols.int32Class,
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                    )
+                },
+            )
+            "UInt32" -> ScalarRuntimeReturnPlan(
+                nullReturn = CodeBlock.of("%T(0u)", PoetSymbols.uint32Class),
+                returnExpression = { vtableIndex ->
+                    CodeBlock.of(
+                        "%T(%T.invokeUInt32Method(pointer, %L).getOrThrow())",
+                        PoetSymbols.uint32Class,
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                    )
+                },
+            )
+            "Int64" -> ScalarRuntimeReturnPlan(
+                nullReturn = CodeBlock.of("%T(0L)", PoetSymbols.int64Class),
+                returnExpression = { vtableIndex ->
+                    CodeBlock.of(
+                        "%T(%T.invokeInt64Getter(pointer, %L).getOrThrow())",
+                        PoetSymbols.int64Class,
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                    )
+                },
+            )
+            "UInt64" -> ScalarRuntimeReturnPlan(
+                nullReturn = CodeBlock.of("%T(0uL)", PoetSymbols.uint64Class),
+                returnExpression = { vtableIndex ->
+                    CodeBlock.of(
+                        "%T(%T.invokeInt64Getter(pointer, %L).getOrThrow().toULong())",
+                        PoetSymbols.uint64Class,
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                    )
+                },
+            )
+            "Float64" -> ScalarRuntimeReturnPlan(
+                nullReturn = CodeBlock.of("%T(0.0)", PoetSymbols.float64Class),
+                returnExpression = { vtableIndex ->
+                    CodeBlock.of(
+                        "%T(%T.invokeFloat64Method(pointer, %L).getOrThrow())",
+                        PoetSymbols.float64Class,
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                    )
+                },
+            )
+            "Guid" -> ScalarRuntimeReturnPlan(
+                nullReturn = CodeBlock.of("%T(%S)", PoetSymbols.guidValueClass, ""),
+                returnExpression = { vtableIndex ->
+                    CodeBlock.of(
+                        "%T(%T.invokeGuidGetter(pointer, %L).getOrThrow().toString())",
+                        PoetSymbols.guidValueClass,
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                    )
+                },
+            )
+            else -> null
+        }
+    }
+
+    private data class ScalarRuntimeReturnPlan(
+        val nullReturn: CodeBlock,
+        val returnExpression: (Int) -> CodeBlock,
+    )
 }
