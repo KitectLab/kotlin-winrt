@@ -13,17 +13,18 @@ import kotlin.String
 
 public open class JsonArray(
   pointer: ComPtr,
-) : Inspectable(pointer) {
+) : Inspectable(pointer),
+  IJsonArray by IJsonArray.from(Inspectable(pointer)) {
 
-  public fun getObjectAt(index: UInt32): JsonObject =
+  override fun getObjectAt(index: UInt32): JsonObject =
       JsonObject(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 6,
       index.value).getOrThrow())
 
-  public fun getArrayAt(index: UInt32): JsonArray =
+  override fun getArrayAt(index: UInt32): JsonArray =
       JsonArray(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 7,
       index.value).getOrThrow())
 
-  public fun getStringAt(index: UInt32): String {
+  override fun getStringAt(index: UInt32): String {
     val value = PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 8,
         index.value).getOrThrow()
     return try {
@@ -33,11 +34,11 @@ public open class JsonArray(
     }
   }
 
-  public fun getNumberAt(index: UInt32): Float64 =
+  override fun getNumberAt(index: UInt32): Float64 =
       Float64(PlatformComInterop.invokeFloat64MethodWithUInt32Arg(pointer, 9,
       index.value).getOrThrow())
 
-  public fun getBooleanAt(index: UInt32): WinRtBoolean =
+  override fun getBooleanAt(index: UInt32): WinRtBoolean =
       WinRtBoolean(PlatformComInterop.invokeBooleanMethodWithUInt32Arg(pointer, 10,
       index.value).getOrThrow())
 
