@@ -12,7 +12,6 @@ internal class RuntimeTypeRenderer(
     private val runtimePropertyRenderer: RuntimePropertyRenderer,
     private val runtimeMethodRenderer: RuntimeMethodRenderer,
     private val runtimeCompanionRenderer: RuntimeCompanionRenderer,
-    private val runtimeProjectionRenderer: RuntimeProjectionRenderer,
     private val winRtSignatureMapper: WinRtSignatureMapper,
     private val winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     private val kotlinCollectionProjectionMapper: KotlinCollectionProjectionMapper = KotlinCollectionProjectionMapper(),
@@ -77,16 +76,6 @@ internal class RuntimeTypeRenderer(
             .mapNotNull { runtimeMethodRenderer.renderRuntimeLambdaOverload(it, type.namespace) }
             .forEach(builder::addFunction)
         builder.addType(runtimeCompanionRenderer.render(type))
-        type.defaultInterface?.let { defaultInterface ->
-            runtimeProjectionRenderer.renderDefaultInterfaceProjection(defaultInterface)
-                ?.let(builder::addFunction)
-        }
-        type.implementedInterfaces
-            .asSequence()
-            .filter { it != type.defaultInterface }
-            .mapNotNull(runtimeProjectionRenderer::renderImplementedInterfaceProjection)
-            .distinctBy { it.name }
-            .forEach(builder::addFunction)
         return builder.build()
     }
 }

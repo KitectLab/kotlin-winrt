@@ -927,8 +927,9 @@ class KotlinBindingGeneratorTest {
             it.relativePath == "Microsoft/UI/Xaml/Controls/UIElementCollection.kt"
         }.content
 
-        assertTrue(binding.contains("fun asIUIElementCollection(): IUIElementCollection = IUIElementCollection.from(this)"))
+        assertFalse(binding.contains("fun asIUIElementCollection(): IUIElementCollection = IUIElementCollection.from(this)"))
         assertFalse(binding.contains("fun asIBindableVector(): IBindableVector = IBindableVector.from(this)"))
+        assertFalse(binding.contains("fun asI"))
     }
 
     @Test

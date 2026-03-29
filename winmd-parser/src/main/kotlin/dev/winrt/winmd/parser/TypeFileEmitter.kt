@@ -37,7 +37,6 @@ internal class TypeFileEmitter(
         runtimePropertyRenderer,
         runtimeMethodRenderer,
         runtimeCompanionRenderer,
-        runtimeProjectionRenderer,
         winRtSignatureMapper,
         winRtProjectionTypeMapper,
     )
