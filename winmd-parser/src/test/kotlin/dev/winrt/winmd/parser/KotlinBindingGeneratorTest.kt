@@ -5573,4 +5573,83 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("operator fun plusAssign(handler: EventHandler<IWidgetClosedEventArgs>)"))
         assertTrue(runtimeBinding.contains("operator fun minusAssign(token: EventRegistrationToken)"))
     }
+
+    @Test
+    fun generates_event_handler_slot_helpers_for_runtime_companion_statics() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "EventHandler`1",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "9de1c534-6ae1-11e0-84e1-18a905bcc53f",
+                            genericParameters = listOf("T"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("sender", "Object"),
+                                        WinMdParameter("args", "T"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Events",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetClosedEventArgs",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "33333333-3333-3333-3333-333333333333",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_Closed",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(WinMdParameter("handler", "Windows.Foundation.EventHandler<Example.Events.IWidgetClosedEventArgs>")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_Closed",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("token", "EventRegistrationToken")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Example/Events/Widget.kt" }.content
+        val normalizedRuntimeBinding = runtimeBinding.replace("\n", "").replace(" ", "")
+
+        assertTrue(runtimeBinding.contains("val closedEvent: ClosedStaticEvent"))
+        assertTrue(runtimeBinding.contains("class ClosedStaticEvent"))
+        assertTrue(runtimeBinding.contains("fun subscribe(handler: EventHandler<IWidgetClosedEventArgs>): EventRegistrationToken"))
+        assertTrue(normalizedRuntimeBinding.contains("funsubscribe(handler:(ComPtr,IWidgetClosedEventArgs)->Unit):EventRegistrationToken"))
+        assertTrue(runtimeBinding.contains("operator fun plusAssign(handler: EventHandler<IWidgetClosedEventArgs>)"))
+        assertTrue(runtimeBinding.contains("operator fun minusAssign(token: EventRegistrationToken)"))
+        assertTrue(normalizedRuntimeBinding.contains("get()=ClosedStaticEvent{statics}"))
+    }
 }

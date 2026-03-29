@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
@@ -82,8 +83,124 @@ internal class RuntimeCompanionRenderer(
                 renderForwardingAsyncAwaitMethod(method, type.namespace)?.let(members::add)
                 renderForwardingLambdaOverload(method, type.namespace)?.let(members::add)
             }
+        renderEventSlotMembers(type, staticsType).let { eventMembers ->
+            members.addAll(eventMembers.properties)
+        }
         synthesizeGetterProperties(staticsType.methods, declaredPropertyNames, type.namespace).forEach(members::add)
         return members
+    }
+
+    fun renderStaticEventSlotTypes(type: WinMdType): List<TypeSpec> {
+        val staticsType = typeRegistry.findRuntimeClassStaticsType(type.name, type.namespace) ?: return emptyList()
+        return renderEventSlotMembers(type, staticsType).types
+    }
+
+    private fun renderEventSlotMembers(type: WinMdType, staticsType: WinMdType): RuntimeCompanionEventMembers {
+        val methodsByName = staticsType.methods.associateBy { it.name }
+        val plans = staticsType.methods.mapNotNull { addMethod ->
+            if (!addMethod.name.startsWith("add_") || addMethod.parameters.size != 1 || addMethod.returnType != "EventRegistrationToken") {
+                return@mapNotNull null
+            }
+            val eventName = addMethod.name.removePrefix("add_")
+            val removeMethod = methodsByName["remove_$eventName"] ?: return@mapNotNull null
+            if (removeMethod.parameters.size != 1 || removeMethod.parameters.single().type != "EventRegistrationToken" || removeMethod.returnType != "Unit") {
+                return@mapNotNull null
+            }
+            val delegateTypeName = addMethod.parameters.single().type
+            if (!isEventHandlerDelegate(delegateTypeName)) {
+                return@mapNotNull null
+            }
+            val eventArgsTypeName = eventHandlerArgumentType(delegateTypeName) ?: return@mapNotNull null
+            val delegateType = typeRegistry.findType(delegateTypeName, type.namespace) ?: return@mapNotNull null
+            RuntimeCompanionEventSlotPlan(
+                propertyName = eventName.replaceFirstChar(Char::lowercase),
+                typeName = "${eventName}StaticEvent",
+                nestedType = ClassName(type.namespace.lowercase(), type.name, "${eventName}StaticEvent"),
+                delegateType = typeNameMapper.mapTypeName(delegateTypeName, type.namespace),
+                lambdaType = LambdaTypeName.get(
+                    parameters = arrayOf(
+                        PoetSymbols.comPtrClass,
+                        typeNameMapper.mapTypeName(eventArgsTypeName, type.namespace),
+                    ),
+                    returnType = Unit::class.asTypeName(),
+                ),
+                eventArgsType = typeNameMapper.mapTypeName(eventArgsTypeName, type.namespace),
+                delegateGuid = delegateType.guid ?: "00000000-0000-0000-0000-000000000000",
+                staticsClass = ClassName(staticsType.namespace.lowercase(), staticsType.name),
+                addVtableIndex = addMethod.vtableIndex ?: return@mapNotNull null,
+                removeVtableIndex = removeMethod.vtableIndex ?: return@mapNotNull null,
+            )
+        }
+        return RuntimeCompanionEventMembers(
+            properties = plans.map { plan ->
+                PropertySpec.builder("${plan.propertyName}Event", plan.nestedType)
+                    .getter(
+                        FunSpec.getterBuilder()
+                            .addStatement("return %L { statics }", plan.typeName)
+                            .build(),
+                    )
+                    .build()
+            },
+            types = plans.map { plan ->
+                TypeSpec.classBuilder(plan.typeName)
+                    .primaryConstructor(
+                        FunSpec.constructorBuilder()
+                            .addParameter("staticsProvider", LambdaTypeName.get(returnType = plan.staticsClass))
+                            .build(),
+                    )
+                    .addProperty(
+                        PropertySpec.builder("staticsProvider", LambdaTypeName.get(returnType = plan.staticsClass))
+                            .addModifiers(KModifier.PRIVATE)
+                            .initializer("staticsProvider")
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("subscribe")
+                            .addParameter("handler", plan.delegateType)
+                            .returns(PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement(
+                                "return %T(%T.invokeInt64MethodWithObjectArg(staticsProvider().pointer, %L, handler.pointer).getOrThrow())",
+                                PoetSymbols.eventRegistrationTokenClass,
+                                PoetSymbols.platformComInteropClass,
+                                plan.addVtableIndex,
+                            )
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("subscribe")
+                            .addParameter("handler", plan.lambdaType)
+                            .returns(PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement(
+                                "val delegateHandle = %T.createUnitDelegate(%M(%S), listOf(%T.OBJECT, %T.OBJECT)) { args -> handler(args[0] as %T, %T(args[1] as %T)) }",
+                                PoetSymbols.winRtDelegateBridgeClass,
+                                PoetSymbols.guidOfMember,
+                                plan.delegateGuid,
+                                PoetSymbols.winRtDelegateValueKindClass,
+                                PoetSymbols.winRtDelegateValueKindClass,
+                                PoetSymbols.comPtrClass,
+                                plan.eventArgsType,
+                                PoetSymbols.comPtrClass,
+                            )
+                            .addStatement("return subscribe(%T(delegateHandle.pointer))", plan.delegateType)
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("plusAssign")
+                            .addModifiers(KModifier.OPERATOR)
+                            .addParameter("handler", plan.delegateType)
+                            .addStatement("subscribe(handler)")
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("minusAssign")
+                            .addModifiers(KModifier.OPERATOR)
+                            .addParameter("token", PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement("%T.invokeUnitMethodWithInt64Arg(staticsProvider().pointer, %L, token.value).getOrThrow()", PoetSymbols.platformComInteropClass, plan.removeVtableIndex)
+                            .build(),
+                    )
+                    .build()
+            },
+        )
     }
 
     private fun renderForwardingProperty(property: WinMdProperty, currentNamespace: String): PropertySpec {
@@ -281,4 +398,35 @@ internal class RuntimeCompanionRenderer(
             WinMdActivationKind.Factory -> "Factory"
         }
     }
+
+    private fun isEventHandlerDelegate(typeName: String): Boolean {
+        val rawType = typeName.substringBefore('<').substringBefore('`')
+        return rawType == "Windows.Foundation.EventHandler"
+    }
+
+    private fun eventHandlerArgumentType(typeName: String): String? {
+        return if ('<' in typeName && typeName.endsWith(">")) {
+            typeName.substringAfter('<').substringBeforeLast('>')
+        } else {
+            null
+        }
+    }
+
+    private data class RuntimeCompanionEventMembers(
+        val properties: List<PropertySpec>,
+        val types: List<TypeSpec>,
+    )
+
+    private data class RuntimeCompanionEventSlotPlan(
+        val propertyName: String,
+        val typeName: String,
+        val nestedType: ClassName,
+        val delegateType: TypeName,
+        val lambdaType: LambdaTypeName,
+        val eventArgsType: TypeName,
+        val delegateGuid: String,
+        val staticsClass: ClassName,
+        val addVtableIndex: Int,
+        val removeVtableIndex: Int,
+    )
 }

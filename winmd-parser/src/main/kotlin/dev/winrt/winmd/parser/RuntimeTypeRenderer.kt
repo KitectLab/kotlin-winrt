@@ -106,6 +106,7 @@ internal class RuntimeTypeRenderer(
             projection.methods.forEach(builder::addFunction)
             projection.types.forEach(builder::addType)
         }
+        runtimeCompanionRenderer.renderStaticEventSlotTypes(type).forEach(builder::addType)
         builder.addType(runtimeCompanionRenderer.render(type))
         return builder.build()
     }
