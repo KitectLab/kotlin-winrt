@@ -7,13 +7,14 @@ import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
+import dev.winrt.core.WinRtObject
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
 
 public open class JsonObject(
   pointer: ComPtr,
-) : Inspectable(pointer),
+) : WinRtObject(pointer),
   IJsonValue,
   IJsonObject {
 
