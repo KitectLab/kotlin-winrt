@@ -61,17 +61,18 @@ internal class RuntimeMethodRenderer(
             return null
         }
         val parameterTypes = method.parameters.map { it.type }
+        val signatureKey = methodSignatureKey(method.returnType, parameterTypes, ::supportsRuntimeObjectType)
         return when {
-            method.returnType == "Unit" -> unitRuntimePlan(parameterTypes)
+            signatureKey?.returnKind == MethodReturnKind.UNIT -> unitRuntimePlan(signatureKey.shape)
             scalarRuntimeReturnPlan(method.returnType)?.supports(parameterTypes) == true ->
                 scalarRuntimePlan(scalarRuntimeReturnPlan(method.returnType)!!)
-            supportsRuntimeObjectType(method.returnType) -> objectRuntimePlan(parameterTypes)
+            signatureKey?.returnKind == MethodReturnKind.OBJECT -> objectRuntimePlan(signatureKey.shape)
             else -> null
         }
     }
 
-    private fun unitRuntimePlan(parameterTypes: List<String>): RuntimeMethodPlan? {
-        return when (methodSignatureShape(parameterTypes, ::supportsRuntimeObjectType)) {
+    private fun unitRuntimePlan(shape: MethodSignatureShape): RuntimeMethodPlan? {
+        return when (shape) {
             MethodSignatureShape.EMPTY -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return") },
                 returnStatement = "%T.invokeUnitMethod(pointer, %L).getOrThrow()",
@@ -127,8 +128,8 @@ internal class RuntimeMethodRenderer(
         )
     }
 
-    private fun objectRuntimePlan(parameterTypes: List<String>): RuntimeMethodPlan? {
-        return when (methodSignatureShape(parameterTypes, ::supportsRuntimeObjectType)) {
+    private fun objectRuntimePlan(shape: MethodSignatureShape): RuntimeMethodPlan? {
+        return when (shape) {
             MethodSignatureShape.EMPTY -> RuntimeMethodPlan(
                 nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
                 returnStatement = "return %T(%T.invokeObjectMethod(pointer, %L).getOrThrow())",

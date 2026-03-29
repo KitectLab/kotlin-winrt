@@ -668,19 +668,23 @@ internal class InterfaceTypeRenderer(
         if (method.vtableIndex == null) {
             return null
         }
-        val parameterTypes = method.parameters.map { it.type }
-        return when {
-            method.returnType == "String" -> plannedStringMethod(parameterTypes)
-            method.returnType == "Float64" -> plannedFloat64Method(parameterTypes)
-            method.returnType == "Boolean" -> plannedBooleanMethod(parameterTypes)
-            method.returnType == "Unit" -> plannedUnitMethod(parameterTypes)
-            supportsInterfaceObjectType(method.returnType) -> plannedObjectMethod(genericParameters, parameterTypes)
+        val signatureKey = methodSignatureKey(
+            returnType = method.returnType,
+            parameterTypes = method.parameters.map { it.type },
+            supportsObjectType = ::supportsInterfaceObjectInput,
+        )
+        return when (signatureKey?.returnKind) {
+            MethodReturnKind.STRING -> plannedStringMethod(signatureKey.shape)
+            MethodReturnKind.FLOAT64 -> plannedFloat64Method(signatureKey.shape)
+            MethodReturnKind.BOOLEAN -> plannedBooleanMethod(signatureKey.shape)
+            MethodReturnKind.UNIT -> plannedUnitMethod(signatureKey.shape)
+            MethodReturnKind.OBJECT -> plannedObjectMethod(genericParameters, signatureKey.shape)
             else -> null
         }
     }
 
-    private fun plannedStringMethod(parameterTypes: List<String>): PlannedInterfaceMethod? {
-        return when (methodSignatureShape(parameterTypes, ::supportsInterfaceObjectInput)) {
+    private fun plannedStringMethod(shape: MethodSignatureShape): PlannedInterfaceMethod? {
+        return when (shape) {
             MethodSignatureShape.EMPTY -> PlannedInterfaceMethod(
                 statement = "return %L",
                 args = { method, _ ->
@@ -705,8 +709,8 @@ internal class InterfaceTypeRenderer(
         }
     }
 
-    private fun plannedFloat64Method(parameterTypes: List<String>): PlannedInterfaceMethod? {
-        return when (methodSignatureShape(parameterTypes, ::supportsInterfaceObjectInput)) {
+    private fun plannedFloat64Method(shape: MethodSignatureShape): PlannedInterfaceMethod? {
+        return when (shape) {
             MethodSignatureShape.EMPTY -> PlannedInterfaceMethod(
                 statement = "return %T(%T.invokeFloat64Method(pointer, %L).getOrThrow())",
                 args = { method, _ ->
@@ -731,8 +735,8 @@ internal class InterfaceTypeRenderer(
         }
     }
 
-    private fun plannedBooleanMethod(parameterTypes: List<String>): PlannedInterfaceMethod? {
-        return when (methodSignatureShape(parameterTypes, ::supportsInterfaceObjectInput)) {
+    private fun plannedBooleanMethod(shape: MethodSignatureShape): PlannedInterfaceMethod? {
+        return when (shape) {
             MethodSignatureShape.EMPTY -> PlannedInterfaceMethod(
                 statement = "return %T(%T.invokeBooleanGetter(pointer, %L).getOrThrow())",
                 args = { method, _ ->
@@ -766,9 +770,9 @@ internal class InterfaceTypeRenderer(
 
     private fun plannedObjectMethod(
         genericParameters: Set<String>,
-        parameterTypes: List<String>,
+        shape: MethodSignatureShape,
     ): PlannedInterfaceMethod? {
-        return when (methodSignatureShape(parameterTypes, ::supportsInterfaceObjectInput)) {
+        return when (shape) {
             MethodSignatureShape.EMPTY -> PlannedInterfaceMethod(
                 statement = "return %T(%T.invokeObjectMethod(pointer, %L).getOrThrow())",
                 args = { method, namespace ->
@@ -807,8 +811,8 @@ internal class InterfaceTypeRenderer(
         }
     }
 
-    private fun plannedUnitMethod(parameterTypes: List<String>): PlannedInterfaceMethod? {
-        return when (methodSignatureShape(parameterTypes, ::supportsInterfaceObjectInput)) {
+    private fun plannedUnitMethod(shape: MethodSignatureShape): PlannedInterfaceMethod? {
+        return when (shape) {
             MethodSignatureShape.EMPTY -> PlannedInterfaceMethod(
                 statement = "%T.invokeUnitMethod(pointer, %L).getOrThrow()",
                 args = { method, _ ->

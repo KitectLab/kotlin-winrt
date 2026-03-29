@@ -9,6 +9,19 @@ internal enum class MethodSignatureShape {
     OBJECT,
 }
 
+internal enum class MethodReturnKind {
+    UNIT,
+    STRING,
+    FLOAT64,
+    BOOLEAN,
+    OBJECT,
+}
+
+internal data class MethodSignatureKey(
+    val returnKind: MethodReturnKind,
+    val shape: MethodSignatureShape,
+)
+
 internal fun methodSignatureShape(
     parameterTypes: List<String>,
     supportsObjectType: (String) -> Boolean,
@@ -22,4 +35,20 @@ internal fun methodSignatureShape(
         parameterTypes.size == 1 && supportsObjectType(parameterTypes.single()) -> MethodSignatureShape.OBJECT
         else -> null
     }
+}
+
+internal fun methodSignatureKey(
+    returnType: String,
+    parameterTypes: List<String>,
+    supportsObjectType: (String) -> Boolean,
+): MethodSignatureKey? {
+    val shape = methodSignatureShape(parameterTypes, supportsObjectType) ?: return null
+    val returnKind = when (returnType) {
+        "Unit" -> MethodReturnKind.UNIT
+        "String" -> MethodReturnKind.STRING
+        "Float64" -> MethodReturnKind.FLOAT64
+        "Boolean" -> MethodReturnKind.BOOLEAN
+        else -> if (supportsObjectType(returnType)) MethodReturnKind.OBJECT else null
+    } ?: return null
+    return MethodSignatureKey(returnKind = returnKind, shape = shape)
 }
