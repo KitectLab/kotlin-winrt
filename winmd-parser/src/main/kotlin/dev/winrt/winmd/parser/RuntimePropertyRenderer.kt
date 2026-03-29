@@ -84,46 +84,46 @@ internal class RuntimePropertyRenderer(
     }
 
     private fun scalarRuntimePropertyPlan(type: String): ScalarRuntimePropertyPlan? {
-        return when (type) {
-            "Boolean" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+        return when (PropertyRuleRegistry.getterRuleFamily(type)) {
+            RuntimePropertyGetterRuleFamily.BOOLEAN -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 CodeBlock.of(
                     "%T(%L)",
                     PoetSymbols.winRtBooleanClass,
                     AbiCallCatalog.booleanMethod(getterVtableIndex),
                 )
             }
-            "Guid" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+            RuntimePropertyGetterRuleFamily.GUID -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 CodeBlock.of(
                     "%T(%L.toString())",
                     PoetSymbols.guidValueClass,
                     AbiCallCatalog.guidGetter(getterVtableIndex),
                 )
             }
-            "DateTime" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+            RuntimePropertyGetterRuleFamily.DATE_TIME -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 CodeBlock.of(
                     "%T(%L)",
                     PoetSymbols.dateTimeClass,
                     AbiCallCatalog.int64Getter(getterVtableIndex),
                 )
             }
-            "TimeSpan" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+            RuntimePropertyGetterRuleFamily.TIME_SPAN -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 CodeBlock.of(
                     "%T(%L)",
                     PoetSymbols.timeSpanClass,
                     AbiCallCatalog.int64Getter(getterVtableIndex),
                 )
             }
-            "EventRegistrationToken" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+            RuntimePropertyGetterRuleFamily.EVENT_REGISTRATION_TOKEN -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 CodeBlock.of(
                     "%T(%L)",
                     PoetSymbols.eventRegistrationTokenClass,
                     AbiCallCatalog.int64Getter(getterVtableIndex),
                 )
             }
-            "String" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+            RuntimePropertyGetterRuleFamily.STRING -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 hStringToKotlinString("pointer", getterVtableIndex)
             }
-            "Int32" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+            RuntimePropertyGetterRuleFamily.INT32 -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 CodeBlock.of(
                     "%T(%L)",
                     PoetSymbols.int32Class,
@@ -137,7 +137,7 @@ internal class RuntimePropertyRenderer(
     private fun runtimePropertyPlan(property: WinMdProperty): RuntimePropertyPlan? {
         val getterPlan = when {
             property.getterVtableIndex == null -> null
-            property.type == "IReference<String>" -> RuntimePropertyGetterPlan { getterVtableIndex ->
+            PropertyRuleRegistry.getterRuleFamily(property.type) == RuntimePropertyGetterRuleFamily.IREFERENCE_STRING -> RuntimePropertyGetterPlan { getterVtableIndex ->
                 CodeBlock.of(
                     "%T(%L)",
                     PoetSymbols.iReferenceClass.parameterizedBy(String::class.asTypeName()),
@@ -148,17 +148,16 @@ internal class RuntimePropertyRenderer(
                 RuntimePropertyGetterPlan { getterVtableIndex -> scalarPlan.renderGetter(getterVtableIndex) }
             }
         }
-        val setterPlan = when {
-            property.setterVtableIndex == null -> null
-            property.type == "String" -> RuntimePropertySetterPlan(
+        val setterPlan = when (PropertyRuleRegistry.setterRuleFamily(property.type)) {
+            null -> null
+            RuntimePropertySetterRuleFamily.STRING -> RuntimePropertySetterPlan(
                 statement = "%L",
                 args = { setterVtableIndex -> arrayOf(AbiCallCatalog.stringSetter(setterVtableIndex)) },
             )
-            property.type == "Int32" -> RuntimePropertySetterPlan(
+            RuntimePropertySetterRuleFamily.INT32 -> RuntimePropertySetterPlan(
                 statement = "%L",
                 args = { setterVtableIndex -> arrayOf(AbiCallCatalog.int32Setter(setterVtableIndex)) },
             )
-            else -> null
         }
         return if (getterPlan != null || setterPlan != null) {
             RuntimePropertyPlan(getter = getterPlan, setter = setterPlan)
