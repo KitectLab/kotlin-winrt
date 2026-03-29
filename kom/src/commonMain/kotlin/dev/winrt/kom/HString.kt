@@ -6,10 +6,14 @@ import kotlin.jvm.JvmInline
 value class HString(val raw: Long) : AutoCloseable {
     companion object {
         val NULL = HString(0)
+
+        fun fromKotlin(value: String): HString = PlatformHStringBridge.create(value)
     }
 
     val isNull: Boolean
         get() = raw == 0L
+
+    fun toKotlinString(): String = PlatformHStringBridge.toKotlinString(this)
 
     override fun close() {
         PlatformHStringBridge.release(this)
