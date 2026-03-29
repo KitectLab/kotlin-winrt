@@ -19,7 +19,11 @@ object WinUiApplicationStart {
 
     fun probeCallbackOnly(): Boolean {
         var callbackInvoked = false
-        val callback = WinRtDelegateBridge.createObjectArgUnitDelegate(ApplicationInitializationCallback.iid) {
+        val callback = WinRtDelegateBridge.createUnitDelegate(
+            ApplicationInitializationCallback.iid,
+            listOf(dev.winrt.core.WinRtDelegateValueKind.OBJECT),
+        ) {
+            val arg = it.single() as dev.winrt.kom.ComPtr
             callbackInvoked = true
             val uiThreadId = WindowsMessageLoop.currentThreadId()
             Thread.ofPlatform().daemon(true).start {
@@ -36,7 +40,11 @@ object WinUiApplicationStart {
     fun probeCallbackParamsInterface(): Boolean {
         var callbackInvoked = false
         var paramsSupported = false
-        val callback = WinRtDelegateBridge.createObjectArgUnitDelegate(ApplicationInitializationCallback.iid) { arg ->
+        val callback = WinRtDelegateBridge.createUnitDelegate(
+            ApplicationInitializationCallback.iid,
+            listOf(dev.winrt.core.WinRtDelegateValueKind.OBJECT),
+        ) {
+            val arg = it.single() as dev.winrt.kom.ComPtr
             callbackInvoked = true
             paramsSupported = runCatching {
                 val paramsPointer = dev.winrt.kom.PlatformComInterop.queryInterface(
@@ -70,7 +78,11 @@ object WinUiApplicationStart {
         windowVisible = false
         activeCallback?.close()
         activeCallback = null
-        val callback = WinRtDelegateBridge.createObjectArgUnitDelegate(ApplicationInitializationCallback.iid) {
+        val callback = WinRtDelegateBridge.createUnitDelegate(
+            ApplicationInitializationCallback.iid,
+            listOf(dev.winrt.core.WinRtDelegateValueKind.OBJECT),
+        ) {
+            val arg = it.single() as dev.winrt.kom.ComPtr
             runCatching {
                 application = Application.current
                 window = Window()
