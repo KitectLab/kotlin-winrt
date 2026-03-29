@@ -928,7 +928,7 @@ class KotlinBindingGeneratorTest {
         }.content
 
         assertTrue(binding.contains("fun asIUIElementCollection(): IUIElementCollection = IUIElementCollection.from(this)"))
-        assertTrue(binding.contains("fun asIBindableVector(): IBindableVector = IBindableVector.from(this)"))
+        assertFalse(binding.contains("fun asIBindableVector(): IBindableVector = IBindableVector.from(this)"))
     }
 
     @Test

@@ -5,11 +5,10 @@ import dev.winrt.core.UInt32
 import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
-import dev.winrt.core.Inspectable
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
 import microsoft.ui.xaml.UIElement
-import microsoft.ui.xaml.interop.IBindableVector
+import dev.winrt.projection.WinRtMutableListProjection
 
 open class UIElementCollection(
     pointer: ComPtr,
@@ -24,8 +23,6 @@ open class UIElementCollection(
         PlatformComInterop.invokeObjectSetter(pointer, 13, value.pointer).getOrThrow()
     }
 
-    fun asIBindableVector(): IBindableVector = IBindableVector.from(this)
-
     companion object : WinRtRuntimeClassMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Controls.UIElementCollection"
         override val classId: RuntimeClassId = RuntimeClassId("Microsoft.UI.Xaml.Controls", "UIElementCollection")
@@ -33,10 +30,10 @@ open class UIElementCollection(
         override val activationKind: WinRtActivationKind = WinRtActivationKind.Factory
 
         private fun createMutableListDelegate(pointer: ComPtr): MutableList<UIElement> {
-            val inspectable = Inspectable(pointer)
-            val bindableVector: Lazy<IBindableVector> = lazy { IBindableVector.from(inspectable) }
-            return IBindableVector.Companion.createMutableListProjection(
-                sizeProvider = { bindableVector.value.size },
+            return createMutableListProjection(
+                sizeProvider = {
+                    UInt32(PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow()).value.toInt()
+                },
                 getter = { index: Int ->
                     UIElement(
                         PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 6, index.toUInt()).getOrThrow(),
@@ -45,9 +42,24 @@ open class UIElementCollection(
                 append = { value: UIElement ->
                     PlatformComInterop.invokeObjectSetter(pointer, 13, value.pointer).getOrThrow()
                 },
-                clearer = { bindableVector.value.clear() },
+                clearer = {
+                    PlatformComInterop.invokeUnitMethod(pointer, 16).getOrThrow()
+                },
             )
         }
+
+        internal fun <T> createMutableListProjection(
+            sizeProvider: () -> Int,
+            getter: (Int) -> T,
+            append: (T) -> Unit,
+            clearer: () -> Unit,
+        ): MutableList<T> =
+            WinRtMutableListProjection(
+                sizeProvider = sizeProvider,
+                getter = getter,
+                append = append,
+                clearer = clearer,
+            )
 
         fun activate(): UIElementCollection = WinRtRuntime.activate(this, ::UIElementCollection)
     }
