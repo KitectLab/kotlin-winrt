@@ -51,6 +51,9 @@ internal object MethodRuleRegistry {
         put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64), SharedMethodRuleFamily.UNIT)
         put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN), SharedMethodRuleFamily.UNIT)
         put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.UNIT)
+
+        put(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.OBJECT)
+        put(MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.OBJECT)
     }
 
     fun sharedMethodRuleFamily(signatureKey: MethodSignatureKey): SharedMethodRuleFamily? =

@@ -1202,6 +1202,20 @@ internal class InterfaceTypeRenderer(
                     arrayOf(PoetSymbols.winRtBooleanClass, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
                 },
             )
+            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
+                statement = "return %T(%T.invokeInt64MethodWithObjectArg(pointer, %L, %N.pointer).getOrThrow())",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.int64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
+                statement = "return %T(%T.invokeInt64MethodWithObjectArg(pointer, %L, %N.pointer).getOrThrow().toULong())",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.uint64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                },
+            )
             MethodSignatureKey(MethodReturnKind.EVENT_REGISTRATION_TOKEN, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
                 statement = "return %T(%L)",
                 args = { method, _ ->

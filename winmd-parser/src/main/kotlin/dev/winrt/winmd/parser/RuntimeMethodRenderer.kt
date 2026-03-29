@@ -256,6 +256,26 @@ internal class RuntimeMethodRenderer(
                     arrayOf(PoetSymbols.winRtBooleanClass, AbiCallCatalog.booleanMethodWithUInt32(method.vtableIndex!!, "if (${argumentName}.value) 1u else 0u"))
                 },
             )
+            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %T(0L)", arrayOf(PoetSymbols.int64Class)) },
+                returnStatement = "return %T(%L)",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(
+                        PoetSymbols.int64Class,
+                        AbiCallCatalog.int64MethodWithObject(method.vtableIndex!!, "${parameterBindings.single().name}.pointer"),
+                    )
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %T(0uL)", arrayOf(PoetSymbols.uint64Class)) },
+                returnStatement = "return %T(%L)",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(
+                        PoetSymbols.uint64Class,
+                        CodeBlock.of("%L.toULong()", AbiCallCatalog.int64MethodWithObject(method.vtableIndex!!, "${parameterBindings.single().name}.pointer")),
+                    )
+                },
+            )
             MethodSignatureKey(MethodReturnKind.EVENT_REGISTRATION_TOKEN, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %T(0)", arrayOf(PoetSymbols.eventRegistrationTokenClass)) },
                 returnStatement = "return %T(%L)",

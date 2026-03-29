@@ -1984,6 +1984,52 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_runtime_methods_with_object_arguments_for_int64_and_uint64_returns() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Payload",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "ObjectReturnHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetSignedValue",
+                                    returnType = "Int64",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetUnsignedValue",
+                                    returnType = "UInt64",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/ObjectReturnHost.kt" }.content
+
+        assertTrue(binding.contains("fun getSignedValue(payload: Payload): Int64"))
+        assertTrue(binding.contains("invokeInt64MethodWithObjectArg(pointer, 6, payload.pointer).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedValue(payload: Payload): UInt64"))
+        assertTrue(binding.contains("invokeInt64MethodWithObjectArg(pointer, 7, payload.pointer).getOrThrow().toULong()"))
+    }
+
+    @Test
     fun generates_scalar_runtime_properties_for_common_value_types() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
