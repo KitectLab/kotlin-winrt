@@ -155,6 +155,7 @@ kotlin {
         commonMain.dependencies {
             implementation(projects.kom)
             implementation(projects.winrtCore)
+            implementation(libs.kotlinx.coroutines.core)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
