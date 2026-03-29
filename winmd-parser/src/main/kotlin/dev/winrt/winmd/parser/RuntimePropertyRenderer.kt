@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.asTypeName
 import dev.winrt.winmd.plugin.WinMdProperty
 
@@ -95,12 +96,7 @@ internal class RuntimePropertyRenderer(
                     .beginControlFlow("if (pointer.isNull)")
                     .addStatement("return %N.get()", backingName)
                     .endControlFlow()
-                    .addStatement(
-                        "return %T(%T.invokeHStringMethod(pointer, %L).getOrThrow().use { it.toKotlinString() })",
-                        PoetSymbols.iReferenceClass.parameterizedBy(String::class.asTypeName()),
-                        PoetSymbols.platformComInteropClass,
-                        getterVtableIndex,
-                    )
+                    .addStatement("return %T(%L)", PoetSymbols.iReferenceClass.parameterizedBy(String::class.asTypeName()), hStringToKotlinString("pointer", getterVtableIndex))
                     .build()
             }
             property.type == "String" && property.getterVtableIndex != null -> {
@@ -109,11 +105,7 @@ internal class RuntimePropertyRenderer(
                     .beginControlFlow("if (pointer.isNull)")
                     .addStatement("return %N.get()", backingName)
                     .endControlFlow()
-                    .addStatement(
-                        "return %T.invokeHStringMethod(pointer, %L).getOrThrow().use { it.toKotlinString() }",
-                        PoetSymbols.platformComInteropClass,
-                        getterVtableIndex,
-                    )
+                    .addStatement("return %L", hStringToKotlinString("pointer", getterVtableIndex))
                     .build()
             }
             property.type == "Int32" && property.getterVtableIndex != null -> {
@@ -158,5 +150,12 @@ internal class RuntimePropertyRenderer(
                 .addStatement("%N.set(value)", backingName)
                 .build()
         }
+    }
+
+    private fun hStringToKotlinString(pointerName: String, vtableIndex: Int): CodeBlock {
+        return CodeBlock.of(
+            "%T.invokeHStringMethod($pointerName, $vtableIndex).getOrThrow().use { it.toKotlinString() }",
+            PoetSymbols.platformComInteropClass,
+        )
     }
 }
