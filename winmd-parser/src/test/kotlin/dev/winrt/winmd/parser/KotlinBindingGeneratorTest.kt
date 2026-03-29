@@ -4626,6 +4626,63 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_event_registration_token_methods() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Events",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IEmitter",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                            methods = listOf(
+                                WinMdMethod(name = "add_Changed", returnType = "EventRegistrationToken", vtableIndex = 6),
+                                WinMdMethod(
+                                    name = "remove_Changed",
+                                    returnType = "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter(name = "token", type = "EventRegistrationToken")),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "Emitter",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(name = "add_Changed", returnType = "EventRegistrationToken", vtableIndex = 6),
+                                WinMdMethod(
+                                    name = "remove_Changed",
+                                    returnType = "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter(name = "token", type = "EventRegistrationToken")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Events/IEmitter.kt" }.content
+        val runtimeBinding = files.first { it.relativePath == "Example/Events/Emitter.kt" }.content
+
+        assertTrue(interfaceBinding.contains("fun add_Changed(): EventRegistrationToken"))
+        assertTrue(interfaceBinding.contains("EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer, 6).getOrThrow())"))
+        assertTrue(interfaceBinding.contains("fun remove_Changed(token: EventRegistrationToken)"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 7, token.value).getOrThrow()"))
+
+        assertTrue(runtimeBinding.contains("fun add_Changed(): EventRegistrationToken"))
+        assertTrue(runtimeBinding.contains("EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer, 6).getOrThrow())"))
+        assertTrue(runtimeBinding.contains("fun remove_Changed(token: EventRegistrationToken)"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 7, token.value).getOrThrow()"))
+    }
+
+    @Test
     fun generates_winui_unit_interface_methods() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

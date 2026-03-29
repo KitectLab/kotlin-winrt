@@ -4,6 +4,7 @@ internal enum class SharedMethodRuleFamily {
     STRING,
     FLOAT64,
     BOOLEAN,
+    EVENT_REGISTRATION_TOKEN,
     OBJECT,
     UNIT,
 }
@@ -24,6 +25,11 @@ internal object MethodRuleRegistry {
         put(MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.UINT32), SharedMethodRuleFamily.BOOLEAN)
         put(MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.BOOLEAN)
 
+        put(
+            MethodSignatureKey(MethodReturnKind.EVENT_REGISTRATION_TOKEN, MethodSignatureShape.EMPTY),
+            SharedMethodRuleFamily.EVENT_REGISTRATION_TOKEN,
+        )
+
         put(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.EMPTY), SharedMethodRuleFamily.OBJECT)
         put(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.STRING), SharedMethodRuleFamily.OBJECT)
         put(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.UINT32), SharedMethodRuleFamily.OBJECT)
@@ -32,6 +38,7 @@ internal object MethodRuleRegistry {
         put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING), SharedMethodRuleFamily.UNIT)
         put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32), SharedMethodRuleFamily.UNIT)
         put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64), SharedMethodRuleFamily.UNIT)
+        put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN), SharedMethodRuleFamily.UNIT)
         put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.UNIT)
     }
 

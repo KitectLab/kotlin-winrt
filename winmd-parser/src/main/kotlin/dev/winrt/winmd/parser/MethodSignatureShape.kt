@@ -6,6 +6,7 @@ internal enum class MethodSignatureShape {
     INT32,
     INT64,
     UINT32,
+    EVENT_REGISTRATION_TOKEN,
     OBJECT,
 }
 
@@ -19,6 +20,7 @@ internal enum class MethodReturnKind {
     INT64,
     UINT64,
     GUID,
+    EVENT_REGISTRATION_TOKEN,
     OBJECT,
 }
 
@@ -37,6 +39,7 @@ internal fun methodSignatureShape(
         parameterTypes == listOf("Int32") -> MethodSignatureShape.INT32
         parameterTypes == listOf("Int64") -> MethodSignatureShape.INT64
         parameterTypes == listOf("UInt32") -> MethodSignatureShape.UINT32
+        parameterTypes == listOf("EventRegistrationToken") -> MethodSignatureShape.EVENT_REGISTRATION_TOKEN
         parameterTypes.size == 1 && supportsObjectType(parameterTypes.single()) -> MethodSignatureShape.OBJECT
         else -> null
     }
@@ -58,6 +61,7 @@ internal fun methodSignatureKey(
         "Int64" -> MethodReturnKind.INT64
         "UInt64" -> MethodReturnKind.UINT64
         "Guid" -> MethodReturnKind.GUID
+        "EventRegistrationToken" -> MethodReturnKind.EVENT_REGISTRATION_TOKEN
         else -> if (supportsObjectType(returnType)) MethodReturnKind.OBJECT else null
     } ?: return null
     return MethodSignatureKey(returnKind = returnKind, shape = shape)
