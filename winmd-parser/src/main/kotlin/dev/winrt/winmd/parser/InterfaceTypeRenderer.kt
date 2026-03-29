@@ -673,7 +673,9 @@ internal class InterfaceTypeRenderer(
             parameterTypes = method.parameters.map { it.type },
             supportsObjectType = ::supportsInterfaceObjectInput,
         )
-        return signatureKey?.let { plannedInterfaceMethodForKey(it, genericParameters) }
+        return signatureKey
+            ?.takeIf { MethodRuleRegistry.sharedMethodRuleFamily(it) != null }
+            ?.let { plannedInterfaceMethodForKey(it, genericParameters) }
     }
 
     private fun plannedInterfaceMethodForKey(
