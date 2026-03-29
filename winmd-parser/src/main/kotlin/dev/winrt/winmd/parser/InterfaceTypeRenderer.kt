@@ -328,7 +328,7 @@ internal class InterfaceTypeRenderer(
             method.returnType == "String" && method.parameters.isEmpty() && method.vtableIndex != null -> {
                 val vtableIndex = method.vtableIndex!!
                 builder
-                    .addStatement("return kotlin.io.use(%T.invokeHStringMethod(pointer, %L).getOrThrow()) { it.toKotlinString() }", PoetSymbols.platformComInteropClass, vtableIndex)
+                    .addStatement("return %L", HStringSupport.toKotlinString("pointer", vtableIndex))
                     .build()
             }
             method.returnType == "String" &&
@@ -338,12 +338,7 @@ internal class InterfaceTypeRenderer(
                 val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
                 val vtableIndex = method.vtableIndex!!
                 builder
-                    .addStatement(
-                        "return kotlin.io.use(%T.invokeHStringMethodWithStringArg(pointer, %L, %N).getOrThrow()) { it.toKotlinString() }",
-                        PoetSymbols.platformComInteropClass,
-                        vtableIndex,
-                        argumentName,
-                    )
+                    .addStatement("return %L", HStringSupport.toKotlinStringWithStringArg("pointer", vtableIndex, argumentName))
                     .build()
             }
             method.returnType == "String" &&
@@ -353,12 +348,7 @@ internal class InterfaceTypeRenderer(
                 val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
                 val vtableIndex = method.vtableIndex!!
                 builder
-                    .addStatement(
-                        "return kotlin.io.use(%T.invokeHStringMethodWithInt32Arg(pointer, %L, %N.value).getOrThrow()) { it.toKotlinString() }",
-                        PoetSymbols.platformComInteropClass,
-                        vtableIndex,
-                        argumentName,
-                    )
+                    .addStatement("return %L", HStringSupport.toKotlinStringWithInt32Arg("pointer", vtableIndex, "$argumentName.value"))
                     .build()
             }
             method.returnType == "String" &&
@@ -368,12 +358,7 @@ internal class InterfaceTypeRenderer(
                 val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
                 val vtableIndex = method.vtableIndex!!
                 builder
-                    .addStatement(
-                        "return kotlin.io.use(%T.invokeHStringMethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow()) { it.toKotlinString() }",
-                        PoetSymbols.platformComInteropClass,
-                        vtableIndex,
-                        argumentName,
-                    )
+                    .addStatement("return %L", HStringSupport.toKotlinStringWithUInt32Arg("pointer", vtableIndex, "$argumentName.value"))
                     .build()
             }
             method.returnType == "Float64" && method.parameters.isEmpty() && method.vtableIndex != null -> {

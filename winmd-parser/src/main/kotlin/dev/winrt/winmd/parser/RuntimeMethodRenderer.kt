@@ -125,11 +125,7 @@ internal class RuntimeMethodRenderer(
                 .beginControlFlow("if (pointer.isNull)")
                 .addStatement("return %S", "")
                 .endControlFlow()
-                .addStatement(
-                    "return kotlin.io.use(%T.invokeHStringMethod(pointer, %L).getOrThrow()) { it.toKotlinString() }",
-                    PoetSymbols.platformComInteropClass,
-                    vtableIndex,
-                )
+                .addStatement("return %L", HStringSupport.toKotlinString("pointer", vtableIndex))
                 .build()
         }
         if (supportsRuntimeObjectType(method.returnType) &&
