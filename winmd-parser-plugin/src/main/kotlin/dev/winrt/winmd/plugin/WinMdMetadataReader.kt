@@ -111,7 +111,7 @@ object WinMdMetadataReader {
 
     private fun readBaseInterfaces(typeDefIndex: Int, tables: MetadataTables): List<String> {
         val typeKind = classifyType(tables.typeDefs[typeDefIndex - 1], tables)
-        if (typeKind != WinMdTypeKind.Interface) {
+        if (typeKind != WinMdTypeKind.Interface && typeKind != WinMdTypeKind.RuntimeClass) {
             return emptyList()
         }
         return tables.interfaceImplRows

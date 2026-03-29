@@ -150,6 +150,18 @@ class WinMdMetadataReaderTest {
             .first { it.name == "Windows.Data.Json" }
             .types.first { it.name == "JsonObject" }
         assertEquals("Windows.Data.Json.IJsonObject", jsonObject.defaultInterface)
+        assertTrue(
+            jsonObject.baseInterfaces.toString(),
+            jsonObject.baseInterfaces.any { it.startsWith("Windows.Foundation.Collections.IMap`2<") },
+        )
+        assertTrue(
+            jsonObject.baseInterfaces.toString(),
+            jsonObject.baseInterfaces.any { it.startsWith("Windows.Foundation.Collections.IIterable`1<") },
+        )
+        assertTrue(
+            jsonObject.baseInterfaces.toString(),
+            jsonObject.baseInterfaces.any { it == "Windows.Foundation.IStringable" },
+        )
         assertTrue(jsonObject.properties.toString(), jsonObject.properties.any { it.name == "ValueType" && it.type == "Windows.Data.Json.JsonValueType" })
         assertTrue(jsonObject.properties.toString(), jsonObject.properties.any { it.name == "Size" && it.type == "UInt32" })
 
