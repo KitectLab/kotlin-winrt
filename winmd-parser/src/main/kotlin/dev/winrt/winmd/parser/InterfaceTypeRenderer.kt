@@ -226,14 +226,15 @@ internal class InterfaceTypeRenderer(
             method.returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") -> {
                 val progressType = asyncMethodProjectionPlanner.asyncProgressTypeName(method.returnType, currentNamespace, genericParameters)
                     ?: return null
+                val progressCallbackType = LambdaTypeName.get(
+                    parameters = listOf(ParameterSpec.builder("value", progressType).build()),
+                    returnType = Unit::class.asTypeName(),
+                )
                 builder.addParameter(
                     "block",
                     LambdaTypeName.get(
                         receiver = PoetSymbols.coroutineScopeClass,
-                        LambdaTypeName.get(
-                            progressType,
-                            returnType = Unit::class.asTypeName(),
-                        ),
+                        progressCallbackType,
                         returnType = Unit::class.asTypeName(),
                     ).copy(suspending = true),
                 )
@@ -248,14 +249,15 @@ internal class InterfaceTypeRenderer(
                     ?: return null
                 val progressType = asyncMethodProjectionPlanner.asyncProgressTypeName(method.returnType, currentNamespace, genericParameters)
                     ?: return null
+                val progressCallbackType = LambdaTypeName.get(
+                    parameters = listOf(ParameterSpec.builder("value", progressType).build()),
+                    returnType = Unit::class.asTypeName(),
+                )
                 builder.addParameter(
                     "block",
                     LambdaTypeName.get(
                         receiver = PoetSymbols.coroutineScopeClass,
-                        LambdaTypeName.get(
-                            progressType,
-                            returnType = Unit::class.asTypeName(),
-                        ),
+                        progressCallbackType,
                         returnType = resultType,
                     ).copy(suspending = true),
                 )
