@@ -1,6 +1,5 @@
 package windows.globalization
 
-import dev.winrt.core.Inspectable
 import dev.winrt.core.RuntimeClassId
 import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtRuntime
@@ -10,8 +9,7 @@ import kotlin.String
 
 public open class Calendar(
   pointer: ComPtr,
-) : Inspectable(pointer) {
-  public fun asICalendar(): ICalendar = ICalendar.from(this)
+) : ICalendar(pointer) {
 
   public companion object : WinRtRuntimeClassMetadata {
     override val qualifiedName: String = "Windows.Globalization.Calendar"

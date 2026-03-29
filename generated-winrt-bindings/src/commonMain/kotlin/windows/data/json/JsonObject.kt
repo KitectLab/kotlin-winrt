@@ -1,6 +1,5 @@
 package windows.`data`.json
 
-import dev.winrt.core.Inspectable
 import dev.winrt.core.RuntimeClassId
 import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtRuntime
@@ -10,8 +9,7 @@ import kotlin.String
 
 public open class JsonObject(
   pointer: ComPtr,
-) : Inspectable(pointer) {
-  public fun asIJsonObject(): IJsonObject = IJsonObject.from(this)
+) : IJsonObject(pointer) {
 
   public companion object : WinRtRuntimeClassMetadata {
     override val qualifiedName: String = "Windows.Data.Json.JsonObject"

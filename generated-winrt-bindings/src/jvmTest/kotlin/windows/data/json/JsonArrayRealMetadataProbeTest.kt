@@ -114,12 +114,7 @@ class JsonArrayRealMetadataProbeTest {
             ).getOrThrow()
             try {
                 val jsonObject = JsonObject(Inspectable(instance).pointer)
-                val projected = jsonObject.asIJsonObject()
-                try {
-                    return projected.getNamedArray("items").pointer
-                } finally {
-                    PlatformComInterop.release(projected.pointer)
-                }
+                return jsonObject.getNamedArray("items").pointer
             } finally {
                 PlatformComInterop.release(instance)
             }
@@ -141,12 +136,7 @@ class JsonArrayRealMetadataProbeTest {
             ).getOrThrow()
             try {
                 val jsonObject = JsonObject(Inspectable(instance).pointer)
-                val projected = jsonObject.asIJsonObject()
-                try {
-                    return projected.getNamedArray("items").pointer
-                } finally {
-                    PlatformComInterop.release(projected.pointer)
-                }
+                return jsonObject.getNamedArray("items").pointer
             } finally {
                 PlatformComInterop.release(instance)
             }

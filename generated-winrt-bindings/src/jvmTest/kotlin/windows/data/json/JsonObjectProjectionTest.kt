@@ -36,110 +36,84 @@ class JsonObjectProjectionTest {
                 ).getOrThrow()
                 try {
                     val jsonObject = JsonObject(Inspectable(instance).pointer)
-                    val projected = jsonObject.asIJsonObject()
+                    assertEquals("codex", jsonObject.getNamedString("name"))
+                    assertEquals(3.5, jsonObject.getNamedNumber("pi").value, 0.0)
+                    assertTrue(jsonObject.getNamedBoolean("flag").value)
+                    val textValue = jsonObject.getNamedValue("name")
                     try {
-                        assertEquals("codex", projected.getNamedString("name"))
-                        assertEquals(3.5, projected.getNamedNumber("pi").value, 0.0)
-                        assertTrue(projected.getNamedBoolean("flag").value)
-                        val textValue = projected.getNamedValue("name")
+                        assertEquals(JsonValueType.String, textValue.valueType)
+                        assertEquals("\"codex\"", textValue.stringify())
+                        assertEquals("codex", textValue.getString())
+                    } finally {
+                        PlatformComInterop.release(textValue.pointer)
+                    }
+                    val numberValue = jsonObject.getNamedValue("pi")
+                    try {
+                        assertEquals(JsonValueType.Number, numberValue.valueType)
+                        assertEquals("3.5", numberValue.stringify())
+                        assertEquals(3.5, numberValue.getNumber().value, 0.0)
+                    } finally {
+                        PlatformComInterop.release(numberValue.pointer)
+                    }
+                    val booleanValue = jsonObject.getNamedValue("flag")
+                    try {
+                        assertEquals(JsonValueType.Boolean, booleanValue.valueType)
+                        assertEquals("true", booleanValue.stringify())
+                        assertTrue(booleanValue.getBoolean().value)
+                    } finally {
+                        PlatformComInterop.release(booleanValue.pointer)
+                    }
+                    val nested = jsonObject.getNamedObject("nested")
+                    try {
+                        val nestedValue = IJsonValue.from(Inspectable(nested.pointer))
                         try {
-                            assertEquals(JsonValueType.String, textValue.valueType)
-                            assertEquals("\"codex\"", textValue.stringify())
-                            assertEquals("codex", textValue.getString())
-                        } finally {
-                            PlatformComInterop.release(textValue.pointer)
-                        }
-                        val numberValue = projected.getNamedValue("pi")
-                        try {
-                            assertEquals(JsonValueType.Number, numberValue.valueType)
-                            assertEquals("3.5", numberValue.stringify())
-                            assertEquals(3.5, numberValue.getNumber().value, 0.0)
-                        } finally {
-                            PlatformComInterop.release(numberValue.pointer)
-                        }
-                        val booleanValue = projected.getNamedValue("flag")
-                        try {
-                            assertEquals(JsonValueType.Boolean, booleanValue.valueType)
-                            assertEquals("true", booleanValue.stringify())
-                            assertTrue(booleanValue.getBoolean().value)
-                        } finally {
-                            PlatformComInterop.release(booleanValue.pointer)
-                        }
-                        val nested = projected.getNamedObject("nested")
-                        try {
-                            val nestedValue = IJsonValue.from(Inspectable(nested.pointer))
+                            assertEquals(JsonValueType.Object, nestedValue.valueType)
+                            assertEquals("""{"child":"value"}""", nestedValue.stringify())
+                            val nestedObject = nestedValue.getObject()
                             try {
-                                assertEquals(JsonValueType.Object, nestedValue.valueType)
-                                assertEquals("""{"child":"value"}""", nestedValue.stringify())
-                                val nestedObject = nestedValue.getObject()
-                                try {
-                                    assertTrue(!nestedObject.pointer.isNull)
-                                } finally {
-                                    PlatformComInterop.release(nestedObject.pointer)
-                                }
+                                assertTrue(!nestedObject.pointer.isNull)
                             } finally {
-                                PlatformComInterop.release(nestedValue.pointer)
-                            }
-                            val nestedProjected = nested.asIJsonObject()
-                            try {
-                                assertEquals("value", nestedProjected.getNamedString("child"))
-                            } finally {
-                                PlatformComInterop.release(nestedProjected.pointer)
+                                PlatformComInterop.release(nestedObject.pointer)
                             }
                         } finally {
-                            PlatformComInterop.release(nested.pointer)
+                            PlatformComInterop.release(nestedValue.pointer)
                         }
-                        val items = projected.getNamedArray("items")
+                        assertEquals("value", nested.getNamedString("child"))
+                    } finally {
+                        PlatformComInterop.release(nested.pointer)
+                    }
+                    val items = jsonObject.getNamedArray("items")
+                    try {
+                        val arrayValue = jsonObject.getNamedValue("items")
                         try {
-                            val arrayValue = projected.getNamedValue("items")
+                            assertEquals(JsonValueType.Array, arrayValue.valueType)
+                            assertEquals("[{\"child\":\"a\"},{\"child\":\"b\"}]", arrayValue.stringify())
+                            val nestedArray = arrayValue.getArray()
                             try {
-                                assertEquals(JsonValueType.Array, arrayValue.valueType)
-                                assertEquals("[{\"child\":\"a\"},{\"child\":\"b\"}]", arrayValue.stringify())
-                                val nestedArray = arrayValue.getArray()
-                                try {
-                                    assertTrue(!nestedArray.pointer.isNull)
-                                } finally {
-                                    PlatformComInterop.release(nestedArray.pointer)
-                                }
+                                assertTrue(!nestedArray.pointer.isNull)
                             } finally {
-                                PlatformComInterop.release(arrayValue.pointer)
-                            }
-                            val itemsProjected = items.asIJsonArray()
-                            try {
-                                assertTrue(!items.pointer.isNull)
-                                assertTrue(!itemsProjected.pointer.isNull)
-                                val firstItem = itemsProjected.getObjectAt(UInt32(0u))
-                                try {
-                                    val firstItemProjected = firstItem.asIJsonObject()
-                                    try {
-                                        assertEquals("a", firstItemProjected.getNamedString("child"))
-                                    } finally {
-                                        PlatformComInterop.release(firstItemProjected.pointer)
-                                    }
-                                } finally {
-                                    PlatformComInterop.release(firstItem.pointer)
-                                }
-                            } finally {
-                                PlatformComInterop.release(itemsProjected.pointer)
+                                PlatformComInterop.release(nestedArray.pointer)
                             }
                         } finally {
-                            PlatformComInterop.release(items.pointer)
+                            PlatformComInterop.release(arrayValue.pointer)
                         }
-                        val scalarItems = projected.getNamedArray("scalarItems")
+                        assertTrue(!items.pointer.isNull)
+                        val firstItem = items.getObjectAt(UInt32(0u))
                         try {
-                            val scalarItemsProjected = scalarItems.asIJsonArray()
-                            try {
-                                assertEquals("alpha", scalarItemsProjected.getStringAt(UInt32(0u)))
-                                assertEquals(3.5, scalarItemsProjected.getNumberAt(UInt32(1u)).value, 0.0)
-                                assertTrue(scalarItemsProjected.getBooleanAt(UInt32(2u)).value)
-                            } finally {
-                                PlatformComInterop.release(scalarItemsProjected.pointer)
-                            }
+                            assertEquals("a", firstItem.getNamedString("child"))
                         } finally {
-                            PlatformComInterop.release(scalarItems.pointer)
+                            PlatformComInterop.release(firstItem.pointer)
                         }
                     } finally {
-                        PlatformComInterop.release(projected.pointer)
+                        PlatformComInterop.release(items.pointer)
+                    }
+                    val scalarItems = jsonObject.getNamedArray("scalarItems")
+                    try {
+                        assertEquals("alpha", scalarItems.getStringAt(UInt32(0u)))
+                        assertEquals(3.5, scalarItems.getNumberAt(UInt32(1u)).value, 0.0)
+                        assertTrue(scalarItems.getBooleanAt(UInt32(2u)).value)
+                    } finally {
+                        PlatformComInterop.release(scalarItems.pointer)
                     }
                 } finally {
                     PlatformComInterop.release(instance)

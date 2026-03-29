@@ -128,16 +128,14 @@ class JsonValueRealMetadataProbeTest {
             ).getOrThrow()
             try {
                 val jsonObject = JsonObject(Inspectable(instance).pointer)
-                val projected = jsonObject.asIJsonObject()
                 try {
-                    val nested = projected.getNamedObject("nested")
+                    val nested = jsonObject.getNamedObject("nested")
                     try {
                         return IJsonValue.from(Inspectable(nested.pointer)).pointer
                     } finally {
                         PlatformComInterop.release(nested.pointer)
                     }
                 } finally {
-                    PlatformComInterop.release(projected.pointer)
                 }
             } finally {
                 PlatformComInterop.release(instance)
@@ -160,18 +158,13 @@ class JsonValueRealMetadataProbeTest {
             ).getOrThrow()
             try {
                 val jsonObject = JsonObject(Inspectable(instance).pointer)
-                val projected = jsonObject.asIJsonObject()
-                try {
-                    return linkedMapOf(
-                        "text" to PlatformComInterop.invokeObjectMethodWithStringArg(projected.pointer, 6, "text").getOrThrow(),
-                        "num" to PlatformComInterop.invokeObjectMethodWithStringArg(projected.pointer, 6, "num").getOrThrow(),
-                        "flag" to PlatformComInterop.invokeObjectMethodWithStringArg(projected.pointer, 6, "flag").getOrThrow(),
-                        "arr" to PlatformComInterop.invokeObjectMethodWithStringArg(projected.pointer, 6, "arr").getOrThrow(),
-                        "obj" to PlatformComInterop.invokeObjectMethodWithStringArg(projected.pointer, 6, "obj").getOrThrow(),
-                    )
-                } finally {
-                    PlatformComInterop.release(projected.pointer)
-                }
+                return linkedMapOf(
+                    "text" to PlatformComInterop.invokeObjectMethodWithStringArg(jsonObject.pointer, 6, "text").getOrThrow(),
+                    "num" to PlatformComInterop.invokeObjectMethodWithStringArg(jsonObject.pointer, 6, "num").getOrThrow(),
+                    "flag" to PlatformComInterop.invokeObjectMethodWithStringArg(jsonObject.pointer, 6, "flag").getOrThrow(),
+                    "arr" to PlatformComInterop.invokeObjectMethodWithStringArg(jsonObject.pointer, 6, "arr").getOrThrow(),
+                    "obj" to PlatformComInterop.invokeObjectMethodWithStringArg(jsonObject.pointer, 6, "obj").getOrThrow(),
+                )
             } finally {
                 PlatformComInterop.release(instance)
             }
