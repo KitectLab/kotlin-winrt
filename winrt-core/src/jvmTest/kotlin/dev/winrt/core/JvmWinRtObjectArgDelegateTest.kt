@@ -16,7 +16,11 @@ class JvmWinRtObjectArgDelegateTest {
     fun delegate_supports_query_interface_and_invoke() {
         val seenPointer = AtomicLong(0L)
         val iid = guidOf("d8ea1239-1234-56f1-9963-45dd9c80a661")
-        WinRtDelegateBridge.createObjectArgUnitDelegate(iid) { arg ->
+        WinRtDelegateBridge.createUnitDelegate(
+            iid = iid,
+            parameterKinds = listOf(WinRtDelegateValueKind.OBJECT),
+        ) { args ->
+            val arg = args.single() as ComPtr
             seenPointer.set(arg.value.rawValue)
         }.use { callback ->
             val callbackPointer = MemorySegment.ofAddress(callback.pointer.value.rawValue)
