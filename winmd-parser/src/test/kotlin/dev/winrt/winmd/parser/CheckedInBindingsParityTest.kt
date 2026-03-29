@@ -457,6 +457,8 @@ class CheckedInBindingsParityTest {
 
         assertTrue(calendarRuntimeClass.contains("Windows.Globalization.CalendarIdentifiers"))
         assertTrue(calendarRuntimeClass.contains("defaultInterfaceName: String? = null"))
+        assertTrue(calendarRuntimeClass.contains("private val statics: ICalendarIdentifiersStatics by lazy"))
+        assertTrue(calendarRuntimeClass.contains("WinRtRuntime.projectActivationFactory(this, ICalendarIdentifiersStatics"))
         assertTrue(calendarStatics.contains("val gregorian: String"))
         assertTrue(calendarStatics.contains("get_Gregorian(): String = readString(6)"))
         assertTrue(calendarStatics.contains("val umAlQura: String"))
@@ -464,6 +466,8 @@ class CheckedInBindingsParityTest {
         assertTrue(calendarStatics.contains("80653f68-2cb2-4c1f-b590-f0f52bf4fd1a"))
         assertTrue(clockRuntimeClass.contains("Windows.Globalization.ClockIdentifiers"))
         assertTrue(clockRuntimeClass.contains("defaultInterfaceName: String? = null"))
+        assertTrue(clockRuntimeClass.contains("private val statics: IClockIdentifiersStatics by lazy"))
+        assertTrue(clockRuntimeClass.contains("WinRtRuntime.projectActivationFactory(this, IClockIdentifiersStatics"))
         assertTrue(clockStatics.contains("val twelveHour: String"))
         assertTrue(clockStatics.contains("get_TwelveHour(): String = readString(6)"))
         assertTrue(clockStatics.contains("val twentyFourHour: String"))
