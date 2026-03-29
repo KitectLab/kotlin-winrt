@@ -87,8 +87,7 @@ class CoroutineTasksTest {
         val progressValues = mutableListOf<UInt32>()
 
         val action = scope.asyncActionWithProgress(
-            progressSignature = "u4",
-            progressArgumentKind = WinRtDelegateValueKind.UINT32,
+            progressType = AsyncProgressTypes.uint32,
         ) { reportProgress ->
             reportProgress(UInt32(1u))
             delay(10)
@@ -107,8 +106,7 @@ class CoroutineTasksTest {
 
         val operation = scope.asyncOperationWithProgress(
             resultSignature = WinRtTypeSignature.string(),
-            progressSignature = "u4",
-            progressArgumentKind = WinRtDelegateValueKind.UINT32,
+            progressType = AsyncProgressTypes.uint32,
         ) { reportProgress ->
             reportProgress(UInt32(3u))
             delay(10)
@@ -124,10 +122,27 @@ class CoroutineTasksTest {
     }
 
     @Test
+    fun progress_type_overload_supports_string_progress() = runBlocking {
+        val progressValues = mutableListOf<String>()
+
+        val action = scope.asyncActionWithProgress(
+            progressType = AsyncProgressTypes.string,
+        ) { reportProgress ->
+            reportProgress("a")
+            delay(10)
+            reportProgress("b")
+        }
+
+        action.await { progressValues += it }
+
+        assertEquals(listOf("a", "b"), progressValues)
+        assertEquals(AsyncStatus.Completed, action.status)
+    }
+
+    @Test
     fun canceling_async_action_with_progress_cancels_coroutine() = runBlocking {
         val action = scope.asyncActionWithProgress(
-            progressSignature = "u4",
-            progressArgumentKind = WinRtDelegateValueKind.UINT32,
+            progressType = AsyncProgressTypes.uint32,
         ) { reportProgress ->
             reportProgress(UInt32(1u))
             delay(10_000)
@@ -147,8 +162,7 @@ class CoroutineTasksTest {
     fun completed_handler_runs_even_when_set_after_progress_operation_finishes() = runBlocking {
         val operation = scope.asyncOperationWithProgress(
             resultSignature = WinRtTypeSignature.string(),
-            progressSignature = "u4",
-            progressArgumentKind = WinRtDelegateValueKind.UINT32,
+            progressType = AsyncProgressTypes.uint32,
         ) { reportProgress ->
             reportProgress(UInt32(1u))
             "ready"

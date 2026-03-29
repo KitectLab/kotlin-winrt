@@ -34,6 +34,17 @@ public fun <TResult> CoroutineScope.asyncOperation(
 }
 
 public fun <TProgress> CoroutineScope.asyncActionWithProgress(
+  progressType: AsyncProgressType<TProgress>,
+  block: suspend CoroutineScope.(reportProgress: (TProgress) -> Unit) -> Unit,
+): IAsyncActionWithProgress<TProgress> {
+  return asyncActionWithProgress(
+      progressSignature = progressType.signature,
+      progressArgumentKind = progressType.argumentKind,
+      block = block,
+  )
+}
+
+public fun <TProgress> CoroutineScope.asyncActionWithProgress(
   progressSignature: String,
   progressArgumentKind: WinRtDelegateValueKind,
   block: suspend CoroutineScope.(reportProgress: (TProgress) -> Unit) -> Unit,
@@ -52,6 +63,19 @@ public fun <TProgress> CoroutineScope.asyncActionWithProgress(
   progressEmitter = { progress -> action.emitProgress(progress) }
   job.start()
   return action
+}
+
+public fun <TResult, TProgress> CoroutineScope.asyncOperationWithProgress(
+  resultSignature: String,
+  progressType: AsyncProgressType<TProgress>,
+  block: suspend CoroutineScope.(reportProgress: (TProgress) -> Unit) -> TResult,
+): IAsyncOperationWithProgress<TResult, TProgress> {
+  return asyncOperationWithProgress(
+      resultSignature = resultSignature,
+      progressSignature = progressType.signature,
+      progressArgumentKind = progressType.argumentKind,
+      block = block,
+  )
 }
 
 public fun <TResult, TProgress> CoroutineScope.asyncOperationWithProgress(
