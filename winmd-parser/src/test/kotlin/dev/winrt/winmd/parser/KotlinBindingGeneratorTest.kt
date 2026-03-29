@@ -5305,4 +5305,150 @@ class KotlinBindingGeneratorTest {
         assertTrue(normalizedBinding.contains("suspendfundownloadAsyncAwait(name:String,onProgress:(UInt32)->Unit={_->}):String"))
         assertTrue(binding.contains("statics.downloadAsync(name).await(onProgress = onProgress)"))
     }
+
+    @Test
+    fun keeps_async_projection_shapes_consistent_across_interface_runtime_and_statics() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncAction",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "5a648006-843a-4da9-865b-9d26e5dfad7b",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "fcdcf02c-e5d8-4478-915a-4d90b74b83a5",
+                            genericParameters = listOf("TResult"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncActionWithProgress`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "1f6db258-e803-48a1-9546-eb7353398884",
+                            genericParameters = listOf("TProgress"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperationWithProgress`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "b5d036d7-e297-498f-ba60-0289e76e23dd",
+                            genericParameters = listOf("TResult", "TProgress"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Async",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IUnifiedAsyncSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "0f0f0f0f-1111-2222-3333-444444444444",
+                            methods = listOf(
+                                WinMdMethod(name = "LoadAsync", returnType = "Windows.Foundation.IAsyncAction", vtableIndex = 6),
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 7,
+                                ),
+                                WinMdMethod(
+                                    name = "UploadAsync",
+                                    returnType = "Windows.Foundation.IAsyncActionWithProgress<UInt32>",
+                                    vtableIndex = 8,
+                                ),
+                                WinMdMethod(
+                                    name = "DownloadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperationWithProgress<String, UInt32>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 9,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "UnifiedAsyncSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Async.IUnifiedAsyncSource",
+                            methods = listOf(
+                                WinMdMethod(name = "LoadAsync", returnType = "Windows.Foundation.IAsyncAction", vtableIndex = 6),
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 7,
+                                ),
+                                WinMdMethod(
+                                    name = "UploadAsync",
+                                    returnType = "Windows.Foundation.IAsyncActionWithProgress<UInt32>",
+                                    vtableIndex = 8,
+                                ),
+                                WinMdMethod(
+                                    name = "DownloadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperationWithProgress<String, UInt32>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 9,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IUnifiedAsyncSourceStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-1111-2222-3333-bbbbbbbbbbbb",
+                            methods = listOf(
+                                WinMdMethod(name = "LoadAsync", returnType = "Windows.Foundation.IAsyncAction", vtableIndex = 6),
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 7,
+                                ),
+                                WinMdMethod(
+                                    name = "UploadAsync",
+                                    returnType = "Windows.Foundation.IAsyncActionWithProgress<UInt32>",
+                                    vtableIndex = 8,
+                                ),
+                                WinMdMethod(
+                                    name = "DownloadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperationWithProgress<String, UInt32>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 9,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Async/IUnifiedAsyncSource.kt" }.content
+        val runtimeBinding = files.first { it.relativePath == "Example/Async/UnifiedAsyncSource.kt" }.content
+
+        val expectedSnippets = listOf(
+            "fun loadAsync(): IAsyncAction",
+            "suspend fun loadAsyncAwait()",
+            "fun readAsync(name: String)",
+            "suspend fun readAsyncAwait(name: String): String",
+            "fun uploadAsync(): IAsyncActionWithProgress<UInt32>",
+            "suspend fun uploadAsyncAwait(onProgress: (UInt32) -> Unit = { _ -> }): Unit",
+            "fun downloadAsync(name: String)",
+            "await(onProgress = onProgress)",
+        )
+
+        expectedSnippets.forEach { snippet ->
+            assertTrue(interfaceBinding.contains(snippet))
+            assertTrue(runtimeBinding.contains(snippet))
+        }
+        assertTrue(runtimeBinding.contains("statics.loadAsync().await()"))
+        assertTrue(runtimeBinding.contains("statics.downloadAsync(name).await(onProgress = onProgress)"))
+    }
 }
