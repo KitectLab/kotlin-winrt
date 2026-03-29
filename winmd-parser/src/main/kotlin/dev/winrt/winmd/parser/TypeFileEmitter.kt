@@ -21,7 +21,7 @@ internal class TypeFileEmitter(
     )
     private val delegateTypeRenderer = DelegateTypeRenderer(typeNameMapper)
     private val runtimePropertyRenderer = RuntimePropertyRenderer(typeNameMapper)
-    private val runtimeMethodRenderer = RuntimeMethodRenderer(typeNameMapper, delegateLambdaPlanResolver, typeRegistry)
+    private val runtimeMethodRenderer = RuntimeMethodRenderer(typeNameMapper, delegateLambdaPlanResolver, typeRegistry, winRtSignatureMapper)
     private val runtimeCompanionRenderer = RuntimeCompanionRenderer(
         typeRegistry = typeRegistry,
         typeNameMapper = typeNameMapper,

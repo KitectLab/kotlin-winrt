@@ -43,4 +43,7 @@ internal object PoetSymbols {
     val projectInterfaceMember = MemberName("dev.winrt.core", "projectInterface")
     val comPtrClass = ClassName("dev.winrt.kom", "ComPtr")
     val platformComInteropClass = ClassName("dev.winrt.kom", "PlatformComInterop")
+    val asyncActionClass = ClassName("windows.foundation", "IAsyncAction")
+    val asyncOperationClass = ClassName("windows.foundation", "IAsyncOperation")
+    val awaitMember = MemberName("windows.foundation", "await")
 }

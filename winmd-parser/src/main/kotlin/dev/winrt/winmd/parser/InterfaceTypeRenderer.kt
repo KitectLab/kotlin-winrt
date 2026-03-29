@@ -107,7 +107,7 @@ internal class InterfaceTypeRenderer(
                 }
             }
             .addProperties(type.properties.mapNotNull { renderProperty(it, type.namespace, genericParameters) })
-            .addFunctions(type.methods.mapNotNull { renderMethod(it, type.namespace, genericParameters) })
+            .addFunctions(type.methods.flatMap { renderMethods(it, type.namespace, genericParameters) })
             .addFunctions(type.methods.mapNotNull { renderLambdaOverload(it, type.namespace, genericParameters) })
             .addType(
                 TypeSpec.companionObjectBuilder()
@@ -148,6 +148,17 @@ internal class InterfaceTypeRenderer(
                     .build(),
             )
             .build()
+    }
+
+    private fun renderMethods(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): List<FunSpec> {
+        return listOfNotNull(
+            renderMethod(method, currentNamespace, genericParameters),
+            renderAsyncAwaitMethod(method, currentNamespace, genericParameters),
+        )
     }
 
     private fun renderGenericSignatureOf(type: WinMdType): FunSpec {
@@ -394,6 +405,7 @@ internal class InterfaceTypeRenderer(
         if (!supportsInterfaceMethod(method, currentNamespace, genericParameters)) {
             return null
         }
+        renderAsyncTaskMethod(method, currentNamespace, genericParameters)?.let { return it }
         val functionName = kotlinMethodName(method.name)
         val builder = FunSpec.builder(functionName)
             .apply {
@@ -621,6 +633,105 @@ internal class InterfaceTypeRenderer(
         }
     }
 
+    private fun renderAsyncAwaitMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): FunSpec? {
+        if (!isKotlinIdentifier(method.name) || !supportsInterfaceMethod(method, currentNamespace, genericParameters)) {
+            return null
+        }
+        val awaitReturnType = asyncAwaitReturnType(method.returnType, currentNamespace, genericParameters) ?: return null
+        val parameterSpecs = method.parameters.map { parameter ->
+            ParameterSpec.builder(
+                parameter.name.replaceFirstChar(Char::lowercase),
+                typeNameMapper.mapTypeName(parameter.type, currentNamespace, genericParameters),
+            ).build()
+        }
+        val invocation = buildString {
+            append(kotlinMethodName(method.name))
+            append('(')
+            append(parameterSpecs.joinToString(", ") { it.name })
+            append(')')
+        }
+        return FunSpec.builder("${kotlinMethodName(method.name)}Await")
+            .addModifiers(KModifier.SUSPEND)
+            .returns(awaitReturnType)
+            .addParameters(parameterSpecs)
+            .addStatement("return %L.%M()", invocation, PoetSymbols.awaitMember)
+            .build()
+    }
+
+    private fun asyncAwaitReturnType(
+        returnType: String,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): TypeName? {
+        return when {
+            returnType == "Windows.Foundation.IAsyncAction" -> Unit::class.asTypeName()
+            returnType.startsWith("Windows.Foundation.IAsyncOperation<") ->
+                (typeNameMapper.mapTypeName(returnType, currentNamespace, genericParameters) as? com.squareup.kotlinpoet.ParameterizedTypeName)
+                    ?.typeArguments
+                    ?.singleOrNull()
+            else -> null
+        }
+    }
+
+    private fun renderAsyncTaskMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): FunSpec? {
+        if (method.vtableIndex == null || !isAsyncTaskReturn(method.returnType, currentNamespace)) {
+            return null
+        }
+        val functionName = kotlinMethodName(method.name)
+        val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace, genericParameters)
+        val builder = FunSpec.builder(functionName)
+            .returns(returnType)
+            .addParameters(method.parameters.map { parameter ->
+                ParameterSpec.builder(
+                    parameter.name.replaceFirstChar(Char::lowercase),
+                    typeNameMapper.mapTypeName(parameter.type, currentNamespace, genericParameters),
+                ).build()
+            })
+        val invocation = when {
+            method.parameters.isEmpty() ->
+                "PlatformComInterop.invokeObjectMethod(pointer, ${method.vtableIndex}).getOrThrow()"
+            method.parameters.size == 1 && method.parameters[0].type == "String" -> {
+                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                "PlatformComInterop.invokeObjectMethodWithStringArg(pointer, ${method.vtableIndex}, $argumentName).getOrThrow()"
+            }
+            else -> return null
+        }
+        when {
+            method.returnType == "Windows.Foundation.IAsyncAction" ->
+                builder.addStatement("return %T($invocation)", PoetSymbols.asyncActionClass)
+            method.returnType.startsWith("Windows.Foundation.IAsyncOperation<") -> {
+                val resultSignature = asyncOperationResultSignature(method.returnType, currentNamespace) ?: return null
+                builder.addStatement("return %T($invocation, %S)", returnType, resultSignature)
+            }
+        }
+        return builder.build()
+    }
+
+    private fun isAsyncTaskReturn(returnType: String, currentNamespace: String): Boolean {
+        return when {
+            returnType == "Windows.Foundation.IAsyncAction" -> true
+            returnType.startsWith("Windows.Foundation.IAsyncOperation<") ->
+                asyncOperationResultSignature(returnType, currentNamespace) != null
+            else -> false
+        }
+    }
+
+    private fun asyncOperationResultSignature(returnType: String, currentNamespace: String): String? {
+        if (!returnType.startsWith("Windows.Foundation.IAsyncOperation<") || !returnType.endsWith(">")) {
+            return null
+        }
+        val argument = returnType.substringAfter('<').substringBeforeLast('>')
+        return winRtSignatureMapper.signatureFor(argument, currentNamespace)
+    }
+
     private fun renderLambdaOverload(
         method: WinMdMethod,
         currentNamespace: String,
@@ -707,7 +818,8 @@ internal class InterfaceTypeRenderer(
         currentNamespace: String,
         genericParameters: Set<String>,
     ): Boolean {
-        return plannedInterfaceMethod(method, currentNamespace, genericParameters) != null ||
+        return isAsyncTaskReturn(method.returnType, currentNamespace) ||
+            plannedInterfaceMethod(method, currentNamespace, genericParameters) != null ||
             (method.returnType == "Int32" &&
                 method.parameters.isEmpty() &&
                 method.vtableIndex != null) ||

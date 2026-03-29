@@ -4994,4 +4994,92 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("-> Boolean"))
         assertTrue(binding.contains("class ScalarCallback("))
     }
+
+    @Test
+    fun generates_suspend_async_method_projections() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncAction",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "5a648006-843a-4da9-865b-9d26e5dfad7b",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "fcdcf02c-e5d8-4478-915a-4d90b74b83a5",
+                            genericParameters = listOf("TResult"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Async",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IAsyncSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-2222-3333-4444-555555555555",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "LoadAsync",
+                                    returnType = "Windows.Foundation.IAsyncAction",
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "AsyncSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Async.IAsyncSource",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "LoadAsync",
+                                    returnType = "Windows.Foundation.IAsyncAction",
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Async/IAsyncSource.kt" }.content
+        val runtimeBinding = files.first { it.relativePath == "Example/Async/AsyncSource.kt" }.content
+
+        assertTrue(interfaceBinding.contains("fun loadAsync(): IAsyncAction"))
+        assertTrue(interfaceBinding.contains("suspend fun loadAsyncAwait()"))
+        assertTrue(interfaceBinding.contains("loadAsync().await()"))
+        assertTrue(interfaceBinding.contains("fun readAsync(name: String)"))
+        assertTrue(interfaceBinding.contains("suspend fun readAsyncAwait(name: String): String"))
+        assertTrue(interfaceBinding.contains("readAsync(name).await()"))
+
+        assertTrue(runtimeBinding.contains("fun loadAsync(): IAsyncAction"))
+        assertTrue(runtimeBinding.contains("suspend fun loadAsyncAwait()"))
+        assertTrue(runtimeBinding.contains("loadAsync().await()"))
+        assertTrue(runtimeBinding.contains("fun readAsync(name: String)"))
+        assertTrue(runtimeBinding.contains("suspend fun readAsyncAwait(name: String): String"))
+        assertTrue(runtimeBinding.contains("readAsync(name).await()"))
+    }
 }
