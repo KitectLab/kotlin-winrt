@@ -114,6 +114,39 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun interface_projection_wrapper_is_cached_by_projection_key() {
+        WinRtProjectionRegistry.resetForTests()
+
+        val metadata = object : WinRtInterfaceMetadata {
+            override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
+            override val projectionTypeKey: String = "System.Collections.IList"
+            override val iid = Guid(0, 0, 0, byteArrayOf(5, 4, 3, 2, 1, 0, 9, 8))
+        }
+        val subject = object : Inspectable(ComPtr.NULL) {
+            var queryCount = 0
+            var constructorCount = 0
+
+            override fun queryInterface(iid: Guid): ComPtr {
+                queryCount += 1
+                return ComPtr.NULL
+            }
+        }
+
+        val first = subject.projectInterface(metadata) {
+            subject.constructorCount += 1
+            WinRtInterfaceProjection(it)
+        }
+        val second = subject.projectInterface(metadata) {
+            subject.constructorCount += 1
+            WinRtInterfaceProjection(it)
+        }
+
+        assertSame(first, second)
+        assertEquals(1, subject.queryCount)
+        assertEquals(1, subject.constructorCount)
+    }
+
+    @Test
     fun projected_type_lookup_aliases_winrt_and_projection_keys_to_same_reference() {
         WinRtProjectionRegistry.resetForTests()
 
