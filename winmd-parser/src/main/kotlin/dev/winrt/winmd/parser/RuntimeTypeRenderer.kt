@@ -81,7 +81,7 @@ internal class RuntimeTypeRenderer(
             builder.addProperty(runtimePropertyRenderer.renderBackingProperty(property, type.namespace))
             builder.addProperty(runtimePropertyRenderer.renderRuntimeProperty(property, type.namespace))
         }
-        type.methods.filter(runtimeMethodRenderer::canRenderRuntimeMethod)
+        type.methods.filter { runtimeMethodRenderer.canRenderRuntimeMethod(it, type.namespace) }
             .flatMap { runtimeMethodRenderer.renderRuntimeMethods(it, type.namespace) }
             .forEach(builder::addFunction)
         type.methods
@@ -119,7 +119,7 @@ internal class RuntimeTypeRenderer(
 
     private fun collectProjectedInterfaceMembers(interfaceType: WinMdType, currentNamespace: String): RuntimeProjectionMembers {
         val methods = interfaceType.methods
-            .filter(runtimeMethodRenderer::canRenderRuntimeMethod)
+            .filter { runtimeMethodRenderer.canRenderRuntimeMethod(it, currentNamespace) }
             .flatMap { runtimeMethodRenderer.renderRuntimeMethods(it, currentNamespace) }
         val properties = interfaceType.properties
             .filter(runtimePropertyRenderer::canRenderRuntimeProperty)

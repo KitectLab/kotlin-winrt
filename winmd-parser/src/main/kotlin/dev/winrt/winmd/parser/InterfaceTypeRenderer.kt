@@ -21,8 +21,7 @@ internal class InterfaceTypeRenderer(
     private val typeNameMapper: TypeNameMapper,
     private val delegateLambdaPlanResolver: DelegateLambdaPlanResolver,
     private val typeRegistry: TypeRegistry,
-    private val winRtSignatureMapper: WinRtSignatureMapper,
-    private val asyncMethodProjectionPlanner: AsyncMethodProjectionPlanner,
+    private val asyncMethodRuleRegistry: AsyncMethodRuleRegistry,
     private val winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     private val kotlinCollectionProjectionMapper: KotlinCollectionProjectionMapper = KotlinCollectionProjectionMapper(),
 ) {
@@ -643,7 +642,7 @@ internal class InterfaceTypeRenderer(
         if (!isKotlinIdentifier(method.name) || !supportsInterfaceMethod(method, currentNamespace, genericParameters)) {
             return null
         }
-        val awaitReturnType = asyncMethodProjectionPlanner.awaitReturnType(method.returnType, currentNamespace, genericParameters) ?: return null
+        val asyncPlan = asyncMethodRuleRegistry.plan(method, currentNamespace, genericParameters) ?: return null
         val parameterSpecs = method.parameters.map { parameter ->
             ParameterSpec.builder(
                 parameter.name.replaceFirstChar(Char::lowercase),
@@ -658,9 +657,9 @@ internal class InterfaceTypeRenderer(
         }
         val builder = FunSpec.builder("${kotlinMethodName(method.name)}Await")
             .addModifiers(KModifier.SUSPEND)
-            .returns(awaitReturnType)
+            .returns(asyncPlan.awaitReturnType)
             .addParameters(parameterSpecs)
-        asyncMethodProjectionPlanner.progressLambdaType(method.returnType, currentNamespace, genericParameters)?.let { progressLambdaType ->
+        asyncPlan.progressLambdaType?.let { progressLambdaType ->
             builder.addParameter(
                 ParameterSpec.builder("onProgress", progressLambdaType)
                     .defaultValue("{ _ -> }")
@@ -676,48 +675,25 @@ internal class InterfaceTypeRenderer(
         currentNamespace: String,
         genericParameters: Set<String>,
     ): FunSpec? {
-        if (method.vtableIndex == null || !asyncMethodProjectionPlanner.isAsyncTaskReturn(method.returnType, currentNamespace)) {
-            return null
-        }
+        val asyncPlan = asyncMethodRuleRegistry.plan(method, currentNamespace, genericParameters) ?: return null
         val functionName = kotlinMethodName(method.name)
-        val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace, genericParameters)
         val builder = FunSpec.builder(functionName)
-            .returns(returnType)
+            .returns(asyncPlan.rawReturnType)
             .addParameters(method.parameters.map { parameter ->
                 ParameterSpec.builder(
                     parameter.name.replaceFirstChar(Char::lowercase),
                     typeNameMapper.mapTypeName(parameter.type, currentNamespace, genericParameters),
                 ).build()
             })
-        val invocation = when {
-            method.parameters.isEmpty() ->
-                "%T.invokeObjectMethod(pointer, ${method.vtableIndex}).getOrThrow()"
-            method.parameters.size == 1 && method.parameters[0].type == "String" -> {
-                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+        val invocation = when (asyncPlan.invocationKind) {
+            AsyncInvocationKind.NO_ARGS -> "%T.invokeObjectMethod(pointer, ${method.vtableIndex}).getOrThrow()"
+            AsyncInvocationKind.STRING_ARG -> {
+                val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
                 "%T.invokeObjectMethodWithStringArg(pointer, ${method.vtableIndex}, $argumentName).getOrThrow()"
             }
-            else -> return null
         }
-        when {
-            method.returnType == "Windows.Foundation.IAsyncAction" ->
-                AsyncTaskCallCatalog.asyncAction(returnType, invocation, PoetSymbols.platformComInteropClass)
-                    .let { plan -> builder.addStatement(plan.statementFormat, *plan.args) }
-            method.returnType.startsWith("Windows.Foundation.IAsyncOperation<") -> {
-                val resultSignature = asyncMethodProjectionPlanner.asyncOperationResultSignature(method.returnType, currentNamespace) ?: return null
-                AsyncTaskCallCatalog.asyncOperation(returnType, invocation, resultSignature, PoetSymbols.platformComInteropClass)
-                    .let { plan -> builder.addStatement(plan.statementFormat, *plan.args) }
-            }
-            method.returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") -> {
-                val progressPlan = asyncMethodProjectionPlanner.asyncProgressPlan(method.returnType, currentNamespace) ?: return null
-                AsyncTaskCallCatalog.asyncActionWithProgress(returnType, invocation, progressPlan, PoetSymbols.platformComInteropClass)
-                    .let { plan -> builder.addStatement(plan.statementFormat, *plan.args) }
-            }
-            method.returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") -> {
-                val progressPlan = asyncMethodProjectionPlanner.asyncOperationWithProgressPlan(method.returnType, currentNamespace) ?: return null
-                AsyncTaskCallCatalog.asyncOperationWithProgress(returnType, invocation, progressPlan, PoetSymbols.platformComInteropClass)
-                    .let { plan -> builder.addStatement(plan.statementFormat, *plan.args) }
-            }
-        }
+        asyncPlan.rawTaskCallFactory.create(invocation)
+            .let { plan -> builder.addStatement(plan.statementFormat, *plan.args) }
         return builder.build()
     }
 
@@ -807,7 +783,7 @@ internal class InterfaceTypeRenderer(
         currentNamespace: String,
         genericParameters: Set<String>,
     ): Boolean {
-        return asyncMethodProjectionPlanner.isAsyncTaskReturn(method.returnType, currentNamespace) ||
+        return asyncMethodRuleRegistry.plan(method, currentNamespace, genericParameters) != null ||
             plannedInterfaceMethod(method, currentNamespace, genericParameters) != null ||
             (method.returnType == "Int32" &&
                 method.parameters.isEmpty() &&

@@ -11,7 +11,7 @@ internal class RuntimeMethodRenderer(
     private val typeNameMapper: TypeNameMapper,
     private val delegateLambdaPlanResolver: DelegateLambdaPlanResolver,
     private val typeRegistry: TypeRegistry,
-    private val asyncMethodProjectionPlanner: AsyncMethodProjectionPlanner,
+    private val asyncMethodRuleRegistry: AsyncMethodRuleRegistry,
 ) {
     fun renderRuntimeMethods(method: WinMdMethod, currentNamespace: String): List<FunSpec> {
         return listOfNotNull(
@@ -20,8 +20,8 @@ internal class RuntimeMethodRenderer(
         )
     }
 
-    fun canRenderRuntimeMethod(method: WinMdMethod): Boolean {
-        return asyncMethodProjectionPlanner.isAsyncTaskReturn(method.returnType, "") || runtimeMethodPlan(method) != null
+    fun canRenderRuntimeMethod(method: WinMdMethod, currentNamespace: String): Boolean {
+        return asyncMethodRuleRegistry.plan(method, currentNamespace) != null || runtimeMethodPlan(method) != null
     }
 
     fun renderRuntimeMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
@@ -50,44 +50,29 @@ internal class RuntimeMethodRenderer(
     }
 
     private fun renderAsyncTaskMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
-        if (!isKotlinIdentifier(method.name) || method.vtableIndex == null || !asyncMethodProjectionPlanner.isAsyncTaskReturn(method.returnType, currentNamespace)) {
-            return null
-        }
+        val asyncPlan = asyncMethodRuleRegistry.plan(method, currentNamespace) ?: return null
         val functionName = method.name.replaceFirstChar(Char::lowercase)
-        val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
-        val builder = FunSpec.builder(functionName).returns(returnType)
+        val builder = FunSpec.builder(functionName).returns(asyncPlan.rawReturnType)
         val parameterNames = method.parameters.map { parameter ->
             val parameterName = parameter.name.replaceFirstChar(Char::lowercase)
             builder.addParameter(parameterName, typeNameMapper.mapTypeName(parameter.type, currentNamespace))
             parameterName
         }
-        val invocation = when {
-            method.parameters.isEmpty() -> "%T.invokeObjectMethod(pointer, ${method.vtableIndex}).getOrThrow()"
-            method.parameters.size == 1 && method.parameters[0].type == "String" ->
+        val invocation = when (asyncPlan.invocationKind) {
+            AsyncInvocationKind.NO_ARGS -> "%T.invokeObjectMethod(pointer, ${method.vtableIndex}).getOrThrow()"
+            AsyncInvocationKind.STRING_ARG ->
                 "%T.invokeObjectMethodWithStringArg(pointer, ${method.vtableIndex}, ${parameterNames.single()}).getOrThrow()"
-            else -> return null
         }
         builder.beginControlFlow("if (pointer.isNull)")
             .addStatement("error(%S)", "Null runtime object pointer: ${method.name}")
             .endControlFlow()
-        when {
-            method.returnType == "Windows.Foundation.IAsyncAction" ->
-                AsyncTaskCallCatalog.asyncAction(returnType, invocation, PoetSymbols.platformComInteropClass)
-                    .let { plan -> builder.addStatement(plan.statementFormat, *plan.args) }
-            method.returnType.startsWith("Windows.Foundation.IAsyncOperation<") -> {
-                val resultSignature = asyncMethodProjectionPlanner.asyncOperationResultSignature(method.returnType, currentNamespace) ?: return null
-                AsyncTaskCallCatalog.asyncOperation(returnType, invocation, resultSignature, PoetSymbols.platformComInteropClass)
-                    .let { plan -> builder.addStatement(plan.statementFormat, *plan.args) }
-            }
-        }
+        asyncPlan.rawTaskCallFactory.create(invocation)
+            .let { plan -> builder.addStatement(plan.statementFormat, *plan.args) }
         return builder.build()
     }
 
     private fun renderAsyncAwaitMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
-        if (!canRenderRuntimeMethod(method)) {
-            return null
-        }
-        val awaitReturnType = asyncMethodProjectionPlanner.awaitReturnType(method.returnType, currentNamespace) ?: return null
+        val asyncPlan = asyncMethodRuleRegistry.plan(method, currentNamespace) ?: return null
         val baseFunctionName = if (method.name == "ToString" && method.returnType == "String" && method.parameters.isEmpty()) {
             "toString"
         } else {
@@ -95,7 +80,7 @@ internal class RuntimeMethodRenderer(
         }
         val builder = FunSpec.builder("${baseFunctionName}Await")
             .addModifiers(KModifier.SUSPEND)
-            .returns(awaitReturnType)
+            .returns(asyncPlan.awaitReturnType)
         val parameterNames = method.parameters.map { parameter ->
             val parameterName = parameter.name.replaceFirstChar(Char::lowercase)
             builder.addParameter(parameterName, typeNameMapper.mapTypeName(parameter.type, currentNamespace))
@@ -107,7 +92,7 @@ internal class RuntimeMethodRenderer(
             append(parameterNames.joinToString(", "))
             append(')')
         }
-        asyncMethodProjectionPlanner.progressLambdaType(method.returnType, currentNamespace)?.let { progressLambdaType ->
+        asyncPlan.progressLambdaType?.let { progressLambdaType ->
             builder.addParameter(
                 com.squareup.kotlinpoet.ParameterSpec.builder("onProgress", progressLambdaType)
                     .defaultValue("{ _ -> }")

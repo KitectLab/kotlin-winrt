@@ -1,0 +1,108 @@
+package dev.winrt.winmd.parser
+
+import com.squareup.kotlinpoet.TypeName
+import dev.winrt.winmd.plugin.WinMdMethod
+
+internal class AsyncMethodRuleRegistry(
+    private val typeNameMapper: TypeNameMapper,
+    private val asyncMethodProjectionPlanner: AsyncMethodProjectionPlanner,
+) {
+    fun plan(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String> = emptySet(),
+    ): AsyncMethodRulePlan? {
+        if (!isKotlinIdentifier(method.name) || method.vtableIndex == null) {
+            return null
+        }
+        val invocationKind = when {
+            method.parameters.isEmpty() -> AsyncInvocationKind.NO_ARGS
+            method.parameters.size == 1 && method.parameters[0].type == "String" -> AsyncInvocationKind.STRING_ARG
+            else -> return null
+        }
+        val rawReturnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace, genericParameters)
+        val awaitReturnType = asyncMethodProjectionPlanner.awaitReturnType(
+            method.returnType,
+            currentNamespace,
+            genericParameters,
+        ) ?: return null
+        val progressLambdaType = asyncMethodProjectionPlanner.progressLambdaType(
+            method.returnType,
+            currentNamespace,
+            genericParameters,
+        )
+        val rawTaskCallFactory = when {
+            method.returnType == "Windows.Foundation.IAsyncAction" ->
+                AsyncRawTaskCallFactory { invocation ->
+                    AsyncTaskCallCatalog.asyncAction(rawReturnType, invocation, PoetSymbols.platformComInteropClass)
+                }
+            method.returnType.startsWith("Windows.Foundation.IAsyncOperation<") -> {
+                val resultSignature = asyncMethodProjectionPlanner.asyncOperationResultSignature(
+                    method.returnType,
+                    currentNamespace,
+                ) ?: return null
+                AsyncRawTaskCallFactory { invocation ->
+                    AsyncTaskCallCatalog.asyncOperation(
+                        rawReturnType,
+                        invocation,
+                        resultSignature,
+                        PoetSymbols.platformComInteropClass,
+                    )
+                }
+            }
+            method.returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") -> {
+                val progressPlan = asyncMethodProjectionPlanner.asyncProgressPlan(
+                    method.returnType,
+                    currentNamespace,
+                ) ?: return null
+                AsyncRawTaskCallFactory { invocation ->
+                    AsyncTaskCallCatalog.asyncActionWithProgress(
+                        rawReturnType,
+                        invocation,
+                        progressPlan,
+                        PoetSymbols.platformComInteropClass,
+                    )
+                }
+            }
+            method.returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") -> {
+                val progressPlan = asyncMethodProjectionPlanner.asyncOperationWithProgressPlan(
+                    method.returnType,
+                    currentNamespace,
+                ) ?: return null
+                AsyncRawTaskCallFactory { invocation ->
+                    AsyncTaskCallCatalog.asyncOperationWithProgress(
+                        rawReturnType,
+                        invocation,
+                        progressPlan,
+                        PoetSymbols.platformComInteropClass,
+                    )
+                }
+            }
+            else -> return null
+        }
+        return AsyncMethodRulePlan(
+            rawReturnType = rawReturnType,
+            awaitReturnType = awaitReturnType,
+            progressLambdaType = progressLambdaType,
+            invocationKind = invocationKind,
+            rawTaskCallFactory = rawTaskCallFactory,
+        )
+    }
+}
+
+internal data class AsyncMethodRulePlan(
+    val rawReturnType: TypeName,
+    val awaitReturnType: TypeName,
+    val progressLambdaType: TypeName?,
+    val invocationKind: AsyncInvocationKind,
+    val rawTaskCallFactory: AsyncRawTaskCallFactory,
+)
+
+internal fun interface AsyncRawTaskCallFactory {
+    fun create(invocationFormat: String): AsyncTaskCallPlan
+}
+
+internal enum class AsyncInvocationKind {
+    NO_ARGS,
+    STRING_ARG,
+}
