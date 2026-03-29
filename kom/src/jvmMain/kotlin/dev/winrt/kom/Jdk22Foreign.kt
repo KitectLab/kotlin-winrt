@@ -271,6 +271,18 @@ internal object Jdk22Foreign {
         )
     }
 
+    val float32MethodWithInputHandle: MethodHandle by lazy {
+        downcallHandle(
+            FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout),
+        )
+    }
+
+    val float32MethodWithUInt32Handle: MethodHandle by lazy {
+        downcallHandle(
+            FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
+        )
+    }
+
     val float64MethodWithInputHandle: MethodHandle by lazy {
         downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout),

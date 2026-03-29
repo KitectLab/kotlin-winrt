@@ -787,6 +787,20 @@ internal class InterfaceTypeRenderer(
                     arrayOf(PoetSymbols.float32Class, AbiCallCatalog.float32Method(method.vtableIndex!!))
                 },
             )
+            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.STRING) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.float32Class, AbiCallCatalog.float32MethodWithString(method.vtableIndex!!, argumentName))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.UINT32) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.float32Class, AbiCallCatalog.float32MethodWithUInt32(method.vtableIndex!!, argumentName))
+                },
+            )
             MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
                 statement = "return %T(%L)",
                 args = { method, _ ->

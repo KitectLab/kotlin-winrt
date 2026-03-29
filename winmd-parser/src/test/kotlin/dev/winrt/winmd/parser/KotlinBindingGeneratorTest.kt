@@ -2120,6 +2120,73 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_float32_methods_with_string_and_uint32_arguments() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Float",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Float",
+                            name = "IProgressCalculator",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "00112233-4455-6677-8899-aabbccddeeff",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "MeasureLabel",
+                                    returnType = "Float32",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter(name = "label", type = "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "MeasureIndex",
+                                    returnType = "Float32",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter(name = "index", type = "UInt32")),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Float",
+                            name = "ProgressCalculator",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "MeasureLabel",
+                                    returnType = "Float32",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter(name = "label", type = "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "MeasureIndex",
+                                    returnType = "Float32",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter(name = "index", type = "UInt32")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Float/IProgressCalculator.kt" }.content
+        val runtimeBinding = files.first { it.relativePath == "Example/Float/ProgressCalculator.kt" }.content
+
+        assertTrue(interfaceBinding.contains("fun measureLabel(label: String): Float32"))
+        assertTrue(interfaceBinding.contains("invokeFloat32MethodWithStringArg(pointer, 6,"))
+        assertTrue(interfaceBinding.contains("fun measureIndex(index: UInt32): Float32"))
+        assertTrue(interfaceBinding.contains("invokeFloat32MethodWithUInt32Arg(pointer, 7,"))
+
+        assertTrue(runtimeBinding.contains("fun measureLabel(label: String): Float32"))
+        assertTrue(runtimeBinding.contains("invokeFloat32MethodWithStringArg(pointer, 6,"))
+        assertTrue(runtimeBinding.contains("fun measureIndex(index: UInt32): Float32"))
+        assertTrue(runtimeBinding.contains("invokeFloat32MethodWithUInt32Arg(pointer, 7,"))
+    }
+
+    @Test
     fun generates_unit_runtime_methods_for_string_and_int64_parameters() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

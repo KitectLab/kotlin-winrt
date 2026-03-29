@@ -149,6 +149,18 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeFloat32MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Float> {
+        return Result.failure(
+            UnsupportedOperationException("Native Float32 method invocation with input is not wired yet"),
+        )
+    }
+
+    override fun invokeFloat32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Float> {
+        return Result.failure(
+            UnsupportedOperationException("Native Float32 method invocation with UInt32 input is not wired yet"),
+        )
+    }
+
     override fun invokeFloat64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Double> {
         return Result.failure(
             UnsupportedOperationException("Native Float64 method invocation with input is not wired yet"),

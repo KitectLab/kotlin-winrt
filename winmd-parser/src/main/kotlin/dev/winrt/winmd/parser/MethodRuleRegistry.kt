@@ -18,6 +18,8 @@ internal object MethodRuleRegistry {
         put(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.UINT32), SharedMethodRuleFamily.STRING)
 
         put(MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.EMPTY), SharedMethodRuleFamily.FLOAT32)
+        put(MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.STRING), SharedMethodRuleFamily.FLOAT32)
+        put(MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.UINT32), SharedMethodRuleFamily.FLOAT32)
 
         put(MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.EMPTY), SharedMethodRuleFamily.FLOAT64)
         put(MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.STRING), SharedMethodRuleFamily.FLOAT64)

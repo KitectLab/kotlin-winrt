@@ -492,6 +492,55 @@ actual object PlatformComInterop : ComInterop {
         }
     }
 
+    override fun invokeFloat32MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Float> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            val hString = JvmWinRtRuntime.createHString(value)
+            try {
+                Arena.ofConfined().use { arena ->
+                    val resultSegment = arena.allocate(ValueLayout.JAVA_FLOAT)
+                    val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                    val hresult = HResult(
+                        Jdk22Foreign.float32MethodWithInputHandle.bindTo(function).invokeWithArguments(
+                            Jdk22Foreign.pointerOf(instance),
+                            MemorySegment.ofAddress(hString.raw),
+                            resultSegment,
+                        ) as Int,
+                    )
+                    hresult.requireSuccess("invokeFloat32MethodWithStringArg($vtableIndex)")
+                    resultSegment.get(ValueLayout.JAVA_FLOAT, 0L)
+                }
+            } finally {
+                JvmWinRtRuntime.releaseHString(hString)
+            }
+        }
+    }
+
+    override fun invokeFloat32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Float> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            Arena.ofConfined().use { arena ->
+                val resultSegment = arena.allocate(ValueLayout.JAVA_FLOAT)
+                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                val hresult = HResult(
+                    Jdk22Foreign.float32MethodWithUInt32Handle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        value.toInt(),
+                        resultSegment,
+                    ) as Int,
+                )
+                hresult.requireSuccess("invokeFloat32MethodWithUInt32Arg($vtableIndex)")
+                resultSegment.get(ValueLayout.JAVA_FLOAT, 0L)
+            }
+        }
+    }
+
     override fun invokeFloat64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Double> {
         if (instance.isNull) {
             return Result.failure(KomException("Method invocation requires a non-null COM pointer"))

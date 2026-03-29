@@ -54,6 +54,12 @@ internal object AbiCallCatalog {
     fun float32Method(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeFloat32Method(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
+    fun float32MethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
+        CodeBlock.of("%T.invokeFloat32MethodWithStringArg(pointer, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+
+    fun float32MethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
+        CodeBlock.of("%T.invokeFloat32MethodWithUInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+
     fun float64MethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
         CodeBlock.of("%T.invokeFloat64MethodWithStringArg(pointer, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
 
