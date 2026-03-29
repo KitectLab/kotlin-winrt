@@ -15,10 +15,13 @@ internal class AsyncMethodRuleRegistry(
         if (!isKotlinIdentifier(method.name) || method.vtableIndex == null) {
             return null
         }
-        val invocationKind = when {
-            method.parameters.isEmpty() -> AsyncInvocationKind.NO_ARGS
-            method.parameters.size == 1 && method.parameters[0].type == "String" -> AsyncInvocationKind.STRING_ARG
-            else -> return null
+        val invocationShape = methodSignatureShape(
+            parameterTypes = method.parameters.map { it.type },
+            supportsObjectType = { false },
+        )?.takeIf { it == MethodSignatureShape.EMPTY || it == MethodSignatureShape.STRING } ?: return null
+        val parameterName = when (invocationShape) {
+            MethodSignatureShape.STRING -> method.parameters.single().name.replaceFirstChar(Char::lowercase)
+            else -> null
         }
         val rawReturnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace, genericParameters)
         val awaitReturnType = asyncMethodProjectionPlanner.awaitReturnType(
@@ -84,7 +87,13 @@ internal class AsyncMethodRuleRegistry(
             rawReturnType = rawReturnType,
             awaitReturnType = awaitReturnType,
             progressLambdaType = progressLambdaType,
-            invocationKind = invocationKind,
+            invocation = when (invocationShape) {
+                MethodSignatureShape.EMPTY ->
+                    "%T.invokeObjectMethod(pointer, ${method.vtableIndex}).getOrThrow()"
+                MethodSignatureShape.STRING ->
+                    "%T.invokeObjectMethodWithStringArg(pointer, ${method.vtableIndex}, $parameterName).getOrThrow()"
+                else -> error("Unsupported async invocation shape: $invocationShape")
+            },
             rawTaskCallFactory = rawTaskCallFactory,
         )
     }
@@ -94,15 +103,10 @@ internal data class AsyncMethodRulePlan(
     val rawReturnType: TypeName,
     val awaitReturnType: TypeName,
     val progressLambdaType: TypeName?,
-    val invocationKind: AsyncInvocationKind,
+    val invocation: String,
     val rawTaskCallFactory: AsyncRawTaskCallFactory,
 )
 
 internal fun interface AsyncRawTaskCallFactory {
     fun create(invocationFormat: String): AsyncTaskCallPlan
-}
-
-internal enum class AsyncInvocationKind {
-    NO_ARGS,
-    STRING_ARG,
 }

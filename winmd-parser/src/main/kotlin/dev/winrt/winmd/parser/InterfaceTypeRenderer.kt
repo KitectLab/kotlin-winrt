@@ -685,14 +685,7 @@ internal class InterfaceTypeRenderer(
                     typeNameMapper.mapTypeName(parameter.type, currentNamespace, genericParameters),
                 ).build()
             })
-        val invocation = when (asyncPlan.invocationKind) {
-            AsyncInvocationKind.NO_ARGS -> "%T.invokeObjectMethod(pointer, ${method.vtableIndex}).getOrThrow()"
-            AsyncInvocationKind.STRING_ARG -> {
-                val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                "%T.invokeObjectMethodWithStringArg(pointer, ${method.vtableIndex}, $argumentName).getOrThrow()"
-            }
-        }
-        asyncPlan.rawTaskCallFactory.create(invocation)
+        asyncPlan.rawTaskCallFactory.create(asyncPlan.invocation)
             .let { plan -> builder.addStatement(plan.statementFormat, *plan.args) }
         return builder.build()
     }

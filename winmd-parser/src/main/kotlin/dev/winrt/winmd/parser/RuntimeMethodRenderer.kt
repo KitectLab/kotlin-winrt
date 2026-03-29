@@ -53,20 +53,14 @@ internal class RuntimeMethodRenderer(
         val asyncPlan = asyncMethodRuleRegistry.plan(method, currentNamespace) ?: return null
         val functionName = method.name.replaceFirstChar(Char::lowercase)
         val builder = FunSpec.builder(functionName).returns(asyncPlan.rawReturnType)
-        val parameterNames = method.parameters.map { parameter ->
+        method.parameters.forEach { parameter ->
             val parameterName = parameter.name.replaceFirstChar(Char::lowercase)
             builder.addParameter(parameterName, typeNameMapper.mapTypeName(parameter.type, currentNamespace))
-            parameterName
-        }
-        val invocation = when (asyncPlan.invocationKind) {
-            AsyncInvocationKind.NO_ARGS -> "%T.invokeObjectMethod(pointer, ${method.vtableIndex}).getOrThrow()"
-            AsyncInvocationKind.STRING_ARG ->
-                "%T.invokeObjectMethodWithStringArg(pointer, ${method.vtableIndex}, ${parameterNames.single()}).getOrThrow()"
         }
         builder.beginControlFlow("if (pointer.isNull)")
             .addStatement("error(%S)", "Null runtime object pointer: ${method.name}")
             .endControlFlow()
-        asyncPlan.rawTaskCallFactory.create(invocation)
+        asyncPlan.rawTaskCallFactory.create(asyncPlan.invocation)
             .let { plan -> builder.addStatement(plan.statementFormat, *plan.args) }
         return builder.build()
     }
