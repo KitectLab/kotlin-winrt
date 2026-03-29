@@ -12,7 +12,7 @@ import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.kom.ComPtr
 
-open class Window(pointer: ComPtr) : IWindow(pointer) {
+open class Window(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
     constructor() : this(Companion.activateInstance().pointer)
 
     private val backingIsVisible = RuntimeProperty(WinRtBoolean.FALSE)
@@ -58,16 +58,6 @@ open class Window(pointer: ComPtr) : IWindow(pointer) {
 
     val stableId: dev.winrt.core.GuidValue
         get() = dev.winrt.core.GuidValue(dev.winrt.kom.PlatformComInterop.invokeGuidGetter(pointer, 9).getOrThrow().toString())
-
-    fun activateWindow() {
-        if (pointer.isNull) return
-        activate()
-    }
-
-    fun setWindowContent(content: dev.winrt.core.Inspectable) {
-        if (pointer.isNull) return
-        setContent(content)
-    }
 
     companion object : WinRtRuntimeClassMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Window"
