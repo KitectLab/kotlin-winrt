@@ -79,6 +79,11 @@ internal class TypeNameMapper {
         }
         val rawTypeName = when (normalizeSimpleName(rawType.substringAfterLast('.'))) {
             "IReference" -> PoetSymbols.iReferenceClass
+            "IIterable" -> PoetSymbols.iterableClass
+            "IIterator" -> PoetSymbols.iteratorClass
+            "IMap" -> PoetSymbols.mutableMapClass
+            "IMapView" -> PoetSymbols.mapClass
+            "IKeyValuePair" -> PoetSymbols.mapEntryClass
             else -> normalizeQualifiedType(rawType) as ClassName
         }
         return rawTypeName.parameterizedBy(arguments)

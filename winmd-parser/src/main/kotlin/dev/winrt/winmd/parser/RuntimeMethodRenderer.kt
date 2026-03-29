@@ -2,6 +2,7 @@ package dev.winrt.winmd.parser
 
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.asTypeName
 import dev.winrt.winmd.plugin.WinMdMethod
 
@@ -30,6 +31,7 @@ internal class RuntimeMethodRenderer(
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "UInt32" &&
                 method.vtableIndex != null)
+            || (method.returnType == "String" && method.parameters.isEmpty() && method.vtableIndex != null)
     }
 
     fun renderRuntimeMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
@@ -43,6 +45,9 @@ internal class RuntimeMethodRenderer(
         }
         val kotlinType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
         val builder = FunSpec.builder(functionName).returns(kotlinType)
+        if (method.name == "ToString" && method.returnType == "String" && method.parameters.isEmpty()) {
+            builder.addModifiers(KModifier.OVERRIDE)
+        }
 
         if (method.returnType == "Unit" && method.parameters.isEmpty() && method.vtableIndex != null) {
             val vtableIndex = method.vtableIndex!!
@@ -112,6 +117,24 @@ internal class RuntimeMethodRenderer(
                 .addStatement("error(%S)", "Null runtime object pointer: ${method.name}")
                 .endControlFlow()
                 .addStatement("return %T(%T.invokeObjectMethod(pointer, %L).getOrThrow())", returnType, PoetSymbols.platformComInteropClass, vtableIndex)
+                .build()
+        }
+        if (method.returnType == "String" && method.parameters.isEmpty() && method.vtableIndex != null) {
+            val vtableIndex = method.vtableIndex!!
+            return builder
+                .beginControlFlow("if (pointer.isNull)")
+                .addStatement("return %S", "")
+                .endControlFlow()
+                .addStatement(
+                    "val value = %T.invokeHStringMethod(pointer, %L).getOrThrow()",
+                    PoetSymbols.platformComInteropClass,
+                    vtableIndex,
+                )
+                .beginControlFlow("return try")
+                .addStatement("%T.toKotlin(value)", PoetSymbols.winRtStringsClass)
+                .nextControlFlow("finally")
+                .addStatement("%T.release(value)", PoetSymbols.winRtStringsClass)
+                .endControlFlow()
                 .build()
         }
         if (supportsRuntimeObjectType(method.returnType) &&

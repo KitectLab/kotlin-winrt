@@ -38,6 +38,9 @@ internal class InterfaceTypeRenderer(
             .superclass(PoetSymbols.winRtInterfaceProjectionClass)
             .addSuperclassConstructorParameter("pointer")
             .apply {
+                type.baseInterfaces.mapNotNull { baseInterface ->
+                    collectionSuperinterface(baseInterface, type.namespace, genericParameters)
+                }.forEach { addSuperinterface(it) }
                 kotlinCollectionProjectionMapper.interfaceProjection(type)?.let { projection ->
                     addSuperinterface(projection.superinterface, projection.delegateFactory)
                     addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
@@ -804,5 +807,14 @@ internal class InterfaceTypeRenderer(
                 typeRegistry.isEnumType(property.type, currentNamespace) ||
                     property.type == "Int32"
                 )
+    }
+
+    private fun collectionSuperinterface(
+        baseInterface: String,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): TypeName? {
+        val mapped = typeNameMapper.mapTypeName(baseInterface, currentNamespace, genericParameters)
+        return if (mapped.toString().startsWith("kotlin.collections.")) mapped else null
     }
 }

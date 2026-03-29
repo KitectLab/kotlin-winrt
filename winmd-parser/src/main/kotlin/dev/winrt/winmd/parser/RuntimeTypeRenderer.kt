@@ -58,6 +58,9 @@ internal class RuntimeTypeRenderer(
         )?.let { projection ->
             builder.addSuperinterface(projection.superinterface, projection.delegateFactory)
         }
+        type.baseInterfaces.mapNotNull { baseInterface ->
+            collectionSuperinterface(baseInterface, type.namespace, emptySet())
+        }.forEach(builder::addSuperinterface)
 
         if (type.activationKind == WinMdActivationKind.Factory) {
             builder.addFunction(
@@ -81,6 +84,10 @@ internal class RuntimeTypeRenderer(
             projection.properties.forEach(builder::addProperty)
             projection.methods.forEach(builder::addFunction)
         }
+        renderBaseInterfaceMembers(type).let { projection ->
+            projection.properties.forEach(builder::addProperty)
+            projection.methods.forEach(builder::addFunction)
+        }
         builder.addType(runtimeCompanionRenderer.render(type))
         return builder.build()
     }
@@ -98,8 +105,40 @@ internal class RuntimeTypeRenderer(
                     runtimePropertyRenderer.renderBackingProperty(property, type.namespace),
                     runtimePropertyRenderer.renderRuntimeProperty(property, type.namespace),
                 )
+        }
+        return RuntimeProjectionMembers(methods, properties)
+    }
+
+    private fun renderBaseInterfaceMembers(type: WinMdType): RuntimeProjectionMembers {
+        val methods = mutableListOf<FunSpec>()
+        val properties = mutableListOf<PropertySpec>()
+        type.baseInterfaces
+            .asSequence()
+            .filterNot { it == type.defaultInterface }
+            .mapNotNull { typeRegistry.findType(it, type.namespace) }
+            .forEach { baseInterface ->
+                methods += baseInterface.methods
+                    .filter(runtimeMethodRenderer::canRenderRuntimeMethod)
+                    .mapNotNull { runtimeMethodRenderer.renderRuntimeMethod(it, type.namespace) }
+                properties += baseInterface.properties
+                    .filter(runtimePropertyRenderer::canRenderRuntimeProperty)
+                    .flatMap { property ->
+                        listOfNotNull(
+                            runtimePropertyRenderer.renderBackingProperty(property, type.namespace),
+                            runtimePropertyRenderer.renderRuntimeProperty(property, type.namespace),
+                        )
+                    }
             }
         return RuntimeProjectionMembers(methods, properties)
+    }
+
+    private fun collectionSuperinterface(
+        baseInterface: String,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): com.squareup.kotlinpoet.TypeName? {
+        val mapped = typeNameMapper.mapTypeName(baseInterface, currentNamespace, genericParameters)
+        return if (mapped.toString().startsWith("kotlin.collections.")) mapped else null
     }
 
     private data class RuntimeProjectionMembers(
