@@ -59,10 +59,10 @@ class KotlinCollectionProjectionMapperTest {
         assertEquals(
             listOf(
                 "Windows.Globalization.ICalendar",
-                "Windows.Foundation.Collections.IIterable`1",
-                "Windows.Foundation.Collections.IIterator`1",
+                "Windows.Foundation.Collections.IIterable`1<Windows.Foundation.String>",
+                "Windows.Foundation.Collections.IIterator`1<Windows.Foundation.String>",
             ),
-            mapper.runtimeClassCollectionInterfaces(typeRegistry.findType("Calendar", "Windows.Globalization")!!, typeRegistry).toList(),
+            mapper.runtimeClassCollectionInterfaces(typeRegistry.findType("Calendar", "Windows.Globalization")!!).toList(),
         )
     }
 }

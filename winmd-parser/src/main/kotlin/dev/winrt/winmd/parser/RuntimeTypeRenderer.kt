@@ -37,26 +37,28 @@ internal class RuntimeTypeRenderer(
             .addSuperclassConstructorParameter("pointer")
 
         kotlinCollectionProjectionMapper.runtimeClassProjection(type)?.let { projection ->
-            builder.addSuperinterface(projection.superinterface)
+            projection.delegateFactory?.let { delegateFactory ->
+                builder.addSuperinterface(projection.superinterface, delegateFactory)
+            } ?: builder.addSuperinterface(projection.superinterface)
             projection.extraProperties.forEach(builder::addProperty)
             projection.extraFunctions.forEach(builder::addFunction)
             builder.addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
         }
         kotlinCollectionProjectionMapper.runtimeClassInterfaceProjection(
             type = type,
-            typeRegistry = typeRegistry,
             typeNameMapper = typeNameMapper,
             winRtSignatureMapper = winRtSignatureMapper,
             winRtProjectionTypeMapper = winRtProjectionTypeMapper,
         )?.let { projection ->
-            builder.addSuperinterface(projection.superinterface)
+            projection.delegateFactory?.let { delegateFactory ->
+                builder.addSuperinterface(projection.superinterface, delegateFactory)
+            } ?: builder.addSuperinterface(projection.superinterface)
             projection.extraProperties.forEach(builder::addProperty)
             projection.extraFunctions.forEach(builder::addFunction)
             builder.addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
         }
         kotlinCollectionProjectionMapper.runtimeClassIterableProjection(
             type = type,
-            typeRegistry = typeRegistry,
             typeNameMapper = typeNameMapper,
             winRtSignatureMapper = winRtSignatureMapper,
             winRtProjectionTypeMapper = winRtProjectionTypeMapper,
@@ -100,37 +102,33 @@ internal class RuntimeTypeRenderer(
     private fun renderDefaultInterfaceMembers(type: WinMdType): RuntimeProjectionMembers {
         val defaultInterface = typeRegistry.findDefaultInterfaceType(type.name, type.namespace)
             ?: return RuntimeProjectionMembers(emptyList(), emptyList())
-        val methods = defaultInterface.methods
-            .filter(runtimeMethodRenderer::canRenderRuntimeMethod)
-            .mapNotNull { runtimeMethodRenderer.renderRuntimeMethod(it, type.namespace) }
-        val properties = defaultInterface.properties
-            .filter(runtimePropertyRenderer::canRenderRuntimeProperty)
-            .flatMap { property ->
-                listOfNotNull(
-                    runtimePropertyRenderer.renderBackingProperty(property, type.namespace),
-                    runtimePropertyRenderer.renderRuntimeProperty(property, type.namespace),
-                )
-        }
-        return RuntimeProjectionMembers(methods, properties)
+        return collectProjectedInterfaceMembers(defaultInterface, type.namespace)
     }
 
     private fun renderBaseInterfaceMembers(type: WinMdType): RuntimeProjectionMembers {
         val methods = mutableListOf<FunSpec>()
         val properties = mutableListOf<PropertySpec>()
         typeRegistry.findImplementedInterfaceTypes(type.name, type.namespace)
-            .forEach { baseInterface ->
-                methods += baseInterface.methods
-                    .filter(runtimeMethodRenderer::canRenderRuntimeMethod)
-                    .mapNotNull { runtimeMethodRenderer.renderRuntimeMethod(it, type.namespace) }
-                properties += baseInterface.properties
-                    .filter(runtimePropertyRenderer::canRenderRuntimeProperty)
-                    .flatMap { property ->
-                        listOfNotNull(
-                            runtimePropertyRenderer.renderBackingProperty(property, type.namespace),
-                            runtimePropertyRenderer.renderRuntimeProperty(property, type.namespace),
-                        )
-                    }
-        }
+            .forEach { interfaceType ->
+                val members = collectProjectedInterfaceMembers(interfaceType, type.namespace)
+                methods += members.methods
+                properties += members.properties
+            }
+        return RuntimeProjectionMembers(methods, properties)
+    }
+
+    private fun collectProjectedInterfaceMembers(interfaceType: WinMdType, currentNamespace: String): RuntimeProjectionMembers {
+        val methods = interfaceType.methods
+            .filter(runtimeMethodRenderer::canRenderRuntimeMethod)
+            .mapNotNull { runtimeMethodRenderer.renderRuntimeMethod(it, currentNamespace) }
+        val properties = interfaceType.properties
+            .filter(runtimePropertyRenderer::canRenderRuntimeProperty)
+            .flatMap { property ->
+                listOfNotNull(
+                    runtimePropertyRenderer.renderBackingProperty(property, currentNamespace),
+                    runtimePropertyRenderer.renderRuntimeProperty(property, currentNamespace),
+                )
+            }
         return RuntimeProjectionMembers(methods, properties)
     }
 

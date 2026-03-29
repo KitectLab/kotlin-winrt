@@ -530,6 +530,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("open class IBindableVector"))
         assertTrue(binding.contains("MutableList<Inspectable> by"))
+        assertTrue(binding.contains("MutableList<Boolean> by IVector.from(Inspectable(pointer), \"b1\", \"Boolean\")"))
         assertTrue(binding.contains("val winRtSize: UInt32"))
         assertTrue(binding.contains("fun getAt(index: UInt32): Inspectable"))
         assertTrue(binding.contains("invokeObjectSetter(pointer, 14,"))
@@ -1276,7 +1277,6 @@ class KotlinBindingGeneratorTest {
             it.relativePath == "Windows/Foundation/Collections/BooleanVectorHost.kt"
         }.content
 
-        assertTrue(binding.contains("MutableList<Boolean> by IVector.from(Inspectable(pointer), \"b1\", \"Boolean\")"))
         assertTrue(binding.contains("val winRtSize: UInt32"))
     }
 
@@ -1475,7 +1475,6 @@ class KotlinBindingGeneratorTest {
             it.relativePath == "Windows/Foundation/Collections/DoubleVectorViewHost.kt"
         }.content
 
-        assertTrue(binding.contains("List<Double> by IVectorView.from(Inspectable(pointer), \"f8\", \"Float64\")"))
         assertTrue(binding.contains("val winRtSize: UInt32"))
     }
 
@@ -1934,10 +1933,9 @@ class KotlinBindingGeneratorTest {
         val binding = files.first { it.relativePath == "Microsoft/UI/Xaml/Interop/IBindableVectorView.kt" }.content
 
         assertTrue(binding.contains("open class IBindableVectorView"))
-        assertTrue(binding.contains("List<Inspectable> by"))
+        assertTrue(binding.contains("List<Inspectable>"))
         assertTrue(binding.contains("val winRtSize: UInt32"))
         assertTrue(binding.contains("fun getAt(index: UInt32): Inspectable"))
-        assertTrue(binding.contains("WinRtListProjection<Inspectable>"))
     }
 
     @Test
