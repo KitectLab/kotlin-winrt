@@ -122,4 +122,48 @@ class CoroutineTasksTest {
         assertEquals(listOf(UInt32(3u), UInt32(4u)), progressValues)
         assertEquals(AsyncStatus.Completed, operation.status)
     }
+
+    @Test
+    fun canceling_async_action_with_progress_cancels_coroutine() = runBlocking {
+        val action = scope.asyncActionWithProgress(
+            progressSignature = "u4",
+            progressArgumentKind = WinRtDelegateValueKind.UINT32,
+        ) { reportProgress ->
+            reportProgress(UInt32(1u))
+            delay(10_000)
+        }
+
+        action.cancel()
+
+        try {
+            action.await { }
+            fail("Expected await() to throw CancellationException")
+        } catch (_: CancellationException) {
+        }
+        assertEquals(AsyncStatus.Canceled, action.status)
+    }
+
+    @Test
+    fun completed_handler_runs_even_when_set_after_progress_operation_finishes() = runBlocking {
+        val operation = scope.asyncOperationWithProgress(
+            resultSignature = WinRtTypeSignature.string(),
+            progressSignature = "u4",
+            progressArgumentKind = WinRtDelegateValueKind.UINT32,
+        ) { reportProgress ->
+            reportProgress(UInt32(1u))
+            "ready"
+        }
+
+        operation.await { }
+
+        var callbackStatus: AsyncStatus? = null
+        operation.completed = AsyncOperationWithProgressCompletedHandler.create(
+            resultSignature = WinRtTypeSignature.string(),
+            progressSignature = "u4",
+        ) { _, status ->
+            callbackStatus = status
+        }
+
+        assertEquals(AsyncStatus.Completed, callbackStatus)
+    }
 }
