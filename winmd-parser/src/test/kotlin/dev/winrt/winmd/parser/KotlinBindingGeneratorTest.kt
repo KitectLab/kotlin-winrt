@@ -2198,6 +2198,40 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_string_runtime_methods_with_int32_arguments() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Int32ArgumentHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Render",
+                                    returnType = "String",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter(name = "index", type = "Int32")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/Int32ArgumentHost.kt" }.content
+
+        assertTrue(binding.contains("fun render(index: Int32): String"))
+        assertTrue(binding.contains("invokeHStringMethodWithInt32Arg(pointer, 6,"))
+        assertTrue(binding.contains("index.value"))
+    }
+
+    @Test
     fun generates_json_array_uint32_object_call_from_real_metadata_model() {
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",

@@ -428,16 +428,6 @@ internal class InterfaceTypeRenderer(
             }
             method.returnType == "String" &&
                 method.parameters.size == 1 &&
-                method.parameters[0].type == "Int32" &&
-                method.vtableIndex != null -> {
-                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-                val vtableIndex = method.vtableIndex!!
-                builder
-                    .addStatement("return %L", HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithInt32(vtableIndex, "$argumentName.value")))
-                    .build()
-            }
-            method.returnType == "String" &&
-                method.parameters.size == 1 &&
                 method.parameters[0].type == "UInt32" &&
                 method.vtableIndex != null -> {
                 val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
@@ -712,10 +702,6 @@ internal class InterfaceTypeRenderer(
         genericParameters: Set<String>,
     ): Boolean {
         return plannedInterfaceMethod(method, currentNamespace, genericParameters) != null ||
-            (method.returnType == "String" &&
-                method.parameters.size == 1 &&
-                method.parameters[0].type == "Int32" &&
-                method.vtableIndex != null) ||
             (method.returnType == "Int32" &&
                 method.parameters.isEmpty() &&
                 method.vtableIndex != null) ||
@@ -773,6 +759,13 @@ internal class InterfaceTypeRenderer(
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
                     arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithString(method.vtableIndex!!, argumentName)))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.INT32) -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithInt32(method.vtableIndex!!, "$argumentName.value")))
                 },
             )
             MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.UINT32) -> PlannedInterfaceMethod(

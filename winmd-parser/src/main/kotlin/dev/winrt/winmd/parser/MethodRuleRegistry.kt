@@ -12,6 +12,7 @@ internal object MethodRuleRegistry {
     private val sharedMethodRules: Map<MethodSignatureKey, SharedMethodRuleFamily> = buildMap {
         put(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.EMPTY), SharedMethodRuleFamily.STRING)
         put(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING), SharedMethodRuleFamily.STRING)
+        put(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.INT32), SharedMethodRuleFamily.STRING)
         put(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.UINT32), SharedMethodRuleFamily.STRING)
 
         put(MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.EMPTY), SharedMethodRuleFamily.FLOAT64)

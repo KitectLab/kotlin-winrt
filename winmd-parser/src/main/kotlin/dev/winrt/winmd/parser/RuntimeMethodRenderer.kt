@@ -90,6 +90,13 @@ internal class RuntimeMethodRenderer(
                     arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithString(method.vtableIndex!!, parameterBindings.single().name)))
                 },
             )
+            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.INT32) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %S", arrayOf("")) },
+                returnStatement = "return %L",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithInt32(method.vtableIndex!!, "${parameterBindings.single().name}.value")))
+                },
+            )
             MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.UINT32) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %S", arrayOf("")) },
                 returnStatement = "return %L",
