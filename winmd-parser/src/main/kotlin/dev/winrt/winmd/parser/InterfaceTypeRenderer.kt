@@ -39,7 +39,7 @@ internal class InterfaceTypeRenderer(
             .addSuperclassConstructorParameter("pointer")
             .apply {
                 type.baseInterfaces.mapNotNull { baseInterface ->
-                    typeNameMapper.mapTypeName(baseInterface, type.namespace, genericParameters)
+                    collectionSuperinterface(baseInterface, type.namespace, genericParameters)
                 }.forEach { addSuperinterface(it) }
                 kotlinCollectionProjectionMapper.interfaceProjection(type)?.let { projection ->
                     addSuperinterface(projection.superinterface, projection.delegateFactory)
@@ -807,6 +807,15 @@ internal class InterfaceTypeRenderer(
                 typeRegistry.isEnumType(property.type, currentNamespace) ||
                     property.type == "Int32"
                 )
+    }
+
+    private fun collectionSuperinterface(
+        baseInterface: String,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): TypeName? {
+        val mapped = typeNameMapper.mapTypeName(baseInterface, currentNamespace, genericParameters)
+        return if (mapped.toString().startsWith("kotlin.collections.")) mapped else null
     }
 
 }
