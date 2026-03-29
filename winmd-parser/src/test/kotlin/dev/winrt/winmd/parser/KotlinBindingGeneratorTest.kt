@@ -5667,4 +5667,85 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("unsubscribe(token)"))
         assertTrue(normalizedRuntimeBinding.contains("get()=closedEventSlot"))
     }
+
+    @Test
+    fun generates_typed_event_handler_slot_helpers() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "TypedEventHandler`2",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "f5d9f70c-8cf0-4d74-a94f-099a14dbc66f",
+                            genericParameters = listOf("TSender", "TResult"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("sender", "TSender"),
+                                        WinMdParameter("args", "TResult"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Events",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetClosedEventArgs",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "44444444-4444-4444-4444-444444444444",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_Closed",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(
+                                        WinMdParameter(
+                                            "handler",
+                                            "Windows.Foundation.TypedEventHandler<Example.Events.IWidgetSource, Example.Events.IWidgetClosedEventArgs>",
+                                        ),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_Closed",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("token", "EventRegistrationToken")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Events/IWidget.kt" }.content
+        val normalizedInterfaceBinding = interfaceBinding.replace("\n", "").replace(" ", "")
+
+        assertTrue(normalizedInterfaceBinding.contains("funsubscribe(handler:TypedEventHandler<IWidgetSource,IWidgetClosedEventArgs>):EventRegistrationToken"))
+        assertTrue(normalizedInterfaceBinding.contains("funsubscribe(handler:(IWidgetSource,IWidgetClosedEventArgs)->Unit):EventRegistrationToken"))
+        assertTrue(normalizedInterfaceBinding.contains("handler(IWidgetSource(args[0]asComPtr),IWidgetClosedEventArgs(args[1]asComPtr))"))
+    }
 }

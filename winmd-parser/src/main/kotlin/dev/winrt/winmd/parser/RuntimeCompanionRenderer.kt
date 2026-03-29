@@ -20,6 +20,7 @@ internal class RuntimeCompanionRenderer(
     private val typeRegistry: TypeRegistry,
     private val typeNameMapper: TypeNameMapper,
     private val delegateLambdaPlanResolver: DelegateLambdaPlanResolver,
+    private val eventSlotDelegatePlanResolver: EventSlotDelegatePlanResolver,
     private val winRtSignatureMapper: WinRtSignatureMapper,
     private val asyncMethodRuleRegistry: AsyncMethodRuleRegistry,
     private val winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
@@ -108,25 +109,17 @@ internal class RuntimeCompanionRenderer(
                 return@mapNotNull null
             }
             val delegateTypeName = addMethod.parameters.single().type
-            if (!isEventHandlerDelegate(delegateTypeName)) {
-                return@mapNotNull null
-            }
-            val eventArgsTypeName = eventHandlerArgumentType(delegateTypeName) ?: return@mapNotNull null
-            val delegateType = typeRegistry.findType(delegateTypeName, type.namespace) ?: return@mapNotNull null
+            val delegatePlan = eventSlotDelegatePlanResolver.resolve(delegateTypeName, type.namespace)
+                ?: return@mapNotNull null
             RuntimeCompanionEventSlotPlan(
                 propertyName = eventName.replaceFirstChar(Char::lowercase),
                 typeName = "${eventName}StaticEvent",
                 nestedType = ClassName(type.namespace.lowercase(), type.name, "${eventName}StaticEvent"),
-                delegateType = typeNameMapper.mapTypeName(delegateTypeName, type.namespace),
-                lambdaType = LambdaTypeName.get(
-                    parameters = arrayOf(
-                        PoetSymbols.comPtrClass,
-                        typeNameMapper.mapTypeName(eventArgsTypeName, type.namespace),
-                    ),
-                    returnType = Unit::class.asTypeName(),
-                ),
-                eventArgsType = typeNameMapper.mapTypeName(eventArgsTypeName, type.namespace),
-                delegateGuid = delegateType.guid ?: "00000000-0000-0000-0000-000000000000",
+                delegateType = delegatePlan.delegateType,
+                lambdaType = delegatePlan.lambdaType,
+                delegateGuid = delegatePlan.delegateGuid,
+                lambdaArgumentKindsLiteral = delegatePlan.argumentKindsLiteral(),
+                lambdaCallbackInvocation = delegatePlan.callbackInvocation("handler"),
                 staticsClass = ClassName(staticsType.namespace.lowercase(), staticsType.name),
                 addVtableIndex = addMethod.vtableIndex ?: return@mapNotNull null,
                 removeVtableIndex = removeMethod.vtableIndex ?: return@mapNotNull null,
@@ -190,15 +183,12 @@ internal class RuntimeCompanionRenderer(
                             .addParameter("handler", plan.lambdaType)
                             .returns(PoetSymbols.eventRegistrationTokenClass)
                             .addStatement(
-                                "val delegateHandle = %T.createUnitDelegate(%M(%S), listOf(%T.OBJECT, %T.OBJECT)) { args -> handler(args[0] as %T, %T(args[1] as %T)) }",
+                                "val delegateHandle = %T.createUnitDelegate(%M(%S), %L) { args -> %L }",
                                 PoetSymbols.winRtDelegateBridgeClass,
                                 PoetSymbols.guidOfMember,
                                 plan.delegateGuid,
-                                PoetSymbols.winRtDelegateValueKindClass,
-                                PoetSymbols.winRtDelegateValueKindClass,
-                                PoetSymbols.comPtrClass,
-                                plan.eventArgsType,
-                                PoetSymbols.comPtrClass,
+                                plan.lambdaArgumentKindsLiteral,
+                                plan.lambdaCallbackInvocation,
                             )
                             .addStatement("val token = subscribe(%T(delegateHandle.pointer))", plan.delegateType)
                             .addStatement("delegateHandles[token] = delegateHandle")
@@ -427,19 +417,6 @@ internal class RuntimeCompanionRenderer(
         }
     }
 
-    private fun isEventHandlerDelegate(typeName: String): Boolean {
-        val rawType = typeName.substringBefore('<').substringBefore('`')
-        return rawType == "Windows.Foundation.EventHandler"
-    }
-
-    private fun eventHandlerArgumentType(typeName: String): String? {
-        return if ('<' in typeName && typeName.endsWith(">")) {
-            typeName.substringAfter('<').substringBeforeLast('>')
-        } else {
-            null
-        }
-    }
-
     private data class RuntimeCompanionEventMembers(
         val properties: List<PropertySpec>,
         val types: List<TypeSpec>,
@@ -451,8 +428,9 @@ internal class RuntimeCompanionRenderer(
         val nestedType: ClassName,
         val delegateType: TypeName,
         val lambdaType: LambdaTypeName,
-        val eventArgsType: TypeName,
         val delegateGuid: String,
+        val lambdaArgumentKindsLiteral: String,
+        val lambdaCallbackInvocation: CodeBlock,
         val staticsClass: ClassName,
         val addVtableIndex: Int,
         val removeVtableIndex: Int,

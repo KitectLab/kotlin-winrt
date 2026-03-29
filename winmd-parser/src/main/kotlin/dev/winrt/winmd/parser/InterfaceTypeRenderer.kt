@@ -20,6 +20,7 @@ import dev.winrt.winmd.plugin.WinMdType
 internal class InterfaceTypeRenderer(
     private val typeNameMapper: TypeNameMapper,
     private val delegateLambdaPlanResolver: DelegateLambdaPlanResolver,
+    private val eventSlotDelegatePlanResolver: EventSlotDelegatePlanResolver,
     private val typeRegistry: TypeRegistry,
     private val asyncMethodProjectionPlanner: AsyncMethodProjectionPlanner,
     private val asyncMethodRuleRegistry: AsyncMethodRuleRegistry,
@@ -217,15 +218,12 @@ internal class InterfaceTypeRenderer(
                             .addParameter("handler", plan.lambdaType)
                             .returns(PoetSymbols.eventRegistrationTokenClass)
                             .addStatement(
-                                "val delegateHandle = %T.createUnitDelegate(%M(%S), listOf(%T.OBJECT, %T.OBJECT)) { args -> handler(args[0] as %T, %T(args[1] as %T)) }",
+                                "val delegateHandle = %T.createUnitDelegate(%M(%S), %L) { args -> %L }",
                                 PoetSymbols.winRtDelegateBridgeClass,
                                 PoetSymbols.guidOfMember,
                                 plan.delegateGuid,
-                                PoetSymbols.winRtDelegateValueKindClass,
-                                PoetSymbols.winRtDelegateValueKindClass,
-                                PoetSymbols.comPtrClass,
-                                plan.eventArgsType,
-                                PoetSymbols.comPtrClass,
+                                plan.lambdaArgumentKindsLiteral,
+                                plan.lambdaCallbackInvocation,
                             )
                             .addStatement("val token = subscribe(%T(delegateHandle.pointer))", plan.delegateType)
                             .addStatement("delegateHandles[token] = delegateHandle")
@@ -273,40 +271,19 @@ internal class InterfaceTypeRenderer(
                 return@mapNotNull null
             }
             val delegateTypeName = addMethod.parameters.single().type
-            if (!isEventHandlerDelegate(delegateTypeName)) {
-                return@mapNotNull null
-            }
-            val eventArgsTypeName = eventHandlerArgumentType(delegateTypeName) ?: return@mapNotNull null
-            val delegateType = typeRegistry.findType(delegateTypeName, currentNamespace) ?: return@mapNotNull null
+            val delegatePlan = eventSlotDelegatePlanResolver.resolve(delegateTypeName, currentNamespace, genericParameters)
+                ?: return@mapNotNull null
             InterfaceEventSlotPlan(
                 propertyName = eventName.replaceFirstChar(Char::lowercase),
                 typeName = "${eventName}Event",
-                delegateType = typeNameMapper.mapTypeName(delegateTypeName, currentNamespace, genericParameters),
-                lambdaType = LambdaTypeName.get(
-                    parameters = arrayOf(
-                        PoetSymbols.comPtrClass,
-                        typeNameMapper.mapTypeName(eventArgsTypeName, currentNamespace, genericParameters),
-                    ),
-                    returnType = Unit::class.asTypeName(),
-                ),
-                eventArgsType = typeNameMapper.mapTypeName(eventArgsTypeName, currentNamespace, genericParameters),
-                delegateGuid = delegateType.guid ?: "00000000-0000-0000-0000-000000000000",
+                delegateType = delegatePlan.delegateType,
+                lambdaType = delegatePlan.lambdaType,
+                delegateGuid = delegatePlan.delegateGuid,
+                lambdaArgumentKindsLiteral = delegatePlan.argumentKindsLiteral(),
+                lambdaCallbackInvocation = delegatePlan.callbackInvocation("handler"),
                 addVtableIndex = addMethod.vtableIndex ?: return@mapNotNull null,
                 removeVtableIndex = removeMethod.vtableIndex ?: return@mapNotNull null,
             )
-        }
-    }
-
-    private fun isEventHandlerDelegate(typeName: String): Boolean {
-        val rawType = typeName.substringBefore('<').substringBefore('`')
-        return rawType == "Windows.Foundation.EventHandler"
-    }
-
-    private fun eventHandlerArgumentType(typeName: String): String? {
-        return if ('<' in typeName && typeName.endsWith(">")) {
-            typeName.substringAfter('<').substringBeforeLast('>')
-        } else {
-            null
         }
     }
 
@@ -1319,8 +1296,9 @@ internal class InterfaceTypeRenderer(
         val typeName: String,
         val delegateType: TypeName,
         val lambdaType: LambdaTypeName,
-        val eventArgsType: TypeName,
         val delegateGuid: String,
+        val lambdaArgumentKindsLiteral: String,
+        val lambdaCallbackInvocation: CodeBlock,
         val addVtableIndex: Int,
         val removeVtableIndex: Int,
     )
