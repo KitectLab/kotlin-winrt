@@ -6,6 +6,7 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asTypeName
@@ -132,14 +133,20 @@ internal class RuntimeCompanionRenderer(
             )
         }
         return RuntimeCompanionEventMembers(
-            properties = plans.map { plan ->
-                PropertySpec.builder("${plan.propertyName}Event", plan.nestedType)
-                    .getter(
-                        FunSpec.getterBuilder()
-                            .addStatement("return %L { statics }", plan.typeName)
-                            .build(),
-                    )
-                    .build()
+            properties = plans.flatMap { plan ->
+                listOf(
+                    PropertySpec.builder("${plan.propertyName}EventSlot", plan.nestedType)
+                        .addModifiers(KModifier.PRIVATE)
+                        .initializer("%L { statics }", plan.typeName)
+                        .build(),
+                    PropertySpec.builder("${plan.propertyName}Event", plan.nestedType)
+                        .getter(
+                            FunSpec.getterBuilder()
+                                .addStatement("return %N", "${plan.propertyName}EventSlot")
+                                .build(),
+                        )
+                        .build(),
+                )
             },
             types = plans.map { plan ->
                 TypeSpec.classBuilder(plan.typeName)
@@ -152,6 +159,18 @@ internal class RuntimeCompanionRenderer(
                         PropertySpec.builder("staticsProvider", LambdaTypeName.get(returnType = plan.staticsClass))
                             .addModifiers(KModifier.PRIVATE)
                             .initializer("staticsProvider")
+                            .build(),
+                    )
+                    .addProperty(
+                        PropertySpec.builder(
+                            "delegateHandles",
+                            PoetSymbols.mutableMapClass.parameterizedBy(
+                                PoetSymbols.eventRegistrationTokenClass,
+                                PoetSymbols.winRtDelegateHandleClass,
+                            ),
+                        )
+                            .addModifiers(KModifier.PRIVATE)
+                            .initializer("mutableMapOf()")
                             .build(),
                     )
                     .addFunction(
@@ -181,7 +200,9 @@ internal class RuntimeCompanionRenderer(
                                 plan.eventArgsType,
                                 PoetSymbols.comPtrClass,
                             )
-                            .addStatement("return subscribe(%T(delegateHandle.pointer))", plan.delegateType)
+                            .addStatement("val token = subscribe(%T(delegateHandle.pointer))", plan.delegateType)
+                            .addStatement("delegateHandles[token] = delegateHandle")
+                            .addStatement("return token")
                             .build(),
                     )
                     .addFunction(
@@ -195,6 +216,7 @@ internal class RuntimeCompanionRenderer(
                         FunSpec.builder("minusAssign")
                             .addModifiers(KModifier.OPERATOR)
                             .addParameter("token", PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement("delegateHandles.remove(token)?.close()")
                             .addStatement("%T.invokeUnitMethodWithInt64Arg(staticsProvider().pointer, %L, token.value).getOrThrow()", PoetSymbols.platformComInteropClass, plan.removeVtableIndex)
                             .build(),
                     )

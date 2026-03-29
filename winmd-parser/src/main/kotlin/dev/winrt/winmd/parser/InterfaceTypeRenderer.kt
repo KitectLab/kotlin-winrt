@@ -164,14 +164,20 @@ internal class InterfaceTypeRenderer(
         currentNamespace: String,
         genericParameters: Set<String>,
     ): List<PropertySpec> {
-        return eventSlotPlans(type, currentNamespace, genericParameters).map { plan ->
-            PropertySpec.builder("${plan.propertyName}Event", ClassName("", plan.typeName))
-                .getter(
-                    FunSpec.getterBuilder()
-                        .addStatement("return %L()", plan.typeName)
-                        .build(),
-                )
-                .build()
+        return eventSlotPlans(type, currentNamespace, genericParameters).flatMap { plan ->
+            listOf(
+                PropertySpec.builder("${plan.propertyName}EventSlot", ClassName("", plan.typeName))
+                    .addModifiers(KModifier.PRIVATE)
+                    .initializer("%L()", plan.typeName)
+                    .build(),
+                PropertySpec.builder("${plan.propertyName}Event", ClassName("", plan.typeName))
+                    .getter(
+                        FunSpec.getterBuilder()
+                            .addStatement("return %N", "${plan.propertyName}EventSlot")
+                            .build(),
+                    )
+                    .build(),
+            )
         }
     }
 
@@ -183,6 +189,18 @@ internal class InterfaceTypeRenderer(
         return eventSlotPlans(type, currentNamespace, genericParameters).map { plan ->
                 TypeSpec.classBuilder(plan.typeName)
                     .addModifiers(KModifier.INNER)
+                    .addProperty(
+                        PropertySpec.builder(
+                            "delegateHandles",
+                            PoetSymbols.mutableMapClass.parameterizedBy(
+                                PoetSymbols.eventRegistrationTokenClass,
+                                PoetSymbols.winRtDelegateHandleClass,
+                            ),
+                        )
+                            .addModifiers(KModifier.PRIVATE)
+                            .initializer("mutableMapOf()")
+                            .build(),
+                    )
                     .addFunction(
                         FunSpec.builder("subscribe")
                             .addParameter("handler", plan.delegateType)
@@ -209,7 +227,9 @@ internal class InterfaceTypeRenderer(
                                 plan.eventArgsType,
                                 PoetSymbols.comPtrClass,
                             )
-                            .addStatement("return subscribe(%T(delegateHandle.pointer))", plan.delegateType)
+                            .addStatement("val token = subscribe(%T(delegateHandle.pointer))", plan.delegateType)
+                            .addStatement("delegateHandles[token] = delegateHandle")
+                            .addStatement("return token")
                             .build(),
                     )
                     .addFunction(
@@ -223,6 +243,7 @@ internal class InterfaceTypeRenderer(
                         FunSpec.builder("minusAssign")
                             .addModifiers(KModifier.OPERATOR)
                             .addParameter("token", PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement("delegateHandles.remove(token)?.close()")
                             .addStatement("%T.invokeUnitMethodWithInt64Arg(pointer, %L, token.value).getOrThrow()", PoetSymbols.platformComInteropClass, plan.removeVtableIndex)
                             .build(),
                     )

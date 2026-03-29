@@ -5560,18 +5560,24 @@ class KotlinBindingGeneratorTest {
         val normalizedRuntimeBinding = runtimeBinding.replace("\n", "").replace(" ", "")
 
         assertTrue(interfaceBinding.contains("val closedEvent: ClosedEvent"))
+        assertTrue(interfaceBinding.contains("private val closedEventSlot: ClosedEvent = ClosedEvent()"))
         assertTrue(interfaceBinding.contains("class ClosedEvent"))
         assertTrue(interfaceBinding.contains("fun subscribe(handler: EventHandler<IWidgetClosedEventArgs>): EventRegistrationToken"))
         assertTrue(normalizedInterfaceBinding.contains("funsubscribe(handler:(ComPtr,IWidgetClosedEventArgs)->Unit):EventRegistrationToken"))
         assertTrue(interfaceBinding.contains("operator fun plusAssign(handler: EventHandler<IWidgetClosedEventArgs>)"))
         assertTrue(interfaceBinding.contains("operator fun minusAssign(token: EventRegistrationToken)"))
+        assertTrue(interfaceBinding.contains("delegateHandles[token] = delegateHandle"))
+        assertTrue(interfaceBinding.contains("delegateHandles.remove(token)?.close()"))
 
         assertTrue(runtimeBinding.contains("val closedEvent: ClosedEvent"))
+        assertTrue(runtimeBinding.contains("private val closedEventSlot: ClosedEvent = ClosedEvent()"))
         assertTrue(runtimeBinding.contains("class ClosedEvent"))
         assertTrue(runtimeBinding.contains("fun subscribe(handler: EventHandler<IWidgetClosedEventArgs>): EventRegistrationToken"))
         assertTrue(normalizedRuntimeBinding.contains("funsubscribe(handler:(ComPtr,IWidgetClosedEventArgs)->Unit):EventRegistrationToken"))
         assertTrue(runtimeBinding.contains("operator fun plusAssign(handler: EventHandler<IWidgetClosedEventArgs>)"))
         assertTrue(runtimeBinding.contains("operator fun minusAssign(token: EventRegistrationToken)"))
+        assertTrue(runtimeBinding.contains("delegateHandles[token] = delegateHandle"))
+        assertTrue(runtimeBinding.contains("delegateHandles.remove(token)?.close()"))
     }
 
     @Test
@@ -5645,11 +5651,14 @@ class KotlinBindingGeneratorTest {
         val normalizedRuntimeBinding = runtimeBinding.replace("\n", "").replace(" ", "")
 
         assertTrue(runtimeBinding.contains("val closedEvent: ClosedStaticEvent"))
+        assertTrue(runtimeBinding.contains("private val closedEventSlot: ClosedStaticEvent = ClosedStaticEvent { statics }"))
         assertTrue(runtimeBinding.contains("class ClosedStaticEvent"))
         assertTrue(runtimeBinding.contains("fun subscribe(handler: EventHandler<IWidgetClosedEventArgs>): EventRegistrationToken"))
         assertTrue(normalizedRuntimeBinding.contains("funsubscribe(handler:(ComPtr,IWidgetClosedEventArgs)->Unit):EventRegistrationToken"))
         assertTrue(runtimeBinding.contains("operator fun plusAssign(handler: EventHandler<IWidgetClosedEventArgs>)"))
         assertTrue(runtimeBinding.contains("operator fun minusAssign(token: EventRegistrationToken)"))
-        assertTrue(normalizedRuntimeBinding.contains("get()=ClosedStaticEvent{statics}"))
+        assertTrue(runtimeBinding.contains("delegateHandles[token] = delegateHandle"))
+        assertTrue(runtimeBinding.contains("delegateHandles.remove(token)?.close()"))
+        assertTrue(normalizedRuntimeBinding.contains("get()=closedEventSlot"))
     }
 }
