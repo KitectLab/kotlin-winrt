@@ -5,6 +5,7 @@ import dev.winrt.kom.PlatformComInterop
 
 public open class IAsyncOperation<TResult>(
   pointer: ComPtr,
+  public open val resultSignature: String,
 ) : IAsyncInfo(pointer) {
   public open var completed: AsyncOperationCompletedHandler<TResult>
     get() = get_Completed()

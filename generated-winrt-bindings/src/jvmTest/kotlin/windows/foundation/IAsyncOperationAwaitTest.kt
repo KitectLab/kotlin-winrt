@@ -1,12 +1,14 @@
 package windows.foundation
 
 import dev.winrt.core.UInt32
+import dev.winrt.core.WinRtTypeSignature
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.HResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -22,17 +24,20 @@ class IAsyncOperationAwaitTest {
     }
 
     @Test
-    fun await_polls_until_completed() = runBlocking {
+    fun await_resumes_from_completed_handler_without_polling() = runBlocking {
         val operation = TestAsyncOperation(statusState = AsyncStatus.Started, result = "done")
 
         launch {
             delay(10)
-            operation.statusState = AsyncStatus.Completed
+            operation.complete()
         }
 
-        val result = operation.await()
+        val result = withTimeout(1_000) {
+            operation.await()
+        }
 
         assertEquals("done", result)
+        assertTrue(operation.statusReadCount <= 2)
     }
 
     @Test(expected = CancellationException::class)
@@ -57,12 +62,18 @@ class IAsyncOperationAwaitTest {
         var statusState: AsyncStatus,
         private val result: String,
         private val error: HResult = HResult(0),
-    ) : IAsyncOperation<String>(ComPtr.NULL) {
+    ) : IAsyncOperation<String>(ComPtr.NULL, WinRtTypeSignature.string()) {
+        var statusReadCount: Int = 0
+        private var completedHandler: AsyncOperationCompletedHandler<String>? = null
+
         override val id: UInt32
             get() = UInt32(1u)
 
         override val status: AsyncStatus
-            get() = statusState
+            get() {
+                statusReadCount += 1
+                return statusState
+            }
 
         override val errorCode: HResult
             get() = error
@@ -71,6 +82,15 @@ class IAsyncOperationAwaitTest {
 
         override fun close() = Unit
 
+        override fun put_Completed(handler: AsyncOperationCompletedHandler<String>) {
+            completedHandler = handler
+        }
+
         override fun getResults(): String = result
+
+        fun complete() {
+            statusState = AsyncStatus.Completed
+            completedHandler?.invoke(pointer, AsyncStatus.Completed)
+        }
     }
 }

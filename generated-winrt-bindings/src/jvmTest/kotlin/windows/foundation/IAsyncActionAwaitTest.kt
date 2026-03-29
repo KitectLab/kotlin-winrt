@@ -8,6 +8,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -23,17 +24,20 @@ class IAsyncActionAwaitTest {
     }
 
     @Test
-    fun await_polls_until_completed() = runBlocking {
+    fun await_resumes_from_completed_handler_without_polling() = runBlocking {
         val action = TestAsyncAction(statusState = AsyncStatus.Started)
 
         launch {
             delay(10)
-            action.statusState = AsyncStatus.Completed
+            action.complete()
         }
 
-        action.await()
+        withTimeout(1_000) {
+            action.await()
+        }
 
         assertTrue(action.resultsCalled)
+        assertTrue(action.statusReadCount <= 2)
     }
 
     @Test(expected = CancellationException::class)
@@ -58,12 +62,17 @@ class IAsyncActionAwaitTest {
     ) : IAsyncAction(ComPtr.NULL) {
         var resultsCalled: Boolean = false
         var cancelCalled: Boolean = false
+        var statusReadCount: Int = 0
+        private var completedHandler: AsyncActionCompletedHandler? = null
 
         override val id: UInt32
             get() = UInt32(1u)
 
         override val status: AsyncStatus
-            get() = statusState
+            get() {
+                statusReadCount += 1
+                return statusState
+            }
 
         override val errorCode: HResult
             get() = error
@@ -80,12 +89,19 @@ class IAsyncActionAwaitTest {
 
         override fun close() = Unit
 
-        override fun put_Completed(handler: AsyncActionCompletedHandler) = Unit
+        override fun put_Completed(handler: AsyncActionCompletedHandler) {
+            completedHandler = handler
+        }
 
         override fun get_Completed(): AsyncActionCompletedHandler = AsyncActionCompletedHandler(ComPtr.NULL)
 
         override fun getResults() {
             resultsCalled = true
+        }
+
+        fun complete() {
+            statusState = AsyncStatus.Completed
+            completedHandler?.invoke(this, AsyncStatus.Completed)
         }
     }
 }
