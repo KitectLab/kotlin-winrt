@@ -1984,6 +1984,55 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_scalar_runtime_properties_for_common_value_types() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "ScalarPropertyHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(name = "Flag", type = "Boolean", mutable = false, getterVtableIndex = 6),
+                                WinMdProperty(name = "StableId", type = "Guid", mutable = false, getterVtableIndex = 7),
+                                WinMdProperty(name = "CreatedAt", type = "DateTime", mutable = false, getterVtableIndex = 8),
+                                WinMdProperty(name = "Lifetime", type = "TimeSpan", mutable = false, getterVtableIndex = 9),
+                                WinMdProperty(name = "LastToken", type = "EventRegistrationToken", mutable = false, getterVtableIndex = 10),
+                                WinMdProperty(name = "Title", type = "String", mutable = true, getterVtableIndex = 11, setterVtableIndex = 12),
+                                WinMdProperty(name = "Count", type = "Int32", mutable = true, getterVtableIndex = 13, setterVtableIndex = 14),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/ScalarPropertyHost.kt" }.content
+
+        assertTrue(binding.contains("val flag: WinRtBoolean"))
+        assertTrue(binding.contains("return WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 6).getOrThrow())"))
+        assertTrue(binding.contains("val stableId: GuidValue"))
+        assertTrue(binding.contains("return GuidValue(PlatformComInterop.invokeGuidGetter(pointer, 7).getOrThrow().toString())"))
+        assertTrue(binding.contains("val createdAt: DateTime"))
+        assertTrue(binding.contains("return DateTime(PlatformComInterop.invokeInt64Getter(pointer, 8).getOrThrow())"))
+        assertTrue(binding.contains("val lifetime: TimeSpan"))
+        assertTrue(binding.contains("return TimeSpan(PlatformComInterop.invokeInt64Getter(pointer, 9).getOrThrow())"))
+        assertTrue(binding.contains("val lastToken: EventRegistrationToken"))
+        assertTrue(binding.contains("return EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer, 10).getOrThrow())"))
+        assertTrue(binding.contains("var title: String"))
+        assertTrue(binding.contains("PlatformComInterop.invokeHStringMethod(pointer, 11).getOrThrow()"))
+        assertTrue(binding.contains("it.toKotlinString()"))
+        assertTrue(binding.contains("PlatformComInterop.invokeStringSetter(pointer, 12, value).getOrThrow()"))
+        assertTrue(binding.contains("var count: Int32"))
+        assertTrue(binding.contains("return Int32(PlatformComInterop.invokeInt32Method(pointer, 13).getOrThrow())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt32Setter(pointer, 14, value.value).getOrThrow()"))
+    }
+
+    @Test
     fun generates_json_array_uint32_object_call_from_real_metadata_model() {
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",

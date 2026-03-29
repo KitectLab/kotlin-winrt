@@ -12,11 +12,10 @@ internal class RuntimePropertyRenderer(
     private val typeNameMapper: TypeNameMapper,
 ) {
     fun canRenderRuntimeProperty(property: WinMdProperty): Boolean {
-        return when (property.type) {
-            "Boolean", "Guid", "DateTime", "TimeSpan", "EventRegistrationToken", "IReference<String>", "String", "Int32" ->
-                property.getterVtableIndex != null || ((property.type == "String" || property.type == "Int32") && property.setterVtableIndex != null)
-            else -> false
-        }
+        val supportsGetter = scalarRuntimePropertyPlan(property.type) != null || property.type == "IReference<String>"
+        val supportsSetter = property.type == "String" || property.type == "Int32"
+        return (supportsGetter && property.getterVtableIndex != null) ||
+            (supportsSetter && property.setterVtableIndex != null)
     }
 
     fun renderBackingProperty(property: WinMdProperty, currentNamespace: String): PropertySpec {
@@ -44,52 +43,17 @@ internal class RuntimePropertyRenderer(
     private fun renderRuntimeGetter(property: WinMdProperty): FunSpec {
         val backingName = "backing_${property.name}"
         val builder = FunSpec.getterBuilder()
+        val scalarPlan = scalarRuntimePropertyPlan(property.type)
+        if (scalarPlan != null && property.getterVtableIndex != null) {
+            val getterVtableIndex = property.getterVtableIndex!!
+            return builder
+                .beginControlFlow("if (pointer.isNull)")
+                .addStatement("return %N.get()", backingName)
+                .endControlFlow()
+                .addStatement("return %L", scalarPlan.renderGetter(getterVtableIndex))
+                .build()
+        }
         return when {
-            property.type == "Boolean" && property.getterVtableIndex != null -> {
-                val getterVtableIndex = property.getterVtableIndex!!
-                builder
-                    .beginControlFlow("if (pointer.isNull)")
-                    .addStatement("return %N.get()", backingName)
-                    .endControlFlow()
-                    .addStatement("return %T(%T.invokeBooleanGetter(pointer, %L).getOrThrow())", PoetSymbols.winRtBooleanClass, PoetSymbols.platformComInteropClass, getterVtableIndex)
-                    .build()
-            }
-            property.type == "Guid" && property.getterVtableIndex != null -> {
-                val getterVtableIndex = property.getterVtableIndex!!
-                builder
-                    .beginControlFlow("if (pointer.isNull)")
-                    .addStatement("return %N.get()", backingName)
-                    .endControlFlow()
-                    .addStatement("return %T(%T.invokeGuidGetter(pointer, %L).getOrThrow().toString())", PoetSymbols.guidValueClass, PoetSymbols.platformComInteropClass, getterVtableIndex)
-                    .build()
-            }
-            property.type == "DateTime" && property.getterVtableIndex != null -> {
-                val getterVtableIndex = property.getterVtableIndex!!
-                builder
-                    .beginControlFlow("if (pointer.isNull)")
-                    .addStatement("return %N.get()", backingName)
-                    .endControlFlow()
-                    .addStatement("return %T(%T.invokeInt64Getter(pointer, %L).getOrThrow())", PoetSymbols.dateTimeClass, PoetSymbols.platformComInteropClass, getterVtableIndex)
-                    .build()
-            }
-            property.type == "TimeSpan" && property.getterVtableIndex != null -> {
-                val getterVtableIndex = property.getterVtableIndex!!
-                builder
-                    .beginControlFlow("if (pointer.isNull)")
-                    .addStatement("return %N.get()", backingName)
-                    .endControlFlow()
-                    .addStatement("return %T(%T.invokeInt64Getter(pointer, %L).getOrThrow())", PoetSymbols.timeSpanClass, PoetSymbols.platformComInteropClass, getterVtableIndex)
-                    .build()
-            }
-            property.type == "EventRegistrationToken" && property.getterVtableIndex != null -> {
-                val getterVtableIndex = property.getterVtableIndex!!
-                builder
-                    .beginControlFlow("if (pointer.isNull)")
-                    .addStatement("return %N.get()", backingName)
-                    .endControlFlow()
-                    .addStatement("return %T(%T.invokeInt64Getter(pointer, %L).getOrThrow())", PoetSymbols.eventRegistrationTokenClass, PoetSymbols.platformComInteropClass, getterVtableIndex)
-                    .build()
-            }
             property.type == "IReference<String>" && property.getterVtableIndex != null -> {
                 val getterVtableIndex = property.getterVtableIndex!!
                 builder
@@ -158,4 +122,65 @@ internal class RuntimePropertyRenderer(
             PoetSymbols.platformComInteropClass,
         )
     }
+
+    private fun scalarRuntimePropertyPlan(type: String): ScalarRuntimePropertyPlan? {
+        return when (type) {
+            "Boolean" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+                CodeBlock.of(
+                    "%T(%T.invokeBooleanGetter(pointer, %L).getOrThrow())",
+                    PoetSymbols.winRtBooleanClass,
+                    PoetSymbols.platformComInteropClass,
+                    getterVtableIndex,
+                )
+            }
+            "Guid" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+                CodeBlock.of(
+                    "%T(%T.invokeGuidGetter(pointer, %L).getOrThrow().toString())",
+                    PoetSymbols.guidValueClass,
+                    PoetSymbols.platformComInteropClass,
+                    getterVtableIndex,
+                )
+            }
+            "DateTime" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+                CodeBlock.of(
+                    "%T(%T.invokeInt64Getter(pointer, %L).getOrThrow())",
+                    PoetSymbols.dateTimeClass,
+                    PoetSymbols.platformComInteropClass,
+                    getterVtableIndex,
+                )
+            }
+            "TimeSpan" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+                CodeBlock.of(
+                    "%T(%T.invokeInt64Getter(pointer, %L).getOrThrow())",
+                    PoetSymbols.timeSpanClass,
+                    PoetSymbols.platformComInteropClass,
+                    getterVtableIndex,
+                )
+            }
+            "EventRegistrationToken" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+                CodeBlock.of(
+                    "%T(%T.invokeInt64Getter(pointer, %L).getOrThrow())",
+                    PoetSymbols.eventRegistrationTokenClass,
+                    PoetSymbols.platformComInteropClass,
+                    getterVtableIndex,
+                )
+            }
+            "String" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+                hStringToKotlinString("pointer", getterVtableIndex)
+            }
+            "Int32" -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+                CodeBlock.of(
+                    "%T(%T.invokeInt32Method(pointer, %L).getOrThrow())",
+                    PoetSymbols.int32Class,
+                    PoetSymbols.platformComInteropClass,
+                    getterVtableIndex,
+                )
+            }
+            else -> null
+        }
+    }
+
+    private data class ScalarRuntimePropertyPlan(
+        val renderGetter: (Int) -> CodeBlock,
+    )
 }
