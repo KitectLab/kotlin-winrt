@@ -326,12 +326,7 @@ internal class InterfaceTypeRenderer(
             method.returnType == "String" && method.parameters.isEmpty() && method.vtableIndex != null -> {
                 val vtableIndex = method.vtableIndex!!
                 builder
-                    .addStatement("val value = %T.invokeHStringMethod(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
-                    .beginControlFlow("return try")
-                    .addStatement("%T.toKotlin(value)", PoetSymbols.winRtStringsClass)
-                    .nextControlFlow("finally")
-                    .addStatement("%T.release(value)", PoetSymbols.winRtStringsClass)
-                    .endControlFlow()
+                    .addStatement("return kotlin.io.use(%T.invokeHStringMethod(pointer, %L).getOrThrow()) { it.toKotlinString() }", PoetSymbols.platformComInteropClass, vtableIndex)
                     .build()
             }
             method.returnType == "String" &&
@@ -342,16 +337,11 @@ internal class InterfaceTypeRenderer(
                 val vtableIndex = method.vtableIndex!!
                 builder
                     .addStatement(
-                        "val value = %T.invokeHStringMethodWithStringArg(pointer, %L, %N).getOrThrow()",
+                        "return kotlin.io.use(%T.invokeHStringMethodWithStringArg(pointer, %L, %N).getOrThrow()) { it.toKotlinString() }",
                         PoetSymbols.platformComInteropClass,
                         vtableIndex,
                         argumentName,
                     )
-                    .beginControlFlow("return try")
-                    .addStatement("%T.toKotlin(value)", PoetSymbols.winRtStringsClass)
-                    .nextControlFlow("finally")
-                    .addStatement("%T.release(value)", PoetSymbols.winRtStringsClass)
-                    .endControlFlow()
                     .build()
             }
             method.returnType == "String" &&
@@ -362,16 +352,11 @@ internal class InterfaceTypeRenderer(
                 val vtableIndex = method.vtableIndex!!
                 builder
                     .addStatement(
-                        "val value = %T.invokeHStringMethodWithInt32Arg(pointer, %L, %N.value).getOrThrow()",
+                        "return kotlin.io.use(%T.invokeHStringMethodWithInt32Arg(pointer, %L, %N.value).getOrThrow()) { it.toKotlinString() }",
                         PoetSymbols.platformComInteropClass,
                         vtableIndex,
                         argumentName,
                     )
-                    .beginControlFlow("return try")
-                    .addStatement("%T.toKotlin(value)", PoetSymbols.winRtStringsClass)
-                    .nextControlFlow("finally")
-                    .addStatement("%T.release(value)", PoetSymbols.winRtStringsClass)
-                    .endControlFlow()
                     .build()
             }
             method.returnType == "String" &&
@@ -382,16 +367,11 @@ internal class InterfaceTypeRenderer(
                 val vtableIndex = method.vtableIndex!!
                 builder
                     .addStatement(
-                        "val value = %T.invokeHStringMethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow()",
+                        "return kotlin.io.use(%T.invokeHStringMethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow()) { it.toKotlinString() }",
                         PoetSymbols.platformComInteropClass,
                         vtableIndex,
                         argumentName,
                     )
-                    .beginControlFlow("return try")
-                    .addStatement("%T.toKotlin(value)", PoetSymbols.winRtStringsClass)
-                    .nextControlFlow("finally")
-                    .addStatement("%T.release(value)", PoetSymbols.winRtStringsClass)
-                    .endControlFlow()
                     .build()
             }
             method.returnType == "Float64" && method.parameters.isEmpty() && method.vtableIndex != null -> {

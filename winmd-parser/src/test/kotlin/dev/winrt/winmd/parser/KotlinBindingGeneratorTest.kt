@@ -220,8 +220,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(windowBinding.contains("val stableId: GuidValue"))
         assertTrue(windowBinding.contains("return GuidValue(PlatformComInterop.invokeGuidGetter(pointer, 9).getOrThrow().toString())"))
         assertTrue(windowBinding.contains("val optionalTitle: IReference<String>"))
-        assertTrue(windowBinding.contains("val value = PlatformComInterop.invokeHStringMethod(pointer, 14).getOrThrow()"))
-        assertTrue(windowBinding.contains("WinRtStrings.toKotlin(value)"))
+        assertTrue(windowBinding.contains("PlatformComInterop.invokeHStringMethod(pointer, 14).getOrThrow().use { it.toKotlinString() }"))
         assertTrue(windowBinding.contains("companion object : WinRtRuntimeClassMetadata"))
         assertTrue(applicationBinding.contains("override val activationKind"))
         assertTrue(applicationBinding.contains("WinRtActivationKind.Factory"))
@@ -850,7 +849,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("Iterable<String> by object : Iterable<String>"))
         assertTrue(binding.contains("invokeHStringMethod("))
-        assertTrue(binding.contains("WinRtStrings.toKotlin(value)"))
+        assertTrue(binding.contains(".use { it.toKotlinString() }"))
     }
 
     @Test
@@ -887,7 +886,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("Iterator<String> by object : Iterator<String>"))
         assertTrue(binding.contains("invokeHStringMethod("))
-        assertTrue(binding.contains("WinRtStrings.release(value)"))
+        assertTrue(binding.contains(".use { it.toKotlinString() }"))
     }
 
     @Test

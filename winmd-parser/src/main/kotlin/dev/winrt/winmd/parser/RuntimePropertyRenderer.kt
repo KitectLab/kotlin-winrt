@@ -95,12 +95,7 @@ internal class RuntimePropertyRenderer(
                     .beginControlFlow("if (pointer.isNull)")
                     .addStatement("return %N.get()", backingName)
                     .endControlFlow()
-                    .addStatement("val value = %T.invokeHStringMethod(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, getterVtableIndex)
-                    .beginControlFlow("return try")
-                    .addStatement("%T(%T.toKotlin(value))", PoetSymbols.iReferenceClass.parameterizedBy(String::class.asTypeName()), PoetSymbols.winRtStringsClass)
-                    .nextControlFlow("finally")
-                    .addStatement("%T.release(value)", PoetSymbols.winRtStringsClass)
-                    .endControlFlow()
+                    .addStatement("return %T(kotlin.io.use(%T.invokeHStringMethod(pointer, %L).getOrThrow()) { it.toKotlinString() })", PoetSymbols.iReferenceClass.parameterizedBy(String::class.asTypeName()), PoetSymbols.platformComInteropClass, getterVtableIndex)
                     .build()
             }
             property.type == "String" && property.getterVtableIndex != null -> {
@@ -109,12 +104,7 @@ internal class RuntimePropertyRenderer(
                     .beginControlFlow("if (pointer.isNull)")
                     .addStatement("return %N.get()", backingName)
                     .endControlFlow()
-                    .addStatement("val value = %T.invokeHStringMethod(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, getterVtableIndex)
-                    .beginControlFlow("return try")
-                    .addStatement("%T.toKotlin(value)", PoetSymbols.winRtStringsClass)
-                    .nextControlFlow("finally")
-                    .addStatement("%T.release(value)", PoetSymbols.winRtStringsClass)
-                    .endControlFlow()
+                    .addStatement("return kotlin.io.use(%T.invokeHStringMethod(pointer, %L).getOrThrow()) { it.toKotlinString() }", PoetSymbols.platformComInteropClass, getterVtableIndex)
                     .build()
             }
             property.type == "Int32" && property.getterVtableIndex != null -> {

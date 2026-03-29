@@ -15,13 +15,11 @@ internal class KotlinCollectionProjectionMapper {
             return RuntimeCollectionProjection(
                 superinterface = PoetSymbols.listClass.parameterizedBy(String::class.asTypeName()),
                 delegateFactory = CodeBlock.of(
-                    "%T(sizeProvider = { %T(%T.invokeUInt32Method(pointer, 7).getOrThrow()).value.toInt() }, getter = { index -> val value = %T.invokeHStringMethodWithUInt32Arg(pointer, 6, index.toUInt()).getOrThrow(); try { %T.toKotlin(value) } finally { %T.release(value) } })",
+                    "%T(sizeProvider = { %T(%T.invokeUInt32Method(pointer, 7).getOrThrow()).value.toInt() }, getter = { index -> kotlin.io.use(%T.invokeHStringMethodWithUInt32Arg(pointer, 6, index.toUInt()).getOrThrow()) { it.toKotlinString() } })",
                     PoetSymbols.winRtListProjectionClass.parameterizedBy(String::class.asTypeName()),
                     PoetSymbols.uint32Class,
                     PoetSymbols.platformComInteropClass,
                     PoetSymbols.platformComInteropClass,
-                    PoetSymbols.winRtStringsClass,
-                    PoetSymbols.winRtStringsClass,
                 ),
                 winRtSizeSlot = 7,
                 extraFunctions = listOf(
@@ -29,14 +27,9 @@ internal class KotlinCollectionProjectionMapper {
                         .addParameter("index", PoetSymbols.uint32Class)
                         .returns(String::class)
                         .addStatement(
-                            "val value = %T.invokeHStringMethodWithUInt32Arg(pointer, 6, index.value).getOrThrow()",
+                            "return kotlin.io.use(%T.invokeHStringMethodWithUInt32Arg(pointer, 6, index.value).getOrThrow()) { it.toKotlinString() }",
                             PoetSymbols.platformComInteropClass,
                         )
-                        .beginControlFlow("return try")
-                        .addStatement("%T.toKotlin(value)", PoetSymbols.winRtStringsClass)
-                        .nextControlFlow("finally")
-                        .addStatement("%T.release(value)", PoetSymbols.winRtStringsClass)
-                        .endControlFlow()
                         .build(),
                 ),
             )
@@ -356,18 +349,11 @@ internal class KotlinCollectionProjectionMapper {
         return if (elementTypeName == String::class.asTypeName()) {
             CodeBlock.of(
                 "run {\n" +
-                    "        val value = %T.invokeHStringMethod(%L, %L).getOrThrow()\n" +
-                    "        try {\n" +
-                    "          %T.toKotlin(value)\n" +
-                    "        } finally {\n" +
-                    "          %T.release(value)\n" +
-                    "        }\n" +
+                    "        kotlin.io.use(%T.invokeHStringMethod(%L, %L).getOrThrow()) { it.toKotlinString() }\n" +
                     "      }",
                 PoetSymbols.platformComInteropClass,
                 pointerExpression,
                 slot,
-                PoetSymbols.winRtStringsClass,
-                PoetSymbols.winRtStringsClass,
             )
         } else if (elementTypeName == Boolean::class.asTypeName()) {
             CodeBlock.of(

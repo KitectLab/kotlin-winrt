@@ -126,15 +126,10 @@ internal class RuntimeMethodRenderer(
                 .addStatement("return %S", "")
                 .endControlFlow()
                 .addStatement(
-                    "val value = %T.invokeHStringMethod(pointer, %L).getOrThrow()",
+                    "return kotlin.io.use(%T.invokeHStringMethod(pointer, %L).getOrThrow()) { it.toKotlinString() }",
                     PoetSymbols.platformComInteropClass,
                     vtableIndex,
                 )
-                .beginControlFlow("return try")
-                .addStatement("%T.toKotlin(value)", PoetSymbols.winRtStringsClass)
-                .nextControlFlow("finally")
-                .addStatement("%T.release(value)", PoetSymbols.winRtStringsClass)
-                .endControlFlow()
                 .build()
         }
         if (supportsRuntimeObjectType(method.returnType) &&
