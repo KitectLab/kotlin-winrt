@@ -214,4 +214,27 @@ class CoroutineTasksTest {
         assertEquals(listOf("warmup", "done"), progressValues)
         assertEquals(AsyncStatus.Completed, operation.status)
     }
+
+    @Test
+    fun interface_metadata_descriptors_support_projected_types() = runBlocking {
+        val progressValues = mutableListOf<String>()
+
+        val operation = scope.asyncOperationWithProgress(
+            resultType = AsyncResultTypes.interfaceType(IStringable),
+            progressType = AsyncProgressTypes.interfaceType(IStringable),
+        ) { reportProgress ->
+            reportProgress(object : IStringable {
+                override fun toString(): String = "step"
+            })
+            object : IStringable {
+                override fun toString(): String = "done"
+            }
+        }
+
+        val result = operation.await { progressValues += it.toString() }
+
+        assertEquals("done", result.toString())
+        assertEquals(listOf("step"), progressValues)
+        assertEquals(AsyncStatus.Completed, operation.status)
+    }
 }

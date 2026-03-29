@@ -1,6 +1,7 @@
 package windows.foundation
 
 import dev.winrt.core.UInt32
+import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.WinRtTypeSignature
 
 public class AsyncResultType<TResult> internal constructor(
@@ -31,4 +32,7 @@ public object AsyncResultTypes {
 
   public val float64: AsyncResultType<Double> =
       AsyncResultType("f8")
+
+  public fun <TResult> interfaceType(metadata: WinRtInterfaceMetadata): AsyncResultType<TResult> =
+      AsyncResultType(WinRtTypeSignature.guid(metadata.iid.toString()))
 }

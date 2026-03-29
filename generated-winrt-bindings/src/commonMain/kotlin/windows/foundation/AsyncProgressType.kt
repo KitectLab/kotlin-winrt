@@ -2,6 +2,7 @@ package windows.foundation
 
 import dev.winrt.core.UInt32
 import dev.winrt.core.WinRtDelegateValueKind
+import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.WinRtTypeSignature
 
 public class AsyncProgressType<TProgress> internal constructor(
@@ -33,4 +34,10 @@ public object AsyncProgressTypes {
 
   public val float64: AsyncProgressType<Double> =
       AsyncProgressType("f8", WinRtDelegateValueKind.FLOAT64)
+
+  public fun <TProgress> interfaceType(metadata: WinRtInterfaceMetadata): AsyncProgressType<TProgress> =
+      AsyncProgressType(
+          signature = WinRtTypeSignature.guid(metadata.iid.toString()),
+          argumentKind = WinRtDelegateValueKind.OBJECT,
+      )
 }
