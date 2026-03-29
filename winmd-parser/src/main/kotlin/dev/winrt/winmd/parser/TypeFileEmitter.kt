@@ -30,7 +30,6 @@ internal class TypeFileEmitter(
         winRtProjectionTypeMapper = winRtProjectionTypeMapper,
         kotlinCollectionProjectionMapper = KotlinCollectionProjectionMapper(),
     )
-    private val runtimeProjectionRenderer = RuntimeProjectionRenderer()
     private val valueTypeRenderer = ValueTypeRenderer(typeNameMapper)
     private val runtimeTypeRenderer = RuntimeTypeRenderer(
         typeNameMapper,
