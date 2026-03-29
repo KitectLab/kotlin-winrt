@@ -193,4 +193,25 @@ class CoroutineTasksTest {
         assertEquals(UInt32(7u), result)
         assertEquals(AsyncStatus.Completed, operation.status)
     }
+
+    @Test
+    fun typed_result_and_progress_overloads_round_trip_together() = runBlocking {
+        val progressValues = mutableListOf<String>()
+
+        val operation = scope.asyncOperationWithProgress(
+            resultType = AsyncResultTypes.uint32,
+            progressType = AsyncProgressTypes.string,
+        ) { reportProgress ->
+            reportProgress("warmup")
+            delay(10)
+            reportProgress("done")
+            UInt32(9u)
+        }
+
+        val result = operation.await { progressValues += it }
+
+        assertEquals(UInt32(9u), result)
+        assertEquals(listOf("warmup", "done"), progressValues)
+        assertEquals(AsyncStatus.Completed, operation.status)
+    }
 }
