@@ -213,11 +213,17 @@ internal class RuntimeCompanionRenderer(
                             .build(),
                     )
                     .addFunction(
-                        FunSpec.builder("minusAssign")
-                            .addModifiers(KModifier.OPERATOR)
+                        FunSpec.builder("unsubscribe")
                             .addParameter("token", PoetSymbols.eventRegistrationTokenClass)
                             .addStatement("delegateHandles.remove(token)?.close()")
                             .addStatement("%T.invokeUnitMethodWithInt64Arg(staticsProvider().pointer, %L, token.value).getOrThrow()", PoetSymbols.platformComInteropClass, plan.removeVtableIndex)
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("minusAssign")
+                            .addModifiers(KModifier.OPERATOR)
+                            .addParameter("token", PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement("unsubscribe(token)")
                             .build(),
                     )
                     .build()
