@@ -469,6 +469,60 @@ class WinRtDelegateBridgeTest {
     }
 
     @Test
+    fun creates_three_parameter_boolean_delegate_handle() {
+        val iid = guidOf("ffffffff-1111-2222-3333-555555555555")
+        var capturedInt: Int? = null
+        var capturedString: String? = null
+        var capturedFlag: Boolean? = null
+        val hString = PlatformHStringBridge.create("beta")
+
+        try {
+            WinRtDelegateBridge.createBooleanDelegate(
+                iid = iid,
+                parameterKinds = listOf(
+                    WinRtDelegateValueKind.INT32,
+                    WinRtDelegateValueKind.STRING,
+                    WinRtDelegateValueKind.BOOLEAN,
+                ),
+            ) { args ->
+                capturedInt = args[0] as Int
+                capturedString = args[1] as String
+                capturedFlag = args[2] as Boolean
+                true
+            }.use { handle ->
+                val callbackPointer = MemorySegment.ofAddress(handle.pointer.value.rawValue)
+                val vtablePointer = callbackPointer.reinterpret(ValueLayout.ADDRESS.byteSize()).get(ValueLayout.ADDRESS, 0L)
+                val function = Linker.nativeLinker().downcallHandle(
+                    vtablePointer.reinterpret(ValueLayout.ADDRESS.byteSize() * 4).getAtIndex(ValueLayout.ADDRESS, 3),
+                    FunctionDescriptor.of(
+                        ValueLayout.JAVA_INT,
+                        ValueLayout.ADDRESS,
+                        ValueLayout.JAVA_INT,
+                        ValueLayout.ADDRESS,
+                        ValueLayout.JAVA_INT,
+                        ValueLayout.ADDRESS,
+                    ),
+                )
+
+                val result = Arena.ofConfined().use { arena ->
+                    val out = arena.allocate(ValueLayout.JAVA_INT)
+                    val hresult = function.invokeWithArguments(callbackPointer, 7, MemorySegment.ofAddress(hString.raw), 1, out) as Int
+                    assertEquals(0, hresult)
+                    out.get(ValueLayout.JAVA_INT, 0L)
+                }
+
+                assertEquals(7, capturedInt)
+                assertEquals("beta", capturedString)
+                assertEquals(true, capturedFlag)
+                assertEquals(1, result)
+                assertFalse(handle.pointer.isNull)
+            }
+        } finally {
+            PlatformHStringBridge.release(hString)
+        }
+    }
+
+    @Test
     fun creates_float32_arg_unit_delegate_handle() {
         val iid = guidOf("ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee")
         var captured: Float? = null
