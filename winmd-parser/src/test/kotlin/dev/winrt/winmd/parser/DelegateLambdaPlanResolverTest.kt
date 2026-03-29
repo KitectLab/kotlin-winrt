@@ -58,4 +58,32 @@ class DelegateLambdaPlanResolverTest {
         assertTrue(shape.parameterCarriers[0] is ParameterCarrier.ObjectWrapped)
         assertTrue(shape.parameterCarriers[1] is ParameterCarrier.Direct)
     }
+
+    @Test
+    fun normalizes_three_parameter_mixed_signature_before_bridge_selection() {
+        val shape = resolver.resolveSignatureShape(
+            invokeMethod = WinMdMethod(
+                name = "Invoke",
+                returnType = "Boolean",
+                parameters = listOf(
+                    WinMdParameter(name = "payload", type = "Example.Callbacks.Payload"),
+                    WinMdParameter(name = "count", type = "Int32"),
+                    WinMdParameter(name = "enabled", type = "Boolean"),
+                ),
+            ),
+            currentNamespace = "Example.Callbacks",
+            genericParameters = emptySet(),
+            supportsObjectType = { it == "Object" || it.contains('.') },
+        )
+
+        requireNotNull(shape)
+        assertEquals(ReturnCarrier.BOOLEAN, shape.returnCarrier)
+        assertEquals(
+            listOf("example.callbacks.Payload", "kotlin.Int", "kotlin.Boolean"),
+            shape.lambdaParameterTypes.map(TypeName::toString),
+        )
+        assertTrue(shape.parameterCarriers[0] is ParameterCarrier.ObjectWrapped)
+        assertTrue(shape.parameterCarriers[1] is ParameterCarrier.Direct)
+        assertTrue(shape.parameterCarriers[2] is ParameterCarrier.Direct)
+    }
 }

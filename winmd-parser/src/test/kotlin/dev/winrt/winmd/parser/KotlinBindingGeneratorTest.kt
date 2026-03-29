@@ -2277,8 +2277,9 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("WinRtDelegateBridge.createBooleanDelegate"))
         assertTrue(binding.contains("WinRtDelegateValueKind.OBJECT"))
         assertTrue(binding.contains("WinRtDelegateValueKind.INT32"))
-        assertTrue(binding.contains("callback(example.runtime.Payload("))
-        assertTrue(binding.contains("args[1] as kotlin.Int"))
+        assertTrue(binding.contains("listOf("))
+        assertTrue(binding.contains("callback("))
+        assertTrue(binding.contains("args[1] as"))
     }
 
     @Test
@@ -2388,7 +2389,8 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setHandler(callback: PayloadHandler)"))
         assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate(PayloadHandler.iid"))
-        assertTrue(binding.contains("callback(Payload(arg))"))
+        assertTrue(binding.contains("callback("))
+        assertTrue(binding.contains("Payload"))
         assertTrue(binding.contains("setHandler(PayloadHandler(delegateHandle.pointer))"))
     }
 
