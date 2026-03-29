@@ -3,12 +3,12 @@ package windows.foundation.collections
 import dev.winrt.core.UInt32
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
-import kotlin.collections.AbstractList
+import dev.winrt.projection.WinRtListProjection
 import kotlin.io.use
 
 public open class StringVectorView(
   pointer: ComPtr,
-) : AbstractList<String>() {
+) : List<String> by createListDelegate(pointer) {
   public val pointer: ComPtr = pointer
 
   public val winRtSize: UInt32
@@ -20,8 +20,17 @@ public open class StringVectorView(
     }
   }
 
-  override val size: Int
-    get() = winRtSize.value.toInt()
-
-  override fun get(index: Int): String = getAt(UInt32(index.toUInt()))
+  public companion object {
+    private fun createListDelegate(pointer: ComPtr): List<String> =
+        WinRtListProjection(
+            sizeProvider = {
+              UInt32(PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow()).value.toInt()
+            },
+            getter = { index ->
+              PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 6, index.toUInt()).getOrThrow().use {
+                it.toKotlinString()
+              }
+            },
+        )
+  }
 }
