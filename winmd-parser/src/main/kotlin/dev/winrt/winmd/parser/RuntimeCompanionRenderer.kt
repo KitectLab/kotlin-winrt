@@ -8,6 +8,7 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asTypeName
+import com.squareup.kotlinpoet.ParameterSpec
 import dev.winrt.winmd.plugin.WinMdActivationKind
 import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdProperty
@@ -18,6 +19,7 @@ internal class RuntimeCompanionRenderer(
     private val typeNameMapper: TypeNameMapper,
     private val delegateLambdaPlanResolver: DelegateLambdaPlanResolver,
     private val winRtSignatureMapper: WinRtSignatureMapper,
+    private val asyncMethodRuleRegistry: AsyncMethodRuleRegistry,
     private val winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     private val kotlinCollectionProjectionMapper: KotlinCollectionProjectionMapper,
 ) {
@@ -77,6 +79,7 @@ internal class RuntimeCompanionRenderer(
             .filterNot { method -> isGetterLike(method) || isSetterLike(method) }
             .forEach { method ->
                 members += renderForwardingMethod(method, type.namespace)
+                renderForwardingAsyncAwaitMethod(method, type.namespace)?.let(members::add)
                 renderForwardingLambdaOverload(method, type.namespace)?.let(members::add)
             }
         synthesizeGetterProperties(staticsType.methods, declaredPropertyNames, type.namespace).forEach(members::add)
@@ -125,6 +128,34 @@ internal class RuntimeCompanionRenderer(
                 method.parameters.joinToString(", ") { it.name },
             )
         }
+        return builder.build()
+    }
+
+    private fun renderForwardingAsyncAwaitMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
+        val asyncPlan = asyncMethodRuleRegistry.plan(method, currentNamespace) ?: return null
+        val baseFunctionName = method.name.replaceFirstChar { it.lowercase() }
+        val parameterSpecs = method.parameters.map { parameter ->
+            ParameterSpec.builder(parameter.name, exposedTypeName(parameter.type, currentNamespace)).build()
+        }
+        val invocation = buildString {
+            append("statics.")
+            append(baseFunctionName)
+            append('(')
+            append(parameterSpecs.joinToString(", ") { it.name })
+            append(')')
+        }
+        val builder = FunSpec.builder("${baseFunctionName}Await")
+            .addModifiers(KModifier.SUSPEND)
+            .returns(asyncPlan.awaitReturnType)
+            .addParameters(parameterSpecs)
+        asyncPlan.progressLambdaType?.let { progressLambdaType ->
+            builder.addParameter(
+                ParameterSpec.builder("onProgress", progressLambdaType)
+                    .defaultValue("{ _ -> }")
+                    .build(),
+            )
+            builder.addStatement("return %L.%M(onProgress = onProgress)", invocation, PoetSymbols.awaitMember)
+        } ?: builder.addStatement("return %L.%M()", invocation, PoetSymbols.awaitMember)
         return builder.build()
     }
 

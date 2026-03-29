@@ -34,6 +34,7 @@ internal class TypeFileEmitter(
         typeNameMapper = typeNameMapper,
         delegateLambdaPlanResolver = delegateLambdaPlanResolver,
         winRtSignatureMapper = winRtSignatureMapper,
+        asyncMethodRuleRegistry = asyncMethodRuleRegistry,
         winRtProjectionTypeMapper = winRtProjectionTypeMapper,
         kotlinCollectionProjectionMapper = KotlinCollectionProjectionMapper(),
     )

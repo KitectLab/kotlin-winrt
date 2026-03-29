@@ -5171,4 +5171,70 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("suspend fun downloadAsyncAwait(name: String, onProgress: (UInt32) -> Unit = { _ -> })"))
         assertTrue(runtimeBinding.contains("downloadAsync(name).await(onProgress = onProgress)"))
     }
+
+    @Test
+    fun generates_suspend_async_static_method_projections() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncAction",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "5a648006-843a-4da9-865b-9d26e5dfad7b",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "fcdcf02c-e5d8-4478-915a-4d90b74b83a5",
+                            genericParameters = listOf("TResult"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Async",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "AsyncStaticsSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IAsyncStaticsSourceStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "99999999-8888-7777-6666-555555555555",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "LoadAsync",
+                                    returnType = "Windows.Foundation.IAsyncAction",
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Async/AsyncStaticsSource.kt" }.content
+
+        assertTrue(binding.contains("fun loadAsync(): IAsyncAction"))
+        assertTrue(binding.contains("suspend fun loadAsyncAwait()"))
+        assertTrue(binding.contains("statics.loadAsync().await()"))
+        assertTrue(binding.contains("fun readAsync(name: String): IAsyncOperation<String>"))
+        assertTrue(binding.contains("suspend fun readAsyncAwait(name: String): String"))
+        assertTrue(binding.contains("statics.readAsync(name).await()"))
+    }
 }
