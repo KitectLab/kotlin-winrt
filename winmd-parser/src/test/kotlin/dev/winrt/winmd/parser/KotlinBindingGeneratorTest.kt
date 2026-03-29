@@ -2136,6 +2136,68 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_runtime_methods_with_uint32_arguments_for_scalar_and_object_returns() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Payload",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "UInt32ArgumentHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Lookup",
+                                    returnType = "Example.Runtime.Payload",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter(name = "index", type = "UInt32")),
+                                ),
+                                WinMdMethod(
+                                    name = "Measure",
+                                    returnType = "Float64",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter(name = "index", type = "UInt32")),
+                                ),
+                                WinMdMethod(
+                                    name = "HasIndex",
+                                    returnType = "Boolean",
+                                    vtableIndex = 8,
+                                    parameters = listOf(WinMdParameter(name = "index", type = "UInt32")),
+                                ),
+                                WinMdMethod(
+                                    name = "Render",
+                                    returnType = "String",
+                                    vtableIndex = 9,
+                                    parameters = listOf(WinMdParameter(name = "index", type = "UInt32")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/UInt32ArgumentHost.kt" }.content
+
+        assertTrue(binding.contains("fun lookup(index: UInt32): Payload"))
+        assertTrue(binding.contains("invokeObjectMethodWithUInt32Arg(pointer, 6,"))
+        assertTrue(binding.contains("fun measure(index: UInt32): Float64"))
+        assertTrue(binding.contains("invokeFloat64MethodWithUInt32Arg(pointer, 7,"))
+        assertTrue(binding.contains("fun hasIndex(index: UInt32): WinRtBoolean"))
+        assertTrue(binding.contains("invokeBooleanMethodWithUInt32Arg(pointer, 8,"))
+        assertTrue(binding.contains("fun render(index: UInt32): String"))
+        assertTrue(binding.contains("invokeHStringMethodWithUInt32Arg(pointer, 9,"))
+    }
+
+    @Test
     fun generates_json_array_uint32_object_call_from_real_metadata_model() {
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",
