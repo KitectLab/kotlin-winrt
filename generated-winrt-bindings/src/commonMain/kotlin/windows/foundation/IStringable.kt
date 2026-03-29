@@ -11,17 +11,8 @@ import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
 
-public open class IStringable(
-  pointer: ComPtr,
-) : WinRtInterfaceProjection(pointer) {
-  override fun toString(): String {
-    val value = PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()
-    return try {
-      WinRtStrings.toKotlin(value)
-    } finally {
-      WinRtStrings.release(value)
-    }
-  }
+public interface IStringable {
+  public override fun toString(): String
 
   public companion object : WinRtInterfaceMetadata {
     override val qualifiedName: String = "Windows.Foundation.IStringable"
@@ -31,6 +22,19 @@ public open class IStringable(
     override val iid: Guid = guidOf("96369f54-8eb6-48f0-abce-c1b211e627c3")
 
     public fun from(inspectable: Inspectable): IStringable = inspectable.projectInterface(this,
-        ::IStringable)
+        ::IStringableProjection)
+  }
+}
+
+private class IStringableProjection(
+  pointer: ComPtr,
+) : WinRtInterfaceProjection(pointer), IStringable {
+  override fun toString(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()
+    return try {
+      WinRtStrings.toKotlin(value)
+    } finally {
+      WinRtStrings.release(value)
+    }
   }
 }
