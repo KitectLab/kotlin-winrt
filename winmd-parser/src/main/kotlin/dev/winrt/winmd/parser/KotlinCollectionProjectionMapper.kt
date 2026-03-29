@@ -34,9 +34,9 @@ internal class KotlinCollectionProjectionMapper {
                         .getter(
                             FunSpec.getterBuilder()
                                 .addStatement(
-                                    "return %T(%T.invokeUInt32Method(pointer, 7).getOrThrow()).value.toInt()",
+                                    "return %T(%L).value.toInt()",
                                     PoetSymbols.uint32Class,
-                                    PoetSymbols.platformComInteropClass,
+                                    AbiCallCatalog.uint32Method(7),
                                 )
                                 .build(),
                         )
@@ -47,8 +47,8 @@ internal class KotlinCollectionProjectionMapper {
                         .addParameter("index", PoetSymbols.uint32Class)
                         .returns(String::class)
                         .addStatement(
-                            "return kotlin.io.use(%T.invokeHStringMethodWithUInt32Arg(pointer, 6, index.value).getOrThrow()) { it.toKotlinString() }",
-                            PoetSymbols.platformComInteropClass,
+                            "return %L",
+                            HStringSupport.toKotlinStringWithUInt32Arg("pointer", 6, "index.value"),
                         )
                         .build(),
                 ),
@@ -128,14 +128,14 @@ internal class KotlinCollectionProjectionMapper {
             return InterfaceCollectionProjection(
                 superinterface = PoetSymbols.mutableListClass.parameterizedBy(PoetSymbols.inspectableClass),
                 delegateFactory = CodeBlock.of(
-                    "%T(sizeProvider = { %T(%T.invokeUInt32Method(pointer, 8).getOrThrow()).value.toInt() }, getter = { index -> %T(%T.invokeObjectMethodWithUInt32Arg(pointer, 7, index.toUInt()).getOrThrow()) }, append = { value -> %T.invokeObjectSetter(pointer, 14, value.pointer).getOrThrow() }, clearer = { %T.invokeUnitMethod(pointer, 16).getOrThrow() })",
+                    "%T(sizeProvider = { %T(%L).value.toInt() }, getter = { index -> %T(%L) }, append = { value -> %L }, clearer = { %L })",
                     PoetSymbols.winRtMutableListProjectionClass.parameterizedBy(PoetSymbols.inspectableClass),
                     PoetSymbols.uint32Class,
-                    PoetSymbols.platformComInteropClass,
+                    AbiCallCatalog.uint32Method(8),
                     PoetSymbols.inspectableClass,
-                    PoetSymbols.platformComInteropClass,
-                    PoetSymbols.platformComInteropClass,
-                    PoetSymbols.platformComInteropClass,
+                    AbiCallCatalog.objectMethodWithUInt32(7, "index.toUInt()"),
+                    AbiCallCatalog.objectSetter(14, "value"),
+                    AbiCallCatalog.unitMethod(16),
                 ),
                 winRtSizeSlot = 8,
             )
@@ -144,12 +144,12 @@ internal class KotlinCollectionProjectionMapper {
             return InterfaceCollectionProjection(
                 superinterface = PoetSymbols.listClass.parameterizedBy(PoetSymbols.inspectableClass),
                 delegateFactory = CodeBlock.of(
-                    "%T(sizeProvider = { %T(%T.invokeUInt32Method(pointer, 8).getOrThrow()).value.toInt() }, getter = { index -> %T(%T.invokeObjectMethodWithUInt32Arg(pointer, 7, index.toUInt()).getOrThrow()) })",
+                    "%T(sizeProvider = { %T(%L).value.toInt() }, getter = { index -> %T(%L) })",
                     PoetSymbols.winRtListProjectionClass.parameterizedBy(PoetSymbols.inspectableClass),
                     PoetSymbols.uint32Class,
-                    PoetSymbols.platformComInteropClass,
+                    AbiCallCatalog.uint32Method(8),
                     PoetSymbols.inspectableClass,
-                    PoetSymbols.platformComInteropClass,
+                    AbiCallCatalog.objectMethodWithUInt32(7, "index.toUInt()"),
                 ),
                 winRtSizeSlot = 8,
             )
@@ -162,10 +162,9 @@ internal class KotlinCollectionProjectionMapper {
             .getter(
                 FunSpec.getterBuilder()
                     .addStatement(
-                        "return %T(%T.invokeUInt32Method(pointer, %L).getOrThrow())",
+                        "return %T(%L)",
                         PoetSymbols.uint32Class,
-                        PoetSymbols.platformComInteropClass,
-                        slot,
+                        AbiCallCatalog.uint32Method(slot),
                     )
                     .build(),
             )
