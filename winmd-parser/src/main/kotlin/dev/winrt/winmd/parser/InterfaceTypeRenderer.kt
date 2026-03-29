@@ -22,6 +22,7 @@ internal class InterfaceTypeRenderer(
     private val delegateLambdaPlanResolver: DelegateLambdaPlanResolver,
     private val typeRegistry: TypeRegistry,
     private val winRtSignatureMapper: WinRtSignatureMapper,
+    private val asyncMethodProjectionPlanner: AsyncMethodProjectionPlanner,
     private val winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     private val kotlinCollectionProjectionMapper: KotlinCollectionProjectionMapper = KotlinCollectionProjectionMapper(),
 ) {
@@ -642,7 +643,7 @@ internal class InterfaceTypeRenderer(
         if (!isKotlinIdentifier(method.name) || !supportsInterfaceMethod(method, currentNamespace, genericParameters)) {
             return null
         }
-        val awaitReturnType = asyncAwaitReturnType(method.returnType, currentNamespace, genericParameters) ?: return null
+        val awaitReturnType = asyncMethodProjectionPlanner.awaitReturnType(method.returnType, currentNamespace, genericParameters) ?: return null
         val parameterSpecs = method.parameters.map { parameter ->
             ParameterSpec.builder(
                 parameter.name.replaceFirstChar(Char::lowercase),
@@ -659,7 +660,7 @@ internal class InterfaceTypeRenderer(
             .addModifiers(KModifier.SUSPEND)
             .returns(awaitReturnType)
             .addParameters(parameterSpecs)
-        asyncProgressLambdaType(method.returnType, currentNamespace, genericParameters)?.let { progressLambdaType ->
+        asyncMethodProjectionPlanner.progressLambdaType(method.returnType, currentNamespace, genericParameters)?.let { progressLambdaType ->
             builder.addParameter(
                 ParameterSpec.builder("onProgress", progressLambdaType)
                     .defaultValue("{ _ -> }")
@@ -670,32 +671,12 @@ internal class InterfaceTypeRenderer(
         return builder.build()
     }
 
-    private fun asyncAwaitReturnType(
-        returnType: String,
-        currentNamespace: String,
-        genericParameters: Set<String>,
-    ): TypeName? {
-        return when {
-            returnType == "Windows.Foundation.IAsyncAction" -> Unit::class.asTypeName()
-            returnType.startsWith("Windows.Foundation.IAsyncOperation<") ->
-                (typeNameMapper.mapTypeName(returnType, currentNamespace, genericParameters) as? com.squareup.kotlinpoet.ParameterizedTypeName)
-                    ?.typeArguments
-                    ?.singleOrNull()
-            returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") -> Unit::class.asTypeName()
-            returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") ->
-                (typeNameMapper.mapTypeName(returnType, currentNamespace, genericParameters) as? com.squareup.kotlinpoet.ParameterizedTypeName)
-                    ?.typeArguments
-                    ?.firstOrNull()
-            else -> null
-        }
-    }
-
     private fun renderAsyncTaskMethod(
         method: WinMdMethod,
         currentNamespace: String,
         genericParameters: Set<String>,
     ): FunSpec? {
-        if (method.vtableIndex == null || !isAsyncTaskReturn(method.returnType, currentNamespace)) {
+        if (method.vtableIndex == null || !asyncMethodProjectionPlanner.isAsyncTaskReturn(method.returnType, currentNamespace)) {
             return null
         }
         val functionName = kotlinMethodName(method.name)
@@ -721,11 +702,11 @@ internal class InterfaceTypeRenderer(
             method.returnType == "Windows.Foundation.IAsyncAction" ->
                 builder.addStatement("return %T($invocation)", PoetSymbols.asyncActionClass, PoetSymbols.platformComInteropClass)
             method.returnType.startsWith("Windows.Foundation.IAsyncOperation<") -> {
-                val resultSignature = asyncOperationResultSignature(method.returnType, currentNamespace) ?: return null
+                val resultSignature = asyncMethodProjectionPlanner.asyncOperationResultSignature(method.returnType, currentNamespace) ?: return null
                 builder.addStatement("return %T($invocation, %S)", returnType, PoetSymbols.platformComInteropClass, resultSignature)
             }
             method.returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") -> {
-                val progressPlan = asyncProgressPlan(method.returnType, currentNamespace) ?: return null
+                val progressPlan = asyncMethodProjectionPlanner.asyncProgressPlan(method.returnType, currentNamespace) ?: return null
                 builder.addStatement(
                     "return %T($invocation, %S, %T.%L, %L)",
                     returnType,
@@ -737,7 +718,7 @@ internal class InterfaceTypeRenderer(
                 )
             }
             method.returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") -> {
-                val progressPlan = asyncOperationWithProgressPlan(method.returnType, currentNamespace) ?: return null
+                val progressPlan = asyncMethodProjectionPlanner.asyncOperationWithProgressPlan(method.returnType, currentNamespace) ?: return null
                 builder.addStatement(
                     "return %T($invocation, %S, %S, %T.%L, %L)",
                     returnType,
@@ -752,118 +733,6 @@ internal class InterfaceTypeRenderer(
         }
         return builder.build()
     }
-
-    private fun isAsyncTaskReturn(returnType: String, currentNamespace: String): Boolean {
-        return when {
-            returnType == "Windows.Foundation.IAsyncAction" -> true
-            returnType.startsWith("Windows.Foundation.IAsyncOperation<") ->
-                asyncOperationResultSignature(returnType, currentNamespace) != null
-            returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") ->
-                asyncProgressPlan(returnType, currentNamespace) != null
-            returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") ->
-                asyncOperationWithProgressPlan(returnType, currentNamespace) != null
-            else -> false
-        }
-    }
-
-    private fun asyncOperationResultSignature(returnType: String, currentNamespace: String): String? {
-        if (!returnType.startsWith("Windows.Foundation.IAsyncOperation<") || !returnType.endsWith(">")) {
-            return null
-        }
-        val argument = returnType.substringAfter('<').substringBeforeLast('>')
-        return winRtSignatureMapper.signatureFor(argument, currentNamespace)
-    }
-
-    private fun asyncProgressLambdaType(
-        returnType: String,
-        currentNamespace: String,
-        genericParameters: Set<String>,
-    ): TypeName? {
-        val progressType = when {
-            returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") ->
-                returnType.substringAfter('<').substringBeforeLast('>')
-            returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") ->
-                splitGenericArguments(returnType.substringAfter('<').substringBeforeLast('>')).getOrNull(1)
-            else -> null
-        } ?: return null
-        return LambdaTypeName.get(
-            parameters = arrayOf(typeNameMapper.mapTypeName(progressType, currentNamespace, genericParameters)),
-            returnType = Unit::class.asTypeName(),
-        )
-    }
-
-    private fun asyncProgressPlan(returnType: String, currentNamespace: String): AsyncProgressPlan? {
-        if (!returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") || !returnType.endsWith(">")) {
-            return null
-        }
-        val progressType = returnType.substringAfter('<').substringBeforeLast('>')
-        return scalarAsyncProgressPlan(progressType, currentNamespace)
-    }
-
-    private fun asyncOperationWithProgressPlan(returnType: String, currentNamespace: String): AsyncOperationWithProgressPlan? {
-        if (!returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") || !returnType.endsWith(">")) {
-            return null
-        }
-        val arguments = splitGenericArguments(returnType.substringAfter('<').substringBeforeLast('>'))
-        if (arguments.size != 2) return null
-        val resultSignature = winRtSignatureMapper.signatureFor(arguments[0], currentNamespace)
-        val progressPlan = scalarAsyncProgressPlan(arguments[1], currentNamespace) ?: return null
-        return AsyncOperationWithProgressPlan(
-            resultSignature = resultSignature,
-            progressSignature = progressPlan.progressSignature,
-            valueKind = progressPlan.valueKind,
-            decodeLambda = progressPlan.decodeLambda,
-        )
-    }
-
-    private fun scalarAsyncProgressPlan(typeName: String, currentNamespace: String): AsyncProgressPlan? {
-        val signature = winRtSignatureMapper.signatureFor(typeName, currentNamespace)
-        return when (typeName) {
-            "String" -> AsyncProgressPlan(signature, "STRING", "{ it as String }")
-            "Boolean" -> AsyncProgressPlan(signature, "BOOLEAN", "{ it as Boolean }")
-            "Int32" -> AsyncProgressPlan(signature, "INT32", "{ it as Int }")
-            "UInt32" -> AsyncProgressPlan(signature, "UINT32", "{ it as UInt32 }")
-            "Int64" -> AsyncProgressPlan(signature, "INT64", "{ it as Long }")
-            "UInt64" -> AsyncProgressPlan(signature, "UINT64", "{ it as ULong }")
-            "Float32" -> AsyncProgressPlan(signature, "FLOAT32", "{ it as Float }")
-            "Float64" -> AsyncProgressPlan(signature, "FLOAT64", "{ it as Double }")
-            else -> null
-        }
-    }
-
-    private fun splitGenericArguments(source: String): List<String> {
-        if (source.isBlank()) {
-            return emptyList()
-        }
-        val arguments = mutableListOf<String>()
-        var depth = 0
-        var start = 0
-        source.forEachIndexed { index, char ->
-            when (char) {
-                '<' -> depth++
-                '>' -> depth--
-                ',' -> if (depth == 0) {
-                    arguments += source.substring(start, index).trim()
-                    start = index + 1
-                }
-            }
-        }
-        arguments += source.substring(start).trim()
-        return arguments
-    }
-
-    private data class AsyncProgressPlan(
-        val progressSignature: String,
-        val valueKind: String,
-        val decodeLambda: String,
-    )
-
-    private data class AsyncOperationWithProgressPlan(
-        val resultSignature: String,
-        val progressSignature: String,
-        val valueKind: String,
-        val decodeLambda: String,
-    )
 
     private fun renderLambdaOverload(
         method: WinMdMethod,
@@ -951,7 +820,7 @@ internal class InterfaceTypeRenderer(
         currentNamespace: String,
         genericParameters: Set<String>,
     ): Boolean {
-        return isAsyncTaskReturn(method.returnType, currentNamespace) ||
+        return asyncMethodProjectionPlanner.isAsyncTaskReturn(method.returnType, currentNamespace) ||
             plannedInterfaceMethod(method, currentNamespace, genericParameters) != null ||
             (method.returnType == "Int32" &&
                 method.parameters.isEmpty() &&

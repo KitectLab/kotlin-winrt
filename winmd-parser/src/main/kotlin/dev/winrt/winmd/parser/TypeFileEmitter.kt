@@ -11,17 +11,19 @@ internal class TypeFileEmitter(
     private val typeNameMapper = TypeNameMapper()
     private val delegateLambdaPlanResolver = DelegateLambdaPlanResolver(typeNameMapper)
     private val winRtSignatureMapper = WinRtSignatureMapper(typeRegistry)
+    private val asyncMethodProjectionPlanner = AsyncMethodProjectionPlanner(typeNameMapper, winRtSignatureMapper)
     private val winRtProjectionTypeMapper = WinRtProjectionTypeMapper()
     private val interfaceTypeRenderer = InterfaceTypeRenderer(
         typeNameMapper,
         delegateLambdaPlanResolver,
         typeRegistry,
         winRtSignatureMapper,
+        asyncMethodProjectionPlanner,
         winRtProjectionTypeMapper,
     )
     private val delegateTypeRenderer = DelegateTypeRenderer(typeNameMapper)
     private val runtimePropertyRenderer = RuntimePropertyRenderer(typeNameMapper)
-    private val runtimeMethodRenderer = RuntimeMethodRenderer(typeNameMapper, delegateLambdaPlanResolver, typeRegistry, winRtSignatureMapper)
+    private val runtimeMethodRenderer = RuntimeMethodRenderer(typeNameMapper, delegateLambdaPlanResolver, typeRegistry, asyncMethodProjectionPlanner)
     private val runtimeCompanionRenderer = RuntimeCompanionRenderer(
         typeRegistry = typeRegistry,
         typeNameMapper = typeNameMapper,

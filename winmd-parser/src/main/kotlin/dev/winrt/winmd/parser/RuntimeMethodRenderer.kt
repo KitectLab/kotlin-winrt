@@ -11,7 +11,7 @@ internal class RuntimeMethodRenderer(
     private val typeNameMapper: TypeNameMapper,
     private val delegateLambdaPlanResolver: DelegateLambdaPlanResolver,
     private val typeRegistry: TypeRegistry,
-    private val winRtSignatureMapper: WinRtSignatureMapper,
+    private val asyncMethodProjectionPlanner: AsyncMethodProjectionPlanner,
 ) {
     fun renderRuntimeMethods(method: WinMdMethod, currentNamespace: String): List<FunSpec> {
         return listOfNotNull(
@@ -21,7 +21,7 @@ internal class RuntimeMethodRenderer(
     }
 
     fun canRenderRuntimeMethod(method: WinMdMethod): Boolean {
-        return isAsyncTaskReturn(method.returnType) || runtimeMethodPlan(method) != null
+        return asyncMethodProjectionPlanner.isAsyncTaskReturn(method.returnType, "") || runtimeMethodPlan(method) != null
     }
 
     fun renderRuntimeMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
@@ -50,7 +50,7 @@ internal class RuntimeMethodRenderer(
     }
 
     private fun renderAsyncTaskMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
-        if (!isKotlinIdentifier(method.name) || method.vtableIndex == null || !isAsyncTaskReturn(method.returnType)) {
+        if (!isKotlinIdentifier(method.name) || method.vtableIndex == null || !asyncMethodProjectionPlanner.isAsyncTaskReturn(method.returnType, currentNamespace)) {
             return null
         }
         val functionName = method.name.replaceFirstChar(Char::lowercase)
@@ -74,7 +74,7 @@ internal class RuntimeMethodRenderer(
             method.returnType == "Windows.Foundation.IAsyncAction" ->
                 builder.addStatement("return %T($invocation)", PoetSymbols.asyncActionClass, PoetSymbols.platformComInteropClass)
             method.returnType.startsWith("Windows.Foundation.IAsyncOperation<") -> {
-                val resultSignature = asyncOperationResultSignature(method.returnType, currentNamespace) ?: return null
+                val resultSignature = asyncMethodProjectionPlanner.asyncOperationResultSignature(method.returnType, currentNamespace) ?: return null
                 builder.addStatement("return %T($invocation, %S)", returnType, PoetSymbols.platformComInteropClass, resultSignature)
             }
         }
@@ -85,7 +85,7 @@ internal class RuntimeMethodRenderer(
         if (!canRenderRuntimeMethod(method)) {
             return null
         }
-        val awaitReturnType = asyncAwaitReturnType(method.returnType, currentNamespace) ?: return null
+        val awaitReturnType = asyncMethodProjectionPlanner.awaitReturnType(method.returnType, currentNamespace) ?: return null
         val baseFunctionName = if (method.name == "ToString" && method.returnType == "String" && method.parameters.isEmpty()) {
             "toString"
         } else {
@@ -105,7 +105,7 @@ internal class RuntimeMethodRenderer(
             append(parameterNames.joinToString(", "))
             append(')')
         }
-        asyncProgressLambdaType(method.returnType, currentNamespace)?.let { progressLambdaType ->
+        asyncMethodProjectionPlanner.progressLambdaType(method.returnType, currentNamespace)?.let { progressLambdaType ->
             builder.addParameter(
                 com.squareup.kotlinpoet.ParameterSpec.builder("onProgress", progressLambdaType)
                     .defaultValue("{ _ -> }")
@@ -116,71 +116,6 @@ internal class RuntimeMethodRenderer(
         return builder.build()
     }
 
-    private fun asyncAwaitReturnType(returnType: String, currentNamespace: String): com.squareup.kotlinpoet.TypeName? {
-        return when {
-            returnType == "Windows.Foundation.IAsyncAction" -> Unit::class.asTypeName()
-            returnType.startsWith("Windows.Foundation.IAsyncOperation<") ->
-                (typeNameMapper.mapTypeName(returnType, currentNamespace) as? com.squareup.kotlinpoet.ParameterizedTypeName)
-                    ?.typeArguments
-                    ?.singleOrNull()
-            returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") -> Unit::class.asTypeName()
-            returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") ->
-                (typeNameMapper.mapTypeName(returnType, currentNamespace) as? com.squareup.kotlinpoet.ParameterizedTypeName)
-                    ?.typeArguments
-                    ?.firstOrNull()
-            else -> null
-        }
-    }
-
-    private fun isAsyncTaskReturn(returnType: String): Boolean {
-        return returnType == "Windows.Foundation.IAsyncAction" ||
-            returnType.startsWith("Windows.Foundation.IAsyncOperation<") ||
-            returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") ||
-            returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<")
-    }
-
-    private fun asyncOperationResultSignature(returnType: String, currentNamespace: String): String? {
-        if (!returnType.startsWith("Windows.Foundation.IAsyncOperation<") || !returnType.endsWith(">")) {
-            return null
-        }
-        val argument = returnType.substringAfter('<').substringBeforeLast('>')
-        return winRtSignatureMapper.signatureFor(argument, currentNamespace)
-    }
-
-    private fun asyncProgressLambdaType(returnType: String, currentNamespace: String): com.squareup.kotlinpoet.TypeName? {
-        val progressType = when {
-            returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") ->
-                returnType.substringAfter('<').substringBeforeLast('>')
-            returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") ->
-                splitGenericArguments(returnType.substringAfter('<').substringBeforeLast('>')).getOrNull(1)
-            else -> null
-        } ?: return null
-        return LambdaTypeName.get(
-            parameters = arrayOf(typeNameMapper.mapTypeName(progressType, currentNamespace)),
-            returnType = Unit::class.asTypeName(),
-        )
-    }
-
-    private fun splitGenericArguments(source: String): List<String> {
-        if (source.isBlank()) {
-            return emptyList()
-        }
-        val arguments = mutableListOf<String>()
-        var depth = 0
-        var start = 0
-        source.forEachIndexed { index, char ->
-            when (char) {
-                '<' -> depth++
-                '>' -> depth--
-                ',' -> if (depth == 0) {
-                    arguments += source.substring(start, index).trim()
-                    start = index + 1
-                }
-            }
-        }
-        arguments += source.substring(start).trim()
-        return arguments
-    }
 
     private fun bindParameters(
         builder: FunSpec.Builder,
