@@ -205,7 +205,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(applicationBinding.contains("return UInt32(PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow())"))
         assertTrue(windowBinding.contains("open class Window"))
         assertTrue(windowBinding.contains("PlatformComInterop.invokeUnitMethod(pointer, 13).getOrThrow()"))
-        assertTrue(windowBinding.contains("fun asIStringable(): IStringable = IStringable.from(this)"))
+        assertFalse(windowBinding.contains("fun asIStringable(): IStringable = IStringable.from(this)"))
         assertTrue(windowBinding.contains("var title: String"))
         assertTrue(windowBinding.contains("PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()"))
         assertTrue(windowBinding.contains("PlatformComInterop.invokeStringSetter(pointer, 7, value).getOrThrow()"))

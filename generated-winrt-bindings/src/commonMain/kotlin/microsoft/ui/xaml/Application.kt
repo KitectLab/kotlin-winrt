@@ -10,9 +10,8 @@ import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
-import windows.foundation.IStringable
 
-open class Application(pointer: ComPtr) : Inspectable(pointer) {
+open class Application(pointer: ComPtr) : windows.foundation.IStringable(pointer) {
     constructor() : this(Companion.activate().pointer)
 
     fun start() {
@@ -24,8 +23,6 @@ open class Application(pointer: ComPtr) : Inspectable(pointer) {
         if (pointer.isNull) return UInt32(0u)
         return UInt32(PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow())
     }
-
-    fun asIStringable(): IStringable = IStringable.from(this)
 
     companion object : WinRtRuntimeClassMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Application"

@@ -2,9 +2,7 @@ package microsoft.ui.xaml
 
 import dev.winrt.core.DateTime
 import dev.winrt.core.EventRegistrationToken
-import dev.winrt.core.GuidValue
 import dev.winrt.core.IReference
-import dev.winrt.core.Inspectable
 import dev.winrt.core.RuntimeClassId
 import dev.winrt.core.RuntimeProperty
 import dev.winrt.core.TimeSpan
@@ -12,88 +10,64 @@ import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
-import dev.winrt.core.WinRtStrings
 import dev.winrt.kom.ComPtr
-import dev.winrt.kom.PlatformComInterop
-import windows.foundation.IStringable
 
-open class Window(pointer: ComPtr) : Inspectable(pointer) {
+open class Window(pointer: ComPtr) : IWindow(pointer) {
     constructor() : this(Companion.activateInstance().pointer)
 
-    private val backingTitle = RuntimeProperty("")
     private val backingIsVisible = RuntimeProperty(WinRtBoolean.FALSE)
     private val backingCreatedAt = RuntimeProperty(DateTime(0))
     private val backingLifetime = RuntimeProperty(TimeSpan(0))
     private val backingLastToken = RuntimeProperty(EventRegistrationToken(0))
-    private val backingStableId = RuntimeProperty(GuidValue(""))
     private val backingOptionalTitle = RuntimeProperty(IReference(""))
-
-    var title: String
-        get() {
-            if (pointer.isNull) return backingTitle.get()
-            return asIWindow().title
-        }
-        set(value) {
-            if (pointer.isNull) {
-                backingTitle.set(value)
-                return
-            }
-            asIWindow().title = value
-        }
 
     val isVisible: WinRtBoolean
         get() {
             if (pointer.isNull) return backingIsVisible.get()
-            return WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 8).getOrThrow())
+            return WinRtBoolean(dev.winrt.kom.PlatformComInterop.invokeBooleanGetter(pointer, 8).getOrThrow())
         }
 
     val createdAt: DateTime
         get() {
             if (pointer.isNull) return backingCreatedAt.get()
-            return DateTime(PlatformComInterop.invokeInt64Getter(pointer, 10).getOrThrow())
+            return DateTime(dev.winrt.kom.PlatformComInterop.invokeInt64Getter(pointer, 10).getOrThrow())
         }
 
     val lifetime: TimeSpan
         get() {
             if (pointer.isNull) return backingLifetime.get()
-            return TimeSpan(PlatformComInterop.invokeInt64Getter(pointer, 11).getOrThrow())
+            return TimeSpan(dev.winrt.kom.PlatformComInterop.invokeInt64Getter(pointer, 11).getOrThrow())
         }
 
     val lastToken: EventRegistrationToken
         get() {
             if (pointer.isNull) return backingLastToken.get()
-            return EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer, 12).getOrThrow())
-        }
-
-    val stableId: GuidValue
-        get() {
-            if (pointer.isNull) return backingStableId.get()
-            return GuidValue(PlatformComInterop.invokeGuidGetter(pointer, 9).getOrThrow().toString())
+            return EventRegistrationToken(dev.winrt.kom.PlatformComInterop.invokeInt64Getter(pointer, 12).getOrThrow())
         }
 
     val optionalTitle: IReference<String>
         get() {
             if (pointer.isNull) return backingOptionalTitle.get()
-            val value = PlatformComInterop.invokeHStringMethod(pointer, 14).getOrThrow()
+            val value = dev.winrt.kom.PlatformComInterop.invokeHStringMethod(pointer, 14).getOrThrow()
             return try {
-                IReference(WinRtStrings.toKotlin(value))
+                IReference(dev.winrt.core.WinRtStrings.toKotlin(value))
             } finally {
-                WinRtStrings.release(value)
+                dev.winrt.core.WinRtStrings.release(value)
             }
         }
 
-    fun activate() {
+    val stableId: dev.winrt.core.GuidValue
+        get() = dev.winrt.core.GuidValue(dev.winrt.kom.PlatformComInterop.invokeGuidGetter(pointer, 9).getOrThrow().toString())
+
+    fun activateWindow() {
         if (pointer.isNull) return
-        asIWindow().activate()
+        activate()
     }
 
-    fun setContent(content: Inspectable) {
+    fun setWindowContent(content: dev.winrt.core.Inspectable) {
         if (pointer.isNull) return
-        asIWindow().setContent(content)
+        setContent(content)
     }
-
-    fun asIWindow(): IWindow = IWindow.from(this)
-    fun asIStringable(): IStringable = IStringable.from(this)
 
     companion object : WinRtRuntimeClassMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Window"
