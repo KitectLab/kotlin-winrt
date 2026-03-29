@@ -291,6 +291,12 @@ internal class InterfaceTypeRenderer(
                     "return %L",
                     HStringSupport.toKotlinString("pointer", getterVtableIndex),
                 )
+            InterfacePropertyRuleFamily.FLOAT32 ->
+                getterBuilder.addStatement(
+                    "return %T(%L)",
+                    PoetSymbols.float32Class,
+                    AbiCallCatalog.float32Method(getterVtableIndex),
+                )
             InterfacePropertyRuleFamily.BOOLEAN ->
                 getterBuilder.addStatement(
                     "return %T(%T.invokeBooleanGetter(pointer, %L).getOrThrow())",
@@ -773,6 +779,12 @@ internal class InterfaceTypeRenderer(
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
                     arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithUInt32(method.vtableIndex!!, "$argumentName.value")))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    arrayOf(PoetSymbols.float32Class, AbiCallCatalog.float32Method(method.vtableIndex!!))
                 },
             )
             MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(

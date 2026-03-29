@@ -103,6 +103,13 @@ internal class RuntimeMethodRenderer(
                     arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithUInt32(method.vtableIndex!!, "${parameterBindings.single().name}.value")))
                 },
             )
+            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %T(0f)", arrayOf(PoetSymbols.float32Class)) },
+                returnStatement = "return %T(%L)",
+                statementArgs = { method, _, _ ->
+                    arrayOf(PoetSymbols.float32Class, AbiCallCatalog.float32Method(method.vtableIndex!!))
+                },
+            )
             MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %T(0.0)", arrayOf(PoetSymbols.float64Class)) },
                 returnStatement = "return %T(%L)",

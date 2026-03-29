@@ -123,6 +123,13 @@ internal class RuntimePropertyRenderer(
             RuntimePropertyGetterRuleFamily.STRING -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 hStringToKotlinString("pointer", getterVtableIndex)
             }
+            RuntimePropertyGetterRuleFamily.FLOAT32 -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+                CodeBlock.of(
+                    "%T(%L)",
+                    PoetSymbols.float32Class,
+                    AbiCallCatalog.float32Method(getterVtableIndex),
+                )
+            }
             RuntimePropertyGetterRuleFamily.INT32 -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 CodeBlock.of(
                     "%T(%L)",

@@ -13,6 +13,7 @@ internal enum class MethodSignatureShape {
 internal enum class MethodReturnKind {
     UNIT,
     STRING,
+    FLOAT32,
     FLOAT64,
     BOOLEAN,
     INT32,
@@ -54,6 +55,7 @@ internal fun methodSignatureKey(
     val returnKind = when (returnType) {
         "Unit" -> MethodReturnKind.UNIT
         "String" -> MethodReturnKind.STRING
+        "Float32" -> MethodReturnKind.FLOAT32
         "Float64" -> MethodReturnKind.FLOAT64
         "Boolean" -> MethodReturnKind.BOOLEAN
         "Int32" -> MethodReturnKind.INT32

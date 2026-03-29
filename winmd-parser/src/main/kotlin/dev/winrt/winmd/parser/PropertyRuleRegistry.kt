@@ -3,6 +3,7 @@ package dev.winrt.winmd.parser
 internal enum class RuntimePropertyGetterRuleFamily {
     IREFERENCE_STRING,
     STRING,
+    FLOAT32,
     BOOLEAN,
     GUID,
     DATE_TIME,
@@ -23,6 +24,7 @@ internal enum class InterfacePropertyRuleFamily {
     ENUM,
     OBJECT,
     STRING,
+    FLOAT32,
     BOOLEAN,
     GUID,
     DATE_TIME,
@@ -38,6 +40,7 @@ internal object PropertyRuleRegistry {
     private val getterRules: Map<String, RuntimePropertyGetterRuleFamily> = mapOf(
         "IReference<String>" to RuntimePropertyGetterRuleFamily.IREFERENCE_STRING,
         "String" to RuntimePropertyGetterRuleFamily.STRING,
+        "Float32" to RuntimePropertyGetterRuleFamily.FLOAT32,
         "Boolean" to RuntimePropertyGetterRuleFamily.BOOLEAN,
         "Guid" to RuntimePropertyGetterRuleFamily.GUID,
         "DateTime" to RuntimePropertyGetterRuleFamily.DATE_TIME,
@@ -63,6 +66,7 @@ internal object PropertyRuleRegistry {
             isEnumType -> InterfacePropertyRuleFamily.ENUM
             isObjectType -> InterfacePropertyRuleFamily.OBJECT
             type == "String" -> InterfacePropertyRuleFamily.STRING
+            type == "Float32" -> InterfacePropertyRuleFamily.FLOAT32
             type == "Boolean" -> InterfacePropertyRuleFamily.BOOLEAN
             type == "Guid" -> InterfacePropertyRuleFamily.GUID
             type == "DateTime" -> InterfacePropertyRuleFamily.DATE_TIME

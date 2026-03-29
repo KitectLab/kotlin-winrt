@@ -2067,6 +2067,59 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_float32_methods_and_properties() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Float",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Float",
+                            name = "IProgressSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "fedcba98-7654-3210-fedc-ba9876543210",
+                            methods = listOf(
+                                WinMdMethod(name = "GetProgress", returnType = "Float32", vtableIndex = 6),
+                            ),
+                            properties = listOf(
+                                WinMdProperty(name = "Progress", type = "Float32", mutable = false, getterVtableIndex = 7),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Float",
+                            name = "ProgressSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(name = "GetProgress", returnType = "Float32", vtableIndex = 6),
+                            ),
+                            properties = listOf(
+                                WinMdProperty(name = "Progress", type = "Float32", mutable = false, getterVtableIndex = 7),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Float/IProgressSource.kt" }.content
+        val runtimeBinding = files.first { it.relativePath == "Example/Float/ProgressSource.kt" }.content
+        assertTrue(interfaceBinding.contains("fun getProgress(): Float32"))
+        assertTrue(interfaceBinding.contains("invokeFloat32Method(pointer,"))
+        assertTrue(interfaceBinding.contains("6).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("val progress: Float32"))
+        assertTrue(interfaceBinding.contains("invokeFloat32Method(pointer, 7).getOrThrow()"))
+
+        assertTrue(runtimeBinding.contains("fun getProgress(): Float32"))
+        assertTrue(runtimeBinding.contains("return Float32(0f)"))
+        assertTrue(runtimeBinding.contains("invokeFloat32Method(pointer,"))
+        assertTrue(runtimeBinding.contains("6).getOrThrow()"))
+        assertTrue(runtimeBinding.contains("val progress: Float32"))
+        assertTrue(runtimeBinding.contains("invokeFloat32Method(pointer, 7).getOrThrow()"))
+    }
+
+    @Test
     fun generates_unit_runtime_methods_for_string_and_int64_parameters() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

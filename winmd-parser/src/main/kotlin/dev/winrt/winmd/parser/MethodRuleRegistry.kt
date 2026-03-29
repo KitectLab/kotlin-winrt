@@ -2,6 +2,7 @@ package dev.winrt.winmd.parser
 
 internal enum class SharedMethodRuleFamily {
     STRING,
+    FLOAT32,
     FLOAT64,
     BOOLEAN,
     EVENT_REGISTRATION_TOKEN,
@@ -15,6 +16,8 @@ internal object MethodRuleRegistry {
         put(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING), SharedMethodRuleFamily.STRING)
         put(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.INT32), SharedMethodRuleFamily.STRING)
         put(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.UINT32), SharedMethodRuleFamily.STRING)
+
+        put(MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.EMPTY), SharedMethodRuleFamily.FLOAT32)
 
         put(MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.EMPTY), SharedMethodRuleFamily.FLOAT64)
         put(MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.STRING), SharedMethodRuleFamily.FLOAT64)
