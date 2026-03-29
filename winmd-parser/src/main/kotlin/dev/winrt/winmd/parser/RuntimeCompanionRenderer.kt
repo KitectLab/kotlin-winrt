@@ -64,10 +64,9 @@ internal class RuntimeCompanionRenderer(
         val staticsClass = ClassName(staticsType.namespace.lowercase(), staticsType.name)
         val members = mutableListOf<Any>()
 
-        members += FunSpec.builder("__statics")
+        members += PropertySpec.builder("statics", staticsClass)
             .addModifiers(KModifier.PRIVATE)
-            .returns(staticsClass)
-            .addStatement("return %T.projectActivationFactory(this, %T, ::%T)", PoetSymbols.winRtRuntimeClass, staticsClass, staticsClass)
+            .delegate(CodeBlock.of("lazy { %T.projectActivationFactory(this, %T, ::%T) }", PoetSymbols.winRtRuntimeClass, staticsClass, staticsClass))
             .build()
 
         val declaredPropertyNames = staticsType.properties.map { it.name }.toSet()
@@ -91,7 +90,7 @@ internal class RuntimeCompanionRenderer(
             .mutable(property.mutable)
             .getter(
                 FunSpec.getterBuilder()
-                    .addStatement("return __statics().%L", propertyName)
+                    .addStatement("return statics.%L", propertyName)
                     .build(),
             )
             .apply {
@@ -99,7 +98,7 @@ internal class RuntimeCompanionRenderer(
                     setter(
                         FunSpec.setterBuilder()
                             .addParameter("value", typeName)
-                            .addStatement("__statics().%L = value", propertyName)
+                            .addStatement("statics.%L = value", propertyName)
                             .build(),
                     )
                 }
@@ -115,13 +114,13 @@ internal class RuntimeCompanionRenderer(
         if (method.returnType != "Unit") {
             builder.returns(exposedTypeName(method.returnType, currentNamespace))
             builder.addStatement(
-                "return __statics().%L(%L)",
+                "return statics.%L(%L)",
                 companionForwardTargetName(method),
                 method.parameters.joinToString(", ") { it.name },
             )
         } else {
             builder.addStatement(
-                "__statics().%L(%L)",
+                "statics.%L(%L)",
                 companionForwardTargetName(method),
                 method.parameters.joinToString(", ") { it.name },
             )
@@ -168,7 +167,7 @@ internal class RuntimeCompanionRenderer(
                 )
             }
         }
-        builder.addStatement("__statics().%L(%T(delegateHandle.pointer))", companionForwardTargetName(method), delegateClass)
+        builder.addStatement("statics.%L(%T(delegateHandle.pointer))", companionForwardTargetName(method), delegateClass)
         builder.addStatement("return delegateHandle")
         return builder.build()
     }
@@ -189,7 +188,7 @@ internal class RuntimeCompanionRenderer(
                 PropertySpec.builder(propertyName.replaceFirstChar { it.lowercase() }, exposedTypeName(method.returnType, currentNamespace))
                     .getter(
                         FunSpec.getterBuilder()
-                            .addStatement("return __statics().%L()", method.name.replaceFirstChar { it.lowercase() })
+                            .addStatement("return statics.%L()", method.name.replaceFirstChar { it.lowercase() })
                             .build(),
                     )
                     .build()

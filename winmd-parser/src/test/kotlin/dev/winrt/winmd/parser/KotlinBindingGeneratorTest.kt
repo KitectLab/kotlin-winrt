@@ -71,11 +71,11 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Microsoft/UI/Xaml/Application.kt" }.content
 
-        assertTrue(binding, binding.contains("private fun __statics(): IApplicationStatics"))
+        assertTrue(binding, binding.contains("private val statics: IApplicationStatics by lazy"))
         assertTrue(binding, binding.contains("val current: Application"))
-        assertTrue(binding, binding.contains("get() = __statics().get_Current()"))
+        assertTrue(binding, binding.contains("get() = statics.get_Current()"))
         assertTrue(binding, binding.contains("fun start(callback: ApplicationInitializationCallback)"))
-        assertTrue(binding, binding.contains("__statics().start(callback)"))
+        assertTrue(binding, binding.contains("statics.start(callback)"))
         assertTrue(binding, binding.contains("fun start(callback: (IApplicationInitializationCallbackParams) -> Unit)"))
         assertTrue(binding, binding.contains("WinRtDelegateBridge.createObjectArgUnitDelegate"))
     }
@@ -116,11 +116,11 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Windows/Globalization/ApplicationLanguages.kt" }.content
 
-        assertTrue(binding, binding.contains("private fun __statics(): IApplicationLanguagesStatics"))
+        assertTrue(binding, binding.contains("private val statics: IApplicationLanguagesStatics by lazy"))
         assertTrue(binding, binding.contains("val languages: List<String>"))
-        assertTrue(binding, binding.contains("get() = __statics().languages"))
+        assertTrue(binding, binding.contains("get() = statics.languages"))
         assertTrue(binding, binding.contains("val manifestLanguages: List<String>"))
-        assertTrue(binding, binding.contains("get() = __statics().manifestLanguages"))
+        assertTrue(binding, binding.contains("get() = statics.manifestLanguages"))
     }
 
     @Test

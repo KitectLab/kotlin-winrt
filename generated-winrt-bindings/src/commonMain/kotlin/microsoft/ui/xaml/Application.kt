@@ -34,23 +34,24 @@ open class Application(pointer: ComPtr) : Inspectable(pointer) {
         override val activationKind = WinRtActivationKind.Factory
 
         val current: Application
-            get() = __statics().get_Current()
+            get() = statics.get_Current()
 
         fun activate(): Application = WinRtRuntime.activate(this, ::Application)
 
         fun start(callback: ApplicationInitializationCallback) {
-            __statics().start(callback)
+            statics.start(callback)
         }
 
         fun start(callback: (IApplicationInitializationCallbackParams) -> Unit): WinRtDelegateHandle {
             val delegateHandle = WinRtDelegateBridge.createObjectArgUnitDelegate(ApplicationInitializationCallback.iid) { arg ->
                 callback(IApplicationInitializationCallbackParams(arg))
             }
-            __statics().start(ApplicationInitializationCallback(delegateHandle.pointer))
+            statics.start(ApplicationInitializationCallback(delegateHandle.pointer))
             return delegateHandle
         }
 
-        private fun __statics(): IApplicationStatics =
+        private val statics: IApplicationStatics by lazy {
             WinRtRuntime.projectActivationFactory(this, IApplicationStatics, ::IApplicationStatics)
+        }
     }
 }

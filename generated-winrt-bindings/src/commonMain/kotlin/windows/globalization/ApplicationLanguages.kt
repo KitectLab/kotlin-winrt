@@ -23,13 +23,14 @@ public open class ApplicationLanguages(
     override val activationKind: WinRtActivationKind = WinRtActivationKind.Factory
 
     val languages: List<String>
-      get() = __statics().languages
+      get() = statics.languages
 
     val manifestLanguages: List<String>
-      get() = __statics().manifestLanguages
+      get() = statics.manifestLanguages
 
-    private fun __statics(): IApplicationLanguagesStatics =
+    private val statics: IApplicationLanguagesStatics by lazy {
         WinRtRuntime.projectActivationFactory(this, IApplicationLanguagesStatics,
         ::IApplicationLanguagesStatics)
+    }
   }
 }
