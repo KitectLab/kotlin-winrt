@@ -25,7 +25,7 @@ class WinRtMutableListProjectionTest {
     }
 
     @Test
-    fun appends_only_at_tail() {
+    fun supports_insert_set_and_remove_via_rewrite() {
         val appended = mutableListOf<Int>()
         val list = WinRtMutableListProjection(
             sizeProvider = { appended.size },
@@ -35,8 +35,14 @@ class WinRtMutableListProjectionTest {
         )
 
         list.add(0, 7)
+        list.add(1, 9)
 
-        assertEquals(listOf(7), appended)
-        assertFailsWith<UnsupportedOperationException> { list.add(0, 9) }
+        assertEquals(listOf(7, 9), appended)
+        list.add(1, 8)
+        assertEquals(listOf(7, 8, 9), appended)
+        assertEquals(8, list.set(1, 6))
+        assertEquals(listOf(7, 6, 9), appended)
+        assertEquals(6, list.removeAt(1))
+        assertEquals(listOf(7, 9), appended)
     }
 }

@@ -15,21 +15,41 @@ class WinRtMutableListProjection<T> internal constructor(
     }
 
     override fun add(index: Int, element: T) {
-        if (index != size) {
-            throw UnsupportedOperationException("insert at arbitrary index is not implemented yet")
+        require(index in 0..size) { "index must be between 0 and size" }
+        if (index == size) {
+            append(element)
+            return
         }
-        append(element)
+        val items = snapshot()
+        items.add(index, element)
+        rewrite(items)
     }
 
     override fun set(index: Int, element: T): T {
-        throw UnsupportedOperationException("set is not implemented yet")
+        require(index in 0 until size) { "index must be between 0 and size" }
+        val items = snapshot()
+        val previous = items.set(index, element)
+        rewrite(items)
+        return previous
     }
 
     override fun removeAt(index: Int): T {
-        throw UnsupportedOperationException("removeAt is not implemented yet")
+        require(index in 0 until size) { "index must be between 0 and size" }
+        val items = snapshot()
+        val removed = items.removeAt(index)
+        rewrite(items)
+        return removed
     }
 
     override fun clear() {
         clearer()
+    }
+
+    private fun snapshot(): MutableList<T> =
+        MutableList(sizeProvider()) { getter(it) }
+
+    private fun rewrite(items: List<T>) {
+        clearer()
+        items.forEach { append(it) }
     }
 }
