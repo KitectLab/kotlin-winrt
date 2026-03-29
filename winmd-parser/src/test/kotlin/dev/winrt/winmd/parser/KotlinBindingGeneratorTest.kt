@@ -310,6 +310,8 @@ class KotlinBindingGeneratorTest {
         val jsonInterfaceBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonObject.kt" }.content
 
         assertFalse(jsonObjectBinding.contains("fun asIJsonObject(): IJsonObject = IJsonObject.from(this)"))
+        assertFalse(jsonObjectBinding.contains(": IJsonObject(pointer)"))
+        assertTrue(jsonObjectBinding.contains("fun getObject(): JsonObject"))
         assertTrue(jsonObjectBinding.contains("override val defaultInterfaceName: String? = \"Windows.Data.Json.IJsonObject\""))
         assertTrue(jsonInterfaceBinding.contains("override val qualifiedName: String = \"Windows.Data.Json.IJsonObject\""))
         assertFalse(jsonObjectBinding.contains("Windows.Data.Json.JsonValueType"))
@@ -356,6 +358,17 @@ class KotlinBindingGeneratorTest {
         assertFalse(jsonArrayBinding.contains("Stub method not implemented"))
         assertTrue(jsonEnumBinding.contains("enum class JsonValueType"))
         assertTrue(jsonEnumBinding.contains("Object"))
+    }
+
+    @Test
+    fun generates_json_runtime_class_direct_default_interface_members() {
+        val model = WinMdModelFactory.sampleSupplementalModel()
+
+        val files = KotlinBindingGenerator().generate(model)
+        val jsonArrayBinding = files.first { it.relativePath == "Windows/Data/Json/JsonArray.kt" }.content
+
+        assertTrue(jsonArrayBinding.contains("fun getObjectAt(index: UInt32): JsonObject"))
+        assertFalse(jsonArrayBinding.contains(": IJsonArray(pointer)"))
     }
 
     @Test

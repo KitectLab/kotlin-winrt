@@ -33,6 +33,7 @@ internal class TypeFileEmitter(
     private val valueTypeRenderer = ValueTypeRenderer(typeNameMapper)
     private val runtimeTypeRenderer = RuntimeTypeRenderer(
         typeNameMapper,
+        typeRegistry,
         runtimePropertyRenderer,
         runtimeMethodRenderer,
         runtimeCompanionRenderer,

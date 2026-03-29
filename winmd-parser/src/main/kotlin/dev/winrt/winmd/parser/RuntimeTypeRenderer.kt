@@ -3,12 +3,14 @@ package dev.winrt.winmd.parser
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import dev.winrt.winmd.plugin.WinMdActivationKind
 import dev.winrt.winmd.plugin.WinMdType
 
 internal class RuntimeTypeRenderer(
     private val typeNameMapper: TypeNameMapper,
+    private val typeRegistry: TypeRegistry,
     private val runtimePropertyRenderer: RuntimePropertyRenderer,
     private val runtimeMethodRenderer: RuntimeMethodRenderer,
     private val runtimeCompanionRenderer: RuntimeCompanionRenderer,
@@ -75,7 +77,33 @@ internal class RuntimeTypeRenderer(
         type.methods
             .mapNotNull { runtimeMethodRenderer.renderRuntimeLambdaOverload(it, type.namespace) }
             .forEach(builder::addFunction)
+        renderDefaultInterfaceMembers(type).let { projection ->
+            projection.properties.forEach(builder::addProperty)
+            projection.methods.forEach(builder::addFunction)
+        }
         builder.addType(runtimeCompanionRenderer.render(type))
         return builder.build()
     }
+
+    private fun renderDefaultInterfaceMembers(type: WinMdType): RuntimeProjectionMembers {
+        val defaultInterface = type.defaultInterface?.let { typeRegistry.findType(it, type.namespace) }
+            ?: return RuntimeProjectionMembers(emptyList(), emptyList())
+        val methods = defaultInterface.methods
+            .filter(runtimeMethodRenderer::canRenderRuntimeMethod)
+            .mapNotNull { runtimeMethodRenderer.renderRuntimeMethod(it, type.namespace) }
+        val properties = defaultInterface.properties
+            .filter(runtimePropertyRenderer::canRenderRuntimeProperty)
+            .flatMap { property ->
+                listOfNotNull(
+                    runtimePropertyRenderer.renderBackingProperty(property, type.namespace),
+                    runtimePropertyRenderer.renderRuntimeProperty(property, type.namespace),
+                )
+            }
+        return RuntimeProjectionMembers(methods, properties)
+    }
+
+    private data class RuntimeProjectionMembers(
+        val methods: List<FunSpec>,
+        val properties: List<PropertySpec>,
+    )
 }
