@@ -7,6 +7,7 @@ import java.lang.foreign.MemorySegment
 import java.lang.foreign.ValueLayout
 import java.lang.foreign.SymbolLookup
 import java.lang.invoke.MethodHandle
+import java.util.concurrent.ConcurrentHashMap
 
 internal object Jdk22Foreign {
     val linker: Linker = Linker.nativeLinker()
@@ -14,6 +15,7 @@ internal object Jdk22Foreign {
     private val addressLayout = ValueLayout.ADDRESS
     private val intLayout = ValueLayout.JAVA_INT
     private val longLayout = ValueLayout.JAVA_LONG
+    private val downcallHandleCache = ConcurrentHashMap<String, MethodHandle>()
 
     val windowsLookups: List<SymbolLookup> by lazy {
         if (!System.getProperty("os.name").contains("Windows", ignoreCase = true)) {
@@ -62,26 +64,33 @@ internal object Jdk22Foreign {
         return linker.downcallHandle(symbol, descriptor)
     }
 
+    fun downcallHandle(descriptor: FunctionDescriptor): MethodHandle {
+        val cacheKey = descriptor.toString()
+        return downcallHandleCache.getOrPut(cacheKey) {
+            linker.downcallHandle(descriptor)
+        }
+    }
+
     val queryInterfaceHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout),
         )
     }
 
     val addRefHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout),
         )
     }
 
     val releaseHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout),
         )
     }
 
     val unitMethodHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout),
         )
     }
@@ -143,139 +152,139 @@ internal object Jdk22Foreign {
     }
 
     val activateInstanceHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
         )
     }
 
     val hstringMethodHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
         )
     }
 
     val hstringMethodWithInputHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout),
         )
     }
 
     val hstringMethodWithInt32Handle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
         )
     }
 
     val hstringMethodWithUInt32Handle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
         )
     }
 
     val objectMethodWithInputHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout),
         )
     }
 
     val objectMethodWithUInt32Handle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
         )
     }
 
     val objectMethodHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
         )
     }
 
     val hstringSetterHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
         )
     }
 
     val objectSetterHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
         )
     }
 
     val int32SetterHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, intLayout),
         )
     }
 
     val int32MethodHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
         )
     }
 
     val unitMethodWithInt32Handle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, intLayout),
         )
     }
 
     val unitMethodWithInt64Handle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, ValueLayout.JAVA_LONG),
         )
     }
 
     val uint32MethodHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
         )
     }
 
     val booleanGetterHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
         )
     }
 
     val booleanMethodWithInputHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout),
         )
     }
 
     val booleanMethodWithUInt32Handle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
         )
     }
 
     val float64MethodHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
         )
     }
 
     val float64MethodWithInputHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout),
         )
     }
 
     val float64MethodWithUInt32Handle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
         )
     }
 
     val guidGetterHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
         )
     }
 
     val int64GetterHandle: MethodHandle by lazy {
-        linker.downcallHandle(
+        downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
         )
     }

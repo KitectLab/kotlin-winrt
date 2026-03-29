@@ -3,6 +3,7 @@ package dev.winrt.kom
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
@@ -23,6 +24,19 @@ class Jdk22ForeignTest {
         assertNotNull(Jdk22Foreign.downcall("CoUninitialize", java.lang.foreign.FunctionDescriptor.ofVoid()))
         assertNotNull(Jdk22Foreign.downcall("RoInitialize", java.lang.foreign.FunctionDescriptor.of(java.lang.foreign.ValueLayout.JAVA_INT, java.lang.foreign.ValueLayout.JAVA_INT)))
         assertNotNull(Jdk22Foreign.downcall("RoGetActivationFactory", java.lang.foreign.FunctionDescriptor.of(java.lang.foreign.ValueLayout.JAVA_INT, java.lang.foreign.ValueLayout.ADDRESS, java.lang.foreign.ValueLayout.ADDRESS, java.lang.foreign.ValueLayout.ADDRESS)))
+    }
+
+    @Test
+    fun downcall_handle_cache_reuses_same_descriptor_handle() {
+        val descriptor = java.lang.foreign.FunctionDescriptor.of(
+            java.lang.foreign.ValueLayout.JAVA_INT,
+            java.lang.foreign.ValueLayout.ADDRESS,
+        )
+
+        val first = Jdk22Foreign.downcallHandle(descriptor)
+        val second = Jdk22Foreign.downcallHandle(descriptor)
+
+        assertSame(first, second)
     }
 
     @Test
