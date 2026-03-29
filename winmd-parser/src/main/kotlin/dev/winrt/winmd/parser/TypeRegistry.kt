@@ -13,18 +13,8 @@ internal class TypeRegistry(
         }
         .toMap()
 
-    private val kindsByQualifiedName = model.namespaces
-        .flatMap { namespace -> namespace.types.map { type -> "${type.namespace}.${type.name}" to type.kind } }
-        .toMap()
-
     fun findType(typeName: String, currentNamespace: String? = null): WinMdType? {
-        val qualifiedName = canonicalQualifiedName(
-            when {
-            '.' in typeName -> typeName
-            currentNamespace != null -> "$currentNamespace.$typeName"
-            else -> typeName
-            },
-        )
+        val qualifiedName = resolveQualifiedName(typeName, currentNamespace)
         return typesByQualifiedName[qualifiedName]
     }
 
@@ -36,5 +26,15 @@ internal class TypeRegistry(
         return typeName.substringBefore('<')
             .substringBefore('`')
             .removeSuffix("[]")
+    }
+
+    private fun resolveQualifiedName(typeName: String, currentNamespace: String?): String {
+        return canonicalQualifiedName(
+            when {
+                '.' in typeName -> typeName
+                currentNamespace != null -> "$currentNamespace.$typeName"
+                else -> typeName
+            },
+        )
     }
 }
