@@ -18,6 +18,7 @@ internal enum class RuntimePropertySetterRuleFamily {
 
 internal enum class InterfacePropertyRuleFamily {
     ENUM,
+    OBJECT,
     STRING,
     BOOLEAN,
     GUID,
@@ -50,9 +51,11 @@ internal object PropertyRuleRegistry {
     fun interfaceGetterRuleFamily(
         type: String,
         isEnumType: Boolean,
+        isObjectType: Boolean,
     ): InterfacePropertyRuleFamily? {
         return when {
             isEnumType -> InterfacePropertyRuleFamily.ENUM
+            isObjectType -> InterfacePropertyRuleFamily.OBJECT
             type == "String" -> InterfacePropertyRuleFamily.STRING
             type == "Boolean" -> InterfacePropertyRuleFamily.BOOLEAN
             type == "Guid" -> InterfacePropertyRuleFamily.GUID
@@ -67,8 +70,9 @@ internal object PropertyRuleRegistry {
         }
     }
 
-    fun interfaceSetterRuleFamily(type: String): InterfacePropertyRuleFamily? {
+    fun interfaceSetterRuleFamily(type: String, isObjectType: Boolean): InterfacePropertyRuleFamily? {
         return when (type) {
+            in setOf(type).takeIf { isObjectType } ?: emptySet() -> InterfacePropertyRuleFamily.OBJECT
             "String" -> InterfacePropertyRuleFamily.STRING
             "Int32" -> InterfacePropertyRuleFamily.INT32
             else -> null

@@ -4484,6 +4484,46 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_object_interface_properties() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "Payload",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass,
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "IObjectHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "12345678-1234-5678-9abc-def012345678",
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Current",
+                                    type = "Example.Contracts.Payload",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Contracts/IObjectHost.kt" }.content
+
+        assertTrue(binding.contains("var current: Payload"))
+        assertTrue(binding.contains("Payload(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())"))
+    }
+
+    @Test
     fun generates_winui_unit_interface_methods() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

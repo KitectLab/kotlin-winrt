@@ -266,13 +266,25 @@ internal class InterfaceTypeRenderer(
         val propertyType = typeNameMapper.mapTypeName(property.type, currentNamespace, genericParameters)
         val getterVtableIndex = property.getterVtableIndex!!
         val getterBuilder = FunSpec.getterBuilder()
-        when (PropertyRuleRegistry.interfaceGetterRuleFamily(property.type, typeRegistry.isEnumType(property.type, currentNamespace))) {
+        when (
+            PropertyRuleRegistry.interfaceGetterRuleFamily(
+                property.type,
+                typeRegistry.isEnumType(property.type, currentNamespace),
+                supportsInterfaceObjectType(property.type),
+            )
+        ) {
             InterfacePropertyRuleFamily.ENUM ->
                 getterBuilder.addStatement(
                     "return %T.fromValue(%T.invokeUInt32Method(pointer, %L).getOrThrow().toInt())",
                     propertyType,
                     PoetSymbols.platformComInteropClass,
                     getterVtableIndex,
+                )
+            InterfacePropertyRuleFamily.OBJECT ->
+                getterBuilder.addStatement(
+                    "return %T(%L)",
+                    propertyType,
+                    AbiCallCatalog.objectMethod(getterVtableIndex),
                 )
             InterfacePropertyRuleFamily.STRING ->
                 getterBuilder.addStatement(
@@ -347,7 +359,7 @@ internal class InterfaceTypeRenderer(
         val propertyBuilder = PropertySpec.builder(propertyName, propertyType)
             .getter(getterBuilder.build())
         if (property.mutable &&
-            PropertyRuleRegistry.interfaceSetterRuleFamily(property.type) != null &&
+            PropertyRuleRegistry.interfaceSetterRuleFamily(property.type, supportsInterfaceObjectType(property.type)) != null &&
             property.setterVtableIndex != null
         ) {
             val setterVtableIndex = property.setterVtableIndex!!
@@ -356,7 +368,8 @@ internal class InterfaceTypeRenderer(
                 FunSpec.setterBuilder()
                     .addParameter("value", propertyType)
                     .apply {
-                        when (PropertyRuleRegistry.interfaceSetterRuleFamily(property.type)) {
+                        when (PropertyRuleRegistry.interfaceSetterRuleFamily(property.type, supportsInterfaceObjectType(property.type))) {
+                            InterfacePropertyRuleFamily.OBJECT -> addStatement("%L", AbiCallCatalog.objectSetter(setterVtableIndex, "value"))
                             InterfacePropertyRuleFamily.STRING -> addStatement("%L", AbiCallCatalog.stringSetter(setterVtableIndex))
                             InterfacePropertyRuleFamily.INT32 -> addStatement("%L", AbiCallCatalog.int32Setter(setterVtableIndex))
                             else -> return null
@@ -904,6 +917,7 @@ internal class InterfaceTypeRenderer(
             PropertyRuleRegistry.interfaceGetterRuleFamily(
                 type = property.type,
                 isEnumType = typeRegistry.isEnumType(property.type, currentNamespace),
+                isObjectType = supportsInterfaceObjectType(property.type),
             ) != null
     }
 
