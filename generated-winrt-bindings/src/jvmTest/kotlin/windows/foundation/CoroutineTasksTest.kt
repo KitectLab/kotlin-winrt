@@ -41,7 +41,7 @@ class CoroutineTasksTest {
 
     @Test
     fun async_operation_round_trips_through_await() = runBlocking {
-        val operation = scope.asyncOperation(WinRtTypeSignature.string()) {
+        val operation = scope.asyncOperation(AsyncResultTypes.string) {
             delay(10)
             "done"
         }
@@ -70,7 +70,7 @@ class CoroutineTasksTest {
 
     @Test
     fun completed_handler_runs_even_when_set_after_operation_finishes() = runBlocking {
-        val operation = scope.asyncOperation(WinRtTypeSignature.string()) { "ready" }
+        val operation = scope.asyncOperation(AsyncResultTypes.string) { "ready" }
 
         operation.await()
 
@@ -105,7 +105,7 @@ class CoroutineTasksTest {
         val progressValues = mutableListOf<UInt32>()
 
         val operation = scope.asyncOperationWithProgress(
-            resultSignature = WinRtTypeSignature.string(),
+            resultType = AsyncResultTypes.string,
             progressType = AsyncProgressTypes.uint32,
         ) { reportProgress ->
             reportProgress(UInt32(3u))
@@ -161,7 +161,7 @@ class CoroutineTasksTest {
     @Test
     fun completed_handler_runs_even_when_set_after_progress_operation_finishes() = runBlocking {
         val operation = scope.asyncOperationWithProgress(
-            resultSignature = WinRtTypeSignature.string(),
+            resultType = AsyncResultTypes.string,
             progressType = AsyncProgressTypes.uint32,
         ) { reportProgress ->
             reportProgress(UInt32(1u))
@@ -179,5 +179,18 @@ class CoroutineTasksTest {
         }
 
         assertEquals(AsyncStatus.Completed, callbackStatus)
+    }
+
+    @Test
+    fun result_type_overload_supports_uint32_results() = runBlocking {
+        val operation = scope.asyncOperation(AsyncResultTypes.uint32) {
+            delay(10)
+            UInt32(7u)
+        }
+
+        val result = operation.await()
+
+        assertEquals(UInt32(7u), result)
+        assertEquals(AsyncStatus.Completed, operation.status)
     }
 }

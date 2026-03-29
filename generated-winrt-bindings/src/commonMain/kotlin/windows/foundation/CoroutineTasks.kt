@@ -23,6 +23,13 @@ public fun CoroutineScope.asyncAction(
 }
 
 public fun <TResult> CoroutineScope.asyncOperation(
+  resultType: AsyncResultType<TResult>,
+  block: suspend CoroutineScope.() -> TResult,
+): IAsyncOperation<TResult> {
+  return asyncOperation(resultSignature = resultType.signature, block = block)
+}
+
+public fun <TResult> CoroutineScope.asyncOperation(
   resultSignature: String,
   block: suspend CoroutineScope.() -> TResult,
 ): IAsyncOperation<TResult> {
@@ -66,12 +73,12 @@ public fun <TProgress> CoroutineScope.asyncActionWithProgress(
 }
 
 public fun <TResult, TProgress> CoroutineScope.asyncOperationWithProgress(
-  resultSignature: String,
+  resultType: AsyncResultType<TResult>,
   progressType: AsyncProgressType<TProgress>,
   block: suspend CoroutineScope.(reportProgress: (TProgress) -> Unit) -> TResult,
 ): IAsyncOperationWithProgress<TResult, TProgress> {
   return asyncOperationWithProgress(
-      resultSignature = resultSignature,
+      resultSignature = resultType.signature,
       progressSignature = progressType.signature,
       progressArgumentKind = progressType.argumentKind,
       block = block,
