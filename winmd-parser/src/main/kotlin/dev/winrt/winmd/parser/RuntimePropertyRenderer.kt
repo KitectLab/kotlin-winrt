@@ -130,6 +130,27 @@ internal class RuntimePropertyRenderer(
                     AbiCallCatalog.int32Method(getterVtableIndex),
                 )
             }
+            RuntimePropertyGetterRuleFamily.UINT32 -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+                CodeBlock.of(
+                    "%T(%L)",
+                    PoetSymbols.uint32Class,
+                    AbiCallCatalog.uint32Method(getterVtableIndex),
+                )
+            }
+            RuntimePropertyGetterRuleFamily.INT64 -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+                CodeBlock.of(
+                    "%T(%L)",
+                    PoetSymbols.int64Class,
+                    AbiCallCatalog.int64Getter(getterVtableIndex),
+                )
+            }
+            RuntimePropertyGetterRuleFamily.UINT64 -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+                CodeBlock.of(
+                    "%T(%L.toULong())",
+                    PoetSymbols.uint64Class,
+                    AbiCallCatalog.int64Getter(getterVtableIndex),
+                )
+            }
             else -> null
         }
     }

@@ -2033,6 +2033,40 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_numeric_runtime_properties() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "NumericPropertyHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(name = "Count", type = "UInt32", mutable = false, getterVtableIndex = 6),
+                                WinMdProperty(name = "Ticks", type = "Int64", mutable = false, getterVtableIndex = 7),
+                                WinMdProperty(name = "Version", type = "UInt64", mutable = false, getterVtableIndex = 8),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/NumericPropertyHost.kt" }.content
+
+        assertTrue(binding.contains("val count: UInt32"))
+        assertTrue(binding.contains("UInt32(PlatformComInterop.invokeUInt32Method(pointer, 6).getOrThrow())"))
+        assertTrue(binding.contains("val ticks: Int64"))
+        assertTrue(binding.contains("Int64(PlatformComInterop.invokeInt64Getter(pointer, 7).getOrThrow())"))
+        assertTrue(binding.contains("val version: UInt64"))
+        assertTrue(binding.contains("UInt64(PlatformComInterop.invokeInt64Getter(pointer, 8).getOrThrow().toULong())"))
+    }
+
+    @Test
     fun generates_unit_runtime_methods_for_string_and_int64_parameters() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

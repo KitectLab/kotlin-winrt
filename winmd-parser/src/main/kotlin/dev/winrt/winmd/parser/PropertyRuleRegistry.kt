@@ -9,6 +9,9 @@ internal enum class RuntimePropertyGetterRuleFamily {
     TIME_SPAN,
     EVENT_REGISTRATION_TOKEN,
     INT32,
+    UINT32,
+    INT64,
+    UINT64,
 }
 
 internal enum class RuntimePropertySetterRuleFamily {
@@ -41,6 +44,9 @@ internal object PropertyRuleRegistry {
         "TimeSpan" to RuntimePropertyGetterRuleFamily.TIME_SPAN,
         "EventRegistrationToken" to RuntimePropertyGetterRuleFamily.EVENT_REGISTRATION_TOKEN,
         "Int32" to RuntimePropertyGetterRuleFamily.INT32,
+        "UInt32" to RuntimePropertyGetterRuleFamily.UINT32,
+        "Int64" to RuntimePropertyGetterRuleFamily.INT64,
+        "UInt64" to RuntimePropertyGetterRuleFamily.UINT64,
     )
 
     private val setterRules: Map<String, RuntimePropertySetterRuleFamily> = mapOf(
