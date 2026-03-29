@@ -7,16 +7,11 @@ import dev.winrt.kom.HResult
 import dev.winrt.kom.KomException
 import dev.winrt.kom.PlatformComInterop
 
-interface WinRtProjectedObject {
-    val queryInterfaceCache: MutableMap<String, ComPtr>
-    val additionalTypeData: MutableMap<String, Any>
-}
-
 open class WinRtObject(
-    final override val pointer: ComPtr,
-) : ComReference, WinRtProjectedObject {
-    override val queryInterfaceCache: MutableMap<String, ComPtr> = linkedMapOf()
-    override val additionalTypeData: MutableMap<String, Any> = linkedMapOf()
+    override val pointer: ComPtr,
+) : ComReference {
+    val queryInterfaceCache: MutableMap<String, ComPtr> = linkedMapOf()
+    val additionalTypeData: MutableMap<String, Any> = linkedMapOf()
 
     @Suppress("UNCHECKED_CAST")
     fun <T : Any> getOrPutAdditionalTypeData(key: String, factory: () -> T): T {
