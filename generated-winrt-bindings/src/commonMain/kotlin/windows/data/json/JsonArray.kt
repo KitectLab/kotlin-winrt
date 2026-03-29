@@ -13,7 +13,7 @@ import kotlin.String
 public open class JsonArray(
   pointer: ComPtr,
 ) : Inspectable(pointer),
-  IJsonArray by IJsonArray.from(Inspectable(pointer)) {
+  IJsonArray {
 
   override fun getObjectAt(index: UInt32): JsonObject =
       JsonObject(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 6,
