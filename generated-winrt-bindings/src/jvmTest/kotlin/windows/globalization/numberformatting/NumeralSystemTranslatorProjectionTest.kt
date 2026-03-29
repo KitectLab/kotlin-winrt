@@ -25,21 +25,16 @@ class NumeralSystemTranslatorProjectionTest {
             try {
                 val translator = NumeralSystemTranslator(JvmWinRtRuntime.activateInstance(factory).getOrThrow())
                 try {
-                    val projected = translator.asINumeralSystemTranslator()
+                    val languages = translator.languages
                     try {
-                        val languages = projected.languages
-                        try {
-                            assertTrue(languages.size > 0)
-                            assertFalse(languages[0].isBlank())
-                        } finally {
-                            PlatformComInterop.release(languages.pointer)
-                        }
-                        assertFalse(projected.resolvedLanguage.isBlank())
-                        assertFalse(projected.numeralSystem.isBlank())
-                        assertFalse(projected.translateNumerals("123").isBlank())
+                        assertTrue(languages.size > 0)
+                        assertFalse(languages[0].isBlank())
                     } finally {
-                        PlatformComInterop.release(projected.pointer)
+                        PlatformComInterop.release(languages.pointer)
                     }
+                    assertFalse(translator.resolvedLanguage.isBlank())
+                    assertFalse(translator.numeralSystem.isBlank())
+                    assertFalse(translator.translateNumerals("123").isBlank())
                 } finally {
                     PlatformComInterop.release(translator.pointer)
                 }

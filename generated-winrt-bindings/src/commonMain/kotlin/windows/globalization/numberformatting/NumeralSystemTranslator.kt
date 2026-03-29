@@ -1,6 +1,5 @@
 package windows.globalization.numberformatting
 
-import dev.winrt.core.Inspectable
 import dev.winrt.core.RuntimeClassId
 import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtRuntime
@@ -9,9 +8,7 @@ import dev.winrt.kom.ComPtr
 
 public open class NumeralSystemTranslator(
   pointer: ComPtr,
-) : Inspectable(pointer) {
-  public fun asINumeralSystemTranslator(): INumeralSystemTranslator =
-      INumeralSystemTranslator.from(this)
+) : INumeralSystemTranslator(pointer) {
 
   public companion object : WinRtRuntimeClassMetadata {
     override val qualifiedName: String =
