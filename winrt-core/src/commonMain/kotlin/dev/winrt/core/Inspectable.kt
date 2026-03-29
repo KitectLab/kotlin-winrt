@@ -7,7 +7,11 @@ import dev.winrt.kom.HResult
 import dev.winrt.kom.KomException
 import dev.winrt.kom.PlatformComInterop
 
-interface WinRtProjectedObject {
+interface PointerOwner {
+    val pointer: ComPtr
+}
+
+interface WinRtProjectedObject : PointerOwner {
     val queryInterfaceCache: MutableMap<String, ComPtr>
     val additionalTypeData: MutableMap<String, Any>
 }
