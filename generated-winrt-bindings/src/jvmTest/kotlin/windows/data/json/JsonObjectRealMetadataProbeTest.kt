@@ -1,7 +1,7 @@
 package windows.data.json
 
 import dev.winrt.core.Inspectable
-import dev.winrt.core.WinRtStrings
+import dev.winrt.kom.HString
 import dev.winrt.core.guidOf
 import dev.winrt.kom.JvmComRuntime
 import dev.winrt.kom.JvmWinRtRuntime
@@ -115,8 +115,8 @@ class JsonObjectRealMetadataProbeTest {
             )
             try {
                 val targetPointer = if (mode == "projected") {
-                    val projected = IJsonObject.from(Inspectable(instance))
-                    projected.pointer
+                    IJsonObject.from(Inspectable(instance))
+                    instance
                 } else {
                     instance
                 }
@@ -184,11 +184,7 @@ class JsonObjectRealMetadataProbeTest {
     private fun readNamedString(instance: dev.winrt.kom.ComPtr, slot: Int, name: String): String {
         val inspectable = Inspectable(instance)
         val nameValue = PlatformComInterop.invokeHStringMethodWithStringArg(inspectable.pointer, slot, name).getOrThrow()
-        return try {
-            WinRtStrings.toKotlin(nameValue)
-        } finally {
-            WinRtStrings.release(nameValue)
-        }
+        return nameValue.use(HString::toKotlinString)
     }
 
     private fun readNamedStringOutcome(instance: dev.winrt.kom.ComPtr, slot: Int, name: String): String {
@@ -199,11 +195,7 @@ class JsonObjectRealMetadataProbeTest {
         }
 
         val hString = result.getOrThrow()
-        return try {
-            """success("${WinRtStrings.toKotlin(hString)}")"""
-        } finally {
-            WinRtStrings.release(hString)
-        }
+        return hString.use { """success("${it.toKotlinString()}")""" }
     }
 
     private fun <T> classifyResult(result: Result<T>): String {

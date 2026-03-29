@@ -37,7 +37,6 @@ class IStringableProjectionTest {
                         val value = projected.toString()
                         assertFalse(value.isBlank())
                     } finally {
-                        PlatformComInterop.release(projected.pointer)
                     }
                 } finally {
                     PlatformComInterop.release(instance)

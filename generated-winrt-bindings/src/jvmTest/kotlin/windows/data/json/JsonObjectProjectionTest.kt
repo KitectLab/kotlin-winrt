@@ -45,7 +45,6 @@ class JsonObjectProjectionTest {
                         assertEquals("\"codex\"", textValue.stringify())
                         assertEquals("codex", textValue.getString())
                     } finally {
-                        PlatformComInterop.release(textValue.pointer)
                     }
                     val numberValue = jsonObject.getNamedValue("pi")
                     try {
@@ -53,7 +52,6 @@ class JsonObjectProjectionTest {
                         assertEquals("3.5", numberValue.stringify())
                         assertEquals(3.5, numberValue.getNumber().value, 0.0)
                     } finally {
-                        PlatformComInterop.release(numberValue.pointer)
                     }
                     val booleanValue = jsonObject.getNamedValue("flag")
                     try {
@@ -61,7 +59,6 @@ class JsonObjectProjectionTest {
                         assertEquals("true", booleanValue.stringify())
                         assertTrue(booleanValue.getBoolean().value)
                     } finally {
-                        PlatformComInterop.release(booleanValue.pointer)
                     }
                     val nested = jsonObject.getNamedObject("nested")
                     try {
@@ -76,7 +73,6 @@ class JsonObjectProjectionTest {
                                 PlatformComInterop.release(nestedObject.pointer)
                             }
                         } finally {
-                            PlatformComInterop.release(nestedValue.pointer)
                         }
                         assertEquals("value", nested.getNamedString("child"))
                     } finally {
@@ -95,7 +91,6 @@ class JsonObjectProjectionTest {
                                 PlatformComInterop.release(nestedArray.pointer)
                             }
                         } finally {
-                            PlatformComInterop.release(arrayValue.pointer)
                         }
                         assertTrue(!items.pointer.isNull)
                         val firstItem = items.getObjectAt(UInt32(0u))

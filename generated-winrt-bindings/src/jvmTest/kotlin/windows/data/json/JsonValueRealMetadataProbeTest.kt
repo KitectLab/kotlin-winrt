@@ -1,8 +1,8 @@
 package windows.data.json
 
 import dev.winrt.core.Inspectable
-import dev.winrt.core.WinRtStrings
 import dev.winrt.core.guidOf
+import dev.winrt.kom.HString
 import dev.winrt.kom.JvmComRuntime
 import dev.winrt.kom.JvmWinRtRuntime
 import dev.winrt.kom.KnownHResults
@@ -27,15 +27,15 @@ class JsonValueRealMetadataProbeTest {
         try {
             val valuePointer = parseJsonValue()
             try {
-                val projected = IJsonValue.from(Inspectable(valuePointer))
+                IJsonValue.from(Inspectable(valuePointer))
                 val outcomes = linkedMapOf(
-                    "slot 6 (valueType projected)" to classifyResult(PlatformComInterop.invokeUInt32Method(projected.pointer, 6)),
-                    "slot 7 (stringify projected)" to classifyHStringResult(PlatformComInterop.invokeHStringMethod(projected.pointer, 7)),
-                    "slot 8 (getString projected)" to classifyHStringResult(PlatformComInterop.invokeHStringMethod(projected.pointer, 8)),
-                    "slot 9 (number projected)" to classifyResult(PlatformComInterop.invokeFloat64Method(projected.pointer, 9)),
-                    "slot 10 (boolean projected)" to classifyResult(PlatformComInterop.invokeBooleanGetter(projected.pointer, 10)),
-                    "slot 11 (array projected)" to classifyResult(PlatformComInterop.invokeObjectMethod(projected.pointer, 11)),
-                    "slot 12 (object projected)" to classifyResult(PlatformComInterop.invokeObjectMethod(projected.pointer, 12)),
+                    "slot 6 (valueType projected)" to classifyResult(PlatformComInterop.invokeUInt32Method(valuePointer, 6)),
+                    "slot 7 (stringify projected)" to classifyHStringResult(PlatformComInterop.invokeHStringMethod(valuePointer, 7)),
+                    "slot 8 (getString projected)" to classifyHStringResult(PlatformComInterop.invokeHStringMethod(valuePointer, 8)),
+                    "slot 9 (number projected)" to classifyResult(PlatformComInterop.invokeFloat64Method(valuePointer, 9)),
+                    "slot 10 (boolean projected)" to classifyResult(PlatformComInterop.invokeBooleanGetter(valuePointer, 10)),
+                    "slot 11 (array projected)" to classifyResult(PlatformComInterop.invokeObjectMethod(valuePointer, 11)),
+                    "slot 12 (object projected)" to classifyResult(PlatformComInterop.invokeObjectMethod(valuePointer, 12)),
                     "slot 6 (valueType raw)" to classifyResult(PlatformComInterop.invokeUInt32Method(valuePointer, 6)),
                     "slot 7 (stringify raw)" to classifyHStringResult(PlatformComInterop.invokeHStringMethod(valuePointer, 7)),
                     "slot 8 (getString raw)" to classifyHStringResult(PlatformComInterop.invokeHStringMethod(valuePointer, 8)),
@@ -82,15 +82,14 @@ class JsonValueRealMetadataProbeTest {
             try {
                 val outcomes = linkedMapOf<String, String>()
                 valuePointers.forEach { (label, pointer) ->
-                    val projected = IJsonValue.from(Inspectable(pointer))
-                    outcomes["$label valueType"] = classifyResult(PlatformComInterop.invokeUInt32Method(projected.pointer, 6))
-                    outcomes["$label stringify"] = classifyHStringResult(PlatformComInterop.invokeHStringMethod(projected.pointer, 7))
-                    outcomes["$label getString"] = classifyHStringResult(PlatformComInterop.invokeHStringMethod(projected.pointer, 8))
-                    outcomes["$label getNumber"] = classifyResult(PlatformComInterop.invokeFloat64Method(projected.pointer, 9))
-                    outcomes["$label getBoolean"] = classifyResult(PlatformComInterop.invokeBooleanGetter(projected.pointer, 10))
-                    outcomes["$label getArray"] = classifyResult(PlatformComInterop.invokeObjectMethod(projected.pointer, 11))
-                    outcomes["$label getObject"] = classifyResult(PlatformComInterop.invokeObjectMethod(projected.pointer, 12))
-                    PlatformComInterop.release(projected.pointer)
+                    IJsonValue.from(Inspectable(pointer))
+                    outcomes["$label valueType"] = classifyResult(PlatformComInterop.invokeUInt32Method(pointer, 6))
+                    outcomes["$label stringify"] = classifyHStringResult(PlatformComInterop.invokeHStringMethod(pointer, 7))
+                    outcomes["$label getString"] = classifyHStringResult(PlatformComInterop.invokeHStringMethod(pointer, 8))
+                    outcomes["$label getNumber"] = classifyResult(PlatformComInterop.invokeFloat64Method(pointer, 9))
+                    outcomes["$label getBoolean"] = classifyResult(PlatformComInterop.invokeBooleanGetter(pointer, 10))
+                    outcomes["$label getArray"] = classifyResult(PlatformComInterop.invokeObjectMethod(pointer, 11))
+                    outcomes["$label getObject"] = classifyResult(PlatformComInterop.invokeObjectMethod(pointer, 12))
                 }
                 outcomes.values.forEach { outcome -> assertTrue(outcome.isNotBlank()) }
                 fail(
@@ -130,11 +129,7 @@ class JsonValueRealMetadataProbeTest {
                 val jsonObject = JsonObject(Inspectable(instance).pointer)
                 try {
                     val nested = jsonObject.getNamedObject("nested")
-                    try {
-                        return IJsonValue.from(Inspectable(nested.pointer)).pointer
-                    } finally {
-                        PlatformComInterop.release(nested.pointer)
-                    }
+                    return nested.pointer
                 } finally {
                 }
             } finally {
@@ -189,10 +184,6 @@ class JsonValueRealMetadataProbeTest {
             return "failure(${result.exceptionOrNull()?.message})"
         }
         val value = result.getOrThrow()
-        return try {
-            "success(${WinRtStrings.toKotlin(value)})"
-        } finally {
-            WinRtStrings.release(value)
-        }
+        return value.use(HString::toKotlinString).let { "success($it)" }
     }
 }

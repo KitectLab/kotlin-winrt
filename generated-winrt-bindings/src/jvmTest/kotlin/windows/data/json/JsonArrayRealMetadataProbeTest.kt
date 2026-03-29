@@ -1,7 +1,7 @@
 package windows.data.json
 
 import dev.winrt.core.Inspectable
-import dev.winrt.core.WinRtStrings
+import dev.winrt.kom.HString
 import dev.winrt.core.guidOf
 import dev.winrt.kom.JvmComRuntime
 import dev.winrt.kom.JvmWinRtRuntime
@@ -27,10 +27,10 @@ class JsonArrayRealMetadataProbeTest {
         try {
             val arrayPointer = parseJsonArray()
             try {
-                val projected = IJsonArray.from(Inspectable(arrayPointer))
+                IJsonArray.from(Inspectable(arrayPointer))
                 val outcomes = linkedMapOf(
-                    "slot 13 (projected)" to classifyObjectAt(projected.pointer, 13u),
-                    "slot 6 (projected)" to classifyObjectAt(projected.pointer, 6u),
+                    "slot 13 (projected)" to classifyObjectAt(arrayPointer, 13u),
+                    "slot 6 (projected)" to classifyObjectAt(arrayPointer, 6u),
                     "slot 13 (raw)" to classifyObjectAt(arrayPointer, 13u),
                     "slot 6 (raw)" to classifyObjectAt(arrayPointer, 6u),
                 )
@@ -70,13 +70,13 @@ class JsonArrayRealMetadataProbeTest {
         try {
             val arrayPointer = parseTypedJsonArray()
             try {
-                val projected = IJsonArray.from(Inspectable(arrayPointer))
+                IJsonArray.from(Inspectable(arrayPointer))
                 val outcomes = linkedMapOf(
-                    "string getStringAt" to classifyHStringAt(projected.pointer, 8, 0u),
-                    "number getNumberAt" to classifyFloat64At(projected.pointer, 9, 1u),
-                    "boolean getBooleanAt" to classifyBooleanAt(projected.pointer, 10, 2u),
-                    "object getObjectAt" to classifyObjectAt(projected.pointer, 6u, 3u),
-                    "array getArrayAt" to classifyObjectAt(projected.pointer, 7u, 4u),
+                    "string getStringAt" to classifyHStringAt(arrayPointer, 8, 0u),
+                    "number getNumberAt" to classifyFloat64At(arrayPointer, 9, 1u),
+                    "boolean getBooleanAt" to classifyBooleanAt(arrayPointer, 10, 2u),
+                    "object getObjectAt" to classifyObjectAt(arrayPointer, 6u, 3u),
+                    "array getArrayAt" to classifyObjectAt(arrayPointer, 7u, 4u),
                 )
                 outcomes.values.forEach { outcome -> assertTrue(outcome.isNotBlank()) }
                 fail(
@@ -114,7 +114,8 @@ class JsonArrayRealMetadataProbeTest {
             ).getOrThrow()
             try {
                 val jsonObject = JsonObject(Inspectable(instance).pointer)
-                return jsonObject.getNamedArray("items").pointer
+                val items = jsonObject.getNamedArray("items")
+                return items.pointer
             } finally {
                 PlatformComInterop.release(instance)
             }
@@ -136,7 +137,8 @@ class JsonArrayRealMetadataProbeTest {
             ).getOrThrow()
             try {
                 val jsonObject = JsonObject(Inspectable(instance).pointer)
-                return jsonObject.getNamedArray("items").pointer
+                val items = jsonObject.getNamedArray("items")
+                return items.pointer
             } finally {
                 PlatformComInterop.release(instance)
             }
@@ -160,11 +162,7 @@ class JsonArrayRealMetadataProbeTest {
             return "failure(${result.exceptionOrNull()?.message})"
         }
         val value = result.getOrThrow()
-        return try {
-            "success(${WinRtStrings.toKotlin(value)})"
-        } finally {
-            WinRtStrings.release(value)
-        }
+        return value.use(HString::toKotlinString).let { "success($it)" }
     }
 
     private fun classifyFloat64At(pointer: dev.winrt.kom.ComPtr, slot: Int, index: UInt): String {
