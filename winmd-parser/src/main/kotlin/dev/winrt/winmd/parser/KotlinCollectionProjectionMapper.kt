@@ -14,14 +14,20 @@ internal class KotlinCollectionProjectionMapper {
         if (type.namespace == "Windows.Foundation.Collections" && type.name == "StringVectorView") {
             return RuntimeCollectionProjection(
                 superinterface = PoetSymbols.listClass.parameterizedBy(String::class.asTypeName()),
-                delegateFactory = CodeBlock.of(
-                    "%T(sizeProvider = { %T(%T.invokeUInt32Method(pointer, 7).getOrThrow()).value.toInt() }, getter = { index -> kotlin.io.use(%T.invokeHStringMethodWithUInt32Arg(pointer, 6, index.toUInt()).getOrThrow()) { it.toKotlinString() } })",
-                    PoetSymbols.winRtListProjectionClass.parameterizedBy(String::class.asTypeName()),
-                    PoetSymbols.uint32Class,
-                    PoetSymbols.platformComInteropClass,
-                    PoetSymbols.platformComInteropClass,
-                ),
                 winRtSizeSlot = 7,
+                extraProperties = listOf(
+                    PropertySpec.builder("size", Int::class)
+                        .getter(
+                            FunSpec.getterBuilder()
+                                .addStatement(
+                                    "return %T(%T.invokeUInt32Method(pointer, 7).getOrThrow()).value.toInt()",
+                                    PoetSymbols.uint32Class,
+                                    PoetSymbols.platformComInteropClass,
+                                )
+                                .build(),
+                        )
+                        .build(),
+                ),
                 extraFunctions = listOf(
                     FunSpec.builder("getAt")
                         .addParameter("index", PoetSymbols.uint32Class)
@@ -59,8 +65,9 @@ internal class KotlinCollectionProjectionMapper {
             ?: return null
         return RuntimeCollectionProjection(
             superinterface = collectionInterface.collectionSuperinterface,
-            delegateFactory = collectionInterface.delegateFactory,
             winRtSizeSlot = collectionInterface.winRtSizeSlot,
+            extraProperties = collectionInterface.extraProperties,
+            extraFunctions = collectionInterface.extraFunctions,
         )
     }
 
@@ -174,13 +181,6 @@ internal class KotlinCollectionProjectionMapper {
             val elementTypeName = collectionElementTypeName(elementType, typeNameMapper)
             return CollectionInterfaceMetadata(
                 collectionSuperinterface = PoetSymbols.listClass.parameterizedBy(elementTypeName),
-                delegateFactory = CodeBlock.of(
-                    "%T.from(%T(pointer), %S, %S)",
-                    rawInterfaceClass,
-                    PoetSymbols.inspectableClass,
-                    winRtSignatureMapper.signatureFor(elementType, "Windows.Foundation.Collections"),
-                    winRtProjectionTypeMapper.projectionTypeKeyFor(elementType, "Windows.Foundation.Collections"),
-                ),
                 winRtSizeSlot = 8,
             )
         }
@@ -196,34 +196,41 @@ internal class KotlinCollectionProjectionMapper {
             val elementTypeName = collectionElementTypeName(elementType, typeNameMapper)
             return CollectionInterfaceMetadata(
                 collectionSuperinterface = PoetSymbols.mutableListClass.parameterizedBy(elementTypeName),
-                delegateFactory = CodeBlock.of(
-                    "%T.from(%T(pointer), %S, %S)",
-                    rawInterfaceClass,
-                    PoetSymbols.inspectableClass,
-                    winRtSignatureMapper.signatureFor(elementType, "Windows.Foundation.Collections"),
-                    winRtProjectionTypeMapper.projectionTypeKeyFor(elementType, "Windows.Foundation.Collections"),
-                ),
                 winRtSizeSlot = 8,
             )
         }
         return when (qualifiedName) {
             "Microsoft.UI.Xaml.Interop.IBindableVector" -> CollectionInterfaceMetadata(
                 collectionSuperinterface = PoetSymbols.mutableListClass.parameterizedBy(PoetSymbols.inspectableClass),
-                delegateFactory = CodeBlock.of(
-                    "%T.from(%T(pointer))",
-                    typeNameMapper.mapTypeName(qualifiedName, qualifiedName.substringBeforeLast(".")) as ClassName,
-                    PoetSymbols.inspectableClass,
-                ),
                 winRtSizeSlot = 8,
+                extraFunctions = listOf(
+                    FunSpec.builder("contains")
+                        .addParameter("element", PoetSymbols.inspectableClass)
+                        .returns(Boolean::class)
+                        .addStatement("return indexOf(element) >= 0")
+                        .build(),
+                    FunSpec.builder("containsAll")
+                        .addParameter("elements", Collection::class.asTypeName().parameterizedBy(PoetSymbols.inspectableClass))
+                        .returns(Boolean::class)
+                        .addStatement("return elements.all { contains(it) }")
+                        .build(),
+                ),
             )
             "Microsoft.UI.Xaml.Interop.IBindableVectorView" -> CollectionInterfaceMetadata(
                 collectionSuperinterface = PoetSymbols.listClass.parameterizedBy(PoetSymbols.inspectableClass),
-                delegateFactory = CodeBlock.of(
-                    "%T.from(%T(pointer))",
-                    typeNameMapper.mapTypeName(qualifiedName, qualifiedName.substringBeforeLast(".")) as ClassName,
-                    PoetSymbols.inspectableClass,
-                ),
                 winRtSizeSlot = 8,
+                extraFunctions = listOf(
+                    FunSpec.builder("contains")
+                        .addParameter("element", PoetSymbols.inspectableClass)
+                        .returns(Boolean::class)
+                        .addStatement("return indexOf(element) >= 0")
+                        .build(),
+                    FunSpec.builder("containsAll")
+                        .addParameter("elements", Collection::class.asTypeName().parameterizedBy(PoetSymbols.inspectableClass))
+                        .returns(Boolean::class)
+                        .addStatement("return elements.all { contains(it) }")
+                        .build(),
+                ),
             )
             else -> null
         }
@@ -425,15 +432,18 @@ internal class KotlinCollectionProjectionMapper {
 
 internal data class RuntimeCollectionProjection(
     val superinterface: TypeName,
-    val delegateFactory: CodeBlock,
+    val delegateFactory: CodeBlock? = null,
     val winRtSizeSlot: Int,
+    val extraProperties: List<PropertySpec> = emptyList(),
     val extraFunctions: List<FunSpec> = emptyList(),
 )
 
 internal data class InterfaceCollectionProjection(
     val superinterface: TypeName,
-    val delegateFactory: CodeBlock,
+    val delegateFactory: CodeBlock? = null,
     val winRtSizeSlot: Int,
+    val extraProperties: List<PropertySpec> = emptyList(),
+    val extraFunctions: List<FunSpec> = emptyList(),
 )
 
 internal data class RuntimeIterableProjection(
@@ -443,6 +453,7 @@ internal data class RuntimeIterableProjection(
 
 internal data class CollectionInterfaceMetadata(
     val collectionSuperinterface: TypeName,
-    val delegateFactory: CodeBlock,
     val winRtSizeSlot: Int,
+    val extraProperties: List<PropertySpec> = emptyList(),
+    val extraFunctions: List<FunSpec> = emptyList(),
 )

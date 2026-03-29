@@ -42,7 +42,9 @@ internal class InterfaceTypeRenderer(
                     collectionSuperinterface(baseInterface, type.namespace, genericParameters)
                 }.forEach { addSuperinterface(it) }
                 kotlinCollectionProjectionMapper.interfaceProjection(type)?.let { projection ->
-                    addSuperinterface(projection.superinterface, projection.delegateFactory)
+                    addSuperinterface(projection.superinterface)
+                    projection.extraProperties.forEach(::addProperty)
+                    projection.extraFunctions.forEach(::addFunction)
                     addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
                 }
                 if (type.namespace == "Microsoft.UI.Xaml.Interop" && type.name == "IBindableIterable") {

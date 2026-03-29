@@ -37,9 +37,10 @@ internal class RuntimeTypeRenderer(
             .addSuperclassConstructorParameter("pointer")
 
         kotlinCollectionProjectionMapper.runtimeClassProjection(type)?.let { projection ->
-            builder.addSuperinterface(projection.superinterface, projection.delegateFactory)
-            builder.addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
+            builder.addSuperinterface(projection.superinterface)
+            projection.extraProperties.forEach(builder::addProperty)
             projection.extraFunctions.forEach(builder::addFunction)
+            builder.addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
         }
         kotlinCollectionProjectionMapper.runtimeClassInterfaceProjection(
             type = type,
@@ -47,7 +48,9 @@ internal class RuntimeTypeRenderer(
             winRtSignatureMapper = winRtSignatureMapper,
             winRtProjectionTypeMapper = winRtProjectionTypeMapper,
         )?.let { projection ->
-            builder.addSuperinterface(projection.superinterface, projection.delegateFactory)
+            builder.addSuperinterface(projection.superinterface)
+            projection.extraProperties.forEach(builder::addProperty)
+            projection.extraFunctions.forEach(builder::addFunction)
             builder.addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
         }
         kotlinCollectionProjectionMapper.runtimeClassIterableProjection(
