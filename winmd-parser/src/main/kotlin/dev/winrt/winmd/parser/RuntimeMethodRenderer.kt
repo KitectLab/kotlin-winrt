@@ -23,6 +23,14 @@ internal class RuntimeMethodRenderer(
                 method.vtableIndex != null) ||
             (method.returnType == "Unit" &&
                 method.parameters.size == 1 &&
+                method.parameters[0].type == "Int64" &&
+                method.vtableIndex != null) ||
+            (method.returnType == "Unit" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "String" &&
+                method.vtableIndex != null) ||
+            (method.returnType == "Unit" &&
+                method.parameters.size == 1 &&
                 supportsRuntimeObjectType(method.parameters[0].type) &&
                 method.vtableIndex != null) ||
             (scalarRuntimeReturnPlan(method.returnType) != null && method.parameters.isEmpty() && method.vtableIndex != null) ||
@@ -70,6 +78,36 @@ internal class RuntimeMethodRenderer(
                 .addStatement("return")
                 .endControlFlow()
                 .addStatement("%T.invokeUnitMethodWithInt32Arg(pointer, %L, %N.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+                .build()
+        }
+        if (method.returnType == "Unit" &&
+            method.parameters.size == 1 &&
+            method.parameters[0].type == "Int64" &&
+            method.vtableIndex != null
+        ) {
+            val vtableIndex = method.vtableIndex!!
+            val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+            return builder
+                .addParameter(argumentName, PoetSymbols.int64Class)
+                .beginControlFlow("if (pointer.isNull)")
+                .addStatement("return")
+                .endControlFlow()
+                .addStatement("%T.invokeUnitMethodWithInt64Arg(pointer, %L, %N.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+                .build()
+        }
+        if (method.returnType == "Unit" &&
+            method.parameters.size == 1 &&
+            method.parameters[0].type == "String" &&
+            method.vtableIndex != null
+        ) {
+            val vtableIndex = method.vtableIndex!!
+            val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+            return builder
+                .addParameter(argumentName, String::class.asTypeName())
+                .beginControlFlow("if (pointer.isNull)")
+                .addStatement("return")
+                .endControlFlow()
+                .addStatement("%T.invokeUnitMethodWithStringArg(pointer, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
                 .build()
         }
         if (method.returnType == "Unit" &&

@@ -154,6 +154,20 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeUnitMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit> {
+        return runCatching {
+            JvmComMethodExecutor.withHStringArg(value) { input ->
+                JvmComMethodExecutor.invokeWithoutOut(
+                    instance = instance,
+                    vtableIndex = vtableIndex,
+                    operation = "invokeUnitMethodWithStringArg",
+                    handle = Jdk22Foreign.hstringSetterHandle,
+                    input,
+                ).getOrThrow()
+            }
+        }
+    }
+
     override fun invokeHStringMethod(instance: ComPtr, vtableIndex: Int): Result<HString> {
         return JvmComMethodExecutor.invokeWithOutSegment(
             instance = instance,

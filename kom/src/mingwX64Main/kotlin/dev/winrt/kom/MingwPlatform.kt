@@ -31,6 +31,12 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeUnitMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with String input is not wired yet"),
+        )
+    }
+
     override fun addRef(instance: ComPtr): UInt = 1u
 
     override fun release(instance: ComPtr): UInt = 0u

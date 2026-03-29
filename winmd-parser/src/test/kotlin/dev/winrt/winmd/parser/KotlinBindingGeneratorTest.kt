@@ -2033,6 +2033,47 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_unit_runtime_methods_for_string_and_int64_parameters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "UnitMethodHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetTitle",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter(name = "title", type = "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "SetTicks",
+                                    returnType = "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter(name = "ticks", type = "Int64")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/UnitMethodHost.kt" }.content
+
+        assertTrue(binding.contains("fun setTitle(title: String)"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 6, title).getOrThrow()"))
+        assertTrue(binding.contains("fun setTicks(ticks: Int64)"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 7, ticks.value).getOrThrow()"))
+    }
+
+    @Test
     fun generates_json_array_uint32_object_call_from_real_metadata_model() {
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",
