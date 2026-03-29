@@ -323,6 +323,12 @@ internal class InterfaceTypeRenderer(
                     typeNameMapper.mapTypeName(parameter.type, currentNamespace, genericParameters),
                 ).build()
             })
+        val methodPlan = plannedInterfaceMethod(method, currentNamespace, genericParameters)
+        if (methodPlan != null) {
+            return builder
+                .addStatement(methodPlan.statement, *methodPlan.args(method, currentNamespace))
+                .build()
+        }
 
         return when {
             method.returnType == "String" && method.parameters.isEmpty() && method.vtableIndex != null -> {
@@ -683,55 +689,16 @@ internal class InterfaceTypeRenderer(
         currentNamespace: String,
         genericParameters: Set<String>,
     ): Boolean {
-        return (method.returnType == "String" && method.parameters.isEmpty() && method.vtableIndex != null) ||
-            (method.returnType == "String" &&
-                method.parameters.size == 1 &&
-                method.parameters[0].type == "String" &&
-                method.vtableIndex != null) ||
+        return plannedInterfaceMethod(method, currentNamespace, genericParameters) != null ||
             (method.returnType == "String" &&
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "Int32" &&
                 method.vtableIndex != null) ||
-            (method.returnType == "String" &&
-                method.parameters.size == 1 &&
-                method.parameters[0].type == "UInt32" &&
+            (method.returnType == "Int32" &&
+                method.parameters.isEmpty() &&
                 method.vtableIndex != null) ||
-            (method.returnType == "Float64" && method.parameters.isEmpty() && method.vtableIndex != null) ||
-            (method.returnType == "Float64" &&
-                method.parameters.size == 1 &&
-                method.parameters[0].type == "String" &&
-                method.vtableIndex != null) ||
-            (method.returnType == "Float64" &&
-                method.parameters.size == 1 &&
-                method.parameters[0].type == "UInt32" &&
-                method.vtableIndex != null) ||
-            (method.returnType == "Boolean" && method.parameters.isEmpty() && method.vtableIndex != null) ||
-            (method.returnType == "Boolean" &&
-                method.parameters.size == 1 &&
-                method.parameters[0].type == "String" &&
-                method.vtableIndex != null) ||
-            (method.returnType == "Boolean" &&
-                method.parameters.size == 1 &&
-                method.parameters[0].type == "UInt32" &&
-                method.vtableIndex != null) ||
-            (method.returnType == "Boolean" &&
-                method.parameters.size == 1 &&
-                supportsInterfaceObjectInput(method.parameters[0].type) &&
-                method.vtableIndex != null) ||
-            (method.returnType == "Int32" && method.parameters.isEmpty() && method.vtableIndex != null) ||
             (typeRegistry.isEnumType(method.returnType, currentNamespace) &&
                 method.parameters.isEmpty() &&
-                method.vtableIndex != null) ||
-            (supportsInterfaceObjectType(method.returnType) &&
-                method.parameters.isEmpty() &&
-                method.vtableIndex != null) ||
-            (supportsInterfaceObjectType(method.returnType) &&
-                method.parameters.size == 1 &&
-                method.parameters[0].type == "String" &&
-                method.vtableIndex != null) ||
-            (supportsInterfaceObjectType(method.returnType) &&
-                method.parameters.size == 1 &&
-                method.parameters[0].type == "UInt32" &&
                 method.vtableIndex != null) ||
             (method.returnType == "Unit" &&
                 method.parameters.isEmpty() &&
@@ -749,6 +716,157 @@ internal class InterfaceTypeRenderer(
                 supportsInterfaceObjectInput(method.parameters[0].type) &&
                 method.vtableIndex != null)
     }
+
+    private fun plannedInterfaceMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): PlannedInterfaceMethod? {
+        if (method.vtableIndex == null) {
+            return null
+        }
+        val parameterTypes = method.parameters.map { it.type }
+        return when {
+            method.returnType == "String" -> plannedStringMethod(parameterTypes)
+            method.returnType == "Float64" -> plannedFloat64Method(parameterTypes)
+            method.returnType == "Boolean" -> plannedBooleanMethod(parameterTypes)
+            supportsInterfaceObjectType(method.returnType) -> plannedObjectMethod(genericParameters, parameterTypes)
+            else -> null
+        }
+    }
+
+    private fun plannedStringMethod(parameterTypes: List<String>): PlannedInterfaceMethod? {
+        return when (parameterTypes) {
+            emptyList<String>() -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ ->
+                    arrayOf(HStringSupport.toKotlinString("pointer", method.vtableIndex!!))
+                },
+            )
+            listOf("String") -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(HStringSupport.toKotlinStringWithStringArg("pointer", method.vtableIndex!!, argumentName))
+                },
+            )
+            listOf("UInt32") -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(HStringSupport.toKotlinStringWithUInt32Arg("pointer", method.vtableIndex!!, "$argumentName.value"))
+                },
+            )
+            else -> null
+        }
+    }
+
+    private fun plannedFloat64Method(parameterTypes: List<String>): PlannedInterfaceMethod? {
+        return when (parameterTypes) {
+            emptyList<String>() -> PlannedInterfaceMethod(
+                statement = "return %T(%T.invokeFloat64Method(pointer, %L).getOrThrow())",
+                args = { method, _ ->
+                    arrayOf(PoetSymbols.float64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!)
+                },
+            )
+            listOf("String") -> PlannedInterfaceMethod(
+                statement = "return %T(%T.invokeFloat64MethodWithStringArg(pointer, %L, %N).getOrThrow())",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.float64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                },
+            )
+            listOf("UInt32") -> PlannedInterfaceMethod(
+                statement = "return %T(%T.invokeFloat64MethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow())",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.float64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                },
+            )
+            else -> null
+        }
+    }
+
+    private fun plannedBooleanMethod(parameterTypes: List<String>): PlannedInterfaceMethod? {
+        return when {
+            parameterTypes.isEmpty() -> PlannedInterfaceMethod(
+                statement = "return %T(%T.invokeBooleanGetter(pointer, %L).getOrThrow())",
+                args = { method, _ ->
+                    arrayOf(PoetSymbols.winRtBooleanClass, PoetSymbols.platformComInteropClass, method.vtableIndex!!)
+                },
+            )
+            parameterTypes == listOf("String") -> PlannedInterfaceMethod(
+                statement = "return %T(%T.invokeBooleanMethodWithStringArg(pointer, %L, %N).getOrThrow())",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.winRtBooleanClass, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                },
+            )
+            parameterTypes == listOf("UInt32") -> PlannedInterfaceMethod(
+                statement = "return %T(%T.invokeBooleanMethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow())",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.winRtBooleanClass, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                },
+            )
+            parameterTypes.size == 1 && supportsInterfaceObjectInput(parameterTypes.single()) -> PlannedInterfaceMethod(
+                statement = "return %T(%T.invokeBooleanMethodWithObjectArg(pointer, %L, %N.pointer).getOrThrow())",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.winRtBooleanClass, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                },
+            )
+            else -> null
+        }
+    }
+
+    private fun plannedObjectMethod(
+        genericParameters: Set<String>,
+        parameterTypes: List<String>,
+    ): PlannedInterfaceMethod? {
+        return when (parameterTypes) {
+            emptyList<String>() -> PlannedInterfaceMethod(
+                statement = "return %T(%T.invokeObjectMethod(pointer, %L).getOrThrow())",
+                args = { method, namespace ->
+                    arrayOf(
+                        typeNameMapper.mapTypeName(method.returnType, namespace, genericParameters),
+                        PoetSymbols.platformComInteropClass,
+                        method.vtableIndex!!,
+                    )
+                },
+            )
+            listOf("String") -> PlannedInterfaceMethod(
+                statement = "return %T(%T.invokeObjectMethodWithStringArg(pointer, %L, %N).getOrThrow())",
+                args = { method, namespace ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(
+                        typeNameMapper.mapTypeName(method.returnType, namespace, genericParameters),
+                        PoetSymbols.platformComInteropClass,
+                        method.vtableIndex!!,
+                        argumentName,
+                    )
+                },
+            )
+            listOf("UInt32") -> PlannedInterfaceMethod(
+                statement = "return %T(%T.invokeObjectMethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow())",
+                args = { method, namespace ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(
+                        typeNameMapper.mapTypeName(method.returnType, namespace, genericParameters),
+                        PoetSymbols.platformComInteropClass,
+                        method.vtableIndex!!,
+                        argumentName,
+                    )
+                },
+            )
+            else -> null
+        }
+    }
+
+    private data class PlannedInterfaceMethod(
+        val statement: String,
+        val args: (WinMdMethod, String) -> Array<Any>,
+    )
 
     private fun supportsInterfaceObjectInput(type: String): Boolean {
         return (type == "Object" || type.contains('.')) &&
