@@ -11,6 +11,11 @@ public class AsyncProgressType<TProgress> internal constructor(
 )
 
 public object AsyncProgressTypes {
+  public fun <TProgress> signature(
+    signature: String,
+    argumentKind: WinRtDelegateValueKind,
+  ): AsyncProgressType<TProgress> = AsyncProgressType(signature, argumentKind)
+
   public val string: AsyncProgressType<String> =
       AsyncProgressType(WinRtTypeSignature.string(), WinRtDelegateValueKind.STRING)
 

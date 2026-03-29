@@ -18,6 +18,7 @@ internal class TypeFileEmitter(
         typeNameMapper,
         delegateLambdaPlanResolver,
         typeRegistry,
+        asyncMethodProjectionPlanner,
         asyncMethodRuleRegistry,
         winRtProjectionTypeMapper,
     )

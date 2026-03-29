@@ -9,6 +9,9 @@ public class AsyncResultType<TResult> internal constructor(
 )
 
 public object AsyncResultTypes {
+  public fun <TResult> signature(signature: String): AsyncResultType<TResult> =
+      AsyncResultType(signature)
+
   public val string: AsyncResultType<String> =
       AsyncResultType(WinRtTypeSignature.string())
 

@@ -2,6 +2,7 @@ package dev.winrt.winmd.parser
 
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.asTypeName
 
 internal class AsyncMethodProjectionPlanner(
@@ -49,6 +50,23 @@ internal class AsyncMethodProjectionPlanner(
         return winRtSignatureMapper.signatureFor(argument, currentNamespace)
     }
 
+    fun asyncResultTypeName(
+        returnType: String,
+        currentNamespace: String,
+        genericParameters: Set<String> = emptySet(),
+    ): TypeName? = awaitReturnType(returnType, currentNamespace, genericParameters)
+
+    fun asyncResultDescriptorExpression(returnType: String, currentNamespace: String): CodeBlock? {
+        val signature = when {
+            returnType.startsWith("Windows.Foundation.IAsyncOperation<") ->
+                asyncOperationResultSignature(returnType, currentNamespace)
+            returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") ->
+                asyncOperationWithProgressPlan(returnType, currentNamespace)?.resultSignature
+            else -> null
+        } ?: return null
+        return CodeBlock.of("%T.signature(%S)", PoetSymbols.asyncResultTypesClass, signature)
+    }
+
     fun progressLambdaType(
         returnType: String,
         currentNamespace: String,
@@ -64,6 +82,34 @@ internal class AsyncMethodProjectionPlanner(
         return LambdaTypeName.get(
             parameters = arrayOf(typeNameMapper.mapTypeName(progressType, currentNamespace, genericParameters)),
             returnType = Unit::class.asTypeName(),
+        )
+    }
+
+    fun asyncProgressTypeName(
+        returnType: String,
+        currentNamespace: String,
+        genericParameters: Set<String> = emptySet(),
+    ): TypeName? {
+        val progressLambda = progressLambdaType(returnType, currentNamespace, genericParameters) as? LambdaTypeName ?: return null
+        return progressLambda.parameters.singleOrNull()?.type
+    }
+
+    fun asyncProgressDescriptorExpression(returnType: String, currentNamespace: String): CodeBlock? {
+        val progressPlan = when {
+            returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") ->
+                asyncProgressPlan(returnType, currentNamespace)
+            returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") ->
+                asyncOperationWithProgressPlan(returnType, currentNamespace)?.let {
+                    AsyncProgressPlan(it.progressSignature, it.valueKind, it.decodeLambda)
+                }
+            else -> null
+        } ?: return null
+        return CodeBlock.of(
+            "%T.signature(%S, %T.%L)",
+            PoetSymbols.asyncProgressTypesClass,
+            progressPlan.progressSignature,
+            PoetSymbols.winRtDelegateValueKindClass,
+            progressPlan.valueKind,
         )
     }
 

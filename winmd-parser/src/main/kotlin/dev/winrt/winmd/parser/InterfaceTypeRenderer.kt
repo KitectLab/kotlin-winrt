@@ -21,6 +21,7 @@ internal class InterfaceTypeRenderer(
     private val typeNameMapper: TypeNameMapper,
     private val delegateLambdaPlanResolver: DelegateLambdaPlanResolver,
     private val typeRegistry: TypeRegistry,
+    private val asyncMethodProjectionPlanner: AsyncMethodProjectionPlanner,
     private val asyncMethodRuleRegistry: AsyncMethodRuleRegistry,
     private val winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     private val kotlinCollectionProjectionMapper: KotlinCollectionProjectionMapper = KotlinCollectionProjectionMapper(),
@@ -145,9 +146,42 @@ internal class InterfaceTypeRenderer(
                             addFunction(renderGenericMetadataOf(type))
                             addFunction(renderGenericFrom(type, typeClass, typeVariables))
                         }
+                        type.methods.forEach { method ->
+                            renderAsyncResultDescriptorProperty(method, type.namespace, genericParameters)?.let(::addProperty)
+                            renderAsyncProgressDescriptorProperty(method, type.namespace, genericParameters)?.let(::addProperty)
+                        }
                     }
                     .build(),
             )
+            .build()
+    }
+
+    private fun renderAsyncResultDescriptorProperty(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): PropertySpec? {
+        val resultType = asyncMethodRuleRegistry.plan(method, currentNamespace, genericParameters)
+            ?.let { asyncMethodProjectionPlanner.asyncResultTypeName(method.returnType, currentNamespace, genericParameters) }
+            ?: return null
+        val descriptorExpression = asyncMethodProjectionPlanner.asyncResultDescriptorExpression(method.returnType, currentNamespace)
+            ?: return null
+        return PropertySpec.builder("${kotlinMethodName(method.name)}ResultType", PoetSymbols.asyncResultTypeClass.parameterizedBy(resultType))
+            .initializer("%L", descriptorExpression)
+            .build()
+    }
+
+    private fun renderAsyncProgressDescriptorProperty(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): PropertySpec? {
+        val progressType = asyncMethodProjectionPlanner.asyncProgressTypeName(method.returnType, currentNamespace, genericParameters)
+            ?: return null
+        val descriptorExpression = asyncMethodProjectionPlanner.asyncProgressDescriptorExpression(method.returnType, currentNamespace)
+            ?: return null
+        return PropertySpec.builder("${kotlinMethodName(method.name)}ProgressType", PoetSymbols.asyncProgressTypeClass.parameterizedBy(progressType))
+            .initializer("%L", descriptorExpression)
             .build()
     }
 
