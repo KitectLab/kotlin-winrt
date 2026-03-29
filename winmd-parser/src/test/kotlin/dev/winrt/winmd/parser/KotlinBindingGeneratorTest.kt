@@ -27,7 +27,7 @@ class KotlinBindingGeneratorTest {
                             namespace = "Microsoft.UI.Xaml",
                             name = "Application",
                             kind = WinMdTypeKind.RuntimeClass,
-                            defaultInterface = "Windows.Foundation.IStringable",
+                            defaultInterface = "Microsoft.UI.Xaml.IApplication",
                         ),
                         WinMdType(
                             namespace = "Microsoft.UI.Xaml",
@@ -231,7 +231,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(windowBinding.contains("constructor() : this(Companion.activateInstance().pointer)"))
         assertTrue(applicationBinding.contains("fun activate(): Application = WinRtRuntime.activate(this, ::Application)"))
         assertTrue(windowBinding.contains("fun activateInstance(): Window = WinRtRuntime.activate(this, ::Window)"))
-        assertTrue(windowBinding.contains("defaultInterfaceName: String? = \"Windows.Foundation.IStringable\""))
+        assertTrue(windowBinding.contains("defaultInterfaceName: String? = \"Microsoft.UI.Xaml.IWindow\""))
         assertTrue(iStringableBinding.contains("open class IStringable"))
         assertTrue(iStringableBinding.contains("WinRtInterfaceProjection"))
         assertTrue(iStringableBinding.contains("fun from("))

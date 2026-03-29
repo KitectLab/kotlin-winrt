@@ -159,7 +159,7 @@ object WinMdModelFactory {
                             namespace = "Microsoft.UI.Xaml",
                             name = "Application",
                             kind = WinMdTypeKind.RuntimeClass,
-                            defaultInterface = "Windows.Foundation.IStringable",
+                            defaultInterface = "Microsoft.UI.Xaml.IApplication",
                             activationKind = WinMdActivationKind.Factory,
                             methods = listOf(
                                 WinMdMethod("Start", "Unit", vtableIndex = 6),
@@ -170,7 +170,7 @@ object WinMdModelFactory {
                             namespace = "Microsoft.UI.Xaml",
                             name = "Window",
                             kind = WinMdTypeKind.RuntimeClass,
-                            defaultInterface = "Windows.Foundation.IStringable",
+                            defaultInterface = "Microsoft.UI.Xaml.IWindow",
                             activationKind = WinMdActivationKind.Factory,
                             activationFunctionName = "activateInstance",
                             methods = listOf(
@@ -403,7 +403,7 @@ object WinMdModelFactory {
                             namespace = "Microsoft.UI.Xaml",
                             name = "Application",
                             kind = WinMdTypeKind.RuntimeClass,
-                            defaultInterface = "Windows.Foundation.IStringable",
+                            defaultInterface = "Microsoft.UI.Xaml.IApplication",
                             activationKind = WinMdActivationKind.Factory,
                             methods = listOf(
                                 WinMdMethod("Start", "Unit", vtableIndex = 6),
@@ -414,7 +414,7 @@ object WinMdModelFactory {
                             namespace = "Microsoft.UI.Xaml",
                             name = "Window",
                             kind = WinMdTypeKind.RuntimeClass,
-                            defaultInterface = "Windows.Foundation.IStringable",
+                            defaultInterface = "Microsoft.UI.Xaml.IWindow",
                             activationKind = WinMdActivationKind.Factory,
                             activationFunctionName = "activateInstance",
                             methods = listOf(

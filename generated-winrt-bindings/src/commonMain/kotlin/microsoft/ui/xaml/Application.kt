@@ -1,6 +1,5 @@
 package microsoft.ui.xaml
 
-import dev.winrt.core.Inspectable
 import dev.winrt.core.RuntimeClassId
 import dev.winrt.core.UInt32
 import dev.winrt.core.WinRtDelegateBridge
@@ -11,7 +10,7 @@ import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
 
-open class Application(pointer: ComPtr) : windows.foundation.IStringable(pointer) {
+open class Application(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
     constructor() : this(Companion.activate().pointer)
 
     fun start() {
@@ -27,7 +26,7 @@ open class Application(pointer: ComPtr) : windows.foundation.IStringable(pointer
     companion object : WinRtRuntimeClassMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Application"
         override val classId = RuntimeClassId("Microsoft.UI.Xaml", "Application")
-        override val defaultInterfaceName: String? = "Windows.Foundation.IStringable"
+        override val defaultInterfaceName: String? = "Microsoft.UI.Xaml.IApplication"
         override val activationKind = WinRtActivationKind.Factory
 
         val current: Application
