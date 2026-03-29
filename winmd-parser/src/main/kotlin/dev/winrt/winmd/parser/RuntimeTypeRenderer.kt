@@ -59,7 +59,7 @@ internal class RuntimeTypeRenderer(
             builder.addSuperinterface(projection.superinterface, projection.delegateFactory)
         }
         type.baseInterfaces.mapNotNull { baseInterface ->
-            collectionSuperinterface(baseInterface, type.namespace, emptySet())
+            typeNameMapper.mapTypeName(baseInterface, type.namespace, emptySet())
         }.forEach(builder::addSuperinterface)
 
         if (type.activationKind == WinMdActivationKind.Factory) {
@@ -130,15 +130,6 @@ internal class RuntimeTypeRenderer(
                     }
             }
         return RuntimeProjectionMembers(methods, properties)
-    }
-
-    private fun collectionSuperinterface(
-        baseInterface: String,
-        currentNamespace: String,
-        genericParameters: Set<String>,
-    ): com.squareup.kotlinpoet.TypeName? {
-        val mapped = typeNameMapper.mapTypeName(baseInterface, currentNamespace, genericParameters)
-        return if (mapped.toString().startsWith("kotlin.collections.")) mapped else null
     }
 
     private data class RuntimeProjectionMembers(

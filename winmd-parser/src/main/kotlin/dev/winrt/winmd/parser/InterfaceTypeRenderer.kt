@@ -39,7 +39,7 @@ internal class InterfaceTypeRenderer(
             .addSuperclassConstructorParameter("pointer")
             .apply {
                 type.baseInterfaces.mapNotNull { baseInterface ->
-                    collectionSuperinterface(baseInterface, type.namespace, genericParameters)
+                    typeNameMapper.mapTypeName(baseInterface, type.namespace, genericParameters)
                 }.forEach { addSuperinterface(it) }
                 kotlinCollectionProjectionMapper.interfaceProjection(type)?.let { projection ->
                     addSuperinterface(projection.superinterface, projection.delegateFactory)
@@ -809,12 +809,4 @@ internal class InterfaceTypeRenderer(
                 )
     }
 
-    private fun collectionSuperinterface(
-        baseInterface: String,
-        currentNamespace: String,
-        genericParameters: Set<String>,
-    ): TypeName? {
-        val mapped = typeNameMapper.mapTypeName(baseInterface, currentNamespace, genericParameters)
-        return if (mapped.toString().startsWith("kotlin.collections.")) mapped else null
-    }
 }

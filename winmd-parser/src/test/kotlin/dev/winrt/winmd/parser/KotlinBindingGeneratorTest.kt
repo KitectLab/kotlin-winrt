@@ -343,11 +343,11 @@ class KotlinBindingGeneratorTest {
         assertTrue(jsonObjectBinding, jsonObjectBinding.contains("Iterable<Map.Entry<String, IJsonValue>>"))
         assertTrue(jsonObjectBinding.contains("override fun toString()"))
         assertTrue(jsonObjectBinding.contains("override val defaultInterfaceName: String? = \"Windows.Data.Json.IJsonObject\""))
+        assertTrue(jsonObjectBinding.contains("IJsonValue"))
         assertTrue(jsonInterfaceBinding.contains("override val qualifiedName: String = \"Windows.Data.Json.IJsonObject\""))
         assertTrue(jsonInterfaceBinding, jsonInterfaceBinding.contains("MutableMap<String, IJsonValue>"))
         assertTrue(jsonInterfaceBinding, jsonInterfaceBinding.contains("Iterable<Map.Entry<String, IJsonValue>>"))
         assertFalse(jsonObjectBinding.contains("Windows.Data.Json.JsonValueType"))
-        assertFalse(jsonObjectBinding.contains("Windows.Data.Json.IJsonValue"))
     }
 
     @Test
