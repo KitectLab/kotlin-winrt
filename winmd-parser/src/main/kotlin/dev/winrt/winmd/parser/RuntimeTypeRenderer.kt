@@ -44,6 +44,7 @@ internal class RuntimeTypeRenderer(
         }
         kotlinCollectionProjectionMapper.runtimeClassInterfaceProjection(
             type = type,
+            typeRegistry = typeRegistry,
             typeNameMapper = typeNameMapper,
             winRtSignatureMapper = winRtSignatureMapper,
             winRtProjectionTypeMapper = winRtProjectionTypeMapper,
@@ -55,6 +56,7 @@ internal class RuntimeTypeRenderer(
         }
         kotlinCollectionProjectionMapper.runtimeClassIterableProjection(
             type = type,
+            typeRegistry = typeRegistry,
             typeNameMapper = typeNameMapper,
             winRtSignatureMapper = winRtSignatureMapper,
             winRtProjectionTypeMapper = winRtProjectionTypeMapper,

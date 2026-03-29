@@ -227,12 +227,14 @@ internal class RuntimeCompanionRenderer(
             kotlinCollectionProjectionMapper.runtimeClassProjection(runtimeType)?.let { return it.superinterface }
             kotlinCollectionProjectionMapper.runtimeClassInterfaceProjection(
                 type = runtimeType,
+                typeRegistry = typeRegistry,
                 typeNameMapper = typeNameMapper,
                 winRtSignatureMapper = winRtSignatureMapper,
                 winRtProjectionTypeMapper = winRtProjectionTypeMapper,
             )?.let { return it.superinterface }
             kotlinCollectionProjectionMapper.runtimeClassIterableProjection(
                 type = runtimeType,
+                typeRegistry = typeRegistry,
                 typeNameMapper = typeNameMapper,
                 winRtSignatureMapper = winRtSignatureMapper,
                 winRtProjectionTypeMapper = winRtProjectionTypeMapper,

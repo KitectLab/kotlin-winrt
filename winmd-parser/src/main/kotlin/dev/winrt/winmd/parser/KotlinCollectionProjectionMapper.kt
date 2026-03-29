@@ -10,6 +10,17 @@ import com.squareup.kotlinpoet.asTypeName
 import dev.winrt.winmd.plugin.WinMdType
 
 internal class KotlinCollectionProjectionMapper {
+    fun runtimeClassCollectionInterfaces(
+        type: WinMdType,
+        typeRegistry: TypeRegistry,
+    ): Sequence<String> {
+        return listOfNotNull(typeRegistry.findDefaultInterfaceType(type.name, type.namespace))
+            .plus(typeRegistry.findImplementedInterfaceTypes(type.name, type.namespace))
+            .distinct()
+            .asSequence()
+            .map { "${it.namespace}.${it.name}" }
+    }
+
     fun runtimeClassProjection(type: WinMdType): RuntimeCollectionProjection? {
         if (type.namespace == "Windows.Foundation.Collections" && type.name == "StringVectorView") {
             return RuntimeCollectionProjection(
@@ -45,14 +56,12 @@ internal class KotlinCollectionProjectionMapper {
 
     fun runtimeClassInterfaceProjection(
         type: WinMdType,
+        typeRegistry: TypeRegistry,
         typeNameMapper: TypeNameMapper,
         winRtSignatureMapper: WinRtSignatureMapper,
         winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     ): RuntimeCollectionProjection? {
-        val collectionInterface = sequenceOf(type.defaultInterface)
-            .filterNotNull()
-            .plus(type.implementedInterfaces.asSequence())
-            .distinct()
+        val collectionInterface = runtimeClassCollectionInterfaces(type, typeRegistry)
             .mapNotNull {
                 interfaceProjectionMetadata(
                     qualifiedName = it,
@@ -73,14 +82,12 @@ internal class KotlinCollectionProjectionMapper {
 
     fun runtimeClassIterableProjection(
         type: WinMdType,
+        typeRegistry: TypeRegistry,
         typeNameMapper: TypeNameMapper,
         winRtSignatureMapper: WinRtSignatureMapper,
         winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     ): RuntimeIterableProjection? {
-        val iterableInterface = sequenceOf(type.defaultInterface)
-            .filterNotNull()
-            .plus(type.implementedInterfaces.asSequence())
-            .distinct()
+        val iterableInterface = runtimeClassCollectionInterfaces(type, typeRegistry)
             .firstOrNull {
                 it == "Microsoft.UI.Xaml.Interop.IBindableIterable" ||
                     it == "Microsoft.UI.Xaml.Interop.IBindableIterator" ||
