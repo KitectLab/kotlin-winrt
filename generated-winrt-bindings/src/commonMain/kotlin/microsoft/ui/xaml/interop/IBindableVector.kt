@@ -43,32 +43,13 @@ open class IBindableVector(
     fun first(): IBindableIterator =
         IBindableIterator(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
 
-    internal fun <T> projectMutableList(
-        cacheKey: String,
-        getter: (Int) -> T,
-        append: (T) -> Unit,
-    ): MutableList<T> =
-        getOrPutHelperWrapper(cacheKey) { mutableListProjection(getter, append) }
-
-    internal fun <T> mutableListProjection(
-        getter: (Int) -> T,
-        append: (T) -> Unit,
-    ): MutableList<T> =
-        Companion.createMutableListProjection(
-            sizeProvider = { size },
-            getter = getter,
-            append = append,
-            clearer = ::clear,
-        )
-
     companion object : WinRtInterfaceMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
         override val projectionTypeKey: String = "System.Collections.IList"
         override val iid: Guid = guidOf("393de7de-6fd0-4c0d-bb71-47244a113e93")
 
         private fun createMutableListDelegate(pointer: ComPtr): MutableList<Inspectable> {
-            val rawVector = object : WinRtInterfaceProjection(pointer) {}
-            return rawVector.getOrPutHelperWrapper("kotlin.collections.MutableList") {
+            return Inspectable(pointer).getOrPutHelperWrapper("kotlin.collections.MutableList") {
                 createMutableListProjection(
                     sizeProvider = {
                         UInt32(PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow()).value.toInt()
