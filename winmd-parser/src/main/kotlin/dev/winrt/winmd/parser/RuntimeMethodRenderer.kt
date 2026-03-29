@@ -155,7 +155,7 @@ internal class RuntimeMethodRenderer(
             invokeMethod = invokeMethod,
             currentNamespace = currentNamespace,
             supportsObjectType = ::supportsRuntimeObjectType,
-        ) ?: return null
+        ) as? DelegateLambdaPlan.PlannedBridge ?: return null
         return FunSpec.builder(functionName)
             .returns(PoetSymbols.winRtDelegateHandleClass)
             .addParameter("callback", plan.lambdaType)
@@ -171,45 +171,37 @@ internal class RuntimeMethodRenderer(
                         postfix = ")",
                     ) { kind -> "${PoetSymbols.winRtDelegateValueKindClass.canonicalName}.${kind.name}" }
                 }
-                if (plan.bridge.argumentKinds.isEmpty()) {
-                    addStatement(
-                        "val delegateHandle = %T.%L(%T.iid, %L) { _ -> callback() }",
-                        PoetSymbols.winRtDelegateBridgeClass,
-                        plan.bridge.factoryMethod,
-                        delegateClass,
-                        argumentKindsLiteral,
-                    )
-                } else {
-                    when (plan.bridge.argumentKinds.single()) {
-                        DelegateArgumentKind.OBJECT -> {
-                            val parameterType = plan.lambdaType.parameters.single()
-                            addStatement(
-                                "val delegateHandle = %T.%L(%T.iid, %L) { args -> callback(%L(args.single() as %T)) }",
-                                PoetSymbols.winRtDelegateBridgeClass,
-                                plan.bridge.factoryMethod,
-                                delegateClass,
-                                argumentKindsLiteral,
-                                parameterType,
-                                PoetSymbols.comPtrClass,
-                            )
-                        }
-                        else -> {
-                            val parameterType = plan.lambdaType.parameters.single()
-                            addStatement(
-                                "val delegateHandle = %T.%L(%T.iid, %L) { args -> callback(args.single() as %T) }",
-                                PoetSymbols.winRtDelegateBridgeClass,
-                                plan.bridge.factoryMethod,
-                                delegateClass,
-                                argumentKindsLiteral,
-                                parameterType,
-                            )
-                        }
-                    }
-                }
+                val callbackInvocation = buildDelegateCallbackInvocation(plan)
+                addStatement(
+                    "val delegateHandle = %T.%L(%T.iid, %L) { args -> %L }",
+                    PoetSymbols.winRtDelegateBridgeClass,
+                    plan.bridge.factoryMethod,
+                    delegateClass,
+                    argumentKindsLiteral,
+                    callbackInvocation,
+                )
                 addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
                 addStatement("return delegateHandle")
             }
             .build()
+    }
+
+    private fun buildDelegateCallbackInvocation(plan: DelegateLambdaPlan.PlannedBridge): com.squareup.kotlinpoet.CodeBlock {
+        if (plan.lambdaType.parameters.isEmpty()) {
+            return com.squareup.kotlinpoet.CodeBlock.of("callback()")
+        }
+        val builder = com.squareup.kotlinpoet.CodeBlock.builder().add("callback(")
+        plan.lambdaType.parameters.indices.forEachIndexed { position, index ->
+            if (position > 0) {
+                builder.add(", ")
+            }
+            val parameterType = plan.lambdaType.parameters[index]
+            when (plan.bridge.argumentKinds[index]) {
+                DelegateArgumentKind.OBJECT -> builder.add("%L(args[%L] as %T)", parameterType, index, PoetSymbols.comPtrClass)
+                else -> builder.add("args[%L] as %L", index, parameterType)
+            }
+        }
+        return builder.add(")").build()
     }
 
     private fun supportsRuntimeObjectType(type: String): Boolean {

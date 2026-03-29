@@ -647,7 +647,7 @@ internal class InterfaceTypeRenderer(
             currentNamespace = currentNamespace,
             genericParameters = genericParameters,
             supportsObjectType = ::supportsInterfaceObjectType,
-        ) ?: return null
+        ) as? DelegateLambdaPlan.PlannedBridge ?: return null
         return FunSpec.builder(functionName)
             .returns(PoetSymbols.winRtDelegateHandleClass)
             .addParameter(lambdaParameterName, plan.lambdaType)
@@ -660,47 +660,40 @@ internal class InterfaceTypeRenderer(
                         postfix = ")",
                     ) { kind -> "${PoetSymbols.winRtDelegateValueKindClass.canonicalName}.${kind.name}" }
                 }
-                when (plan.bridge.argumentKinds.singleOrNull()) {
-                    null -> {
-                        addStatement(
-                            "val delegateHandle = %T.%L(%T.iid, %L) { _ -> %N() }",
-                            PoetSymbols.winRtDelegateBridgeClass,
-                            plan.bridge.factoryMethod,
-                            delegateClass,
-                            argumentKindsLiteral,
-                            lambdaParameterName,
-                        )
-                    }
-                    DelegateArgumentKind.OBJECT -> {
-                        val callbackType = plan.lambdaType.parameters.single()
-                        addStatement(
-                            "val delegateHandle = %T.%L(%T.iid, %L) { args -> %N(%L(args.single() as %T)) }",
-                            PoetSymbols.winRtDelegateBridgeClass,
-                            plan.bridge.factoryMethod,
-                            delegateClass,
-                            argumentKindsLiteral,
-                            lambdaParameterName,
-                            callbackType,
-                            PoetSymbols.comPtrClass,
-                        )
-                    }
-                    else -> {
-                        val callbackType = plan.lambdaType.parameters.single()
-                        addStatement(
-                            "val delegateHandle = %T.%L(%T.iid, %L) { args -> %N(args.single() as %T) }",
-                            PoetSymbols.winRtDelegateBridgeClass,
-                            plan.bridge.factoryMethod,
-                            delegateClass,
-                            argumentKindsLiteral,
-                            lambdaParameterName,
-                            callbackType,
-                        )
-                    }
-                }
+                val callbackInvocation = buildDelegateCallbackInvocation(plan, lambdaParameterName)
+                addStatement(
+                    "val delegateHandle = %T.%L(%T.iid, %L) { args -> %L }",
+                    PoetSymbols.winRtDelegateBridgeClass,
+                    plan.bridge.factoryMethod,
+                    delegateClass,
+                    argumentKindsLiteral,
+                    callbackInvocation,
+                )
                 addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
                 addStatement("return delegateHandle")
             }
             .build()
+    }
+
+    private fun buildDelegateCallbackInvocation(
+        plan: DelegateLambdaPlan.PlannedBridge,
+        callbackName: String,
+    ): CodeBlock {
+        if (plan.lambdaType.parameters.isEmpty()) {
+            return CodeBlock.of("%N()", callbackName)
+        }
+        val builder = CodeBlock.builder().add("%N(", callbackName)
+        plan.lambdaType.parameters.indices.forEachIndexed { position, index ->
+            if (position > 0) {
+                builder.add(", ")
+            }
+            val parameterType = plan.lambdaType.parameters[index]
+            when (plan.bridge.argumentKinds[index]) {
+                DelegateArgumentKind.OBJECT -> builder.add("%L(args[%L] as %T)", parameterType, index, PoetSymbols.comPtrClass)
+                else -> builder.add("args[%L] as %L", index, parameterType)
+            }
+        }
+        return builder.add(")").build()
     }
 
     private fun kotlinMethodName(methodName: String): String {

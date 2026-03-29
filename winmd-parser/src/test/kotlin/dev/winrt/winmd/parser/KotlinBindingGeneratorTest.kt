@@ -2212,6 +2212,76 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_lambda_overload_for_multi_parameter_delegate_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Payload",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Runtime.IPayload",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "IPayload",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "MultiArgCallback",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Boolean",
+                                    parameters = listOf(
+                                        WinMdParameter("payload", "Example.Runtime.Payload"),
+                                        WinMdParameter("count", "Int32"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "IMultiArgStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "33333333-3333-3333-3333-333333333333",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Start",
+                                    returnType = "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(
+                                        WinMdParameter("callback", "Example.Runtime.MultiArgCallback"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/IMultiArgStatics.kt" }.content
+
+        assertTrue(binding.contains("fun start("))
+        assertTrue(binding.contains("Payload"))
+        assertTrue(binding.contains("Int) -> Boolean"))
+        assertTrue(binding.contains("WinRtDelegateBridge.createBooleanDelegate"))
+        assertTrue(binding.contains("WinRtDelegateValueKind.OBJECT"))
+        assertTrue(binding.contains("WinRtDelegateValueKind.INT32"))
+        assertTrue(binding.contains("callback(example.runtime.Payload("))
+        assertTrue(binding.contains("args[1] as kotlin.Int"))
+    }
+
+    @Test
     fun generates_runtime_lambda_overload_for_no_arg_delegate_parameter() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
