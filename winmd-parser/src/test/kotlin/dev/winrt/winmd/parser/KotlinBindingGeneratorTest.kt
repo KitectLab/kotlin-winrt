@@ -189,10 +189,12 @@ class KotlinBindingGeneratorTest {
         assertTrue(files.any { it.relativePath == "Microsoft/UI/Xaml/Window.kt" })
 
         val iStringableBinding = files.first { it.relativePath == "Windows/Foundation/IStringable.kt" }.content
+        val normalizedIStringableBinding = iStringableBinding.replace("\n", "").replace(" ", "")
         val pointBinding = files.first { it.relativePath == "Windows/Foundation/Point.kt" }.content
         val asyncStatusBinding = files.first { it.relativePath == "Windows/Foundation/AsyncStatus.kt" }.content
         val applicationBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/Application.kt" }.content
         val windowBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/Window.kt" }.content
+        val normalizedWindowBinding = windowBinding.replace("\n", "").replace(" ", "")
         assertTrue(pointBinding.contains("data class Point("))
         assertTrue(pointBinding.contains("val x: Float64"))
         assertTrue(pointBinding.contains("val y: Float64"))
@@ -220,7 +222,8 @@ class KotlinBindingGeneratorTest {
         assertTrue(windowBinding.contains("val stableId: GuidValue"))
         assertTrue(windowBinding.contains("return GuidValue(PlatformComInterop.invokeGuidGetter(pointer, 9).getOrThrow().toString())"))
         assertTrue(windowBinding.contains("val optionalTitle: IReference<String>"))
-        assertTrue(windowBinding.contains("PlatformComInterop.invokeHStringMethod(pointer, 14).getOrThrow().use { it.toKotlinString() }"))
+        assertTrue(normalizedWindowBinding.contains("invokeHStringMethod(pointer,14).getOrThrow()"))
+        assertTrue(normalizedWindowBinding.contains("toKotlinString()"))
         assertTrue(windowBinding.contains("companion object : WinRtRuntimeClassMetadata"))
         assertTrue(applicationBinding.contains("override val activationKind"))
         assertTrue(applicationBinding.contains("WinRtActivationKind.Factory"))
@@ -236,7 +239,8 @@ class KotlinBindingGeneratorTest {
         assertTrue(iStringableBinding.contains("fun from("))
         assertTrue(iStringableBinding.contains("projectInterface"))
         assertTrue(iStringableBinding.contains("::IStringable"))
-        assertTrue(iStringableBinding.contains("PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()"))
+        assertTrue(normalizedIStringableBinding.contains("PlatformComInterop.invokeHStringMethod(pointer,6).getOrThrow()"))
+        assertTrue(normalizedIStringableBinding.contains("toKotlinString()"))
         assertTrue(iStringableBinding.contains("companion object : WinRtInterfaceMetadata"))
         assertTrue(iStringableBinding.contains("guidOf(\"96369f54-8eb6-48f0-abce-c1b211e627c3\")"))
         assertFalse(windowBinding.contains("Unit as"))

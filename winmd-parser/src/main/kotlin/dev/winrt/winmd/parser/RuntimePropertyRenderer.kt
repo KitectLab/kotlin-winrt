@@ -95,7 +95,12 @@ internal class RuntimePropertyRenderer(
                     .beginControlFlow("if (pointer.isNull)")
                     .addStatement("return %N.get()", backingName)
                     .endControlFlow()
-                    .addStatement("return %T(kotlin.io.use(%T.invokeHStringMethod(pointer, %L).getOrThrow()) { it.toKotlinString() })", PoetSymbols.iReferenceClass.parameterizedBy(String::class.asTypeName()), PoetSymbols.platformComInteropClass, getterVtableIndex)
+                    .addStatement(
+                        "return %T(%T.invokeHStringMethod(pointer, %L).getOrThrow().use { it.toKotlinString() })",
+                        PoetSymbols.iReferenceClass.parameterizedBy(String::class.asTypeName()),
+                        PoetSymbols.platformComInteropClass,
+                        getterVtableIndex,
+                    )
                     .build()
             }
             property.type == "String" && property.getterVtableIndex != null -> {
@@ -104,7 +109,11 @@ internal class RuntimePropertyRenderer(
                     .beginControlFlow("if (pointer.isNull)")
                     .addStatement("return %N.get()", backingName)
                     .endControlFlow()
-                    .addStatement("return kotlin.io.use(%T.invokeHStringMethod(pointer, %L).getOrThrow()) { it.toKotlinString() }", PoetSymbols.platformComInteropClass, getterVtableIndex)
+                    .addStatement(
+                        "return %T.invokeHStringMethod(pointer, %L).getOrThrow().use { it.toKotlinString() }",
+                        PoetSymbols.platformComInteropClass,
+                        getterVtableIndex,
+                    )
                     .build()
             }
             property.type == "Int32" && property.getterVtableIndex != null -> {
