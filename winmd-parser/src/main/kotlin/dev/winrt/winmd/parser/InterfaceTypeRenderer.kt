@@ -542,63 +542,6 @@ internal class InterfaceTypeRenderer(
                     )
                     .build()
             }
-            method.returnType == "Unit" &&
-                method.parameters.isEmpty() &&
-                method.vtableIndex != null -> {
-                val vtableIndex = method.vtableIndex!!
-                builder
-                    .addStatement(
-                        "%T.invokeUnitMethod(pointer, %L).getOrThrow()",
-                        PoetSymbols.platformComInteropClass,
-                        vtableIndex,
-                    )
-                    .build()
-            }
-            method.returnType == "Unit" &&
-                method.parameters.size == 1 &&
-                method.parameters[0].type == "String" &&
-                method.vtableIndex != null -> {
-                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-                val vtableIndex = method.vtableIndex!!
-                builder
-                    .addStatement(
-                        "%T.invokeStringSetter(pointer, %L, %N).getOrThrow()",
-                        PoetSymbols.platformComInteropClass,
-                        vtableIndex,
-                        argumentName,
-                    )
-                    .build()
-            }
-            method.returnType == "Unit" &&
-                method.parameters.size == 1 &&
-                method.parameters[0].type == "Int32" &&
-                method.vtableIndex != null -> {
-                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-                val vtableIndex = method.vtableIndex!!
-                builder
-                    .addStatement(
-                        "%T.invokeUnitMethodWithInt32Arg(pointer, %L, %N.value).getOrThrow()",
-                        PoetSymbols.platformComInteropClass,
-                        vtableIndex,
-                        argumentName,
-                    )
-                    .build()
-            }
-            method.returnType == "Unit" &&
-                method.parameters.size == 1 &&
-                supportsInterfaceObjectInput(method.parameters[0].type) &&
-                method.vtableIndex != null -> {
-                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-                val vtableIndex = method.vtableIndex!!
-                builder
-                    .addStatement(
-                        "%T.invokeObjectSetter(pointer, %L, %N.pointer).getOrThrow()",
-                        PoetSymbols.platformComInteropClass,
-                        vtableIndex,
-                        argumentName,
-                    )
-                    .build()
-            }
             else -> null
         }
     }
@@ -730,6 +673,7 @@ internal class InterfaceTypeRenderer(
             method.returnType == "String" -> plannedStringMethod(parameterTypes)
             method.returnType == "Float64" -> plannedFloat64Method(parameterTypes)
             method.returnType == "Boolean" -> plannedBooleanMethod(parameterTypes)
+            method.returnType == "Unit" -> plannedUnitMethod(parameterTypes)
             supportsInterfaceObjectType(method.returnType) -> plannedObjectMethod(genericParameters, parameterTypes)
             else -> null
         }
@@ -857,6 +801,39 @@ internal class InterfaceTypeRenderer(
                         method.vtableIndex!!,
                         argumentName,
                     )
+                },
+            )
+            else -> null
+        }
+    }
+
+    private fun plannedUnitMethod(parameterTypes: List<String>): PlannedInterfaceMethod? {
+        return when {
+            parameterTypes.isEmpty() -> PlannedInterfaceMethod(
+                statement = "%T.invokeUnitMethod(pointer, %L).getOrThrow()",
+                args = { method, _ ->
+                    arrayOf(PoetSymbols.platformComInteropClass, method.vtableIndex!!)
+                },
+            )
+            parameterTypes == listOf("String") -> PlannedInterfaceMethod(
+                statement = "%T.invokeStringSetter(pointer, %L, %N).getOrThrow()",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                },
+            )
+            parameterTypes == listOf("Int32") -> PlannedInterfaceMethod(
+                statement = "%T.invokeUnitMethodWithInt32Arg(pointer, %L, %N.value).getOrThrow()",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                },
+            )
+            parameterTypes.size == 1 && supportsInterfaceObjectInput(parameterTypes.single()) -> PlannedInterfaceMethod(
+                statement = "%T.invokeObjectSetter(pointer, %L, %N.pointer).getOrThrow()",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
                 },
             )
             else -> null
