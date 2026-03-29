@@ -1,5 +1,7 @@
 package windows.foundation
 
+import dev.winrt.core.UInt32
+import dev.winrt.core.WinRtDelegateValueKind
 import dev.winrt.core.WinRtTypeSignature
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -78,5 +80,46 @@ class CoroutineTasksTest {
         }
 
         assertEquals(AsyncStatus.Completed, callbackStatus)
+    }
+
+    @Test
+    fun async_action_with_progress_round_trips_through_await() = runBlocking {
+        val progressValues = mutableListOf<UInt32>()
+
+        val action = scope.asyncActionWithProgress(
+            progressSignature = "u4",
+            progressArgumentKind = WinRtDelegateValueKind.UINT32,
+        ) { reportProgress ->
+            reportProgress(UInt32(1u))
+            delay(10)
+            reportProgress(UInt32(2u))
+        }
+
+        action.await { progressValues += it }
+
+        assertEquals(listOf(UInt32(1u), UInt32(2u)), progressValues)
+        assertEquals(AsyncStatus.Completed, action.status)
+    }
+
+    @Test
+    fun async_operation_with_progress_round_trips_through_await() = runBlocking {
+        val progressValues = mutableListOf<UInt32>()
+
+        val operation = scope.asyncOperationWithProgress(
+            resultSignature = WinRtTypeSignature.string(),
+            progressSignature = "u4",
+            progressArgumentKind = WinRtDelegateValueKind.UINT32,
+        ) { reportProgress ->
+            reportProgress(UInt32(3u))
+            delay(10)
+            reportProgress(UInt32(4u))
+            "done"
+        }
+
+        val result = operation.await { progressValues += it }
+
+        assertEquals("done", result)
+        assertEquals(listOf(UInt32(3u), UInt32(4u)), progressValues)
+        assertEquals(AsyncStatus.Completed, operation.status)
     }
 }
