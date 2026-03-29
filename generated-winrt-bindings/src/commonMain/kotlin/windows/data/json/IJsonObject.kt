@@ -2,7 +2,6 @@ package windows.`data`.json
 
 import dev.winrt.core.Float64
 import dev.winrt.core.Inspectable
-import dev.winrt.core.PointerOwner
 import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.WinRtStrings
@@ -13,7 +12,8 @@ import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
 
-public interface IJsonObject : PointerOwner {
+public interface IJsonObject {
+
   public fun getNamedValue(name: String): IJsonValue =
       IJsonValue.from(Inspectable(PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 6,
       name).getOrThrow()))
@@ -53,3 +53,6 @@ public interface IJsonObject : PointerOwner {
 private class IJsonObjectProjection(
   pointer: ComPtr,
 ) : dev.winrt.core.WinRtInterfaceProjection(pointer), IJsonObject
+
+private val IJsonObject.pointer: ComPtr
+  get() = (this as dev.winrt.core.WinRtObject).pointer
