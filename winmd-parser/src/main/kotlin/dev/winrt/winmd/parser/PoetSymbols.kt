@@ -35,7 +35,6 @@ internal object PoetSymbols {
     val winRtMutableListProjectionClass = ClassName("dev.winrt.projection", "WinRtMutableListProjection")
     val winRtRuntimeClassMetadataClass = ClassName("dev.winrt.core", "WinRtRuntimeClassMetadata")
     val winRtRuntimeClass = ClassName("dev.winrt.core", "WinRtRuntime")
-    val winRtStringsClass = ClassName("dev.winrt.core", "WinRtStrings")
     val parameterizedInterfaceIdClass = ClassName("dev.winrt.core", "ParameterizedInterfaceId")
     val winRtTypeSignatureClass = ClassName("dev.winrt.core", "WinRtTypeSignature")
     val guidOfMember = MemberName("dev.winrt.core", "guidOf")
