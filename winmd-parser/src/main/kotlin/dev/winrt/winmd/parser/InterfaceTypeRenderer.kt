@@ -306,6 +306,11 @@ internal class InterfaceTypeRenderer(
         }
         val functionName = kotlinMethodName(method.name)
         val builder = FunSpec.builder(functionName)
+            .apply {
+                if (method.name == "ToString" && method.returnType == "String" && method.parameters.isEmpty()) {
+                    addModifiers(KModifier.OVERRIDE)
+                }
+            }
             .returns(typeNameMapper.mapTypeName(method.returnType, currentNamespace, genericParameters))
             .addParameters(method.parameters.map { parameter ->
                 ParameterSpec.builder(
@@ -698,7 +703,7 @@ internal class InterfaceTypeRenderer(
 
     private fun kotlinMethodName(methodName: String): String {
         return when (methodName) {
-            "ToString" -> "toStringValue"
+            "ToString" -> "toString"
             else -> methodName.replaceFirstChar(Char::lowercase)
         }
     }

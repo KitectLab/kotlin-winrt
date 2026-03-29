@@ -14,7 +14,7 @@ import kotlin.String
 public open class IStringable(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
-  public fun toStringValue(): String {
+  override fun toString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()
     return try {
       WinRtStrings.toKotlin(value)

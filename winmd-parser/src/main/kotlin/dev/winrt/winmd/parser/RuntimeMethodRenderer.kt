@@ -36,7 +36,11 @@ internal class RuntimeMethodRenderer(
         if (!canRenderRuntimeMethod(method)) {
             return null
         }
-        val functionName = method.name.replaceFirstChar(Char::lowercase)
+        val functionName = if (method.name == "ToString" && method.returnType == "String" && method.parameters.isEmpty()) {
+            "toString"
+        } else {
+            method.name.replaceFirstChar(Char::lowercase)
+        }
         val kotlinType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
         val builder = FunSpec.builder(functionName).returns(kotlinType)
 

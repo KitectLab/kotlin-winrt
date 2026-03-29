@@ -122,7 +122,9 @@ class CheckedInBindingsParityTest {
             val generated = generatedFiles[relativePath.lowercase()]
                 ?: return@mapNotNull "Missing generated file: $relativePath"
             val checkedIn = checkedInRoot.resolve(relativePath).readText()
-            if (checkedIn != generated.content) "Generated file differs: $relativePath" else null
+            if (checkedIn != generated.content) {
+                "Generated file differs: $relativePath"
+            } else null
         }
 
         assertTrue(
