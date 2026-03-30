@@ -335,8 +335,44 @@ class KotlinBindingGeneratorTest {
                             ),
                             methods = listOf(
                                 dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "ToString",
+                                    returnType = "String",
+                                    vtableIndex = 6,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdMethod(
                                     name = "GetValueType",
                                     returnType = "Windows.Data.Json.JsonValueType",
+                                    vtableIndex = 6,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "Stringify",
+                                    returnType = "String",
+                                    vtableIndex = 7,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "GetString",
+                                    returnType = "String",
+                                    vtableIndex = 8,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "GetNumber",
+                                    returnType = "Windows.Foundation.Float64",
+                                    vtableIndex = 9,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "GetBoolean",
+                                    returnType = "Windows.Foundation.WinRtBoolean",
+                                    vtableIndex = 10,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "GetArray",
+                                    returnType = "Windows.Data.Json.JsonArray",
+                                    vtableIndex = 11,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "GetObject",
+                                    returnType = "Windows.Data.Json.JsonObject",
+                                    vtableIndex = 12,
                                 ),
                             ),
                             properties = listOf(
@@ -381,7 +417,7 @@ class KotlinBindingGeneratorTest {
         assertFalse(jsonObjectBinding.contains("fun asIJsonObject(): IJsonObject = IJsonObject.from(this)"))
         assertFalse(jsonObjectBinding.contains(": IJsonObject(pointer)"))
         assertTrue(jsonObjectBinding, jsonObjectBinding.contains("MutableMap<String, IJsonValue>"))
-        assertTrue(jsonObjectBinding, jsonObjectBinding.contains("Iterable<Map.Entry<String, IJsonValue>>"))
+        assertFalse(jsonObjectBinding, jsonObjectBinding.contains("Iterable<Map.Entry<String, IJsonValue>>"))
         assertTrue(jsonObjectBinding.contains("fun stringify(): String"))
         assertTrue(jsonObjectBinding.contains("fun getString(): String"))
         assertTrue(jsonObjectBinding.contains("fun getNumber(): Float64"))
@@ -2495,7 +2531,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(normalizedBinding.contains("var payload: Inspectable"))
         assertTrue(normalizedBinding.contains("RuntimeProperty<Inspectable>(Inspectable(ComPtr.NULL))"))
         assertTrue(normalizedBinding.contains("return Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 15).getOrThrow())"))
-        assertTrue(normalizedBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 16, `value`.pointer).getOrThrow()"))
+        assertTrue(normalizedBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 16, (`value` as Inspectable).pointer).getOrThrow()"))
     }
 
     @Test
@@ -5065,21 +5101,22 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val jsonObjectBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonObject.kt" }.content
+        val normalizedJsonObjectBinding = jsonObjectBinding.replace(Regex("\\s+"), " ")
 
         assertTrue(jsonObjectBinding.contains("fun getNamedValue(name: String): IJsonValue"))
-        assertTrue(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 6, name).getOrThrow()"))
+        assertTrue(normalizedJsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 6, name).getOrThrow()"))
         assertTrue(jsonObjectBinding.contains("fun getNamedObject(name: String): JsonObject"))
-        assertTrue(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 8, name).getOrThrow()"))
+        assertTrue(normalizedJsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 8, name).getOrThrow()"))
         assertTrue(jsonObjectBinding.contains("fun getNamedArray(name: String): JsonArray"))
-        assertTrue(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 9, name).getOrThrow()"))
+        assertTrue(normalizedJsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 9, name).getOrThrow()"))
         assertTrue(jsonObjectBinding.contains("fun getNamedString(name: String): String"))
-        assertTrue(jsonObjectBinding.contains("invokeHStringMethodWithStringArg(pointer, 10, name).getOrThrow()"))
+        assertTrue(normalizedJsonObjectBinding.contains("invokeHStringMethodWithStringArg(pointer, 10, name).getOrThrow()"))
         assertTrue(jsonObjectBinding.contains("fun getNamedNumber(name: String): Float64"))
-        assertTrue(jsonObjectBinding.contains("invokeFloat64MethodWithStringArg(pointer, 11, name).getOrThrow()"))
+        assertTrue(normalizedJsonObjectBinding.contains("invokeFloat64MethodWithStringArg(pointer, 11, name).getOrThrow()"))
         assertTrue(jsonObjectBinding.contains("fun getNamedBoolean(name: String): WinRtBoolean"))
-        assertTrue(jsonObjectBinding.contains("invokeBooleanMethodWithStringArg(pointer, 12,"))
-        assertFalse(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 13, name).getOrThrow()"))
-        assertFalse(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 15, name).getOrThrow()"))
+        assertTrue(normalizedJsonObjectBinding.contains("invokeBooleanMethodWithStringArg(pointer, 12, name).getOrThrow()"))
+        assertFalse(normalizedJsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 13, name).getOrThrow()"))
+        assertFalse(normalizedJsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 15, name).getOrThrow()"))
         assertFalse(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 16, name).getOrThrow()"))
         assertFalse(jsonObjectBinding.contains("invokeHStringMethodWithStringArg(pointer, 17, name).getOrThrow()"))
         assertFalse(jsonObjectBinding.contains("invokeFloat64MethodWithStringArg(pointer, 18, name).getOrThrow()"))
