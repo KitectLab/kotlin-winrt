@@ -29,6 +29,20 @@ class WinRtSignatureMapperTest {
                         guid = "bbe1fa4c-b0e3-4583-baef-1f1b2e483e56",
                         genericParameters = listOf("T"),
                     ),
+                    WinMdType(
+                        namespace = "Windows.Foundation.Collections",
+                        name = "IMap`2",
+                        kind = WinMdTypeKind.Interface,
+                        guid = "fbd6f7c2-0035-4f89-91cb-6b0bf5d8c9d6",
+                        genericParameters = listOf("K", "V"),
+                    ),
+                    WinMdType(
+                        namespace = "Windows.Foundation.Collections",
+                        name = "IMapView`2",
+                        kind = WinMdTypeKind.Interface,
+                        guid = "e5f839be-1a86-4e27-b357-f8c0d2d9d0d1",
+                        genericParameters = listOf("K", "V"),
+                    ),
                 ),
             ),
             WinMdNamespace(
@@ -154,6 +168,24 @@ class WinRtSignatureMapperTest {
             "kotlin.collections.List<String>",
             projectionTypeMapper.projectionTypeKeyFor(
                 "Windows.Foundation.Collections.IVectorView`1<String>",
+                "Windows.Foundation.Collections",
+            ),
+        )
+    }
+
+    @Test
+    fun maps_dictionary_interfaces_to_parameterized_interface_signatures() {
+        assertEquals(
+            "pinterface({fbd6f7c2-0035-4f89-91cb-6b0bf5d8c9d6};string;rc(Microsoft.UI.Xaml.UIElement;{22222222-2222-2222-2222-222222222222}))",
+            mapper.signatureFor(
+                "Windows.Foundation.Collections.IMap`2<String, Microsoft.UI.Xaml.UIElement>",
+                "Windows.Foundation.Collections",
+            ),
+        )
+        assertEquals(
+            "pinterface({e5f839be-1a86-4e27-b357-f8c0d2d9d0d1};string;rc(Microsoft.UI.Xaml.UIElement;{22222222-2222-2222-2222-222222222222}))",
+            mapper.signatureFor(
+                "Windows.Foundation.Collections.IMapView`2<String, Microsoft.UI.Xaml.UIElement>",
                 "Windows.Foundation.Collections",
             ),
         )
