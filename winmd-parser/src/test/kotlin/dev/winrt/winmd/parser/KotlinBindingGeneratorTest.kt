@@ -2364,6 +2364,7 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Example/Runtime/ScalarPropertyHost.kt" }.content
+        val normalizedBinding = binding.replace(Regex("\\s+"), " ")
 
         assertTrue(binding.contains("val flag: WinRtBoolean"))
         assertTrue(binding.contains("return WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 6).getOrThrow())"))
@@ -2382,10 +2383,10 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("var count: Int32"))
         assertTrue(binding.contains("return Int32(PlatformComInterop.invokeInt32Method(pointer, 13).getOrThrow())"))
         assertTrue(binding.contains("PlatformComInterop.invokeInt32Setter(pointer, 14, value.value).getOrThrow()"))
-        assertTrue(binding.contains("var payload: Inspectable"))
-        assertTrue(binding.contains("RuntimeProperty<Inspectable>(Inspectable(ComPtr.NULL))"))
-        assertTrue(binding.contains("return Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 15).getOrThrow())"))
-        assertTrue(binding.contains("PlatformComInterop.invokeObjectSetter(pointer, 16, value.pointer).getOrThrow()"))
+        assertTrue(normalizedBinding.contains("var payload: Inspectable"))
+        assertTrue(normalizedBinding.contains("RuntimeProperty<Inspectable>(Inspectable(ComPtr.NULL))"))
+        assertTrue(normalizedBinding.contains("return Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 15).getOrThrow())"))
+        assertTrue(normalizedBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 16, `value`.pointer).getOrThrow()"))
     }
 
     @Test
