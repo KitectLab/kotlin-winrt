@@ -153,4 +153,7 @@ internal object AbiCallCatalog {
 
     fun int32Setter(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeInt32Setter(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
+
+    fun uint32Setter(vtableIndex: Int): CodeBlock =
+        CodeBlock.of("%T.invokeUInt32Setter(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 }

@@ -35,6 +35,7 @@ interface ComInterop {
     fun invokeUInt64MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<ULong>
     fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit>
     fun invokeInt32Setter(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit>
+    fun invokeUInt32Setter(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Unit>
     fun invokeInt32Method(instance: ComPtr, vtableIndex: Int): Result<Int>
     fun invokeInt32MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Int>
     fun invokeInt32MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Int>
