@@ -22,6 +22,8 @@ internal enum class RuntimePropertySetterRuleFamily {
     INT32,
     UINT32,
     FLOAT32,
+    BOOLEAN,
+    FLOAT64,
 }
 
 internal enum class InterfacePropertyRuleFamily {
@@ -29,6 +31,7 @@ internal enum class InterfacePropertyRuleFamily {
     OBJECT,
     STRING,
     FLOAT32,
+    FLOAT64,
     BOOLEAN,
     GUID,
     DATE_TIME,
@@ -63,6 +66,8 @@ internal object PropertyRuleRegistry {
         "Int32" to RuntimePropertySetterRuleFamily.INT32,
         "UInt32" to RuntimePropertySetterRuleFamily.UINT32,
         "Float32" to RuntimePropertySetterRuleFamily.FLOAT32,
+        "Boolean" to RuntimePropertySetterRuleFamily.BOOLEAN,
+        "Float64" to RuntimePropertySetterRuleFamily.FLOAT64,
     )
 
     fun interfaceGetterRuleFamily(
@@ -93,6 +98,8 @@ internal object PropertyRuleRegistry {
             in setOf(type).takeIf { isObjectType } ?: emptySet() -> InterfacePropertyRuleFamily.OBJECT
             "String" -> InterfacePropertyRuleFamily.STRING
             "Float32" -> InterfacePropertyRuleFamily.FLOAT32
+            "Boolean" -> InterfacePropertyRuleFamily.BOOLEAN
+            "Float64" -> InterfacePropertyRuleFamily.FLOAT64
             "Int32" -> InterfacePropertyRuleFamily.INT32
             "UInt32" -> InterfacePropertyRuleFamily.UINT32
             else -> null

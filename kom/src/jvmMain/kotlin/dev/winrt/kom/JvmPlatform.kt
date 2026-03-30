@@ -540,6 +540,40 @@ actual object PlatformComInterop : ComInterop {
         }
     }
 
+    override fun invokeBooleanSetter(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Unit> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            val hresult = HResult(
+                Jdk22Foreign.booleanSetterHandle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    if (value) 1 else 0,
+                ) as Int,
+            )
+            hresult.requireSuccess("invokeBooleanSetter($vtableIndex)")
+        }
+    }
+
+    override fun invokeFloat64Setter(instance: ComPtr, vtableIndex: Int, value: Double): Result<Unit> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            val hresult = HResult(
+                Jdk22Foreign.float64SetterHandle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    value,
+                ) as Int,
+            )
+            hresult.requireSuccess("invokeFloat64Setter($vtableIndex)")
+        }
+    }
+
     override fun invokeInt32Method(instance: ComPtr, vtableIndex: Int): Result<Int> {
         return JvmComMethodExecutor.invokeWithOutSegment(
             instance = instance,

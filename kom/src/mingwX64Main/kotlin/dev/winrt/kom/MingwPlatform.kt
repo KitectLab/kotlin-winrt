@@ -191,6 +191,18 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeBooleanSetter(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Boolean setter invocation is not wired yet"),
+        )
+    }
+
+    override fun invokeFloat64Setter(instance: ComPtr, vtableIndex: Int, value: Double): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Float64 setter invocation is not wired yet"),
+        )
+    }
+
     override fun invokeInt32Method(instance: ComPtr, vtableIndex: Int): Result<Int> {
         return Result.failure(
             UnsupportedOperationException("Native Int32 method invocation is not wired yet"),

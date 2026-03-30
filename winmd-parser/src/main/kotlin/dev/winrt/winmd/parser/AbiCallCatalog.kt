@@ -159,4 +159,10 @@ internal object AbiCallCatalog {
 
     fun float32Setter(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeFloat32Setter(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
+
+    fun booleanSetter(vtableIndex: Int): CodeBlock =
+        CodeBlock.of("%T.invokeBooleanSetter(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
+
+    fun float64Setter(vtableIndex: Int): CodeBlock =
+        CodeBlock.of("%T.invokeFloat64Setter(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 }

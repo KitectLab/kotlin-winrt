@@ -5208,6 +5208,114 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_boolean_runtime_and_interface_property_setters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "ToggleHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Enabled",
+                                    type = "Boolean",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "IToggleHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "99999999-aaaa-bbbb-cccc-dddddddddddd",
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Enabled",
+                                    type = "Boolean",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Example/Contracts/ToggleHost.kt" }.content
+        val interfaceBinding = files.first { it.relativePath == "Example/Contracts/IToggleHost.kt" }.content
+
+        assertTrue(runtimeBinding.contains("var enabled: WinRtBoolean"))
+        assertTrue(runtimeBinding.contains("WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 6).getOrThrow())"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeBooleanSetter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("var enabled: WinRtBoolean"))
+        assertTrue(interfaceBinding.contains("WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 6).getOrThrow())"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeBooleanSetter(pointer, 7, value.value).getOrThrow()"))
+    }
+
+    @Test
+    fun generates_float64_runtime_and_interface_property_setters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "MetricHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Ratio",
+                                    type = "Float64",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "IMetricHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Ratio",
+                                    type = "Float64",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Example/Contracts/MetricHost.kt" }.content
+        val interfaceBinding = files.first { it.relativePath == "Example/Contracts/IMetricHost.kt" }.content
+
+        assertTrue(runtimeBinding.contains("var ratio: Float64"))
+        assertTrue(runtimeBinding.contains("Float64(PlatformComInterop.invokeFloat64Method(pointer, 6).getOrThrow())"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeFloat64Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("var ratio: Float64"))
+        assertTrue(interfaceBinding.contains("Float64(PlatformComInterop.invokeFloat64Method(pointer, 6).getOrThrow())"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeFloat64Setter(pointer, 7, value.value).getOrThrow()"))
+    }
+
+    @Test
     fun generates_object_interface_properties() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

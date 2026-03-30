@@ -561,6 +561,12 @@ internal class InterfaceTypeRenderer(
                     PoetSymbols.float32Class,
                     AbiCallCatalog.float32Method(getterVtableIndex),
                 )
+            InterfacePropertyRuleFamily.FLOAT64 ->
+                getterBuilder.addStatement(
+                    "return %T(%L)",
+                    PoetSymbols.float64Class,
+                    AbiCallCatalog.float64Method(getterVtableIndex),
+                )
             InterfacePropertyRuleFamily.BOOLEAN ->
                 getterBuilder.addStatement(
                     "return %T(%T.invokeBooleanGetter(pointer, %L).getOrThrow())",
@@ -642,6 +648,8 @@ internal class InterfaceTypeRenderer(
                             InterfacePropertyRuleFamily.OBJECT -> addStatement("%L", AbiCallCatalog.objectSetter(setterVtableIndex, "value"))
                             InterfacePropertyRuleFamily.STRING -> addStatement("%L", AbiCallCatalog.stringSetter(setterVtableIndex))
                             InterfacePropertyRuleFamily.FLOAT32 -> addStatement("%L", AbiCallCatalog.float32Setter(setterVtableIndex))
+                            InterfacePropertyRuleFamily.FLOAT64 -> addStatement("%L", AbiCallCatalog.float64Setter(setterVtableIndex))
+                            InterfacePropertyRuleFamily.BOOLEAN -> addStatement("%L", AbiCallCatalog.booleanSetter(setterVtableIndex))
                             InterfacePropertyRuleFamily.INT32 -> addStatement("%L", AbiCallCatalog.int32Setter(setterVtableIndex))
                             InterfacePropertyRuleFamily.UINT32 -> addStatement("%L", AbiCallCatalog.uint32Setter(setterVtableIndex))
                             else -> return null
