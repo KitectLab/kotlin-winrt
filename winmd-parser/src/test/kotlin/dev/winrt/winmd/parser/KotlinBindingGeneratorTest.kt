@@ -276,6 +276,41 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun hides_primary_runtime_interface_from_public_runtime_class_surface() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Runtime.IWidget",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-4444-4444-4444-444444444444",
+                            methods = listOf(
+                                WinMdMethod(name = "Close", returnType = "Unit", vtableIndex = 6),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Example/Runtime/Widget.kt" }.content
+
+        assertFalse(runtimeBinding.contains(": IWidget"))
+        assertFalse(runtimeBinding.contains(", IWidget"))
+    }
+
+    @Test
     fun folds_runtime_class_factory_interfaces_into_constructors() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

@@ -110,6 +110,16 @@ internal class TypeRegistry(
         }
     }
 
+    fun isPrimaryRuntimeClassInterface(typeName: String, currentNamespace: String): Boolean {
+        val interfaceType = findType(typeName, currentNamespace) ?: return false
+        if (interfaceType.kind != WinMdTypeKind.Interface) return false
+        return allTypes.any { type ->
+            type.kind == WinMdTypeKind.RuntimeClass &&
+                type.namespace == interfaceType.namespace &&
+                interfaceType.name == "I${type.name}"
+        }
+    }
+
     private fun canonicalQualifiedName(typeName: String): String {
         return typeName.substringBefore('<')
             .substringBefore('`')

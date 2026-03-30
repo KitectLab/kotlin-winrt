@@ -35,7 +35,8 @@ internal class RuntimeTypeRenderer(
     private fun renderRuntimeClass(type: WinMdType): TypeSpec {
         val runtimeInterfaceTypes = runtimeInterfaceTypes(type)
         val exposedRuntimeInterfaceTypes = runtimeInterfaceTypes.filterNot { interfaceType ->
-            typeRegistry.isVersionedRuntimeClassInterface(interfaceType.name, interfaceType.namespace)
+            typeRegistry.isVersionedRuntimeClassInterface(interfaceType.name, interfaceType.namespace) ||
+                typeRegistry.isPrimaryRuntimeClassInterface(interfaceType.name, interfaceType.namespace)
         }
         val overridePropertyNames = exposedRuntimeInterfaceTypes.flatMapTo(linkedSetOf(), ::allInterfacePropertyNames)
         val overrideMethodKeys = exposedRuntimeInterfaceTypes.flatMapTo(linkedSetOf(), ::allInterfaceMethodKeys)
