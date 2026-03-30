@@ -2354,6 +2354,7 @@ class KotlinBindingGeneratorTest {
                                 WinMdProperty(name = "LastToken", type = "EventRegistrationToken", mutable = false, getterVtableIndex = 10),
                                 WinMdProperty(name = "Title", type = "String", mutable = true, getterVtableIndex = 11, setterVtableIndex = 12),
                                 WinMdProperty(name = "Count", type = "Int32", mutable = true, getterVtableIndex = 13, setterVtableIndex = 14),
+                                WinMdProperty(name = "Payload", type = "Object", mutable = true, getterVtableIndex = 15, setterVtableIndex = 16),
                             ),
                         ),
                     ),
@@ -2381,6 +2382,10 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("var count: Int32"))
         assertTrue(binding.contains("return Int32(PlatformComInterop.invokeInt32Method(pointer, 13).getOrThrow())"))
         assertTrue(binding.contains("PlatformComInterop.invokeInt32Setter(pointer, 14, value.value).getOrThrow()"))
+        assertTrue(binding.contains("var payload: Inspectable"))
+        assertTrue(binding.contains("RuntimeProperty<Inspectable>(Inspectable(ComPtr.NULL))"))
+        assertTrue(binding.contains("return Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 15).getOrThrow())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectSetter(pointer, 16, value.pointer).getOrThrow()"))
     }
 
     @Test

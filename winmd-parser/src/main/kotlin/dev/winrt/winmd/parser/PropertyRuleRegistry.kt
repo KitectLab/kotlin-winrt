@@ -1,6 +1,7 @@
 package dev.winrt.winmd.parser
 
 internal enum class RuntimePropertyGetterRuleFamily {
+    OBJECT,
     IREFERENCE_STRING,
     STRING,
     FLOAT32,
@@ -16,6 +17,7 @@ internal enum class RuntimePropertyGetterRuleFamily {
 }
 
 internal enum class RuntimePropertySetterRuleFamily {
+    OBJECT,
     STRING,
     INT32,
 }
@@ -38,6 +40,7 @@ internal enum class InterfacePropertyRuleFamily {
 
 internal object PropertyRuleRegistry {
     private val getterRules: Map<String, RuntimePropertyGetterRuleFamily> = mapOf(
+        "Object" to RuntimePropertyGetterRuleFamily.OBJECT,
         "IReference<String>" to RuntimePropertyGetterRuleFamily.IREFERENCE_STRING,
         "String" to RuntimePropertyGetterRuleFamily.STRING,
         "Float32" to RuntimePropertyGetterRuleFamily.FLOAT32,
@@ -53,6 +56,7 @@ internal object PropertyRuleRegistry {
     )
 
     private val setterRules: Map<String, RuntimePropertySetterRuleFamily> = mapOf(
+        "Object" to RuntimePropertySetterRuleFamily.OBJECT,
         "String" to RuntimePropertySetterRuleFamily.STRING,
         "Int32" to RuntimePropertySetterRuleFamily.INT32,
     )

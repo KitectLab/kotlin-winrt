@@ -48,6 +48,7 @@ internal class TypeNameMapper {
             rendered == "kotlin.String" -> CodeBlock.of("%S", "")
             rendered == "kotlin.Int" -> CodeBlock.of("0")
             rendered == "kotlin.Unit" -> CodeBlock.of("Unit")
+            rendered == "dev.winrt.core.Inspectable" -> CodeBlock.of("%T(%T.NULL)", PoetSymbols.inspectableClass, PoetSymbols.comPtrClass)
             rendered.endsWith(".WinRtBoolean") -> CodeBlock.of("%T.FALSE", PoetSymbols.winRtBooleanClass)
             rendered.endsWith(".Int32") -> CodeBlock.of("%T(0)", PoetSymbols.int32Class)
             rendered.endsWith(".UInt32") -> CodeBlock.of("%T(0u)", PoetSymbols.uint32Class)

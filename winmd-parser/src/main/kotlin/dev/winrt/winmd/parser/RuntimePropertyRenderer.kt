@@ -85,6 +85,13 @@ internal class RuntimePropertyRenderer(
 
     private fun scalarRuntimePropertyPlan(type: String): ScalarRuntimePropertyPlan? {
         return when (PropertyRuleRegistry.getterRuleFamily(type)) {
+            RuntimePropertyGetterRuleFamily.OBJECT -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+                CodeBlock.of(
+                    "%T(%L)",
+                    PoetSymbols.inspectableClass,
+                    AbiCallCatalog.objectMethod(getterVtableIndex),
+                )
+            }
             RuntimePropertyGetterRuleFamily.BOOLEAN -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 CodeBlock.of(
                     "%T(%L)",
@@ -183,6 +190,10 @@ internal class RuntimePropertyRenderer(
         }
         val setterPlan = when (PropertyRuleRegistry.setterRuleFamily(property.type)) {
             null -> null
+            RuntimePropertySetterRuleFamily.OBJECT -> RuntimePropertySetterPlan(
+                statement = "%L",
+                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.objectSetter(setterVtableIndex, "value")) },
+            )
             RuntimePropertySetterRuleFamily.STRING -> RuntimePropertySetterPlan(
                 statement = "%L",
                 args = { setterVtableIndex -> arrayOf(AbiCallCatalog.stringSetter(setterVtableIndex)) },
