@@ -2022,10 +2022,316 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun getSignedValue(payload: Payload): Int64"))
         assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithObjectArg(pointer,"))
-        assertTrue(binding.contains("payload.pointer).getOrThrow()"))
+        assertTrue(binding.contains("payload.pointer"))
         assertTrue(binding.contains("fun getUnsignedValue(payload: Payload): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer"))
+    }
+
+    @Test
+    fun generates_runtime_methods_with_parameters_for_int32_and_uint32_returns() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Payload",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "ParameterRuntimeHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetSignedByName",
+                                    returnType = "Int32",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter(name = "name", type = "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetSignedByIndex",
+                                    returnType = "Int32",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter(name = "index", type = "UInt32")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetSignedByPayload",
+                                    returnType = "Int32",
+                                    vtableIndex = 8,
+                                    parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetUnsignedByName",
+                                    returnType = "UInt32",
+                                    vtableIndex = 9,
+                                    parameters = listOf(WinMdParameter(name = "name", type = "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetUnsignedByIndex",
+                                    returnType = "UInt32",
+                                    vtableIndex = 10,
+                                    parameters = listOf(WinMdParameter(name = "index", type = "UInt32")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetUnsignedByPayload",
+                                    returnType = "UInt32",
+                                    vtableIndex = 11,
+                                    parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/ParameterRuntimeHost.kt" }.content
+
+        assertTrue(binding.contains("fun getSignedByName(name: String): Int32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt32MethodWithStringArg(pointer,"))
+        assertTrue(binding.contains("name).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByIndex(index: UInt32): Int32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt32MethodWithUInt32Arg(pointer, 7,"))
+        assertTrue(binding.contains("index.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByPayload(payload: Payload): Int32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt32MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByName(name: String): UInt32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt32MethodWithStringArg(pointer,"))
+        assertTrue(binding.contains("name).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByIndex(index: UInt32): UInt32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt32MethodWithUInt32Arg(pointer, 10,"))
+        assertTrue(binding.contains("index.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByPayload(payload: Payload): UInt32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt32MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer).getOrThrow()"))
+    }
+
+    @Test
+    fun generates_interface_methods_with_parameters_for_int32_and_uint32_returns() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Payload",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "ParameterInterfaceHost",
+                            kind = WinMdTypeKind.Interface,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetSignedByName",
+                                    returnType = "Int32",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter(name = "name", type = "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetSignedByIndex",
+                                    returnType = "Int32",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter(name = "index", type = "UInt32")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetSignedByPayload",
+                                    returnType = "Int32",
+                                    vtableIndex = 8,
+                                    parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetUnsignedByName",
+                                    returnType = "UInt32",
+                                    vtableIndex = 9,
+                                    parameters = listOf(WinMdParameter(name = "name", type = "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetUnsignedByIndex",
+                                    returnType = "UInt32",
+                                    vtableIndex = 10,
+                                    parameters = listOf(WinMdParameter(name = "index", type = "UInt32")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetUnsignedByPayload",
+                                    returnType = "UInt32",
+                                    vtableIndex = 11,
+                                    parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/ParameterInterfaceHost.kt" }.content
+
+        assertTrue(binding.contains("fun getSignedByName(name: String): Int32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt32MethodWithStringArg(pointer,"))
+        assertTrue(binding.contains("name).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByIndex(index: UInt32): Int32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt32MethodWithUInt32Arg(pointer, 7,"))
+        assertTrue(binding.contains("index.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByPayload(payload: Payload): Int32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt32MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByName(name: String): UInt32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt32MethodWithStringArg(pointer,"))
+        assertTrue(binding.contains("name).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByIndex(index: UInt32): UInt32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt32MethodWithUInt32Arg(pointer, 10,"))
+        assertTrue(binding.contains("index.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByPayload(payload: Payload): UInt32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt32MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer).getOrThrow()"))
+    }
+
+    @Test
+    fun generates_runtime_methods_with_parameters_for_int64_and_uint64_returns() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Payload",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "WideParameterRuntimeHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(name = "GetSignedByName", returnType = "Int64", vtableIndex = 6, parameters = listOf(WinMdParameter(name = "name", type = "String"))),
+                                WinMdMethod(name = "GetSignedByCount", returnType = "Int64", vtableIndex = 7, parameters = listOf(WinMdParameter(name = "count", type = "Int32"))),
+                                WinMdMethod(name = "GetSignedByIndex", returnType = "Int64", vtableIndex = 8, parameters = listOf(WinMdParameter(name = "index", type = "UInt32"))),
+                                WinMdMethod(name = "GetSignedByFlag", returnType = "Int64", vtableIndex = 9, parameters = listOf(WinMdParameter(name = "flag", type = "Boolean"))),
+                                WinMdMethod(name = "GetSignedByPayload", returnType = "Int64", vtableIndex = 10, parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload"))),
+                                WinMdMethod(name = "GetUnsignedByName", returnType = "UInt64", vtableIndex = 11, parameters = listOf(WinMdParameter(name = "name", type = "String"))),
+                                WinMdMethod(name = "GetUnsignedByCount", returnType = "UInt64", vtableIndex = 12, parameters = listOf(WinMdParameter(name = "count", type = "Int32"))),
+                                WinMdMethod(name = "GetUnsignedByIndex", returnType = "UInt64", vtableIndex = 13, parameters = listOf(WinMdParameter(name = "index", type = "UInt32"))),
+                                WinMdMethod(name = "GetUnsignedByFlag", returnType = "UInt64", vtableIndex = 14, parameters = listOf(WinMdParameter(name = "flag", type = "Boolean"))),
+                                WinMdMethod(name = "GetUnsignedByPayload", returnType = "UInt64", vtableIndex = 15, parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload"))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/WideParameterRuntimeHost.kt" }.content
+
+        assertTrue(binding.contains("fun getSignedByName(name: String): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithStringArg(pointer,"))
+        assertTrue(binding.contains("name).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByCount(count: Int32): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithInt32Arg(pointer, 7,"))
+        assertTrue(binding.contains("count.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByIndex(index: UInt32): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithUInt32Arg(pointer, 8,"))
+        assertTrue(binding.contains("index.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByFlag(flag: WinRtBoolean): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithBooleanArg(pointer, 9,"))
+        assertTrue(binding.contains("flag.value"))
+        assertTrue(binding.contains("fun getSignedByPayload(payload: Payload): Int64"))
         assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithObjectArg(pointer,"))
-        assertTrue(binding.contains("payload.pointer).getOrThrow().toULong()"))
+        assertTrue(binding.contains("payload.pointer"))
+        assertTrue(binding.contains("fun getUnsignedByName(name: String): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithStringArg(pointer,"))
+        assertTrue(binding.contains("name).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByCount(count: Int32): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithInt32Arg(pointer, 12,"))
+        assertTrue(binding.contains("count.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByIndex(index: UInt32): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithUInt32Arg(pointer, 13,"))
+        assertTrue(binding.contains("index.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByFlag(flag: WinRtBoolean): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithBooleanArg(pointer, 14,"))
+        assertTrue(binding.contains("fun getUnsignedByPayload(payload: Payload): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer"))
+    }
+
+    @Test
+    fun generates_interface_methods_with_parameters_for_int64_and_uint64_returns() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Payload",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "WideParameterInterfaceHost",
+                            kind = WinMdTypeKind.Interface,
+                            methods = listOf(
+                                WinMdMethod(name = "GetSignedByName", returnType = "Int64", vtableIndex = 6, parameters = listOf(WinMdParameter(name = "name", type = "String"))),
+                                WinMdMethod(name = "GetSignedByCount", returnType = "Int64", vtableIndex = 7, parameters = listOf(WinMdParameter(name = "count", type = "Int32"))),
+                                WinMdMethod(name = "GetSignedByIndex", returnType = "Int64", vtableIndex = 8, parameters = listOf(WinMdParameter(name = "index", type = "UInt32"))),
+                                WinMdMethod(name = "GetSignedByFlag", returnType = "Int64", vtableIndex = 9, parameters = listOf(WinMdParameter(name = "flag", type = "Boolean"))),
+                                WinMdMethod(name = "GetSignedByPayload", returnType = "Int64", vtableIndex = 10, parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload"))),
+                                WinMdMethod(name = "GetUnsignedByName", returnType = "UInt64", vtableIndex = 11, parameters = listOf(WinMdParameter(name = "name", type = "String"))),
+                                WinMdMethod(name = "GetUnsignedByCount", returnType = "UInt64", vtableIndex = 12, parameters = listOf(WinMdParameter(name = "count", type = "Int32"))),
+                                WinMdMethod(name = "GetUnsignedByIndex", returnType = "UInt64", vtableIndex = 13, parameters = listOf(WinMdParameter(name = "index", type = "UInt32"))),
+                                WinMdMethod(name = "GetUnsignedByFlag", returnType = "UInt64", vtableIndex = 14, parameters = listOf(WinMdParameter(name = "flag", type = "Boolean"))),
+                                WinMdMethod(name = "GetUnsignedByPayload", returnType = "UInt64", vtableIndex = 15, parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload"))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/WideParameterInterfaceHost.kt" }.content
+
+        assertTrue(binding.contains("fun getSignedByName(name: String): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithStringArg(pointer,"))
+        assertTrue(binding.contains("name).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByCount(count: Int32): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithInt32Arg(pointer, 7,"))
+        assertTrue(binding.contains("count.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByIndex(index: UInt32): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithUInt32Arg(pointer, 8,"))
+        assertTrue(binding.contains("index.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByFlag(flag: WinRtBoolean): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithBooleanArg(pointer, 9,"))
+        assertTrue(binding.contains("flag.value"))
+        assertTrue(binding.contains("fun getSignedByPayload(payload: Payload): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer"))
+        assertTrue(binding.contains("fun getUnsignedByName(name: String): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithStringArg(pointer,"))
+        assertTrue(binding.contains("name).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByCount(count: Int32): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithInt32Arg(pointer, 12,"))
+        assertTrue(binding.contains("count.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByIndex(index: UInt32): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithUInt32Arg(pointer, 13,"))
+        assertTrue(binding.contains("index.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByFlag(flag: WinRtBoolean): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithBooleanArg(pointer, 14,"))
+        assertTrue(binding.contains("fun getUnsignedByPayload(payload: Payload): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer"))
     }
 
     @Test

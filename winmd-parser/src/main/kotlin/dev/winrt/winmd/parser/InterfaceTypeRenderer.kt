@@ -1055,6 +1055,46 @@ internal class InterfaceTypeRenderer(
                 method.parameters.size == 1 &&
                 supportsInterfaceObjectInput(method.parameters[0].type) &&
                 method.vtableIndex != null)
+            || (method.returnType == "Int32" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "String" &&
+                method.vtableIndex != null)
+            || (method.returnType == "Int32" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "Int32" &&
+                method.vtableIndex != null)
+            || (method.returnType == "Int32" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "UInt32" &&
+                method.vtableIndex != null)
+            || (method.returnType == "Int32" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "Boolean" &&
+                method.vtableIndex != null)
+            || (method.returnType == "Int32" &&
+                method.parameters.size == 1 &&
+                supportsInterfaceObjectInput(method.parameters[0].type) &&
+                method.vtableIndex != null)
+            || (method.returnType == "UInt32" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "String" &&
+                method.vtableIndex != null)
+            || (method.returnType == "UInt32" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "Int32" &&
+                method.vtableIndex != null)
+            || (method.returnType == "UInt32" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "UInt32" &&
+                method.vtableIndex != null)
+            || (method.returnType == "UInt32" &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "Boolean" &&
+                method.vtableIndex != null)
+            || (method.returnType == "UInt32" &&
+                method.parameters.size == 1 &&
+                supportsInterfaceObjectInput(method.parameters[0].type) &&
+                method.vtableIndex != null)
     }
 
     private fun plannedInterfaceMethod(
@@ -1202,6 +1242,76 @@ internal class InterfaceTypeRenderer(
                     arrayOf(PoetSymbols.winRtBooleanClass, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
                 },
             )
+            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.STRING) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.int32Class, AbiCallCatalog.int32MethodWithString(method.vtableIndex!!, argumentName))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.INT32) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.int32Class, AbiCallCatalog.int32MethodWithInt32(method.vtableIndex!!, "${argumentName}.value"))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.UINT32) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.int32Class, AbiCallCatalog.int32MethodWithUInt32(method.vtableIndex!!, "${argumentName}.value"))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.BOOLEAN) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.int32Class, AbiCallCatalog.int32MethodWithUInt32(method.vtableIndex!!, "if (${argumentName}.value) 1u else 0u"))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
+                statement = "return %T(%T.invokeInt32MethodWithObjectArg(pointer, %L, %N.pointer).getOrThrow())",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.int32Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.STRING) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.uint32Class, AbiCallCatalog.uint32MethodWithString(method.vtableIndex!!, argumentName))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.INT32) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.uint32Class, AbiCallCatalog.uint32MethodWithInt32(method.vtableIndex!!, "${argumentName}.value"))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.UINT32) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.uint32Class, AbiCallCatalog.uint32MethodWithUInt32(method.vtableIndex!!, "${argumentName}.value"))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.BOOLEAN) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.uint32Class, AbiCallCatalog.uint32MethodWithUInt32(method.vtableIndex!!, "if (${argumentName}.value) 1u else 0u"))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
+                statement = "return %T(%T.invokeUInt32MethodWithObjectArg(pointer, %L, %N.pointer).getOrThrow())",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.uint32Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                },
+            )
             MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
                 statement = "return %T(%T.invokeInt64MethodWithObjectArg(pointer, %L, %N.pointer).getOrThrow())",
                 args = { method, _ ->
@@ -1209,8 +1319,71 @@ internal class InterfaceTypeRenderer(
                     arrayOf(PoetSymbols.int64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
                 },
             )
+            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.STRING) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.int64Class, AbiCallCatalog.int64MethodWithString(method.vtableIndex!!, argumentName))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.INT32) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.int64Class, AbiCallCatalog.int64MethodWithInt32(method.vtableIndex!!, "${argumentName}.value"))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.UINT32) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.int64Class, AbiCallCatalog.int64MethodWithUInt32(method.vtableIndex!!, "${argumentName}.value"))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.BOOLEAN) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.int64Class, AbiCallCatalog.int64MethodWithBoolean(method.vtableIndex!!, "if (${argumentName}.value) 1L else 0L"))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
+                statement = "return %T(%T.invokeInt64MethodWithObjectArg(pointer, %L, %N.pointer).getOrThrow())",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.int64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.STRING) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithString(method.vtableIndex!!, argumentName))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.INT32) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithInt32(method.vtableIndex!!, "${argumentName}.value"))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.UINT32) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithUInt32(method.vtableIndex!!, "${argumentName}.value"))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.BOOLEAN) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithBoolean(method.vtableIndex!!, "if (${argumentName}.value) 1L else 0L"))
+                },
+            )
             MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
-                statement = "return %T(%T.invokeInt64MethodWithObjectArg(pointer, %L, %N.pointer).getOrThrow().toULong())",
+                statement = "return %T(%T.invokeUInt64MethodWithObjectArg(pointer, %L, %N.pointer).getOrThrow())",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
                     arrayOf(PoetSymbols.uint64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)

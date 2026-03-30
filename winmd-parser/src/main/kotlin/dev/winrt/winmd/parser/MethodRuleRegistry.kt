@@ -34,6 +34,18 @@ internal object MethodRuleRegistry {
         put(MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.BOOLEAN), SharedMethodRuleFamily.BOOLEAN)
         put(MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.BOOLEAN)
 
+        put(MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.STRING), SharedMethodRuleFamily.UNIT)
+        put(MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.INT32), SharedMethodRuleFamily.UNIT)
+        put(MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.UINT32), SharedMethodRuleFamily.UNIT)
+        put(MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.BOOLEAN), SharedMethodRuleFamily.UNIT)
+        put(MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.UNIT)
+
+        put(MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.STRING), SharedMethodRuleFamily.UNIT)
+        put(MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.INT32), SharedMethodRuleFamily.UNIT)
+        put(MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.UINT32), SharedMethodRuleFamily.UNIT)
+        put(MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.BOOLEAN), SharedMethodRuleFamily.UNIT)
+        put(MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.UNIT)
+
         put(
             MethodSignatureKey(MethodReturnKind.EVENT_REGISTRATION_TOKEN, MethodSignatureShape.EMPTY),
             SharedMethodRuleFamily.EVENT_REGISTRATION_TOKEN,
@@ -52,7 +64,16 @@ internal object MethodRuleRegistry {
         put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN), SharedMethodRuleFamily.UNIT)
         put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.UNIT)
 
+        put(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.STRING), SharedMethodRuleFamily.OBJECT)
+        put(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.INT32), SharedMethodRuleFamily.OBJECT)
+        put(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.UINT32), SharedMethodRuleFamily.OBJECT)
+        put(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.BOOLEAN), SharedMethodRuleFamily.OBJECT)
         put(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.OBJECT)
+
+        put(MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.STRING), SharedMethodRuleFamily.OBJECT)
+        put(MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.INT32), SharedMethodRuleFamily.OBJECT)
+        put(MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.UINT32), SharedMethodRuleFamily.OBJECT)
+        put(MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.BOOLEAN), SharedMethodRuleFamily.OBJECT)
         put(MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.OBJECT)
     }
 
