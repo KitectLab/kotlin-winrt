@@ -2,7 +2,6 @@ package microsoft.ui.xaml
 
 import dev.winrt.core.DateTime
 import dev.winrt.core.EventRegistrationToken
-import dev.winrt.core.IReference
 import dev.winrt.core.RuntimeClassId
 import dev.winrt.core.RuntimeProperty
 import dev.winrt.core.TimeSpan
@@ -19,7 +18,7 @@ open class Window(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
     private val backingCreatedAt = RuntimeProperty(DateTime(0))
     private val backingLifetime = RuntimeProperty(TimeSpan(0))
     private val backingLastToken = RuntimeProperty(EventRegistrationToken(0))
-    private val backingOptionalTitle = RuntimeProperty(IReference(""))
+    private val backingOptionalTitle = RuntimeProperty<String?>(null)
 
     val isVisible: WinRtBoolean
         get() {
@@ -45,11 +44,11 @@ open class Window(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
             return EventRegistrationToken(dev.winrt.kom.PlatformComInterop.invokeInt64Getter(pointer, 12).getOrThrow())
         }
 
-    val optionalTitle: IReference<String>
+    val optionalTitle: String?
         get() {
             if (pointer.isNull) return backingOptionalTitle.get()
             return dev.winrt.kom.PlatformComInterop.invokeHStringMethod(pointer, 14).getOrThrow().use { value ->
-                IReference(value.toKotlinString())
+                if (value.isNull) null else value.toKotlinString()
             }
         }
 

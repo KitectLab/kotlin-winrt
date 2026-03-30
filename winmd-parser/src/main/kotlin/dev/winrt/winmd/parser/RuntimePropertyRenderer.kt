@@ -163,14 +163,19 @@ internal class RuntimePropertyRenderer(
     }
 
     private fun runtimePropertyPlan(property: WinMdProperty): RuntimePropertyPlan? {
+        val iReferenceInnerType = iReferenceInnerType(property.type)
         val getterPlan = when {
             property.getterVtableIndex == null -> null
-            PropertyRuleRegistry.getterRuleFamily(property.type) == RuntimePropertyGetterRuleFamily.IREFERENCE_STRING -> RuntimePropertyGetterPlan { getterVtableIndex ->
-                CodeBlock.of(
-                    "%T(%L)",
-                    PoetSymbols.iReferenceClass.parameterizedBy(String::class.asTypeName()),
-                    hStringToKotlinString("pointer", getterVtableIndex),
-                )
+            iReferenceInnerType != null -> RuntimePropertyGetterPlan { getterVtableIndex ->
+                when (iReferenceInnerType) {
+                    "String" -> CodeBlock.of(
+                        "%T.invokeHStringMethod(pointer, %L).getOrThrow().use { value -> if (value.isNull) null else value.toKotlinString() }",
+                        PoetSymbols.platformComInteropClass,
+                        getterVtableIndex,
+                    )
+                    else -> scalarRuntimePropertyPlan(iReferenceInnerType)?.renderGetter(getterVtableIndex)
+                        ?: error("Unsupported IReference projection type: $iReferenceInnerType")
+                }
             }
             else -> scalarRuntimePropertyPlan(property.type)?.let { scalarPlan ->
                 RuntimePropertyGetterPlan { getterVtableIndex -> scalarPlan.renderGetter(getterVtableIndex) }
@@ -192,6 +197,14 @@ internal class RuntimePropertyRenderer(
         } else {
             null
         }
+    }
+
+    private fun iReferenceInnerType(type: String): String? {
+        val rawType = type.substringBefore('<').substringAfterLast('.')
+        if (rawType != "IReference" || !type.endsWith(">") || '<' !in type) {
+            return null
+        }
+        return type.substringAfter('<').substringBeforeLast('>')
     }
 
     private data class ScalarRuntimePropertyPlan(

@@ -40,6 +40,9 @@ internal class TypeNameMapper {
     }
 
     fun defaultValueFor(typeName: TypeName, functionName: String? = null): CodeBlock {
+        if (typeName.isNullable) {
+            return CodeBlock.of("null")
+        }
         val rendered = typeName.toString()
         return when {
             rendered == "kotlin.String" -> CodeBlock.of("%S", "")
@@ -82,7 +85,7 @@ internal class TypeNameMapper {
             mapTypeName(argument, currentNamespace, genericParameters)
         }
         val rawTypeName = when (normalizeSimpleName(rawType.substringAfterLast('.'))) {
-            "IReference" -> PoetSymbols.iReferenceClass
+            "IReference" -> return arguments.single().copy(nullable = true)
             "IIterable" -> PoetSymbols.iterableClass
             "IIterator" -> PoetSymbols.iteratorClass
             "IMap" -> PoetSymbols.mutableMapClass
