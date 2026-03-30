@@ -574,6 +574,40 @@ actual object PlatformComInterop : ComInterop {
         }
     }
 
+    override fun invokeInt64Setter(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            val hresult = HResult(
+                Jdk22Foreign.int64SetterHandle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    value,
+                ) as Int,
+            )
+            hresult.requireSuccess("invokeInt64Setter($vtableIndex)")
+        }
+    }
+
+    override fun invokeUInt64Setter(instance: ComPtr, vtableIndex: Int, value: ULong): Result<Unit> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            val hresult = HResult(
+                Jdk22Foreign.uint64SetterHandle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    value.toLong(),
+                ) as Int,
+            )
+            hresult.requireSuccess("invokeUInt64Setter($vtableIndex)")
+        }
+    }
+
     override fun invokeInt32Method(instance: ComPtr, vtableIndex: Int): Result<Int> {
         return JvmComMethodExecutor.invokeWithOutSegment(
             instance = instance,

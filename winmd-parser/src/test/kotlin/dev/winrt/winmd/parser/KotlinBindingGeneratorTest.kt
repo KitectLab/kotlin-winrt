@@ -5316,6 +5316,114 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_int64_runtime_and_interface_property_setters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "SignedHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Amount",
+                                    type = "Int64",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "ISignedHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Amount",
+                                    type = "Int64",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Example/Contracts/SignedHost.kt" }.content
+        val interfaceBinding = files.first { it.relativePath == "Example/Contracts/ISignedHost.kt" }.content
+
+        assertTrue(runtimeBinding.contains("var amount: Int64"))
+        assertTrue(runtimeBinding.contains("Int64(PlatformComInterop.invokeInt64Getter(pointer, 6).getOrThrow())"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeInt64Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("var amount: Int64"))
+        assertTrue(interfaceBinding.contains("Int64(PlatformComInterop.invokeInt64Getter(pointer, 6).getOrThrow())"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeInt64Setter(pointer, 7, value.value).getOrThrow()"))
+    }
+
+    @Test
+    fun generates_uint64_runtime_and_interface_property_setters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "UnsignedHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Count",
+                                    type = "UInt64",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "IUnsignedHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "cccccccc-dddd-eeee-ffff-000000000000",
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Count",
+                                    type = "UInt64",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Example/Contracts/UnsignedHost.kt" }.content
+        val interfaceBinding = files.first { it.relativePath == "Example/Contracts/IUnsignedHost.kt" }.content
+
+        assertTrue(runtimeBinding.contains("var count: UInt64"))
+        assertTrue(runtimeBinding.contains("UInt64(PlatformComInterop.invokeInt64Getter(pointer, 6).getOrThrow().toULong())"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeUInt64Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("var count: UInt64"))
+        assertTrue(interfaceBinding.contains("UInt64(PlatformComInterop.invokeInt64Getter(pointer, 6).getOrThrow().toULong())"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeUInt64Setter(pointer, 7, value.value).getOrThrow()"))
+    }
+
+    @Test
     fun generates_object_interface_properties() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

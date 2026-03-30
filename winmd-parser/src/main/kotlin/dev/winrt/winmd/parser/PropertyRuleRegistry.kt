@@ -25,6 +25,8 @@ internal enum class RuntimePropertySetterRuleFamily {
     FLOAT32,
     BOOLEAN,
     FLOAT64,
+    INT64,
+    UINT64,
 }
 
 internal enum class InterfacePropertyRuleFamily {
@@ -70,6 +72,8 @@ internal object PropertyRuleRegistry {
         "Float32" to RuntimePropertySetterRuleFamily.FLOAT32,
         "Boolean" to RuntimePropertySetterRuleFamily.BOOLEAN,
         "Float64" to RuntimePropertySetterRuleFamily.FLOAT64,
+        "Int64" to RuntimePropertySetterRuleFamily.INT64,
+        "UInt64" to RuntimePropertySetterRuleFamily.UINT64,
     )
 
     fun interfaceGetterRuleFamily(
@@ -105,6 +109,8 @@ internal object PropertyRuleRegistry {
             "Float64" -> InterfacePropertyRuleFamily.FLOAT64
             "Int32" -> InterfacePropertyRuleFamily.INT32
             "UInt32" -> InterfacePropertyRuleFamily.UINT32
+            "Int64" -> InterfacePropertyRuleFamily.INT64
+            "UInt64" -> InterfacePropertyRuleFamily.UINT64
             else -> null
         }
     }

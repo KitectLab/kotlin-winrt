@@ -203,6 +203,18 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeInt64Setter(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Int64 setter invocation is not wired yet"),
+        )
+    }
+
+    override fun invokeUInt64Setter(instance: ComPtr, vtableIndex: Int, value: ULong): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native UInt64 setter invocation is not wired yet"),
+        )
+    }
+
     override fun invokeInt32Method(instance: ComPtr, vtableIndex: Int): Result<Int> {
         return Result.failure(
             UnsupportedOperationException("Native Int32 method invocation is not wired yet"),

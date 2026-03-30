@@ -652,6 +652,8 @@ internal class InterfaceTypeRenderer(
                             InterfacePropertyRuleFamily.BOOLEAN -> addStatement("%L", AbiCallCatalog.booleanSetter(setterVtableIndex))
                             InterfacePropertyRuleFamily.INT32 -> addStatement("%L", AbiCallCatalog.int32Setter(setterVtableIndex))
                             InterfacePropertyRuleFamily.UINT32 -> addStatement("%L", AbiCallCatalog.uint32Setter(setterVtableIndex))
+                            InterfacePropertyRuleFamily.INT64 -> addStatement("%L", AbiCallCatalog.int64Setter(setterVtableIndex))
+                            InterfacePropertyRuleFamily.UINT64 -> addStatement("%L", AbiCallCatalog.uint64Setter(setterVtableIndex))
                             else -> return null
                         }
                     }
