@@ -32,13 +32,19 @@ internal class InterfaceTypeRenderer(
         val typeVariables = type.genericParameters.map { TypeVariableName(it) }
         val typeClass = if (typeVariables.isEmpty()) rawTypeClass else rawTypeClass.parameterizedBy(typeVariables)
         val genericParameters = type.genericParameters.toSet()
+        val directBaseInterface = directBaseInterface(type, type.namespace)
+        val inheritedSignatureKeys = inheritedSignatureKeys(directBaseInterface)
+        val inheritedPropertyNames = inheritedPropertyNames(directBaseInterface)
         return TypeSpec.classBuilder(type.name)
             .addModifiers(KModifier.OPEN)
             .apply {
                 typeVariables.forEach(::addTypeVariable)
             }
             .primaryConstructor(pointerConstructor())
-            .superclass(PoetSymbols.winRtInterfaceProjectionClass)
+            .superclass(
+                directBaseInterface?.let { typeNameMapper.mapTypeName(it, type.namespace, genericParameters) }
+                    ?: PoetSymbols.winRtInterfaceProjectionClass,
+            )
             .addSuperclassConstructorParameter("pointer")
             .apply {
                 type.baseInterfaces.mapNotNull { baseInterface ->
@@ -113,10 +119,22 @@ internal class InterfaceTypeRenderer(
                     )
                 }
             }
-            .addProperties(type.properties.mapNotNull { renderProperty(it, type.namespace, genericParameters) })
+            .addProperties(
+                type.properties
+                    .filterNot { it.name in inheritedPropertyNames }
+                    .mapNotNull { renderProperty(it, type.namespace, genericParameters) },
+            )
             .addProperties(renderEventSlotProperties(type, type.namespace, genericParameters))
-            .addFunctions(type.methods.flatMap { renderMethods(it, type.namespace, genericParameters) })
-            .addFunctions(type.methods.mapNotNull { renderLambdaOverload(it, type.namespace, genericParameters) })
+            .addFunctions(
+                type.methods
+                    .filterNot { it.signatureKey in inheritedSignatureKeys }
+                    .flatMap { renderMethods(it, type.namespace, genericParameters) },
+            )
+            .addFunctions(
+                type.methods
+                    .filterNot { it.signatureKey in inheritedSignatureKeys }
+                    .mapNotNull { renderLambdaOverload(it, type.namespace, genericParameters) },
+            )
             .addTypes(renderEventSlotTypes(type, type.namespace, genericParameters))
             .addType(
                 TypeSpec.companionObjectBuilder()
@@ -1049,6 +1067,9 @@ internal class InterfaceTypeRenderer(
             (method.returnType == "Int32" &&
                 method.parameters.isEmpty() &&
                 method.vtableIndex != null) ||
+            (method.returnType == "UInt32" &&
+                method.parameters.isEmpty() &&
+                method.vtableIndex != null) ||
             (typeRegistry.isEnumType(method.returnType, currentNamespace) &&
                 method.parameters.isEmpty() &&
                 method.vtableIndex != null) ||
@@ -1291,6 +1312,12 @@ internal class InterfaceTypeRenderer(
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
                     arrayOf(PoetSymbols.int32Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
+                statement = "return %T(%L)",
+                args = { method, _ ->
+                    arrayOf(PoetSymbols.uint32Class, AbiCallCatalog.uint32Method(method.vtableIndex!!))
                 },
             )
             MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.STRING) -> PlannedInterfaceMethod(
@@ -1548,6 +1575,23 @@ internal class InterfaceTypeRenderer(
     ): TypeName? {
         val mapped = typeNameMapper.mapTypeName(baseInterface, currentNamespace, genericParameters)
         return if (mapped.toString().startsWith("kotlin.collections.")) mapped else null
+    }
+
+    private fun directBaseInterface(type: WinMdType, currentNamespace: String): String? {
+        return type.baseInterfaces.firstOrNull { baseInterface ->
+            collectionSuperinterface(baseInterface, currentNamespace, type.genericParameters.toSet()) == null &&
+                typeRegistry.findType(baseInterface, currentNamespace)?.kind == dev.winrt.winmd.plugin.WinMdTypeKind.Interface
+        }
+    }
+
+    private fun inheritedSignatureKeys(baseInterface: String?): Set<String> {
+        val interfaceType = baseInterface?.let { typeRegistry.findType(it) } ?: return emptySet()
+        return interfaceType.methods.mapTo(linkedSetOf(), WinMdMethod::signatureKey)
+    }
+
+    private fun inheritedPropertyNames(baseInterface: String?): Set<String> {
+        val interfaceType = baseInterface?.let { typeRegistry.findType(it) } ?: return emptySet()
+        return interfaceType.properties.mapTo(linkedSetOf(), WinMdProperty::name)
     }
 
     private data class InterfaceEventSlotPlan(

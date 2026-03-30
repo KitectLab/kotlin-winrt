@@ -451,6 +451,49 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun interface_projection_extends_non_collection_base_interface() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Types",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Types",
+                            name = "IBase",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            methods = listOf(
+                                WinMdMethod(name = "GetName", returnType = "String", vtableIndex = 6),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Types",
+                            name = "IDerived",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            baseInterfaces = listOf("Example.Types.IBase"),
+                            methods = listOf(
+                                WinMdMethod(name = "GetName", returnType = "String", vtableIndex = 6),
+                                WinMdMethod(name = "GetValue", returnType = "UInt32", vtableIndex = 7),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Example/Types/IDerived.kt" }
+            .content
+
+        assertTrue(binding.contains(") : IBase(pointer)"))
+        assertFalse(binding.contains("open class IDerived(pointer: ComPtr) : WinRtInterfaceProjection(pointer)"))
+        assertFalse(binding.contains("fun getName(): String"))
+        assertTrue(binding.contains("fun getValue(): UInt32"))
+    }
+
+    @Test
     fun generates_projection_type_keys_for_interface_metadata() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
