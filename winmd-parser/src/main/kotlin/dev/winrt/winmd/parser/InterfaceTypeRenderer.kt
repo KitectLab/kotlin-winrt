@@ -46,7 +46,10 @@ internal class InterfaceTypeRenderer(
         return TypeSpec.classBuilder(type.name)
             .addModifiers(KModifier.OPEN)
             .apply {
-                if (typeRegistry.isRuntimeClassHelperInterface(type.name, type.namespace)) {
+                if (
+                    typeRegistry.isRuntimeClassHelperInterface(type.name, type.namespace) ||
+                    typeRegistry.isVersionedRuntimeClassInterface(type.name, type.namespace)
+                ) {
                     addModifiers(KModifier.INTERNAL)
                 }
             }
@@ -207,6 +210,9 @@ internal class InterfaceTypeRenderer(
         val inheritedPropertyNames = inheritedPropertyNames(directBaseInterface)
         return TypeSpec.interfaceBuilder(type.name)
             .apply {
+                if (typeRegistry.isVersionedRuntimeClassInterface(type.name, type.namespace)) {
+                    addModifiers(KModifier.INTERNAL)
+                }
                 typeVariables.forEach(::addTypeVariable)
                 directBaseInterface?.let {
                     addSuperinterface(typeNameMapper.mapTypeName(it, type.namespace, genericParameters))

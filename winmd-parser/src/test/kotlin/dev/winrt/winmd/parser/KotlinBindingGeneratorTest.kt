@@ -230,6 +230,52 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun hides_versioned_runtime_interfaces_from_public_runtime_class_surface() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "Application",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Microsoft.UI.Xaml.IApplication",
+                            implementedInterfaces = listOf("Microsoft.UI.Xaml.IApplication2"),
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "IApplication",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-3333-3333-3333-333333333333",
+                            methods = listOf(
+                                WinMdMethod(name = "Start", returnType = "Unit", vtableIndex = 6),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "IApplication2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbbbbbbb-3333-3333-3333-333333333333",
+                            methods = listOf(
+                                WinMdMethod(name = "Exit", returnType = "Unit", vtableIndex = 7),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/Application.kt" }.content
+        val interfaceBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/IApplication2.kt" }.content
+
+        assertTrue(interfaceBinding.contains("internal interface IApplication2"))
+        assertFalse(runtimeBinding.contains("IApplication2"))
+    }
+
+    @Test
     fun folds_runtime_class_factory_interfaces_into_constructors() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

@@ -34,8 +34,11 @@ internal class RuntimeTypeRenderer(
 
     private fun renderRuntimeClass(type: WinMdType): TypeSpec {
         val runtimeInterfaceTypes = runtimeInterfaceTypes(type)
-        val overridePropertyNames = runtimeInterfaceTypes.flatMapTo(linkedSetOf(), ::allInterfacePropertyNames)
-        val overrideMethodKeys = runtimeInterfaceTypes.flatMapTo(linkedSetOf(), ::allInterfaceMethodKeys)
+        val exposedRuntimeInterfaceTypes = runtimeInterfaceTypes.filterNot { interfaceType ->
+            typeRegistry.isVersionedRuntimeClassInterface(interfaceType.name, interfaceType.namespace)
+        }
+        val overridePropertyNames = exposedRuntimeInterfaceTypes.flatMapTo(linkedSetOf(), ::allInterfacePropertyNames)
+        val overrideMethodKeys = exposedRuntimeInterfaceTypes.flatMapTo(linkedSetOf(), ::allInterfaceMethodKeys)
         val runtimeProperties = dedupeRuntimeProperties(
             type.properties.filter { runtimePropertyRenderer.canRenderRuntimeProperty(it, type.namespace) },
         )
@@ -55,7 +58,7 @@ internal class RuntimeTypeRenderer(
             .superclass(superclass)
             .addSuperclassConstructorParameter("pointer")
 
-        runtimeInterfaceTypes
+        exposedRuntimeInterfaceTypes
             .map { interfaceType -> typeNameMapper.mapTypeName("${interfaceType.namespace}.${interfaceType.name}", type.namespace) }
             .forEach(builder::addSuperinterface)
 

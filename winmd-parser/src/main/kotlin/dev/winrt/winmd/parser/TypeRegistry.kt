@@ -20,6 +20,7 @@ internal class TypeRegistry(
                 .flatMap { type ->
                     buildList {
                         type.defaultInterface?.let(::add)
+                        addAll(type.implementedInterfaces)
                         addAll(type.baseInterfaces)
                     }
                 }
@@ -95,6 +96,17 @@ internal class TypeRegistry(
                     helperInterfaceOrder(interfaceType.name, "I${type.name}Statics") != null ||
                         helperInterfaceOrder(interfaceType.name, "I${type.name}Factory") != null
                     )
+        }
+    }
+
+    fun isVersionedRuntimeClassInterface(typeName: String, currentNamespace: String): Boolean {
+        val interfaceType = findType(typeName, currentNamespace) ?: return false
+        if (interfaceType.kind != WinMdTypeKind.Interface) return false
+        if (!isRuntimeProjectedInterface(typeName, currentNamespace)) return false
+        return allTypes.any { type ->
+            type.kind == WinMdTypeKind.RuntimeClass &&
+                type.namespace == interfaceType.namespace &&
+                interfaceType.name.matches(Regex("I${Regex.escape(type.name)}\\d+"))
         }
     }
 
