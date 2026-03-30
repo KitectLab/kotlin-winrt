@@ -45,7 +45,11 @@ internal class InterfaceTypeRenderer(
                     collectionSuperinterface(baseInterface, type.namespace, genericParameters)
                 }.forEach { addSuperinterface(it) }
                 kotlinCollectionProjectionMapper.interfaceProjection(type)?.let { projection ->
-                    addSuperinterface(projection.superinterface)
+                    if (projection.delegateFactory != null) {
+                        addSuperinterface(projection.superinterface, projection.delegateFactory)
+                    } else {
+                        addSuperinterface(projection.superinterface)
+                    }
                     projection.extraProperties.forEach(::addProperty)
                     projection.extraFunctions.forEach(::addFunction)
                     addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))

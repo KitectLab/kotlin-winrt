@@ -6,6 +6,7 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asTypeName
 import dev.winrt.winmd.plugin.WinMdType
 
@@ -140,6 +141,30 @@ internal class KotlinCollectionProjectionMapper {
                 winRtSizeSlot = 8,
             )
         }
+        if (type.namespace == "Windows.Foundation.Collections" && type.name == "IMap`2") {
+            val keyTypeName = type.genericParameters.firstOrNull()?.let { TypeVariableName(it) } ?: return null
+            val valueTypeName = type.genericParameters.getOrNull(1)?.let { TypeVariableName(it) } ?: return null
+            return InterfaceCollectionProjection(
+                superinterface = PoetSymbols.mutableMapClass.parameterizedBy(keyTypeName, valueTypeName),
+                delegateFactory = CodeBlock.of(
+                    "%T(sizeProvider = { winRtSize.value.toInt() }, lookupFn = { key -> lookup(key) }, containsKeyFn = { key -> hasKey(key) }, putValueFn = { key, value -> insert(key, value) }, removeKeyFn = { key -> remove(key) }, clearerFn = { clear() }, entriesProvider = { first().asSequence().toList() })",
+                    PoetSymbols.winRtMutableMapProjectionClass.parameterizedBy(keyTypeName, valueTypeName),
+                ),
+                winRtSizeSlot = 7,
+            )
+        }
+        if (type.namespace == "Windows.Foundation.Collections" && type.name == "IMapView`2") {
+            val keyTypeName = type.genericParameters.firstOrNull()?.let { TypeVariableName(it) } ?: return null
+            val valueTypeName = type.genericParameters.getOrNull(1)?.let { TypeVariableName(it) } ?: return null
+            return InterfaceCollectionProjection(
+                superinterface = PoetSymbols.mapClass.parameterizedBy(keyTypeName, valueTypeName),
+                delegateFactory = CodeBlock.of(
+                    "%T(sizeProvider = { winRtSize.value.toInt() }, lookupFn = { key -> lookup(key) }, containsKeyFn = { key -> hasKey(key) }, entriesProvider = { first().asSequence().toList() })",
+                    PoetSymbols.winRtMapProjectionClass.parameterizedBy(keyTypeName, valueTypeName),
+                ),
+                winRtSizeSlot = 7,
+            )
+        }
         if (type.namespace == "Microsoft.UI.Xaml.Interop" && type.name == "IBindableVectorView") {
             return InterfaceCollectionProjection(
                 superinterface = PoetSymbols.listClass.parameterizedBy(PoetSymbols.inspectableClass),
@@ -177,6 +202,48 @@ internal class KotlinCollectionProjectionMapper {
         winRtSignatureMapper: WinRtSignatureMapper,
         winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     ): CollectionInterfaceMetadata? {
+        if (qualifiedName.startsWith("Windows.Foundation.Collections.IMapView<") && qualifiedName.endsWith(">")) {
+            val argumentSource = qualifiedName.substringAfter('<').substringBeforeLast('>')
+            val arguments = splitGenericArguments(argumentSource)
+            if (arguments.size != 2) {
+                return null
+            }
+            val keyType = collectionElementTypeName(arguments[0], typeNameMapper)
+            val valueType = collectionElementTypeName(arguments[1], typeNameMapper)
+            val rawInterfaceClass = typeNameMapper.mapTypeName(
+                "Windows.Foundation.Collections.IMapView",
+                "Windows.Foundation.Collections",
+            ) as ClassName
+            return CollectionInterfaceMetadata(
+                collectionSuperinterface = PoetSymbols.mapClass.parameterizedBy(keyType, valueType),
+                delegateFactory = CodeBlock.of(
+                    "%T(sizeProvider = { winRtSize.value.toInt() }, lookupFn = { key -> lookup(key) }, containsKeyFn = { key -> hasKey(key) }, entriesProvider = { first().asSequence().toList() })",
+                    PoetSymbols.winRtMapProjectionClass.parameterizedBy(keyType, valueType),
+                ),
+                winRtSizeSlot = 7,
+            )
+        }
+        if (qualifiedName.startsWith("Windows.Foundation.Collections.IMap<") && qualifiedName.endsWith(">")) {
+            val argumentSource = qualifiedName.substringAfter('<').substringBeforeLast('>')
+            val arguments = splitGenericArguments(argumentSource)
+            if (arguments.size != 2) {
+                return null
+            }
+            val keyType = collectionElementTypeName(arguments[0], typeNameMapper)
+            val valueType = collectionElementTypeName(arguments[1], typeNameMapper)
+            val rawInterfaceClass = typeNameMapper.mapTypeName(
+                "Windows.Foundation.Collections.IMap",
+                "Windows.Foundation.Collections",
+            ) as ClassName
+            return CollectionInterfaceMetadata(
+                collectionSuperinterface = PoetSymbols.mutableMapClass.parameterizedBy(keyType, valueType),
+                delegateFactory = CodeBlock.of(
+                    "%T(sizeProvider = { winRtSize.value.toInt() }, lookupFn = { key -> lookup(key) }, containsKeyFn = { key -> hasKey(key) }, putValueFn = { key, value -> insert(key, value) }, removeKeyFn = { key -> remove(key) }, clearerFn = { clear() }, entriesProvider = { first().asSequence().toList() })",
+                    PoetSymbols.winRtMutableMapProjectionClass.parameterizedBy(keyType, valueType),
+                ),
+                winRtSizeSlot = 7,
+            )
+        }
         if (qualifiedName.startsWith("Windows.Foundation.Collections.IVectorView<") && qualifiedName.endsWith(">")) {
             val elementType = qualifiedName.substringAfter('<').substringBeforeLast('>')
             if (!supportsClosedGenericVectorElement(elementType)) {
@@ -378,6 +445,27 @@ internal class KotlinCollectionProjectionMapper {
 
     private fun supportsClosedGenericVectorElement(typeName: String): Boolean {
         return supportsClosedGenericIterableElement(typeName)
+    }
+
+    private fun splitGenericArguments(source: String): List<String> {
+        if (source.isBlank()) {
+            return emptyList()
+        }
+        val arguments = mutableListOf<String>()
+        var depth = 0
+        var start = 0
+        source.forEachIndexed { index, char ->
+            when (char) {
+                '<' -> depth++
+                '>' -> depth--
+                ',' -> if (depth == 0) {
+                    arguments += source.substring(start, index).trim()
+                    start = index + 1
+                }
+            }
+        }
+        arguments += source.substring(start).trim()
+        return arguments
     }
 
     private fun elementReadExpression(
