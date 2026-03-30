@@ -17,7 +17,7 @@ public open class JsonValue(
 ) : Inspectable(pointer),
     IJsonValue {
   private val backing_ValueType: RuntimeProperty<JsonValueType> =
-      RuntimeProperty<JsonValueType>(error("Stub method not implemented: windows.`data`.json.JsonValueType"))
+      RuntimeProperty<JsonValueType>(JsonValueType.fromValue(0))
 
   override val valueType: JsonValueType
     get() {

@@ -31,7 +31,10 @@ open class IBindableVectorView(
 
     override fun containsAll(elements: Collection<Inspectable>): Boolean = elements.all { contains(it) }
 
-    override fun get(index: Int): Inspectable = getAt(UInt32(index.toUInt()))
+    override fun get(index: Int): Inspectable {
+        require(index >= 0) { "index must be non-negative" }
+        return getAt(UInt32(index.toUInt()))
+    }
 
     override fun indexOf(element: Inspectable): Int {
         for (index in 0 until size) {

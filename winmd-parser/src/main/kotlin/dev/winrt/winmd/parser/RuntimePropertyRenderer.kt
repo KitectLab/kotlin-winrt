@@ -18,9 +18,14 @@ internal class RuntimePropertyRenderer(
 
     fun renderBackingProperty(property: WinMdProperty, currentNamespace: String): PropertySpec {
         val kotlinType = typeNameMapper.mapTypeName(property.type, currentNamespace)
+        val defaultValue = when {
+            typeRegistry.isEnumType(property.type, currentNamespace) ->
+                CodeBlock.of("%T.fromValue(0)", kotlinType)
+            else -> typeNameMapper.defaultValueFor(kotlinType)
+        }
         return PropertySpec.builder("backing_${property.name}", PoetSymbols.runtimePropertyClass.parameterizedBy(kotlinType))
             .addModifiers(KModifier.PRIVATE)
-            .initializer("%T(%L)", PoetSymbols.runtimePropertyClass.parameterizedBy(kotlinType), typeNameMapper.defaultValueFor(kotlinType))
+            .initializer("%T(%L)", PoetSymbols.runtimePropertyClass.parameterizedBy(kotlinType), defaultValue)
             .build()
     }
 
