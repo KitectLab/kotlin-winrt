@@ -46,7 +46,12 @@ open class Application(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
                 val arg = args.single() as ComPtr
                 callback(IApplicationInitializationCallbackParams(arg))
             }
-            statics.start(ApplicationInitializationCallback(delegateHandle.pointer))
+            try {
+                statics.start(ApplicationInitializationCallback(delegateHandle.pointer))
+            } catch (t: Throwable) {
+                delegateHandle.close()
+                throw t
+            }
             return delegateHandle
         }
 
