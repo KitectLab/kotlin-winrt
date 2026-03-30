@@ -85,6 +85,19 @@ internal class TypeRegistry(
         return qualifiedName in runtimeImplementedInterfaces
     }
 
+    fun isRuntimeClassHelperInterface(typeName: String, currentNamespace: String): Boolean {
+        val interfaceType = findType(typeName, currentNamespace) ?: return false
+        if (interfaceType.kind != WinMdTypeKind.Interface) return false
+        return allTypes.any { type ->
+            type.kind == WinMdTypeKind.RuntimeClass &&
+                type.namespace == interfaceType.namespace &&
+                (
+                    helperInterfaceOrder(interfaceType.name, "I${type.name}Statics") != null ||
+                        helperInterfaceOrder(interfaceType.name, "I${type.name}Factory") != null
+                    )
+        }
+    }
+
     private fun canonicalQualifiedName(typeName: String): String {
         return typeName.substringBefore('<')
             .substringBefore('`')

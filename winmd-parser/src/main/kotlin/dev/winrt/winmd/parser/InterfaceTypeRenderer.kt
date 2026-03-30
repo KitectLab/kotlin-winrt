@@ -46,6 +46,11 @@ internal class InterfaceTypeRenderer(
         return TypeSpec.classBuilder(type.name)
             .addModifiers(KModifier.OPEN)
             .apply {
+                if (typeRegistry.isRuntimeClassHelperInterface(type.name, type.namespace)) {
+                    addModifiers(KModifier.INTERNAL)
+                }
+            }
+            .apply {
                 typeVariables.forEach(::addTypeVariable)
             }
             .primaryConstructor(pointerConstructor())

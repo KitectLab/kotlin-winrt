@@ -185,6 +185,51 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun emits_runtime_helper_interfaces_as_internal_types() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Data.Json",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "JsonValue",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Data.Json.IJsonValue",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonValue",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-2222-2222-2222-222222222222",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonValueStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbbbbbbb-2222-2222-2222-222222222222",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonValueFactory",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "cccccccc-2222-2222-2222-222222222222",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonValueStatics.kt" }.content
+        val factoryBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonValueFactory.kt" }.content
+
+        assertTrue(staticsBinding.contains("internal open class IJsonValueStatics"))
+        assertTrue(factoryBinding.contains("internal open class IJsonValueFactory"))
+    }
+
+    @Test
     fun folds_runtime_class_factory_interfaces_into_constructors() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
