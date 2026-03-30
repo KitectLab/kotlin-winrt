@@ -82,7 +82,7 @@ class JsonInterfaceProjectionTest {
         assertTrue(generatedJsonObject.contains("IJsonValue.from(Inspectable("))
 
         val generatedJsonArrayClass = generated.getValue("windows/data/json/JsonArray.kt".lowercase()).content
-        assertTrue(generatedJsonArrayClass.contains("override fun getObjectAt(index: UInt32): JsonObject"))
+        assertTrue(generatedJsonArrayClass.contains("fun getObjectAt(index: UInt32): JsonObject"))
         assertTrue(generatedJsonArrayClass.contains("invokeObjectMethodWithUInt32Arg(pointer, 6,"))
         assertTrue(generatedJsonArrayClass.contains("JsonValueType.fromValue("))
         assertTrue(!generatedJsonArrayClass.contains("windows.foundation.collections.IVector"))
@@ -90,7 +90,7 @@ class JsonInterfaceProjectionTest {
         assertEquals(1, generatedJsonArrayClass.lineSequence().count { it.contains("fun get_ValueType(): JsonValueType") })
 
         val generatedJsonObjectClass = generated.getValue("windows/data/json/JsonObject.kt".lowercase()).content
-        assertTrue(generatedJsonObjectClass.contains("override fun getNamedValue(name: String): IJsonValue"))
+        assertTrue(generatedJsonObjectClass.contains("fun getNamedValue(name: String): IJsonValue"))
         assertTrue(generatedJsonObjectClass.contains("invokeObjectMethodWithStringArg(pointer,"))
         assertTrue(generatedJsonObjectClass.contains("6, name).getOrThrow()"))
         assertTrue(generatedJsonObjectClass.contains("invokeHStringMethodWithStringArg(pointer, 10,"))
