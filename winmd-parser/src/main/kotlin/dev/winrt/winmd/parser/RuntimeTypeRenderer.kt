@@ -107,6 +107,7 @@ internal class RuntimeTypeRenderer(
                     .build(),
             )
         }
+        renderFactoryConstructors(type).forEach(builder::addFunction)
 
         runtimeProperties.forEach { property ->
             builder.addProperty(runtimePropertyRenderer.renderBackingProperty(property, type.namespace))
@@ -140,6 +141,35 @@ internal class RuntimeTypeRenderer(
         runtimeCompanionRenderer.renderStaticEventSlotTypes(type).forEach(builder::addType)
         builder.addType(runtimeCompanionRenderer.render(type))
         return builder.build()
+    }
+
+    private fun renderFactoryConstructors(type: WinMdType): List<FunSpec> {
+        return typeRegistry.findRuntimeClassFactoryTypes(type.name, type.namespace)
+            .flatMap { factoryType ->
+                val factoryPropertyName = factoryType.name.removePrefix("I").replaceFirstChar(Char::lowercase)
+                factoryType.methods
+                    .filter { method -> method.returnType == "${type.namespace}.${type.name}" }
+                    .map { method ->
+                        FunSpec.constructorBuilder()
+                            .addParameters(
+                                method.parameters.map { parameter ->
+                                    com.squareup.kotlinpoet.ParameterSpec.builder(
+                                        parameter.name,
+                                        typeNameMapper.mapTypeName(parameter.type, type.namespace),
+                                    ).build()
+                                },
+                            )
+                            .callThisConstructor(
+                                CodeBlock.of(
+                                    "Companion.%L%L(%L).pointer",
+                                    factoryPropertyName,
+                                    method.name,
+                                    method.parameters.joinToString(", ") { it.name },
+                                ),
+                            )
+                            .build()
+                    }
+            }
     }
 
     private fun renderEventSlotMembers(methods: List<WinMdMethod>, currentNamespace: String): RuntimeEventMembers {

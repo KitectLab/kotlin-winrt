@@ -7,6 +7,7 @@ import dev.winrt.winmd.plugin.WinMdTypeKind
 internal class TypeRegistry(
     model: WinMdModel,
 ) {
+    private val allTypes = model.namespaces.flatMap { it.types }
     private val typesByQualifiedName = model.namespaces
         .flatMap { namespace ->
             namespace.types.map { type -> canonicalQualifiedName("${type.namespace}.${type.name}") to type }
@@ -36,11 +37,32 @@ internal class TypeRegistry(
     }
 
     fun findRuntimeClassStaticsType(typeName: String, currentNamespace: String): WinMdType? {
-        val runtimeClass = findType(typeName, currentNamespace) ?: return null
+        return findRuntimeClassStaticsTypes(typeName, currentNamespace).firstOrNull()
+    }
+
+    fun findRuntimeClassStaticsTypes(typeName: String, currentNamespace: String): List<WinMdType> {
+        return findRuntimeClassHelperTypes(typeName, currentNamespace, "Statics")
+    }
+
+    fun findRuntimeClassFactoryTypes(typeName: String, currentNamespace: String): List<WinMdType> {
+        return findRuntimeClassHelperTypes(typeName, currentNamespace, "Factory")
+    }
+
+    private fun findRuntimeClassHelperTypes(typeName: String, currentNamespace: String, helperKind: String): List<WinMdType> {
+        val runtimeClass = findType(typeName, currentNamespace) ?: return emptyList()
         if (runtimeClass.kind != WinMdTypeKind.RuntimeClass) {
-            return null
+            return emptyList()
         }
-        return findType("I${runtimeClass.name}Statics", runtimeClass.namespace)
+        val prefix = "I${runtimeClass.name}$helperKind"
+        return allTypes
+            .asSequence()
+            .filter { type ->
+                type.namespace == runtimeClass.namespace &&
+                    type.kind == WinMdTypeKind.Interface &&
+                    helperInterfaceOrder(type.name, prefix) != null
+            }
+            .sortedBy { type -> helperInterfaceOrder(type.name, prefix) }
+            .toList()
     }
 
     fun findDefaultInterfaceType(typeName: String, currentNamespace: String): WinMdType? {
@@ -77,5 +99,15 @@ internal class TypeRegistry(
                 else -> typeName
             },
         )
+    }
+
+    private fun helperInterfaceOrder(typeName: String, prefix: String): Int? {
+        if (!typeName.startsWith(prefix)) return null
+        val suffix = typeName.removePrefix(prefix)
+        return when {
+            suffix.isEmpty() -> 0
+            suffix.all(Char::isDigit) -> suffix.toInt()
+            else -> null
+        }
     }
 }

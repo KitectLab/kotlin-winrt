@@ -71,11 +71,11 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Microsoft/UI/Xaml/Application.kt" }.content
 
-        assertTrue(binding, binding.contains("private val statics: IApplicationStatics by lazy"))
+        assertTrue(binding, binding.contains("private val applicationStatics: IApplicationStatics by lazy"))
         assertTrue(binding, binding.contains("val current: Application"))
-        assertTrue(binding, binding.contains("get() = statics.get_Current()"))
+        assertTrue(binding, binding.contains("get() = applicationStatics.get_Current()"))
         assertTrue(binding, binding.contains("fun start(callback: ApplicationInitializationCallback)"))
-        assertTrue(binding, binding.contains("statics.start(callback)"))
+        assertTrue(binding, binding.contains("applicationStatics.start(callback)"))
         assertTrue(binding, binding.contains("fun start(callback: (IApplicationInitializationCallbackParams) -> Unit)"))
         assertTrue(binding, binding.contains("WinRtDelegateBridge.createUnitDelegate"))
     }
@@ -116,15 +116,76 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Windows/Globalization/ApplicationLanguages.kt" }.content
 
-        assertTrue(binding, binding.contains("private val statics: IApplicationLanguagesStatics by lazy"))
+        assertTrue(binding, binding.contains("private val applicationLanguagesStatics: IApplicationLanguagesStatics by lazy"))
         assertTrue(binding, binding.contains("val languages: List<String>"))
-        assertTrue(binding, binding.contains("get() = statics.languages"))
+        assertTrue(binding, binding.contains("get() = applicationLanguagesStatics.languages"))
         assertTrue(binding, binding.contains("val manifestLanguages: List<String>"))
-        assertTrue(binding, binding.contains("get() = statics.manifestLanguages"))
+        assertTrue(binding, binding.contains("get() = applicationLanguagesStatics.manifestLanguages"))
     }
 
     @Test
-    fun does_not_fold_runtime_class_factory_into_companion_object() {
+    fun folds_all_runtime_class_statics_interfaces_into_companion_object() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Data.Json",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "JsonValue",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Data.Json.IJsonValue",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonValue",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-1111-1111-1111-111111111111",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonValueStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbbbbbbb-1111-1111-1111-111111111111",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Parse",
+                                    returnType = "Windows.Data.Json.JsonValue",
+                                    parameters = listOf(WinMdParameter("input", "String")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonValueStatics2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "cccccccc-1111-1111-1111-111111111111",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateNullValue",
+                                    returnType = "Windows.Data.Json.JsonValue",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Windows/Data/Json/JsonValue.kt" }.content
+
+        assertTrue(binding, binding.contains("private val jsonValueStatics: IJsonValueStatics by lazy"))
+        assertTrue(binding, binding.contains("private val jsonValueStatics2: IJsonValueStatics2 by lazy"))
+        assertTrue(binding, binding.contains("fun parse(input: String): JsonValue = jsonValueStatics.parse(input)"))
+        assertTrue(binding, binding.contains("fun createNullValue(): JsonValue = jsonValueStatics2.createNullValue()"))
+    }
+
+    @Test
+    fun folds_runtime_class_factory_interfaces_into_constructors() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
             namespaces = listOf(
@@ -164,11 +225,12 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Windows/Globalization/Language.kt" }.content
+        val normalizedBinding = binding.replace("\n", "").replace(" ", "")
 
         assertTrue(binding, binding.contains("override val activationKind: WinRtActivationKind = WinRtActivationKind.Factory"))
-        assertFalse(binding, binding.contains("private val languageFactory: ILanguageFactory by lazy"))
-        assertFalse(binding, binding.contains("fun createLanguage(languageTag: String): Language"))
-        assertFalse(binding, binding.contains("constructor(languageTag: String)"))
+        assertTrue(binding, binding.contains("private val languageFactory: ILanguageFactory by lazy"))
+        assertTrue(binding, binding.contains("private fun languageFactoryCreateLanguage(languageTag: String): Language"))
+        assertTrue(normalizedBinding.contains("constructor(languageTag:String):this(Companion.languageFactoryCreateLanguage(languageTag).pointer)"))
     }
 
     @Test
