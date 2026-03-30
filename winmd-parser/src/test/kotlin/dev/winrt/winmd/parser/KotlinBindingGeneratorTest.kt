@@ -477,7 +477,67 @@ class KotlinBindingGeneratorTest {
 
     @Test
     fun generates_json_runtime_class_direct_default_interface_members() {
-        val model = WinMdModelFactory.sampleSupplementalModel()
+        val supplemental = WinMdModelFactory.sampleSupplementalModel()
+        val model = supplemental.copy(
+            namespaces = supplemental.namespaces.map { namespace ->
+                if (namespace.name != "Windows.Data.Json") {
+                    namespace
+                } else {
+                    namespace.copy(
+                        types = namespace.types.map { type ->
+                            if (type.name != "JsonArray") {
+                                type
+                            } else {
+                                type.copy(
+                                    methods = listOf(
+                                        dev.winrt.winmd.plugin.WinMdMethod(
+                                            name = "GetObjectAt",
+                                            returnType = "Windows.Data.Json.JsonObject",
+                                            vtableIndex = 6,
+                                            parameters = listOf(
+                                                dev.winrt.winmd.plugin.WinMdParameter("index", "UInt32"),
+                                            ),
+                                        ),
+                                        dev.winrt.winmd.plugin.WinMdMethod(
+                                            name = "GetArrayAt",
+                                            returnType = "Windows.Data.Json.JsonArray",
+                                            vtableIndex = 7,
+                                            parameters = listOf(
+                                                dev.winrt.winmd.plugin.WinMdParameter("index", "UInt32"),
+                                            ),
+                                        ),
+                                        dev.winrt.winmd.plugin.WinMdMethod(
+                                            name = "GetStringAt",
+                                            returnType = "String",
+                                            vtableIndex = 8,
+                                            parameters = listOf(
+                                                dev.winrt.winmd.plugin.WinMdParameter("index", "UInt32"),
+                                            ),
+                                        ),
+                                        dev.winrt.winmd.plugin.WinMdMethod(
+                                            name = "GetNumberAt",
+                                            returnType = "Float64",
+                                            vtableIndex = 9,
+                                            parameters = listOf(
+                                                dev.winrt.winmd.plugin.WinMdParameter("index", "UInt32"),
+                                            ),
+                                        ),
+                                        dev.winrt.winmd.plugin.WinMdMethod(
+                                            name = "GetBooleanAt",
+                                            returnType = "Boolean",
+                                            vtableIndex = 10,
+                                            parameters = listOf(
+                                                dev.winrt.winmd.plugin.WinMdParameter("index", "UInt32"),
+                                            ),
+                                        ),
+                                    ),
+                                )
+                            }
+                        },
+                    )
+                }
+            },
+        )
 
         val files = KotlinBindingGenerator().generate(model)
         val jsonArrayBinding = files.first { it.relativePath == "Windows/Data/Json/JsonArray.kt" }.content
