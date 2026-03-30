@@ -3044,6 +3044,71 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_kotlin_map_shape_for_open_generic_interfaces() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IMap`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "00000000-0000-0000-0000-000000000002",
+                            genericParameters = listOf("K", "V"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Lookup",
+                                    returnType = "V",
+                                    parameters = listOf(WinMdParameter("key", "K")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "HasKey",
+                                    returnType = "Boolean",
+                                    parameters = listOf(WinMdParameter("key", "K")),
+                                    vtableIndex = 7,
+                                ),
+                                WinMdMethod(
+                                    name = "Insert",
+                                    returnType = "Boolean",
+                                    parameters = listOf(
+                                        WinMdParameter("key", "K"),
+                                        WinMdParameter("value", "V"),
+                                    ),
+                                    vtableIndex = 8,
+                                ),
+                                WinMdMethod(
+                                    name = "Remove",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("key", "K")),
+                                    vtableIndex = 9,
+                                ),
+                                WinMdMethod(
+                                    name = "Clear",
+                                    returnType = "Unit",
+                                    vtableIndex = 10,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Windows/Foundation/Collections/IMap`2.kt"
+        }.content
+
+        assertTrue(binding.contains("MutableMap<"))
+        assertTrue(binding.contains("MutableMap<K, V> by WinRtMutableMapProjection<K, V>"))
+        assertTrue(binding.contains("override val projectionTypeKey: String = \"kotlin.collections.MutableMap\""))
+        assertTrue(binding.contains("fun clear()"))
+    }
+
+    @Test
     fun expands_winui_ui_element_collection_members_from_real_metadata_model_when_available() {
         val winUiRoot = java.nio.file.Path.of("F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002")
         val xamlWinmd = winUiRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd")
