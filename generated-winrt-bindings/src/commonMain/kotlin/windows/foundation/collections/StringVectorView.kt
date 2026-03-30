@@ -5,7 +5,6 @@ import dev.winrt.core.WinRtObject
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
 import kotlin.collections.Collection
-import kotlin.io.use
 
 public open class StringVectorView(
   pointer: ComPtr,
@@ -16,8 +15,11 @@ public open class StringVectorView(
     get() = UInt32(PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow())
 
   public fun getAt(index: UInt32): String {
-    return PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 6, index.value).getOrThrow().use {
-      it.toKotlinString()
+    val value = PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 6, index.value).getOrThrow()
+    try {
+      return value.toKotlinString()
+    } finally {
+      value.close()
     }
   }
 

@@ -111,13 +111,10 @@ public fun <TResult, TProgress> CoroutineScope.asyncOperationWithProgress(
 private class LocalAsyncAction(
   private val job: Job,
 ) : IAsyncAction(ComPtr.NULL) {
-  @Volatile
   private var statusState: AsyncStatus = AsyncStatus.Started
 
-  @Volatile
   private var errorState: HResult = HResult.OK
 
-  @Volatile
   private var completedHandler: AsyncActionCompletedHandler? = null
 
   override val id: UInt32
@@ -174,16 +171,12 @@ private class LocalAsyncOperation<TResult>(
   private val deferred: Deferred<TResult>,
   resultSignature: String,
 ) : IAsyncOperation<TResult>(ComPtr.NULL, resultSignature) {
-  @Volatile
   private var statusState: AsyncStatus = AsyncStatus.Started
 
-  @Volatile
   private var errorState: HResult = HResult.OK
 
-  @Volatile
   private var completedHandler: AsyncOperationCompletedHandler<TResult>? = null
 
-  @Volatile
   private var completedResult: Result<TResult>? = null
 
   override val id: UInt32
@@ -250,18 +243,14 @@ private class LocalAsyncActionWithProgress<TProgress>(
     progressArgumentKind = progressArgumentKind,
     decodeProgress = { decodeProgressValue(it) },
 ) {
-  @Volatile
   private var statusState: AsyncStatus = AsyncStatus.Started
 
-  @Volatile
   private var errorState: HResult = HResult.OK
 
-  @Volatile
   private var progressHandler: AsyncActionProgressHandler<TProgress>? = null
 
   private val pendingProgress = mutableListOf<TProgress>()
 
-  @Volatile
   private var completedHandler: AsyncActionWithProgressCompletedHandler<TProgress>? = null
 
   override val id: UInt32
@@ -293,16 +282,12 @@ private class LocalAsyncActionWithProgress<TProgress>(
       handler.invoke(pointer, progress)
       return
     }
-    synchronized(pendingProgress) {
-      progressHandler?.invoke(pointer, progress) ?: pendingProgress.add(progress)
-    }
+    progressHandler?.invoke(pointer, progress) ?: pendingProgress.add(progress)
   }
 
   override fun put_Progress(handler: AsyncActionProgressHandler<TProgress>) {
     progressHandler = handler
-    val buffered = synchronized(pendingProgress) {
-      pendingProgress.toList().also { pendingProgress.clear() }
-    }
+    val buffered = pendingProgress.toList().also { pendingProgress.clear() }
     buffered.forEach { progress -> handler.invoke(pointer, progress) }
   }
 
@@ -348,21 +333,16 @@ private class LocalAsyncOperationWithProgress<TResult, TProgress>(
     progressArgumentKind = progressArgumentKind,
     decodeProgress = { decodeProgressValue(it) },
 ) {
-  @Volatile
   private var statusState: AsyncStatus = AsyncStatus.Started
 
-  @Volatile
   private var errorState: HResult = HResult.OK
 
-  @Volatile
   private var progressHandler: AsyncOperationProgressHandler<TResult, TProgress>? = null
 
   private val pendingProgress = mutableListOf<TProgress>()
 
-  @Volatile
   private var completedHandler: AsyncOperationWithProgressCompletedHandler<TResult, TProgress>? = null
 
-  @Volatile
   private var completedResult: Result<TResult>? = null
 
   override val id: UInt32
@@ -398,16 +378,12 @@ private class LocalAsyncOperationWithProgress<TResult, TProgress>(
       handler.invoke(pointer, progress)
       return
     }
-    synchronized(pendingProgress) {
-      progressHandler?.invoke(pointer, progress) ?: pendingProgress.add(progress)
-    }
+    progressHandler?.invoke(pointer, progress) ?: pendingProgress.add(progress)
   }
 
   override fun put_Progress(handler: AsyncOperationProgressHandler<TResult, TProgress>) {
     progressHandler = handler
-    val buffered = synchronized(pendingProgress) {
-      pendingProgress.toList().also { pendingProgress.clear() }
-    }
+    val buffered = pendingProgress.toList().also { pendingProgress.clear() }
     buffered.forEach { progress -> handler.invoke(pointer, progress) }
   }
 
