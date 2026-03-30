@@ -12,35 +12,23 @@ import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
 
-public interface IJsonObject : IJsonValue {
-  public fun getNamedValue(name: String): IJsonValue
-
-  public fun getNamedString(name: String): String
-
-  public fun getNamedObject(name: String): JsonObject
-
-  public fun getNamedArray(name: String): JsonArray
-
-  public fun getNamedNumber(name: String): Float64
-
-  public fun getNamedBoolean(name: String): WinRtBoolean
-
+public interface IJsonObjectWithDefaultValues : IJsonObject {
   public companion object : WinRtInterfaceMetadata {
-    override val qualifiedName: String = "Windows.Data.Json.IJsonObject"
+    override val qualifiedName: String = "Windows.Data.Json.IJsonObjectWithDefaultValues"
 
-    override val projectionTypeKey: String = "Windows.Data.Json.IJsonObject"
+    override val projectionTypeKey: String = "Windows.Data.Json.IJsonObjectWithDefaultValues"
 
-    override val iid: Guid = guidOf("064e24dd-29c2-4f83-9ac1-9ee11578beb3")
+    override val iid: Guid = guidOf("d960d2a2-b7f0-4f00-8e44-d82cf415ea13")
 
-    public fun from(inspectable: Inspectable): IJsonObject = inspectable.projectInterface(this,
-        ::IJsonObjectProjection)
+    public fun from(inspectable: Inspectable): IJsonObjectWithDefaultValues =
+        inspectable.projectInterface(this, ::IJsonObjectWithDefaultValuesProjection)
   }
 }
 
-private class IJsonObjectProjection(
+private class IJsonObjectWithDefaultValuesProjection(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer),
-    IJsonObject {
+    IJsonObjectWithDefaultValues {
   override val valueType: JsonValueType
     get() = JsonValueType.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
         6).getOrThrow().toInt())

@@ -10,9 +10,10 @@ import dev.winrt.winmd.plugin.WinMdProperty
 
 internal class RuntimePropertyRenderer(
     private val typeNameMapper: TypeNameMapper,
+    private val typeRegistry: TypeRegistry,
 ) {
-    fun canRenderRuntimeProperty(property: WinMdProperty): Boolean {
-        return runtimePropertyPlan(property) != null
+    fun canRenderRuntimeProperty(property: WinMdProperty, currentNamespace: String): Boolean {
+        return runtimePropertyPlan(property, currentNamespace) != null
     }
 
     fun renderBackingProperty(property: WinMdProperty, currentNamespace: String): PropertySpec {
@@ -30,15 +31,15 @@ internal class RuntimePropertyRenderer(
         if (property.mutable) {
             builder.mutable()
         }
-        builder.getter(renderRuntimeGetter(property))
+        builder.getter(renderRuntimeGetter(property, currentNamespace))
         if (property.mutable) {
             builder.setter(renderRuntimeSetter(property, currentNamespace))
         }
         return builder.build()
     }
 
-    private fun renderRuntimeGetter(property: WinMdProperty): FunSpec {
-        val plan = runtimePropertyPlan(property)
+    private fun renderRuntimeGetter(property: WinMdProperty, currentNamespace: String): FunSpec {
+        val plan = runtimePropertyPlan(property, currentNamespace)
         val backingName = "backing_${property.name}"
         val builder = FunSpec.getterBuilder()
         val getterPlan = plan?.getter
@@ -56,7 +57,7 @@ internal class RuntimePropertyRenderer(
     }
 
     private fun renderRuntimeSetter(property: WinMdProperty, currentNamespace: String): FunSpec {
-        val plan = runtimePropertyPlan(property)
+        val plan = runtimePropertyPlan(property, currentNamespace)
         val backingName = "backing_${property.name}"
         val builder = FunSpec.setterBuilder()
             .addParameter("value", typeNameMapper.mapTypeName(property.type, currentNamespace))
@@ -176,7 +177,7 @@ internal class RuntimePropertyRenderer(
         }
     }
 
-    private fun runtimePropertyPlan(property: WinMdProperty): RuntimePropertyPlan? {
+    private fun runtimePropertyPlan(property: WinMdProperty, currentNamespace: String): RuntimePropertyPlan? {
         val iReferenceInnerType = iReferenceInnerType(property.type)
         val getterPlan = when {
             property.getterVtableIndex == null -> null
@@ -191,8 +192,18 @@ internal class RuntimePropertyRenderer(
                         ?: error("Unsupported IReference projection type: $iReferenceInnerType")
                 }
             }
-            else -> scalarRuntimePropertyPlan(property.type)?.let { scalarPlan ->
+            else -> when {
+                typeRegistry.isEnumType(property.type, currentNamespace) -> RuntimePropertyGetterPlan { getterVtableIndex ->
+                    CodeBlock.of(
+                        "%T.fromValue(%T.invokeUInt32Method(pointer, %L).getOrThrow().toInt())",
+                        typeNameMapper.mapTypeName(property.type, currentNamespace),
+                        PoetSymbols.platformComInteropClass,
+                        getterVtableIndex,
+                    )
+                }
+                else -> scalarRuntimePropertyPlan(property.type)?.let { scalarPlan ->
                 RuntimePropertyGetterPlan { getterVtableIndex -> scalarPlan.renderGetter(getterVtableIndex) }
+            }
             }
         }
         val setterPlan = when (PropertyRuleRegistry.setterRuleFamily(property.type)) {

@@ -80,6 +80,7 @@ internal class RuntimeCompanionRenderer(
         }
         staticsType.methods
             .filterNot { method -> isGetterLike(method) || isSetterLike(method) }
+            .filterNot(::isTemporarilyUnsupportedJsonStaticMethod)
             .forEach { method ->
                 members += renderForwardingMethod(method, type.namespace)
                 renderForwardingAsyncAwaitMethod(method, type.namespace)?.let(members::add)
@@ -219,6 +220,10 @@ internal class RuntimeCompanionRenderer(
                     .build()
             },
         )
+    }
+
+    private fun isTemporarilyUnsupportedJsonStaticMethod(method: WinMdMethod): Boolean {
+        return method.name == "TryParse" || method.name == "CreateNumberValue"
     }
 
     private fun renderForwardingProperty(property: WinMdProperty, currentNamespace: String): PropertySpec {

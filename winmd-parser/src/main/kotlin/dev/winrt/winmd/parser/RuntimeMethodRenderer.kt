@@ -21,11 +21,35 @@ internal class RuntimeMethodRenderer(
     }
 
     fun canRenderRuntimeMethod(method: WinMdMethod, currentNamespace: String): Boolean {
-        return asyncMethodRuleRegistry.plan(method, currentNamespace) != null || runtimeMethodPlan(method) != null
+        return asyncMethodRuleRegistry.plan(method, currentNamespace) != null ||
+            (typeRegistry.isEnumType(method.returnType, currentNamespace) &&
+                method.parameters.isEmpty() &&
+                method.vtableIndex != null) ||
+            runtimeMethodPlan(method) != null
     }
 
     fun renderRuntimeMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
         renderAsyncTaskMethod(method, currentNamespace)?.let { return it }
+        if (typeRegistry.isEnumType(method.returnType, currentNamespace) && method.parameters.isEmpty() && method.vtableIndex != null) {
+            val functionName = if (method.name == "ToString" && method.returnType == "String" && method.parameters.isEmpty()) {
+                "toString"
+            } else {
+                method.name.replaceFirstChar(Char::lowercase)
+            }
+            val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
+            return FunSpec.builder(functionName)
+                .returns(returnType)
+                .beginControlFlow("if (pointer.isNull)")
+                .addStatement("error(%S)", "Null runtime object pointer: ${method.name}")
+                .endControlFlow()
+                .addStatement(
+                    "return %T.fromValue(%T.invokeUInt32Method(pointer, %L).getOrThrow().toInt())",
+                    returnType,
+                    PoetSymbols.platformComInteropClass,
+                    method.vtableIndex!!,
+                )
+                .build()
+        }
         val plan = runtimeMethodPlan(method) ?: return null
         val functionName = if (method.name == "ToString" && method.returnType == "String" && method.parameters.isEmpty()) {
             "toString"

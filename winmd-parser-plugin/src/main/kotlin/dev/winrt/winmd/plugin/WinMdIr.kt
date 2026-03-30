@@ -478,9 +478,11 @@ object WinMdModelFactory {
                 )
             }
 
-        return WinMdModel(
-            files = mergedFiles,
-            namespaces = mergedNamespaces,
+        return expandSpecializedInterfaceMembers(
+            WinMdModel(
+                files = mergedFiles,
+                namespaces = mergedNamespaces,
+            ),
         )
     }
 
@@ -565,6 +567,24 @@ object WinMdModelFactory {
         )
     }
 
+    private fun mergeRuntimeClassMethods(primary: List<WinMdMethod>, supplemental: List<WinMdMethod>): List<WinMdMethod> {
+        if (primary.isEmpty()) return supplemental
+        if (supplemental.isEmpty()) return primary
+        val preferred = primary.asReversed().distinctBy(::runtimeMethodMergeKey).asReversed()
+        val existingKeys = preferred.mapTo(linkedSetOf(), ::runtimeMethodMergeKey)
+        val appended = supplemental.filterNot { runtimeMethodMergeKey(it) in existingKeys }
+        return preferred + appended
+    }
+
+    private fun runtimeMethodMergeKey(method: WinMdMethod): String {
+        return buildString {
+            append(method.name)
+            append('(')
+            append(method.parameters.joinToString(",") { it.type })
+            append(')')
+        }
+    }
+
     private fun mergeProperties(primary: List<WinMdProperty>, supplemental: List<WinMdProperty>): List<WinMdProperty> {
         if (primary.isEmpty()) return supplemental
         if (supplemental.isEmpty()) return primary
@@ -617,8 +637,9 @@ object WinMdModelFactory {
                     }
                     WinMdTypeKind.RuntimeClass -> {
                         val inheritedInterfaces = buildList {
+                            addAll(type.implementedInterfaces.filterNot { it == type.defaultInterface })
+                            addAll(type.baseInterfaces.filterNot { it == type.defaultInterface })
                             type.defaultInterface?.let(::add)
-                            addAll(type.implementedInterfaces)
                         }.distinct()
                         if (inheritedInterfaces.isEmpty()) {
                             type
@@ -635,8 +656,8 @@ object WinMdModelFactory {
                                 inheritedProperties += interfaceType.properties.map { substituteProperty(it, substitutions) }
                             }
                             type.copy(
-                                methods = pruneUnresolvedGenericMethods(mergeMethods(type.methods, inheritedMethods)),
-                                properties = pruneUnresolvedGenericProperties(mergeProperties(type.properties, inheritedProperties)),
+                                methods = pruneUnresolvedGenericMethods(mergeRuntimeClassMethods(inheritedMethods, type.methods)),
+                                properties = pruneUnresolvedGenericProperties(mergeProperties(inheritedProperties, type.properties)),
                             )
                         }
                     }

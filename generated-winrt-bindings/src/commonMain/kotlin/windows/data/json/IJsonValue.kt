@@ -53,11 +53,23 @@ private class IJsonValueProjection(
       JsonValueType.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
       6).getOrThrow().toInt())
 
-  override fun stringify(): String = PlatformComInterop.invokeHStringMethod(pointer,
-      7).getOrThrow().use { it.toKotlinString() }
+  override fun stringify(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow()
+    return try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
 
-  override fun getString(): String = PlatformComInterop.invokeHStringMethod(pointer,
-      8).getOrThrow().use { it.toKotlinString() }
+  override fun getString(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow()
+    return try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
 
   override fun getNumber(): Float64 = Float64(PlatformComInterop.invokeFloat64Method(pointer,
       9).getOrThrow())

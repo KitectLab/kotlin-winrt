@@ -135,12 +135,12 @@ internal class InterfaceTypeRenderer(
             .addProperties(renderEventSlotProperties(type, type.namespace, genericParameters))
             .addFunctions(
                 type.methods
-                    .filterNot { it.signatureKey in inheritedSignatureKeys }
+                    .filterNot { interfaceMethodRenderKey(it) in inheritedSignatureKeys }
                     .flatMap { renderMethods(it, type.namespace, genericParameters) },
             )
             .addFunctions(
                 type.methods
-                    .filterNot { it.signatureKey in inheritedSignatureKeys }
+                    .filterNot { interfaceMethodRenderKey(it) in inheritedSignatureKeys }
                     .mapNotNull { renderLambdaOverload(it, type.namespace, genericParameters) },
             )
             .addTypes(renderEventSlotTypes(type, type.namespace, genericParameters))
@@ -216,7 +216,7 @@ internal class InterfaceTypeRenderer(
             )
             .addFunctions(
                 type.methods
-                    .filterNot { it.signatureKey in inheritedSignatureKeys }
+                    .filterNot { interfaceMethodRenderKey(it) in inheritedSignatureKeys }
                     .mapNotNull { renderInterfaceContractMethod(it, type.namespace, genericParameters) },
             )
             .addType(renderInterfaceCompanion(type, typeVariables))
@@ -345,7 +345,7 @@ internal class InterfaceTypeRenderer(
     private fun allInterfaceMethods(type: WinMdType): List<WinMdMethod> {
         val directBaseInterface = directBaseInterface(type, type.namespace)
         val inherited = directBaseInterface?.let { typeRegistry.findType(it, type.namespace) }?.let(::allInterfaceMethods).orEmpty()
-        return (inherited + type.methods).distinctBy { it.signatureKey }
+        return (inherited + type.methods).distinctBy(::interfaceMethodRenderKey)
     }
 
     private fun allInterfaceProperties(type: WinMdType): List<WinMdProperty> {
@@ -1828,7 +1828,7 @@ internal class InterfaceTypeRenderer(
 
     private fun inheritedSignatureKeys(baseInterface: String?): Set<String> {
         val interfaceType = baseInterface?.let { typeRegistry.findType(it) } ?: return emptySet()
-        return interfaceType.methods.mapTo(linkedSetOf(), WinMdMethod::signatureKey)
+        return interfaceType.methods.mapTo(linkedSetOf(), ::interfaceMethodRenderKey)
     }
 
     private fun inheritedPropertyNames(baseInterface: String?): Set<String> {
@@ -1847,5 +1847,14 @@ internal class InterfaceTypeRenderer(
         val addVtableIndex: Int,
         val removeVtableIndex: Int,
     )
+
+    private fun interfaceMethodRenderKey(method: WinMdMethod): String {
+        return buildString {
+            append(kotlinMethodName(method.name))
+            append('(')
+            append(method.parameters.joinToString(",") { it.type })
+            append(')')
+        }
+    }
 
 }
