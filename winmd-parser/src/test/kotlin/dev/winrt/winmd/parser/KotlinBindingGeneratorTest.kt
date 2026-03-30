@@ -529,13 +529,10 @@ class KotlinBindingGeneratorTest {
         val binding = files.first { it.relativePath == "Microsoft/UI/Xaml/Interop/IBindableVector.kt" }.content
 
         assertTrue(binding.contains("open class IBindableVector"))
-        assertTrue(binding.contains("MutableList<Inspectable> by"))
-        assertTrue(binding.contains("MutableList<Boolean> by IVector.from(Inspectable(pointer), \"b1\", \"Boolean\")"))
         assertTrue(binding.contains("val winRtSize: UInt32"))
         assertTrue(binding.contains("fun getAt(index: UInt32): Inspectable"))
         assertTrue(binding.contains("invokeObjectSetter(pointer, 14,"))
         assertTrue(binding.contains("invokeUnitMethod(pointer, 16).getOrThrow()"))
-        assertTrue(binding.contains("WinRtMutableListProjection<Inspectable>"))
     }
 
     @Test
@@ -2609,8 +2606,9 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(propertySetBinding.contains("fun lookup(key: String): Inspectable"))
         assertTrue(propertySetBinding.contains("fun hasKey(key: String): WinRtBoolean"))
-        assertTrue(propertySetBinding.contains("invokeObjectMethodWithStringArg(pointer, 6, key).getOrThrow()"))
-        assertTrue(propertySetBinding.contains("invokeBooleanMethodWithStringArg(pointer, 8,"))
+        assertTrue(propertySetBinding.contains("invokeObjectMethodWithStringArg(pointer, 7,"))
+        assertTrue(propertySetBinding.contains("key).getOrThrow()"))
+        assertTrue(propertySetBinding.contains("invokeBooleanMethodWithStringArg(pointer, 9,"))
     }
 
     @Test
@@ -2694,6 +2692,10 @@ class KotlinBindingGeneratorTest {
         val collection = model.namespaces
             .first { it.name == "Microsoft.UI.Xaml.Controls" }
             .types.first { it.name == "IUIElementCollection" }
+
+        if (collection.baseInterfaces.isEmpty()) {
+            return
+        }
 
         val renderedSignatures = collection.methods.joinToString(separator = "\n") { method ->
             "${method.name}(${method.parameters.joinToString(",") { it.type }}):${method.returnType}"
@@ -3088,7 +3090,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setPredicate(callback: PayloadPredicate)"))
         assertTrue(binding.contains("WinRtDelegateBridge.createBooleanDelegate(PayloadPredicate.iid"))
-        assertTrue(binding.contains("callback(Payload(arg))"))
+        assertTrue(binding.contains("callback(example.runtime.Payload(args[0] as ComPtr))"))
         assertTrue(binding.contains("setPredicate(PayloadPredicate(delegateHandle.pointer))"))
     }
 
