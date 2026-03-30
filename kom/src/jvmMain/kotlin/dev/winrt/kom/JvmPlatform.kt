@@ -523,6 +523,23 @@ actual object PlatformComInterop : ComInterop {
         }
     }
 
+    override fun invokeFloat32Setter(instance: ComPtr, vtableIndex: Int, value: Float): Result<Unit> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            val hresult = HResult(
+                Jdk22Foreign.float32SetterHandle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    value,
+                ) as Int,
+            )
+            hresult.requireSuccess("invokeFloat32Setter($vtableIndex)")
+        }
+    }
+
     override fun invokeInt32Method(instance: ComPtr, vtableIndex: Int): Result<Int> {
         return JvmComMethodExecutor.invokeWithOutSegment(
             instance = instance,

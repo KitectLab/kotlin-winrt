@@ -21,6 +21,7 @@ internal enum class RuntimePropertySetterRuleFamily {
     STRING,
     INT32,
     UINT32,
+    FLOAT32,
 }
 
 internal enum class InterfacePropertyRuleFamily {
@@ -61,6 +62,7 @@ internal object PropertyRuleRegistry {
         "String" to RuntimePropertySetterRuleFamily.STRING,
         "Int32" to RuntimePropertySetterRuleFamily.INT32,
         "UInt32" to RuntimePropertySetterRuleFamily.UINT32,
+        "Float32" to RuntimePropertySetterRuleFamily.FLOAT32,
     )
 
     fun interfaceGetterRuleFamily(
@@ -90,6 +92,7 @@ internal object PropertyRuleRegistry {
         return when (type) {
             in setOf(type).takeIf { isObjectType } ?: emptySet() -> InterfacePropertyRuleFamily.OBJECT
             "String" -> InterfacePropertyRuleFamily.STRING
+            "Float32" -> InterfacePropertyRuleFamily.FLOAT32
             "Int32" -> InterfacePropertyRuleFamily.INT32
             "UInt32" -> InterfacePropertyRuleFamily.UINT32
             else -> null

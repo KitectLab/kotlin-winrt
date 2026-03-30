@@ -5154,6 +5154,60 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_float32_runtime_and_interface_property_setters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "ProgressHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Progress",
+                                    type = "Float32",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "IProgressHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "11111111-2222-3333-4444-555555555555",
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Progress",
+                                    type = "Float32",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Example/Contracts/ProgressHost.kt" }.content
+        val interfaceBinding = files.first { it.relativePath == "Example/Contracts/IProgressHost.kt" }.content
+
+        assertTrue(runtimeBinding.contains("var progress: Float32"))
+        assertTrue(runtimeBinding.contains("Float32(PlatformComInterop.invokeFloat32Method(pointer, 6).getOrThrow())"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeFloat32Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("var progress: Float32"))
+        assertTrue(interfaceBinding.contains("Float32(PlatformComInterop.invokeFloat32Method(pointer, 6).getOrThrow())"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeFloat32Setter(pointer, 7, value.value).getOrThrow()"))
+    }
+
+    @Test
     fun generates_object_interface_properties() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

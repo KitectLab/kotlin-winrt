@@ -185,6 +185,12 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeFloat32Setter(instance: ComPtr, vtableIndex: Int, value: Float): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Float32 setter invocation is not wired yet"),
+        )
+    }
+
     override fun invokeInt32Method(instance: ComPtr, vtableIndex: Int): Result<Int> {
         return Result.failure(
             UnsupportedOperationException("Native Int32 method invocation is not wired yet"),

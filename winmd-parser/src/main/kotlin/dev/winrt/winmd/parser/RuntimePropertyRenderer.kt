@@ -206,6 +206,10 @@ internal class RuntimePropertyRenderer(
                 statement = "%L",
                 args = { setterVtableIndex -> arrayOf(AbiCallCatalog.uint32Setter(setterVtableIndex)) },
             )
+            RuntimePropertySetterRuleFamily.FLOAT32 -> RuntimePropertySetterPlan(
+                statement = "%L",
+                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.float32Setter(setterVtableIndex)) },
+            )
         }
         return if (getterPlan != null || setterPlan != null) {
             RuntimePropertyPlan(getter = getterPlan, setter = setterPlan)

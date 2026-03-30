@@ -641,6 +641,7 @@ internal class InterfaceTypeRenderer(
                         when (PropertyRuleRegistry.interfaceSetterRuleFamily(property.type, supportsInterfaceObjectType(property.type))) {
                             InterfacePropertyRuleFamily.OBJECT -> addStatement("%L", AbiCallCatalog.objectSetter(setterVtableIndex, "value"))
                             InterfacePropertyRuleFamily.STRING -> addStatement("%L", AbiCallCatalog.stringSetter(setterVtableIndex))
+                            InterfacePropertyRuleFamily.FLOAT32 -> addStatement("%L", AbiCallCatalog.float32Setter(setterVtableIndex))
                             InterfacePropertyRuleFamily.INT32 -> addStatement("%L", AbiCallCatalog.int32Setter(setterVtableIndex))
                             InterfacePropertyRuleFamily.UINT32 -> addStatement("%L", AbiCallCatalog.uint32Setter(setterVtableIndex))
                             else -> return null
