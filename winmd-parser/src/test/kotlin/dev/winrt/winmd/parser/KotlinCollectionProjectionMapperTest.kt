@@ -46,6 +46,20 @@ class KotlinCollectionProjectionMapperTest {
                             guid = "6a79e863-4300-459a-9966-cbb660963ee1",
                             genericParameters = listOf("T"),
                         ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IMap`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "fbd6f7c2-0035-4f89-91cb-6b0bf5d8c9d6",
+                            genericParameters = listOf("K", "V"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IMapView`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "e5f839be-1a86-4e27-b357-f8c0d2d9d0d1",
+                            genericParameters = listOf("K", "V"),
+                        ),
                     ),
                 ),
             ),
@@ -63,6 +77,29 @@ class KotlinCollectionProjectionMapperTest {
                 "Windows.Foundation.Collections.IIterator`1<Windows.Foundation.String>",
             ),
             mapper.runtimeClassCollectionInterfaces(typeRegistry.findType("Calendar", "Windows.Globalization")!!).toList(),
+        )
+    }
+
+    @Test
+    fun projects_dictionary_interfaces_to_kotlin_map_surfaces() {
+        val mutableMapProjection = mapper.interfaceProjection(
+            typeRegistry.findType("IMap`2", "Windows.Foundation.Collections")!!,
+        )
+        requireNotNull(mutableMapProjection)
+        assertEquals("kotlin.collections.MutableMap<K, V>", mutableMapProjection.superinterface.toString())
+        assertEquals(
+            true,
+            mutableMapProjection.delegateFactory.toString().contains("WinRtMutableMapProjection"),
+        )
+
+        val mapProjection = mapper.interfaceProjection(
+            typeRegistry.findType("IMapView`2", "Windows.Foundation.Collections")!!,
+        )
+        requireNotNull(mapProjection)
+        assertEquals("kotlin.collections.Map<K, V>", mapProjection.superinterface.toString())
+        assertEquals(
+            true,
+            mapProjection.delegateFactory.toString().contains("WinRtMapProjection"),
         )
     }
 }
