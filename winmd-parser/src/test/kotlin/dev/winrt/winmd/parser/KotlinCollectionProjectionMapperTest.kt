@@ -33,6 +33,16 @@ class KotlinCollectionProjectionMapperTest {
                             guid = "cccccccc-cccc-cccc-cccc-cccccccccccc",
                         ),
                         WinMdType(
+                            namespace = "Windows.Globalization",
+                            name = "DictionaryHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Globalization.ICalendar",
+                            baseInterfaces = listOf(
+                                "Windows.Foundation.Collections.IMap<String, Windows.Globalization.Calendar>",
+                                "Windows.Foundation.Collections.IMapView<String, Windows.Globalization.Calendar>",
+                            ),
+                        ),
+                        WinMdType(
                             namespace = "Windows.Foundation.Collections",
                             name = "IIterable`1",
                             kind = WinMdTypeKind.Interface,
@@ -91,6 +101,18 @@ class KotlinCollectionProjectionMapperTest {
                 "Windows.Foundation.Collections.IIterator`1<Windows.Foundation.String>",
             ),
             mapper.runtimeClassCollectionInterfaces(typeRegistry.findType("Calendar", "Windows.Globalization")!!).toList(),
+        )
+    }
+
+    @Test
+    fun enumerates_dictionary_base_interfaces_using_registry_helpers() {
+        assertEquals(
+            listOf(
+                "Windows.Globalization.ICalendar",
+                "Windows.Foundation.Collections.IMap<String, Windows.Globalization.Calendar>",
+                "Windows.Foundation.Collections.IMapView<String, Windows.Globalization.Calendar>",
+            ),
+            mapper.runtimeClassCollectionInterfaces(typeRegistry.findType("DictionaryHost", "Windows.Globalization")!!).toList(),
         )
     }
 
