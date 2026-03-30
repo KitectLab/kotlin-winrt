@@ -3109,6 +3109,50 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_kotlin_map_view_shape_for_open_generic_interfaces() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IMapView`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "00000000-0000-0000-0000-000000000003",
+                            genericParameters = listOf("K", "V"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Lookup",
+                                    returnType = "V",
+                                    parameters = listOf(WinMdParameter("key", "K")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "HasKey",
+                                    returnType = "Boolean",
+                                    parameters = listOf(WinMdParameter("key", "K")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Windows/Foundation/Collections/IMapView`2.kt"
+        }.content
+
+        assertTrue(binding.contains("Map<"))
+        assertTrue(binding.contains("Map<K, V> by WinRtMapProjection<K, V>"))
+        assertTrue(binding.contains("override val projectionTypeKey: String = \"kotlin.collections.Map\""))
+    }
+
+    @Test
     fun expands_winui_ui_element_collection_members_from_real_metadata_model_when_available() {
         val winUiRoot = java.nio.file.Path.of("F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002")
         val xamlWinmd = winUiRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd")
