@@ -4,28 +4,65 @@ Use this file when you know the task area but need to decide where upstream evid
 
 ## Start With Docs
 
-- `README.md`: project scope, support matrix, package overview
-- `docs/usage.md`: how projections are generated and consumed
-- `docs/interop.md`: ABI and interop-focused guidance
-- `docs/nuget.md`: build and package properties that affect generation/runtime behavior
-- `docs/repo.md`: repository layout
+- `README.md`
+  Use for package roles, versioning expectations, and high-level support boundaries.
+
+- `docs/usage.md`
+  Use for projection generation workflow, project/package knobs, and consumption patterns.
+
+- `docs/interop.md`
+  Use for ABI-facing interop expectations and runtime bridging questions.
+
+- `docs/nuget.md`
+  Use for build properties that influence generation and runtime packaging.
+
+- `docs/repo.md` or `docs/structure.md`
+  Use for repository layout when you need to find the owning upstream source directory.
+
+## Upstream Source Areas
+
+The exact folder names can evolve, so use the repo map plus code search, but the stable categories are:
+
+- projection generator code
+  Owns how WinMD metadata becomes projected source.
+
+- runtime support code, especially `WinRT.Runtime`
+  Owns object identity, interface lookup, activation plumbing, delegates, marshaling helpers, and generic type support.
+
+- authoring and samples
+  Useful when you need end-to-end evidence of how generated code is expected to be consumed.
+
+- build and packaging files
+  Useful when a behavior comes from configuration rather than projection logic.
 
 ## Task To Upstream Area
 
 - Runtime object semantics
-  Look for runtime support code and interop docs first.
+  Start in runtime support code plus `docs/interop.md`.
 
 - WinMD projection or generated API shape
-  Look for usage docs, generator-related source, and generated sample output.
+  Start in generator source plus `docs/usage.md`, then inspect generated examples if available.
 
 - Generic interface identity or type signatures
-  Look for runtime support plus generated signatures that demonstrate the metadata contract.
+  Start in runtime support code and any helper that computes WinRT signatures or parameterized interfaces.
 
 - Delegate, event, or callback behavior
-  Look for interop docs and runtime delegate support code.
+  Start in runtime support code, delegate/event helper code, and `docs/interop.md`.
+
+- Activation, factory, or static member access
+  Start in runtime support code plus generated projection code for runtime classes.
 
 - Build flags or package configuration
-  Look for `docs/nuget.md` and package-related source files.
+  Start in `docs/nuget.md` and package/build source.
+
+## What Evidence To Extract
+
+When reading `CsWinRT`, answer these concrete questions:
+
+- Which layer owns the behavior: generator, runtime, or both?
+- What metadata or type information drives the behavior?
+- Which part is WinRT-intrinsic, and which part is .NET convenience?
+- What must remain stable for user-observable behavior to match?
 
 ## Translation Heuristic For kotlin-winrt
 

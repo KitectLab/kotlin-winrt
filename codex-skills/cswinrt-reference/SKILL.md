@@ -28,8 +28,11 @@ Start from the local repository contract in `README.md`: when local behavior and
 ## Reference Files
 
 - `references/overview.md`: what `CsWinRT` is, what parts matter for this repository, and official upstream links.
-- `references/projection-rules.md`: behavioral rules to copy into Kotlin designs and reviews.
-- `references/upstream-map.md`: where to look upstream when the task concerns runtime, generator, interop, or build configuration details.
+- `references/upstream-map.md`: where to look in the `CsWinRT` repo and docs for a given task.
+- `references/kotlin-winrt-map.md`: which local Kotlin modules and files own which WinRT behaviors.
+- `references/implementation-topics.md`: implementation-oriented rules for interface projection, activation, delegates, generic IIDs, and marshaling.
+- `references/review-checklists.md`: concrete checks to run before finalizing a projection/runtime change.
+- `references/examples.md`: task-shaped examples that map common `kotlin-winrt` changes to the right local files and upstream evidence.
 
 Load only the file that matches the current task.
 
@@ -39,3 +42,5 @@ Load only the file that matches the current task.
 - If the current task depends on a specific upstream implementation detail, inspect the live GitHub repository before finalizing the change.
 - State explicitly when a conclusion is inferred from multiple upstream sources rather than spelled out in one place.
 - If `CsWinRT` and `C++/WinRT` appear to disagree, treat that as a projection-model question and check both before changing Kotlin behavior.
+- When touching generated bindings, inspect both the generator input path and the generated Kotlin output. Projection bugs often come from the split between metadata modeling and rendering.
+- Keep changes evidence-driven: note which upstream doc or source area justified the local behavior.
