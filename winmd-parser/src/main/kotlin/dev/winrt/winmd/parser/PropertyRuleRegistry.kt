@@ -5,6 +5,7 @@ internal enum class RuntimePropertyGetterRuleFamily {
     IREFERENCE_STRING,
     STRING,
     FLOAT32,
+    FLOAT64,
     BOOLEAN,
     GUID,
     DATE_TIME,
@@ -49,6 +50,7 @@ internal object PropertyRuleRegistry {
         "IReference<String>" to RuntimePropertyGetterRuleFamily.IREFERENCE_STRING,
         "String" to RuntimePropertyGetterRuleFamily.STRING,
         "Float32" to RuntimePropertyGetterRuleFamily.FLOAT32,
+        "Float64" to RuntimePropertyGetterRuleFamily.FLOAT64,
         "Boolean" to RuntimePropertyGetterRuleFamily.BOOLEAN,
         "Guid" to RuntimePropertyGetterRuleFamily.GUID,
         "DateTime" to RuntimePropertyGetterRuleFamily.DATE_TIME,
@@ -80,6 +82,7 @@ internal object PropertyRuleRegistry {
             isObjectType -> InterfacePropertyRuleFamily.OBJECT
             type == "String" -> InterfacePropertyRuleFamily.STRING
             type == "Float32" -> InterfacePropertyRuleFamily.FLOAT32
+            type == "Float64" -> InterfacePropertyRuleFamily.FLOAT64
             type == "Boolean" -> InterfacePropertyRuleFamily.BOOLEAN
             type == "Guid" -> InterfacePropertyRuleFamily.GUID
             type == "DateTime" -> InterfacePropertyRuleFamily.DATE_TIME
