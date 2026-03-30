@@ -311,6 +311,36 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun emits_interface_companion_invoke_projection_helpers() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IStringable",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-5555-5555-5555-555555555555",
+                            methods = listOf(
+                                WinMdMethod(name = "ToString", returnType = "String", vtableIndex = 6),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Windows/Foundation/IStringable.kt" }.content
+        val normalizedBinding = binding.replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("operator fun invoke("))
+        assertTrue(normalizedBinding.contains("=from(inspectable)"))
+    }
+
+    @Test
     fun folds_runtime_class_factory_interfaces_into_constructors() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

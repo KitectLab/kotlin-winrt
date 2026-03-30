@@ -184,6 +184,14 @@ internal class InterfaceTypeRenderer(
                                     .addStatement("return inspectable.%M(this, ::%L)", PoetSymbols.projectInterfaceMember, type.name)
                                     .build(),
                             )
+                            addFunction(
+                                FunSpec.builder("invoke")
+                                    .addModifiers(KModifier.OPERATOR)
+                                    .returns(typeClass)
+                                    .addParameter("inspectable", PoetSymbols.inspectableClass)
+                                    .addStatement("return from(inspectable)")
+                                    .build(),
+                            )
                         } else {
                             addFunction(renderGenericSignatureOf(type))
                             addFunction(renderGenericProjectionTypeKeyOf(type))
@@ -301,12 +309,21 @@ internal class InterfaceTypeRenderer(
                             .addStatement("return inspectable.%M(this, ::%LProjection)", PoetSymbols.projectInterfaceMember, type.name)
                             .build(),
                     )
+                    addFunction(
+                        FunSpec.builder("invoke")
+                            .addModifiers(KModifier.OPERATOR)
+                            .returns(typeClass)
+                            .addParameter("inspectable", PoetSymbols.inspectableClass)
+                            .addStatement("return from(inspectable)")
+                            .build(),
+                    )
                 } else {
                     addFunction(renderGenericSignatureOf(type))
                     addFunction(renderGenericProjectionTypeKeyOf(type))
                     addFunction(renderGenericIidOf())
                     addFunction(renderGenericMetadataOf(type))
                     addFunction(renderGenericFrom(type, typeClass, typeVariables))
+                    addFunction(renderGenericInvoke(type, typeClass, typeVariables))
                 }
                 type.methods.forEach { method ->
                     renderAsyncResultDescriptorProperty(method, type.namespace, type.genericParameters.toSet())?.let(::addProperty)
@@ -751,6 +768,32 @@ internal class InterfaceTypeRenderer(
                 PoetSymbols.projectInterfaceMember,
                 type.name,
             )
+            .build()
+    }
+
+    private fun renderGenericInvoke(
+        type: WinMdType,
+        typeClass: TypeName,
+        typeVariables: List<TypeVariableName>,
+    ): FunSpec {
+        val argumentParameters = type.genericParameters.indices.map { index ->
+            ParameterSpec.builder("arg${index}Signature", String::class).build()
+        }
+        val projectionTypeKeyParameters = type.genericParameters.indices.map { index ->
+            ParameterSpec.builder("arg${index}ProjectionTypeKey", String::class).build()
+        }
+        val callArguments = (listOf("inspectable") + argumentParameters.map { it.name } + projectionTypeKeyParameters.map { it.name })
+            .joinToString(", ")
+        return FunSpec.builder("invoke")
+            .addModifiers(KModifier.OPERATOR)
+            .apply {
+                typeVariables.forEach(::addTypeVariable)
+            }
+            .returns(typeClass)
+            .addParameter("inspectable", PoetSymbols.inspectableClass)
+            .addParameters(argumentParameters)
+            .addParameters(projectionTypeKeyParameters)
+            .addStatement("return from($callArguments)")
             .build()
     }
 
