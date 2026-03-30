@@ -60,6 +60,20 @@ class KotlinCollectionProjectionMapperTest {
                             guid = "e5f839be-1a86-4e27-b357-f8c0d2d9d0d1",
                             genericParameters = listOf("K", "V"),
                         ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "MapRuntimeClass",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IMap<String, Windows.Globalization.Calendar>",
+                            baseInterfaces = listOf("Windows.Foundation.Collections.IMap<String, Windows.Globalization.Calendar>"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "MapViewRuntimeClass",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IMapView<String, Windows.Globalization.Calendar>",
+                            baseInterfaces = listOf("Windows.Foundation.Collections.IMapView<String, Windows.Globalization.Calendar>"),
+                        ),
                     ),
                 ),
             ),
@@ -97,6 +111,35 @@ class KotlinCollectionProjectionMapperTest {
         )
         requireNotNull(mapProjection)
         assertEquals("kotlin.collections.Map<K, V>", mapProjection.superinterface.toString())
+        assertEquals(
+            true,
+            mapProjection.delegateFactory.toString().contains("WinRtMapProjection"),
+        )
+    }
+
+    @Test
+    fun projects_runtime_classes_with_dictionary_base_interfaces() {
+        val mutableMapProjection = mapper.runtimeClassInterfaceProjection(
+            typeRegistry.findType("MapRuntimeClass", "Windows.Foundation.Collections")!!,
+            TypeNameMapper(),
+            WinRtSignatureMapper(typeRegistry),
+            WinRtProjectionTypeMapper(),
+        )
+        requireNotNull(mutableMapProjection)
+        assertEquals("kotlin.collections.MutableMap<kotlin.String, windows.globalization.Calendar>", mutableMapProjection.superinterface.toString())
+        assertEquals(
+            true,
+            mutableMapProjection.delegateFactory.toString().contains("WinRtMutableMapProjection"),
+        )
+
+        val mapProjection = mapper.runtimeClassInterfaceProjection(
+            typeRegistry.findType("MapViewRuntimeClass", "Windows.Foundation.Collections")!!,
+            TypeNameMapper(),
+            WinRtSignatureMapper(typeRegistry),
+            WinRtProjectionTypeMapper(),
+        )
+        requireNotNull(mapProjection)
+        assertEquals("kotlin.collections.Map<kotlin.String, windows.globalization.Calendar>", mapProjection.superinterface.toString())
         assertEquals(
             true,
             mapProjection.delegateFactory.toString().contains("WinRtMapProjection"),
