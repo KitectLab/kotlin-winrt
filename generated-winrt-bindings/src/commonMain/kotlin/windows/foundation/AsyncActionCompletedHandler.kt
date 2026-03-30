@@ -34,6 +34,7 @@ public open class AsyncActionCompletedHandler(
   override fun close() {
     delegateHandle?.close()
     delegateHandle = null
+    localInvoke = null
   }
 
   public companion object : WinRtInterfaceMetadata {

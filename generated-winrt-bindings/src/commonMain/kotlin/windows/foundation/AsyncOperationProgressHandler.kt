@@ -32,6 +32,7 @@ public open class AsyncOperationProgressHandler<TResult, TProgress>(
   override fun close() {
     delegateHandle?.close()
     delegateHandle = null
+    localInvoke = null
   }
 
   public companion object {

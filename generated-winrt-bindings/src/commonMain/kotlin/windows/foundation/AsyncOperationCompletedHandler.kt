@@ -33,6 +33,7 @@ public open class AsyncOperationCompletedHandler<TResult>(
   override fun close() {
     delegateHandle?.close()
     delegateHandle = null
+    localInvoke = null
   }
 
   public companion object {
