@@ -9,10 +9,9 @@ import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
-import kotlin.io.use
 
 public interface IStringable {
-  public override fun toString(): String
+  override fun toString(): String
 
   public companion object : WinRtInterfaceMetadata {
     override val qualifiedName: String = "Windows.Foundation.IStringable"
@@ -28,10 +27,8 @@ public interface IStringable {
 
 private class IStringableProjection(
   pointer: ComPtr,
-) : WinRtInterfaceProjection(pointer), IStringable {
-  override fun toString(): String {
-    return PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow().use {
-      it.toKotlinString()
-    }
-  }
+) : WinRtInterfaceProjection(pointer),
+    IStringable {
+  override fun toString(): String = PlatformComInterop.invokeHStringMethod(pointer,
+      6).getOrThrow().use { it.toKotlinString() }
 }

@@ -4,13 +4,15 @@ import dev.winrt.core.Float64
 import dev.winrt.core.Inspectable
 import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtInterfaceMetadata
+import dev.winrt.core.WinRtInterfaceProjection
 import dev.winrt.core.guidOf
 import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
+import dev.winrt.kom.PlatformComInterop
 import kotlin.String
 
-public interface IJsonObject {
+public interface IJsonObject : IJsonValue {
   public fun getNamedValue(name: String): IJsonValue
 
   public fun getNamedString(name: String): String
@@ -26,6 +28,8 @@ public interface IJsonObject {
   public companion object : WinRtInterfaceMetadata {
     override val qualifiedName: String = "Windows.Data.Json.IJsonObject"
 
+    override val projectionTypeKey: String = "Windows.Data.Json.IJsonObject"
+
     override val iid: Guid = guidOf("064e24dd-29c2-4f83-9ac1-9ee11578beb3")
 
     public fun from(inspectable: Inspectable): IJsonObject = inspectable.projectInterface(this,
@@ -35,30 +39,52 @@ public interface IJsonObject {
 
 private class IJsonObjectProjection(
   pointer: ComPtr,
-) : dev.winrt.core.WinRtInterfaceProjection(pointer), IJsonObject {
-  override fun getNamedValue(name: String): IJsonValue = IJsonValue.from(
-      Inspectable(dev.winrt.kom.PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 6,
+) : WinRtInterfaceProjection(pointer),
+    IJsonObject {
+  override val valueType: JsonValueType
+    get() = JsonValueType.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
+        6).getOrThrow().toInt())
+
+  override fun get_ValueType(): JsonValueType =
+      JsonValueType.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
+      6).getOrThrow().toInt())
+
+  override fun stringify(): String = PlatformComInterop.invokeHStringMethod(pointer,
+      7).getOrThrow().use { it.toKotlinString() }
+
+  override fun getString(): String = PlatformComInterop.invokeHStringMethod(pointer,
+      8).getOrThrow().use { it.toKotlinString() }
+
+  override fun getNumber(): Float64 = Float64(PlatformComInterop.invokeFloat64Method(pointer,
+      9).getOrThrow())
+
+  override fun getBoolean(): WinRtBoolean =
+      WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 10).getOrThrow())
+
+  override fun getObject(): JsonObject = JsonObject(PlatformComInterop.invokeObjectMethod(pointer,
+      12).getOrThrow())
+
+  override fun getArray(): JsonArray = JsonArray(PlatformComInterop.invokeObjectMethod(pointer,
+      11).getOrThrow())
+
+  override fun getNamedValue(name: String): IJsonValue =
+      IJsonValue.from(Inspectable(PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 6,
       name).getOrThrow()))
 
-  override fun getNamedString(name: String): String {
-    val value = dev.winrt.kom.PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 10, name).getOrThrow()
-    return try {
-      value.toKotlinString()
-    } finally {
-      value.close()
-    }
-  }
+  override fun getNamedString(name: String): String =
+      PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 10, name).getOrThrow().use {
+      it.toKotlinString() }
 
-  override fun getNamedObject(name: String): JsonObject = JsonObject(
-      dev.winrt.kom.PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 8, name).getOrThrow())
+  override fun getNamedObject(name: String): JsonObject =
+      JsonObject(PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 8, name).getOrThrow())
 
-  override fun getNamedArray(name: String): JsonArray = JsonArray(
-      dev.winrt.kom.PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 9, name).getOrThrow())
+  override fun getNamedArray(name: String): JsonArray =
+      JsonArray(PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 9, name).getOrThrow())
 
   override fun getNamedNumber(name: String): Float64 =
-      Float64(dev.winrt.kom.PlatformComInterop.invokeFloat64MethodWithStringArg(pointer, 11, name).getOrThrow())
+      Float64(PlatformComInterop.invokeFloat64MethodWithStringArg(pointer, 11, name).getOrThrow())
 
   override fun getNamedBoolean(name: String): WinRtBoolean =
-      WinRtBoolean(dev.winrt.kom.PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 12,
+      WinRtBoolean(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 12,
       name).getOrThrow())
 }

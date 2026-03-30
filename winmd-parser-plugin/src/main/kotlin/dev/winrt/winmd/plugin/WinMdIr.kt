@@ -247,8 +247,31 @@ object WinMdModelFactory {
                             namespace = "Windows.Data.Json",
                             name = "IJsonValue",
                             kind = WinMdTypeKind.Interface,
-                            guid = "a3219a91-eccd-42e5-b553-261d0aefde37",
+                            guid = "a3219ecb-f0b3-4dcd-beee-19d48cd3ed1e",
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "ValueType",
+                                    type = "Windows.Data.Json.JsonValueType",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                            ),
                             methods = listOf(
+                                WinMdMethod(
+                                    name = "Get_ValueType",
+                                    returnType = "Windows.Data.Json.JsonValueType",
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "Stringify",
+                                    returnType = "String",
+                                    vtableIndex = 7,
+                                ),
+                                WinMdMethod(
+                                    name = "GetString",
+                                    returnType = "String",
+                                    vtableIndex = 8,
+                                ),
                                 WinMdMethod(
                                     name = "GetNumber",
                                     returnType = "Float64",
@@ -593,12 +616,16 @@ object WinMdModelFactory {
                         }
                     }
                     WinMdTypeKind.RuntimeClass -> {
-                        if (type.implementedInterfaces.isEmpty()) {
+                        val inheritedInterfaces = buildList {
+                            type.defaultInterface?.let(::add)
+                            addAll(type.implementedInterfaces)
+                        }.distinct()
+                        if (inheritedInterfaces.isEmpty()) {
                             type
                         } else {
                             val inheritedMethods = mutableListOf<WinMdMethod>()
                             val inheritedProperties = mutableListOf<WinMdProperty>()
-                            type.implementedInterfaces.forEach { implementedInterface ->
+                            inheritedInterfaces.forEach { implementedInterface ->
                                 val specialization = parseSpecializedType(implementedInterface)
                                 val interfaceType = typeIndex[specialization.rawType]?.let(::expand) ?: return@forEach
                                 val substitutions = interfaceType.genericParameters.zip(specialization.arguments).toMap()

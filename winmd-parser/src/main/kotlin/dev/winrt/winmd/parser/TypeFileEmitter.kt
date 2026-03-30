@@ -1,6 +1,7 @@
 package dev.winrt.winmd.parser
 
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.TypeSpec
 import dev.winrt.winmd.plugin.WinMdNamespace
 import dev.winrt.winmd.plugin.WinMdType
 import dev.winrt.winmd.plugin.WinMdTypeKind
@@ -73,17 +74,16 @@ internal class TypeFileEmitter(
         if (type.kind == WinMdTypeKind.Delegate) {
             delegateTypeRenderer.renderLambdaAlias(type)?.let(builder::addTypeAlias)
         }
-        return builder
-            .addType(renderType(type))
-            .build()
+        renderTypes(type).forEach(builder::addType)
+        return builder.build()
     }
 
-    private fun renderType(type: WinMdType) = when (type.kind) {
+    private fun renderTypes(type: WinMdType): List<TypeSpec> = when (type.kind) {
         WinMdTypeKind.Interface -> interfaceTypeRenderer.render(type)
-        WinMdTypeKind.Delegate -> delegateTypeRenderer.render(type)
-        WinMdTypeKind.RuntimeClass -> runtimeTypeRenderer.render(type)
+        WinMdTypeKind.Delegate -> listOf(delegateTypeRenderer.render(type))
+        WinMdTypeKind.RuntimeClass -> listOf(runtimeTypeRenderer.render(type))
         WinMdTypeKind.Struct,
         WinMdTypeKind.Enum,
-        -> valueTypeRenderer.render(type)
+        -> listOf(valueTypeRenderer.render(type))
     }
 }

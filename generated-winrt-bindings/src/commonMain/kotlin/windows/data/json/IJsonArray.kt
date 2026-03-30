@@ -13,7 +13,7 @@ import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
 
-public interface IJsonArray {
+public interface IJsonArray : IJsonValue {
   public fun getObjectAt(index: UInt32): JsonObject
 
   public fun getArrayAt(index: UInt32): JsonArray
@@ -38,7 +38,46 @@ public interface IJsonArray {
 
 private class IJsonArrayProjection(
   pointer: ComPtr,
-) : WinRtInterfaceProjection(pointer), IJsonArray {
+) : WinRtInterfaceProjection(pointer),
+    IJsonArray {
+  override val valueType: JsonValueType
+    get() = JsonValueType.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
+        6).getOrThrow().toInt())
+
+  override fun get_ValueType(): JsonValueType =
+      JsonValueType.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
+      6).getOrThrow().toInt())
+
+  override fun stringify(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow()
+    return try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
+
+  override fun getString(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow()
+    return try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
+
+  override fun getNumber(): Float64 = Float64(PlatformComInterop.invokeFloat64Method(pointer,
+      9).getOrThrow())
+
+  override fun getBoolean(): WinRtBoolean =
+      WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 10).getOrThrow())
+
+  override fun getObject(): JsonObject = JsonObject(PlatformComInterop.invokeObjectMethod(pointer,
+      12).getOrThrow())
+
+  override fun getArray(): JsonArray = JsonArray(PlatformComInterop.invokeObjectMethod(pointer,
+      11).getOrThrow())
+
   override fun getObjectAt(index: UInt32): JsonObject =
       JsonObject(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 6,
       index.value).getOrThrow())

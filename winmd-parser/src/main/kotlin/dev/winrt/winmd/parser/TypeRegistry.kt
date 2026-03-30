@@ -12,6 +12,19 @@ internal class TypeRegistry(
             namespace.types.map { type -> canonicalQualifiedName("${type.namespace}.${type.name}") to type }
         }
         .toMap()
+    private val runtimeImplementedInterfaces = model.namespaces
+        .flatMap { namespace ->
+            namespace.types
+                .filter { it.kind == WinMdTypeKind.RuntimeClass }
+                .flatMap { type ->
+                    buildList {
+                        type.defaultInterface?.let(::add)
+                        addAll(type.baseInterfaces)
+                    }
+                }
+        }
+        .map(::canonicalQualifiedName)
+        .toSet()
 
     fun findType(typeName: String, currentNamespace: String? = null): WinMdType? {
         val qualifiedName = resolveQualifiedName(typeName, currentNamespace)
@@ -43,6 +56,11 @@ internal class TypeRegistry(
             .filterNot { it == runtimeClass.defaultInterface }
             .mapNotNull { findType(it, runtimeClass.namespace) }
             .toList()
+    }
+
+    fun isRuntimeProjectedInterface(typeName: String, currentNamespace: String? = null): Boolean {
+        val qualifiedName = resolveQualifiedName(typeName, currentNamespace)
+        return qualifiedName in runtimeImplementedInterfaces
     }
 
     private fun canonicalQualifiedName(typeName: String): String {

@@ -138,6 +138,7 @@ class WinMdModelFactoryTest {
 
         assertEquals(
             listOf(
+                "GetNamedValue" to 6,
                 "GetNamedString" to 10,
                 "GetNamedObject" to 8,
                 "GetNamedArray" to 9,
