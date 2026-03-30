@@ -4,6 +4,7 @@ import dev.winrt.core.JvmWinRtObjectStub
 import dev.winrt.core.guidOf
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.HResult
+import dev.winrt.core.Inspectable
 import microsoft.ui.xaml.IApplicationOverrides
 import microsoft.ui.xaml.LaunchActivatedEventArgs
 import org.junit.Assert.assertEquals
@@ -30,7 +31,7 @@ class WinUiApplicationOverridesProbeTest {
             JvmWinRtObjectStub.create(
                 JvmWinRtObjectStub.InterfaceSpec(iid = argsIid),
             ).use { argsStub ->
-                val overrides = IApplicationOverrides(overridesStub.primaryPointer)
+                val overrides = IApplicationOverrides.from(Inspectable(overridesStub.primaryPointer))
                 val args = LaunchActivatedEventArgs(argsStub.primaryPointer)
                 overrides.onLaunched(args)
                 assertEquals(argsStub.primaryPointer.value.rawValue, seenArg.value.rawValue)
