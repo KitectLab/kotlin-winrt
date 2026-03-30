@@ -26,8 +26,4 @@ interface HStringBridge {
     fun release(value: HString)
 }
 
-expect object PlatformHStringBridge {
-    fun create(value: String): HString
-    fun toKotlinString(value: HString): String
-    fun release(value: HString)
-}
+expect val PlatformHStringBridge: HStringBridge

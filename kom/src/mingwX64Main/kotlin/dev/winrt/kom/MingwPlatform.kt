@@ -6,7 +6,7 @@ actual object PlatformRuntime {
     actual val ffiBackend: String = "kotlin-native-cinterop"
 }
 
-actual object PlatformComInterop : ComInterop {
+private object MingwPlatformComInterop : ComInterop {
     override fun queryInterface(instance: ComPtr, iid: Guid): Result<ComPtr> {
         return Result.failure(
             UnsupportedOperationException("Native COM interop is not wired yet for $iid"),
@@ -348,7 +348,9 @@ actual object PlatformComInterop : ComInterop {
     }
 }
 
-actual object PlatformHStringBridge : HStringBridge {
+actual val PlatformComInterop: ComInterop = MingwPlatformComInterop
+
+private object MingwPlatformHStringBridge : HStringBridge {
     override fun create(value: String): HString = HString.NULL
 
     override fun toKotlinString(value: HString): String = ""
@@ -356,3 +358,5 @@ actual object PlatformHStringBridge : HStringBridge {
     override fun release(value: HString) {
     }
 }
+
+actual val PlatformHStringBridge: HStringBridge = MingwPlatformHStringBridge

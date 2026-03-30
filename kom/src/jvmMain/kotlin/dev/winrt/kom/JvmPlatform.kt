@@ -73,7 +73,7 @@ private object JvmComMethodExecutor {
     }
 }
 
-actual object PlatformComInterop : ComInterop {
+private object JvmPlatformComInterop : ComInterop {
     override fun queryInterface(instance: ComPtr, iid: Guid): Result<ComPtr> {
         if (instance.isNull) {
             return Result.failure(KomException("QueryInterface requires a non-null COM pointer"))
@@ -999,7 +999,9 @@ actual object PlatformComInterop : ComInterop {
     }
 }
 
-actual object PlatformHStringBridge : HStringBridge {
+actual val PlatformComInterop: ComInterop = JvmPlatformComInterop
+
+private object JvmPlatformHStringBridge : HStringBridge {
     override fun create(value: String): HString = JvmWinRtRuntime.createHString(value)
 
     override fun toKotlinString(value: HString): String = JvmWinRtRuntime.toKotlinString(value)
@@ -1008,6 +1010,8 @@ actual object PlatformHStringBridge : HStringBridge {
         JvmWinRtRuntime.releaseHString(value)
     }
 }
+
+actual val PlatformHStringBridge: HStringBridge = JvmPlatformHStringBridge
 
 object JvmComRuntime {
     private const val coinitApartmentThreaded = 2
