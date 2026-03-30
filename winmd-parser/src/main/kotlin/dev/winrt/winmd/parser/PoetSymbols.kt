@@ -45,6 +45,7 @@ internal object PoetSymbols {
     val projectInterfaceMember = MemberName("dev.winrt.core", "projectInterface")
     val comPtrClass = ClassName("dev.winrt.kom", "ComPtr")
     val coroutineScopeClass = ClassName("kotlinx.coroutines", "CoroutineScope")
+    val dispatchQueueClass = ClassName("windows.foundation", "DispatchQueue")
     val platformComInteropClass = ClassName("dev.winrt.kom", "PlatformComInterop")
     val asyncActionClass = ClassName("windows.foundation", "IAsyncAction")
     val asyncResultTypeClass = ClassName("windows.foundation", "AsyncResultType")

@@ -3383,6 +3383,7 @@ class KotlinBindingGeneratorTest {
         val dispatcherQueueBinding = files.first {
             it.relativePath == "Microsoft/UI/Dispatching/IDispatcherQueue.kt"
         }.content
+        val normalizedDispatcherQueueBinding = dispatcherQueueBinding.replace("\n", "").replace(" ", "")
 
         assertTrue(dispatcherQueueBinding.contains("fun tryEnqueue(callback: DispatcherQueueHandler): WinRtBoolean"))
         assertTrue(dispatcherQueueBinding.contains("fun tryEnqueue("))
@@ -3391,6 +3392,59 @@ class KotlinBindingGeneratorTest {
         assertTrue(dispatcherQueueBinding.contains("DispatcherQueueHandler.iid"))
         assertTrue(dispatcherQueueBinding.contains("invokeBooleanMethodWithObjectArg(pointer, 7,"))
         assertTrue(dispatcherQueueBinding.contains("callback.pointer"))
+    }
+
+    @Test
+    fun generates_dispatch_queue_adapter_for_dispatcher_queue_interfaces() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Dispatching",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Dispatching",
+                            name = "DispatcherQueueHandler",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "aaaa1111-2222-3333-4444-555555555555",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Dispatching",
+                            name = "IDispatcherQueue",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbbb1111-2222-3333-4444-555555555555",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "TryEnqueue",
+                                    returnType = "Windows.Foundation.WinRtBoolean",
+                                    vtableIndex = 7,
+                                    parameters = listOf(
+                                        WinMdParameter("callback", "Microsoft.UI.Dispatching.DispatcherQueueHandler"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Microsoft/UI/Dispatching/IDispatcherQueue.kt" }.content
+        val normalizedBinding = binding.replace("\n", "").replace(" ", "")
+
+        assertTrue(binding.contains("DispatchQueue"))
+        assertTrue(binding.contains("fun dispatch("))
+        assertTrue(normalizedBinding.contains("return"))
+        assertTrue(normalizedBinding.contains("tryEnqueue("))
+        assertTrue(normalizedBinding.contains("DispatcherQueueHandler(block)"))
+        assertTrue(normalizedBinding.contains(".value"))
     }
 
     @Test
@@ -6609,6 +6663,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(normalizedInterfaceBinding.contains("funsubscribe(handler:(ComPtr,IWidgetClosedEventArgs)->Unit):EventRegistrationToken"))
         assertTrue(interfaceBinding.contains("fun unsubscribe(token: EventRegistrationToken)"))
         assertTrue(interfaceBinding.contains("operator fun plusAssign(handler: EventHandler<IWidgetClosedEventArgs>)"))
+        assertTrue(normalizedInterfaceBinding.contains("operatorfuninvoke(handler:EventHandler<IWidgetClosedEventArgs>):EventRegistrationToken"))
         assertTrue(interfaceBinding.contains("operator fun minusAssign(token: EventRegistrationToken)"))
         assertTrue(interfaceBinding.contains("delegateHandles[token] = delegateHandle"))
         assertTrue(interfaceBinding.contains("catch (t: Throwable)"))
@@ -6625,6 +6680,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(normalizedRuntimeBinding.contains("funsubscribe(handler:(ComPtr,IWidgetClosedEventArgs)->Unit):EventRegistrationToken"))
         assertTrue(runtimeBinding.contains("fun unsubscribe(token: EventRegistrationToken)"))
         assertTrue(runtimeBinding.contains("operator fun plusAssign(handler: EventHandler<IWidgetClosedEventArgs>)"))
+        assertTrue(normalizedRuntimeBinding.contains("operatorfuninvoke(handler:EventHandler<IWidgetClosedEventArgs>):EventRegistrationToken"))
         assertTrue(runtimeBinding.contains("operator fun minusAssign(token: EventRegistrationToken)"))
         assertTrue(runtimeBinding.contains("delegateHandles[token] = delegateHandle"))
         assertTrue(runtimeBinding.contains("catch (t: Throwable)"))
@@ -6712,6 +6768,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(normalizedRuntimeBinding.contains("funsubscribe(handler:(ComPtr,IWidgetClosedEventArgs)->Unit):EventRegistrationToken"))
         assertTrue(runtimeBinding.contains("fun unsubscribe(token: EventRegistrationToken)"))
         assertTrue(runtimeBinding.contains("operator fun plusAssign(handler: EventHandler<IWidgetClosedEventArgs>)"))
+        assertTrue(normalizedRuntimeBinding.contains("operatorfuninvoke(handler:EventHandler<IWidgetClosedEventArgs>):EventRegistrationToken"))
         assertTrue(runtimeBinding.contains("operator fun minusAssign(token: EventRegistrationToken)"))
         assertTrue(runtimeBinding.contains("delegateHandles[token] = delegateHandle"))
         assertTrue(runtimeBinding.contains("val delegateHandle = delegateHandles[token]"))

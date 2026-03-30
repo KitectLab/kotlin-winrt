@@ -209,6 +209,22 @@ internal class RuntimeCompanionRenderer(
                             .build(),
                     )
                     .addFunction(
+                        FunSpec.builder("invoke")
+                            .addModifiers(KModifier.OPERATOR)
+                            .addParameter("handler", plan.delegateType)
+                            .returns(PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement("return subscribe(handler)")
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("invoke")
+                            .addModifiers(KModifier.OPERATOR)
+                            .addParameter("handler", plan.lambdaType)
+                            .returns(PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement("return subscribe(handler)")
+                            .build(),
+                    )
+                    .addFunction(
                         FunSpec.builder("unsubscribe")
                             .addParameter("token", PoetSymbols.eventRegistrationTokenClass)
                             .addStatement("val delegateHandle = delegateHandles[token]")

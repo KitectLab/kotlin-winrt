@@ -59,6 +59,18 @@ internal class RuntimeTypeRenderer(
             .map { interfaceType -> typeNameMapper.mapTypeName("${interfaceType.namespace}.${interfaceType.name}", type.namespace) }
             .forEach(builder::addSuperinterface)
 
+        if (isDispatchQueueRuntimeClass(type)) {
+            builder.addSuperinterface(PoetSymbols.dispatchQueueClass)
+            builder.addFunction(
+                FunSpec.builder("dispatch")
+                    .addModifiers(KModifier.OVERRIDE)
+                    .addParameter("block", LambdaTypeName.get(returnType = Unit::class.asTypeName()))
+                    .returns(Boolean::class)
+                    .addStatement("return tryEnqueue(%T(block)).value", ClassName(type.namespace.lowercase(), "DispatcherQueueHandler"))
+                    .build(),
+            )
+        }
+
         kotlinCollectionProjectionMapper.runtimeClassProjection(type)?.let { projection ->
             projection.delegateFactory?.let { delegateFactory ->
                 builder.addSuperinterface(projection.superinterface, delegateFactory)
@@ -228,6 +240,22 @@ internal class RuntimeTypeRenderer(
                             .build(),
                     )
                     .addFunction(
+                        FunSpec.builder("invoke")
+                            .addModifiers(KModifier.OPERATOR)
+                            .addParameter("handler", plan.delegateType)
+                            .returns(PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement("return subscribe(handler)")
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("invoke")
+                            .addModifiers(KModifier.OPERATOR)
+                            .addParameter("handler", plan.lambdaType)
+                            .returns(PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement("return subscribe(handler)")
+                            .build(),
+                    )
+                    .addFunction(
                         FunSpec.builder("unsubscribe")
                             .addParameter("token", PoetSymbols.eventRegistrationTokenClass)
                             .addStatement("val delegateHandle = delegateHandles[token]")
@@ -292,6 +320,17 @@ internal class RuntimeTypeRenderer(
                 }
                 .forEach(::add)
         }.distinctBy { "${it.namespace}.${it.name}" }
+    }
+
+    private fun isDispatchQueueRuntimeClass(type: WinMdType): Boolean {
+        return (type.namespace == "Microsoft.UI.Dispatching" || type.namespace == "Windows.System") &&
+            type.name == "DispatcherQueue" &&
+            type.methods.any { method ->
+                method.name == "TryEnqueue" &&
+                    method.parameters.size == 1 &&
+                    method.parameters.single().type == "${type.namespace}.DispatcherQueueHandler" &&
+                    method.returnType == "Windows.Foundation.WinRtBoolean"
+            }
     }
 
     private fun allImplementedInterfaceNames(type: WinMdType): Set<String> {

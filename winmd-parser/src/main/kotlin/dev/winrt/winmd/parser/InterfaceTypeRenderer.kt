@@ -126,6 +126,10 @@ internal class InterfaceTypeRenderer(
                             .build(),
                     )
                 }
+                renderDispatchQueueOverride(type, type.namespace, genericParameters)?.let { dispatchOverride ->
+                    addSuperinterface(PoetSymbols.dispatchQueueClass)
+                    addFunction(dispatchOverride)
+                }
             }
             .addProperties(
                 type.properties
@@ -208,6 +212,10 @@ internal class InterfaceTypeRenderer(
                         collectionSuperinterface(baseInterface, type.namespace, genericParameters)
                     }
                     .forEach(::addSuperinterface)
+                renderDispatchQueueOverride(type, type.namespace, genericParameters)?.let { dispatchOverride ->
+                    addSuperinterface(PoetSymbols.dispatchQueueClass)
+                    addFunction(dispatchOverride)
+                }
             }
             .addProperties(
                 type.properties
@@ -436,6 +444,22 @@ internal class InterfaceTypeRenderer(
                             .addStatement("subscribe(handler)")
                         .build(),
                 )
+                    .addFunction(
+                        FunSpec.builder("invoke")
+                            .addModifiers(KModifier.OPERATOR)
+                            .addParameter("handler", plan.delegateType)
+                            .returns(PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement("return subscribe(handler)")
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("invoke")
+                            .addModifiers(KModifier.OPERATOR)
+                            .addParameter("handler", plan.lambdaType)
+                            .returns(PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement("return subscribe(handler)")
+                            .build(),
+                    )
                     .addFunction(
                         FunSpec.builder("unsubscribe")
                             .addParameter("token", PoetSymbols.eventRegistrationTokenClass)
@@ -1846,6 +1870,32 @@ internal class InterfaceTypeRenderer(
     private fun inheritedPropertyNames(baseInterface: String?): Set<String> {
         val interfaceType = baseInterface?.let { typeRegistry.findType(it) } ?: return emptySet()
         return interfaceType.properties.mapTo(linkedSetOf(), WinMdProperty::name)
+    }
+
+    private fun renderDispatchQueueOverride(
+        type: WinMdType,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): FunSpec? {
+        if (!isDispatchQueueType(type)) return null
+        val tryEnqueue = type.methods.singleOrNull { method ->
+            method.name == "TryEnqueue" &&
+                method.parameters.size == 1 &&
+                method.parameters.single().type == "${type.namespace}.DispatcherQueueHandler" &&
+                method.returnType == "Windows.Foundation.WinRtBoolean"
+        } ?: return null
+        val handlerType = typeNameMapper.mapTypeName("${type.namespace}.DispatcherQueueHandler", currentNamespace, genericParameters)
+        return FunSpec.builder("dispatch")
+            .addModifiers(KModifier.OVERRIDE)
+            .addParameter("block", LambdaTypeName.get(returnType = Unit::class.asTypeName()))
+            .returns(Boolean::class)
+            .addStatement("return %N(%T(block)).value", kotlinMethodName(tryEnqueue.name), handlerType)
+            .build()
+    }
+
+    private fun isDispatchQueueType(type: WinMdType): Boolean {
+        return (type.namespace == "Microsoft.UI.Dispatching" || type.namespace == "Windows.System") &&
+            (type.name == "IDispatcherQueue" || type.name == "DispatcherQueue")
     }
 
     private data class InterfaceEventSlotPlan(
