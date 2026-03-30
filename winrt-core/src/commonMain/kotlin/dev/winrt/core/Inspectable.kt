@@ -48,9 +48,13 @@ open class Inspectable(pointer: ComPtr) : WinRtObject(pointer) {
             typeKey = abiHelperTypeKey,
             iid = iid,
         )
-        queryInterfaceCache.putIfAbsent(projectionTypeKey, reference)
+        if (!queryInterfaceCache.containsKey(projectionTypeKey)) {
+            queryInterfaceCache[projectionTypeKey] = reference
+        }
         if (typeKey != projectionTypeKey) {
-            queryInterfaceCache.putIfAbsent(typeKey, reference)
+            if (!queryInterfaceCache.containsKey(typeKey)) {
+                queryInterfaceCache[typeKey] = reference
+            }
         }
         return reference
     }
