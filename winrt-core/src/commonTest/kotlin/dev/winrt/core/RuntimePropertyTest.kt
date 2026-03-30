@@ -64,8 +64,8 @@ class RuntimePropertyTest {
             }
         }
 
-        val first = subject.getObjectReferenceForType("System.Collections.IList", iid)
-        val second = subject.getObjectReferenceForType("System.Collections.IList", iid)
+        val first = subject.getObjectReferenceForType("kotlin.collections.MutableList", iid)
+        val second = subject.getObjectReferenceForType("kotlin.collections.MutableList", iid)
 
         assertEquals(ComPtr.NULL, first)
         assertEquals(ComPtr.NULL, second)
@@ -77,17 +77,17 @@ class RuntimePropertyTest {
         WinRtProjectionRegistry.resetForTests()
 
         assertEquals(
-            "System.Collections.IList",
+            "kotlin.collections.MutableList",
             WinRtProjectionRegistry.projectionTypeKeyFor("Microsoft.UI.Xaml.Interop.IBindableVector"),
         )
         assertNull(WinRtProjectionRegistry.findProjectionTypeKey("Windows.Foundation.Collections.IVector<String>"))
         assertEquals(
             "ABI.System.Collections.IList",
-            WinRtProjectionRegistry.abiHelperTypeKeyFor("System.Collections.IList"),
+            WinRtProjectionRegistry.abiHelperTypeKeyFor("kotlin.collections.MutableList"),
         )
         assertEquals(
             "ABI.System.Collections.Generic.IList<Microsoft.UI.Xaml.UIElement>",
-            WinRtProjectionRegistry.abiHelperTypeKeyFor("System.Collections.Generic.IList<Microsoft.UI.Xaml.UIElement>"),
+            WinRtProjectionRegistry.abiHelperTypeKeyFor("kotlin.collections.MutableList<Microsoft.UI.Xaml.UIElement>"),
         )
     }
 
@@ -119,7 +119,7 @@ class RuntimePropertyTest {
 
         val metadata = object : WinRtInterfaceMetadata {
             override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
-            override val projectionTypeKey: String = "System.Collections.IList"
+            override val projectionTypeKey: String = "kotlin.collections.MutableList"
             override val iid = Guid(0, 0, 0, byteArrayOf(5, 4, 3, 2, 1, 0, 9, 8))
         }
         val subject = object : Inspectable(ComPtr.NULL) {
@@ -161,7 +161,7 @@ class RuntimePropertyTest {
         }
 
         val first = subject.getObjectReferenceForProjectedType("Microsoft.UI.Xaml.Interop.IBindableVector", iid)
-        val second = subject.getObjectReferenceForType("System.Collections.IList", iid)
+        val second = subject.getObjectReferenceForType("kotlin.collections.MutableList", iid)
         val third = subject.getObjectReferenceForType("ABI.System.Collections.IList", iid)
         val fourth = subject.getObjectReferenceForType("Microsoft.UI.Xaml.Interop.IBindableVector", iid)
 
@@ -195,8 +195,8 @@ class RuntimePropertyTest {
     fun inspectable_can_cache_helper_wrappers_by_type_key() {
         val subject = Inspectable(ComPtr.NULL)
 
-        val first = subject.getOrPutHelperWrapper("System.Collections.IList") { mutableListOf("cached") }
-        val second = subject.getOrPutHelperWrapper("System.Collections.IList") { mutableListOf("new") }
+        val first = subject.getOrPutHelperWrapper("kotlin.collections.MutableList") { mutableListOf("cached") }
+        val second = subject.getOrPutHelperWrapper("kotlin.collections.MutableList") { mutableListOf("new") }
 
         assertSame(first, second)
         assertEquals(listOf("cached"), first)
@@ -235,13 +235,13 @@ class RuntimePropertyTest {
     fun interface_projection_uses_projection_type_key_when_provided() {
         WinRtProjectionRegistry.resetForTests()
         WinRtProjectionRegistry.registerAbiHelperTypeMapping(
-            projectionTypeKey = "System.Collections.IList",
+            projectionTypeKey = "kotlin.collections.MutableList",
             abiHelperTypeKey = "ABI.System.Collections.IList",
         )
 
         val metadata = object : WinRtInterfaceMetadata {
             override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
-            override val projectionTypeKey: String = "System.Collections.IList"
+            override val projectionTypeKey: String = "kotlin.collections.MutableList"
             override val iid = Guid(0, 0, 0, byteArrayOf(9, 9, 9, 9, 9, 9, 9, 9))
         }
         val subject = object : Inspectable(ComPtr.NULL) {
@@ -266,7 +266,7 @@ class RuntimePropertyTest {
 
         val metadata = object : WinRtInterfaceMetadata {
             override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
-            override val projectionTypeKey: String = "System.Collections.IList"
+            override val projectionTypeKey: String = "kotlin.collections.MutableList"
             override val iid = Guid(0, 0, 0, byteArrayOf(2, 7, 1, 8, 2, 8, 1, 8))
         }
         val subject = object : Inspectable(ComPtr.NULL) {

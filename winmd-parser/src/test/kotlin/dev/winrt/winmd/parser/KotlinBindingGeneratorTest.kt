@@ -473,7 +473,7 @@ class KotlinBindingGeneratorTest {
         val binding = files.first { it.relativePath == "Microsoft/UI/Xaml/Interop/IBindableVector.kt" }.content
 
         assertTrue(binding.contains("override val qualifiedName: String = \"Microsoft.UI.Xaml.Interop.IBindableVector\""))
-        assertTrue(binding.contains("override val projectionTypeKey: String = \"System.Collections.IList\""))
+        assertTrue(binding.contains("override val projectionTypeKey: String = \"kotlin.collections.MutableList\""))
     }
 
     @Test
@@ -3024,7 +3024,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("open class `IVector`1`<T>("))
         assertTrue(binding.contains("fun signatureOf(arg0Signature: String): String"))
         assertTrue(binding.contains("fun projectionTypeKeyOf(arg0ProjectionTypeKey: String): String"))
-        assertTrue(binding.contains("System.Collections.Generic.IList<"))
+        assertTrue(binding.contains("kotlin.collections.MutableList<"))
         assertTrue(binding.contains("WinRtTypeSignature.parameterizedInterface("))
         assertTrue(binding.contains("\"00000000-0000-0000-0000-000000000001\""))
         assertTrue(binding.contains("arg0Signature"))

@@ -17,7 +17,7 @@ class WinRtProjectionTypeMapperTest {
     @Test
     fun maps_generic_collection_projection_key_with_nested_runtime_class_argument() {
         assertEquals(
-            "System.Collections.Generic.IList<Microsoft.UI.Xaml.UIElement>",
+            "kotlin.collections.MutableList<Microsoft.UI.Xaml.UIElement>",
             mapper.projectionTypeKeyFor(
                 "Windows.Foundation.Collections.IVector`1<Microsoft.UI.Xaml.UIElement>",
                 "Microsoft.UI.Xaml.Controls",
@@ -28,9 +28,27 @@ class WinRtProjectionTypeMapperTest {
     @Test
     fun preserves_scalar_arguments_in_generic_projection_keys() {
         assertEquals(
-            "System.Collections.Generic.IReadOnlyList<String>",
+            "kotlin.collections.List<String>",
             mapper.projectionTypeKeyFor(
                 "Windows.Foundation.Collections.IVectorView`1<String>",
+                "Windows.Foundation.Collections",
+            ),
+        )
+    }
+
+    @Test
+    fun maps_dictionary_projection_keys_to_kotlin_collection_interfaces() {
+        assertEquals(
+            "kotlin.collections.MutableMap<String, Microsoft.UI.Xaml.UIElement>",
+            mapper.projectionTypeKeyFor(
+                "Windows.Foundation.Collections.IMap`2<String, Microsoft.UI.Xaml.UIElement>",
+                "Windows.Foundation.Collections",
+            ),
+        )
+        assertEquals(
+            "kotlin.collections.Map<String, Microsoft.UI.Xaml.UIElement>",
+            mapper.projectionTypeKeyFor(
+                "Windows.Foundation.Collections.IMapView`2<String, Microsoft.UI.Xaml.UIElement>",
                 "Windows.Foundation.Collections",
             ),
         )

@@ -122,7 +122,7 @@ class WinRtSignatureMapperTest {
     @Test
     fun maps_bindable_vector_to_cswinrt_projection_type_key() {
         assertEquals(
-            "System.Collections.IList",
+            "kotlin.collections.MutableList",
             projectionTypeMapper.projectionTypeKeyFor(
                 "Microsoft.UI.Xaml.Interop.IBindableVector",
                 "Microsoft.UI.Xaml.Interop",
@@ -133,7 +133,7 @@ class WinRtSignatureMapperTest {
     @Test
     fun maps_specialized_vector_to_generic_list_projection_type_key() {
         assertEquals(
-            "System.Collections.Generic.IList<Microsoft.UI.Xaml.UIElement>",
+            "kotlin.collections.MutableList<Microsoft.UI.Xaml.UIElement>",
             projectionTypeMapper.projectionTypeKeyFor(
                 "Windows.Foundation.Collections.IVector`1<Microsoft.UI.Xaml.UIElement>",
                 "Microsoft.UI.Xaml.Controls",
@@ -151,7 +151,7 @@ class WinRtSignatureMapperTest {
             ),
         )
         assertEquals(
-            "System.Collections.Generic.IReadOnlyList<String>",
+            "kotlin.collections.List<String>",
             projectionTypeMapper.projectionTypeKeyFor(
                 "Windows.Foundation.Collections.IVectorView`1<String>",
                 "Windows.Foundation.Collections",
