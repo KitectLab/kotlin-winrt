@@ -2961,6 +2961,44 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun reads_json_object_map_interfaces_from_real_metadata_model_when_available() {
+        val universalContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.UniversalApiContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val foundationContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.FoundationContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val model = WinMdModelFactory.metadataModel(
+            listOf(
+                universalContract.winmdPath,
+                foundationContract.winmdPath,
+            ),
+        )
+
+        val jsonNamespace = model.namespaces.firstOrNull { it.name == "Windows.Data.Json" } ?: return
+        if (jsonNamespace.types.none { it.name == "JsonObject" } || jsonNamespace.types.none { it.name == "IJsonObject" }) {
+            return
+        }
+
+        val jsonObject = jsonNamespace.types.first { it.name == "JsonObject" }
+
+        assertTrue(
+            jsonObject.baseInterfaces.toString(),
+            jsonObject.baseInterfaces.any {
+                it.contains("Windows.Foundation.Collections.IMap") && it.contains("Windows.Data.Json.IJsonValue")
+            },
+        )
+        assertTrue(
+            jsonObject.baseInterfaces.toString(),
+            jsonObject.baseInterfaces.any {
+                it.contains("Windows.Foundation.Collections.IIterable") && it.contains("Windows.Foundation.Collections.IKeyValuePair")
+            },
+        )
+    }
+
+    @Test
     fun generates_specialized_object_methods_for_property_set_binding() {
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",
