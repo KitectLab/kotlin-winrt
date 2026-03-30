@@ -144,6 +144,16 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeUnitMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Unit> {
+        return JvmComMethodExecutor.invokeWithoutOut(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeUnitMethodWithUInt32Arg",
+            handle = Jdk22Foreign.unitMethodWithUInt32Handle,
+            value.toInt(),
+        )
+    }
+
     override fun invokeUnitMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit> {
         return JvmComMethodExecutor.invokeWithoutOut(
             instance = instance,

@@ -95,6 +95,12 @@ internal object Jdk22Foreign {
         )
     }
 
+    val unitMethodWithUInt32Handle: MethodHandle by lazy {
+        downcallHandle(
+            FunctionDescriptor.of(intLayout, addressLayout, intLayout),
+        )
+    }
+
     val coInitializeExHandle: MethodHandle by lazy {
         downcall(
             "CoInitializeEx",

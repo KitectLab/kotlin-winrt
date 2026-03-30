@@ -2113,6 +2113,39 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_runtime_unit_methods_with_uint32_arguments() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "UInt32UnitHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetCount",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter(name = "count", type = "UInt32")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/UInt32UnitHost.kt" }.content
+
+        assertTrue(binding.contains("fun setCount(count: UInt32)"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 6, count.value).getOrThrow()"))
+    }
+
+    @Test
     fun generates_interface_methods_with_parameters_for_int32_and_uint32_returns() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
@@ -2194,6 +2227,39 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("fun getUnsignedByPayload(payload: Payload): UInt32"))
         assertTrue(binding.contains("PlatformComInterop.invokeUInt32MethodWithObjectArg(pointer,"))
         assertTrue(binding.contains("payload.pointer).getOrThrow()"))
+    }
+
+    @Test
+    fun generates_interface_unit_methods_with_uint32_arguments() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "UInt32UnitInterfaceHost",
+                            kind = WinMdTypeKind.Interface,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetCount",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter(name = "count", type = "UInt32")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/UInt32UnitInterfaceHost.kt" }.content
+
+        assertTrue(binding.contains("fun setCount(count: UInt32)"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 6, count.value).getOrThrow()"))
     }
 
     @Test

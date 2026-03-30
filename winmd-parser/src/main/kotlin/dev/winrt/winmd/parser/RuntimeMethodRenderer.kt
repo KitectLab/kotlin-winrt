@@ -517,6 +517,13 @@ internal class RuntimeMethodRenderer(
                     arrayOf(AbiCallCatalog.unitMethodWithInt32(method.vtableIndex!!, parameterBindings.single().name))
                 },
             )
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return") },
+                returnStatement = "%L",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(AbiCallCatalog.unitMethodWithUInt32(method.vtableIndex!!, parameterBindings.single().name))
+                },
+            )
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return") },
                 returnStatement = "%L",
