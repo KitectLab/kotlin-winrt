@@ -210,9 +210,14 @@ internal class RuntimeTypeRenderer(
                                 plan.lambdaArgumentKindsLiteral,
                                 plan.lambdaCallbackInvocation,
                             )
+                            .beginControlFlow("try")
                             .addStatement("val token = subscribe(%T(delegateHandle.pointer))", plan.delegateType)
                             .addStatement("delegateHandles[token] = delegateHandle")
                             .addStatement("return token")
+                            .nextControlFlow("catch (t: Throwable)")
+                            .addStatement("delegateHandle.close()")
+                            .addStatement("throw t")
+                            .endControlFlow()
                             .build(),
                     )
                     .addFunction(
