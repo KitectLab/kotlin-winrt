@@ -6607,7 +6607,9 @@ class KotlinBindingGeneratorTest {
         assertTrue(interfaceBinding.contains("operator fun plusAssign(handler: EventHandler<IWidgetClosedEventArgs>)"))
         assertTrue(interfaceBinding.contains("operator fun minusAssign(token: EventRegistrationToken)"))
         assertTrue(interfaceBinding.contains("delegateHandles[token] = delegateHandle"))
-        assertTrue(interfaceBinding.contains("delegateHandles.remove(token)?.close()"))
+        assertTrue(interfaceBinding.contains("val delegateHandle = delegateHandles[token]"))
+        assertTrue(interfaceBinding.contains("delegateHandles.remove(token)"))
+        assertTrue(interfaceBinding.contains("delegateHandle?.close()"))
         assertTrue(interfaceBinding.contains("unsubscribe(token)"))
 
         assertTrue(runtimeBinding.contains("val closedEvent: ClosedEvent"))
@@ -6619,7 +6621,9 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("operator fun plusAssign(handler: EventHandler<IWidgetClosedEventArgs>)"))
         assertTrue(runtimeBinding.contains("operator fun minusAssign(token: EventRegistrationToken)"))
         assertTrue(runtimeBinding.contains("delegateHandles[token] = delegateHandle"))
-        assertTrue(runtimeBinding.contains("delegateHandles.remove(token)?.close()"))
+        assertTrue(runtimeBinding.contains("val delegateHandle = delegateHandles[token]"))
+        assertTrue(runtimeBinding.contains("delegateHandles.remove(token)"))
+        assertTrue(runtimeBinding.contains("delegateHandle?.close()"))
         assertTrue(runtimeBinding.contains("unsubscribe(token)"))
     }
 
@@ -6702,7 +6706,9 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("operator fun plusAssign(handler: EventHandler<IWidgetClosedEventArgs>)"))
         assertTrue(runtimeBinding.contains("operator fun minusAssign(token: EventRegistrationToken)"))
         assertTrue(runtimeBinding.contains("delegateHandles[token] = delegateHandle"))
-        assertTrue(runtimeBinding.contains("delegateHandles.remove(token)?.close()"))
+        assertTrue(runtimeBinding.contains("val delegateHandle = delegateHandles[token]"))
+        assertTrue(runtimeBinding.contains("delegateHandles.remove(token)"))
+        assertTrue(runtimeBinding.contains("delegateHandle?.close()"))
         assertTrue(runtimeBinding.contains("unsubscribe(token)"))
         assertTrue(normalizedRuntimeBinding.contains("get()=closedEventSlot"))
     }

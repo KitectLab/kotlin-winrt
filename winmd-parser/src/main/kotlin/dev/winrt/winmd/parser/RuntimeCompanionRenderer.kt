@@ -206,8 +206,10 @@ internal class RuntimeCompanionRenderer(
                     .addFunction(
                         FunSpec.builder("unsubscribe")
                             .addParameter("token", PoetSymbols.eventRegistrationTokenClass)
-                            .addStatement("delegateHandles.remove(token)?.close()")
+                            .addStatement("val delegateHandle = delegateHandles[token]")
                             .addStatement("%T.invokeUnitMethodWithInt64Arg(staticsProvider().pointer, %L, token.value).getOrThrow()", PoetSymbols.platformComInteropClass, plan.removeVtableIndex)
+                            .addStatement("delegateHandles.remove(token)")
+                            .addStatement("delegateHandle?.close()")
                             .build(),
                     )
                     .addFunction(
