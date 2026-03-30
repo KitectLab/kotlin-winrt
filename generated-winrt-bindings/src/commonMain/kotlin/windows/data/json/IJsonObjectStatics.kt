@@ -10,7 +10,7 @@ import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
 
-public open class IJsonObjectStatics(
+internal open class IJsonObjectStatics(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
   public fun parse(input: String): JsonObject =

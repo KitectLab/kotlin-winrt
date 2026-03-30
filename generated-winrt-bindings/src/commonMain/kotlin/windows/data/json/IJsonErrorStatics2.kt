@@ -9,7 +9,7 @@ import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import kotlin.String
 
-public open class IJsonErrorStatics2(
+internal open class IJsonErrorStatics2(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
   public companion object : WinRtInterfaceMetadata {

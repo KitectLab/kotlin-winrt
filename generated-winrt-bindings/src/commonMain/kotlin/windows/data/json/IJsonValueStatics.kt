@@ -11,7 +11,7 @@ import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
 
-public open class IJsonValueStatics(
+internal open class IJsonValueStatics(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
   public fun parse(input: String): JsonValue =

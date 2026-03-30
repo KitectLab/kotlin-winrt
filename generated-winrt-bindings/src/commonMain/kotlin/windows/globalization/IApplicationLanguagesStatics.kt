@@ -10,7 +10,7 @@ import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 import windows.foundation.collections.StringVectorView
 
-public open class IApplicationLanguagesStatics(
+internal open class IApplicationLanguagesStatics(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
   public val primaryLanguageOverride: String
