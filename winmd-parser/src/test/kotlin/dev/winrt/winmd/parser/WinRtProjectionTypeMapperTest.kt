@@ -53,4 +53,15 @@ class WinRtProjectionTypeMapperTest {
             ),
         )
     }
+
+    @Test
+    fun maps_key_value_pair_projection_keys_to_kotlin_map_entry() {
+        assertEquals(
+            "kotlin.collections.Map.Entry<String, Microsoft.UI.Xaml.UIElement>",
+            mapper.projectionTypeKeyFor(
+                "Windows.Foundation.Collections.IKeyValuePair`2<String, Microsoft.UI.Xaml.UIElement>",
+                "Windows.Foundation.Collections",
+            ),
+        )
+    }
 }

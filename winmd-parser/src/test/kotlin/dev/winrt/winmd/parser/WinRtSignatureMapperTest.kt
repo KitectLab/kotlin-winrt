@@ -43,6 +43,13 @@ class WinRtSignatureMapperTest {
                         guid = "e5f839be-1a86-4e27-b357-f8c0d2d9d0d1",
                         genericParameters = listOf("K", "V"),
                     ),
+                    WinMdType(
+                        namespace = "Windows.Foundation.Collections",
+                        name = "IKeyValuePair`2",
+                        kind = WinMdTypeKind.Interface,
+                        guid = "8f4cf5d3-0fa1-4c97-aab5-2e6f2d0b5e5e",
+                        genericParameters = listOf("K", "V"),
+                    ),
                 ),
             ),
             WinMdNamespace(
@@ -186,6 +193,17 @@ class WinRtSignatureMapperTest {
             "pinterface({e5f839be-1a86-4e27-b357-f8c0d2d9d0d1};string;rc(Microsoft.UI.Xaml.UIElement;{22222222-2222-2222-2222-222222222222}))",
             mapper.signatureFor(
                 "Windows.Foundation.Collections.IMapView`2<String, Microsoft.UI.Xaml.UIElement>",
+                "Windows.Foundation.Collections",
+            ),
+        )
+    }
+
+    @Test
+    fun maps_key_value_pair_to_parameterized_interface_signature() {
+        assertEquals(
+            "pinterface({8f4cf5d3-0fa1-4c97-aab5-2e6f2d0b5e5e};string;rc(Microsoft.UI.Xaml.UIElement;{22222222-2222-2222-2222-222222222222}))",
+            mapper.signatureFor(
+                "Windows.Foundation.Collections.IKeyValuePair`2<String, Microsoft.UI.Xaml.UIElement>",
                 "Windows.Foundation.Collections",
             ),
         )
