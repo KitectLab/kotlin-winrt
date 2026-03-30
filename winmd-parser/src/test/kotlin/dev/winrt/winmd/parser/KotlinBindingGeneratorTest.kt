@@ -3461,6 +3461,8 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate"))
         assertTrue(binding.contains("ApplicationInitializationCallback.iid"))
         assertTrue(binding.contains("start(ApplicationInitializationCallback(delegateHandle.pointer))"))
+        assertTrue(binding.contains("catch (t: Throwable)"))
+        assertTrue(binding.contains("delegateHandle.close()"))
     }
 
     @Test
@@ -3584,6 +3586,8 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("() -> Unit"))
         assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate(TickHandler.iid, emptyList())"))
         assertTrue(binding.contains("setHandler(TickHandler(delegateHandle.pointer))"))
+        assertTrue(binding.contains("delegateHandle.close()"))
+        assertTrue(binding.contains("catch (t: Throwable)"))
     }
 
     @Test

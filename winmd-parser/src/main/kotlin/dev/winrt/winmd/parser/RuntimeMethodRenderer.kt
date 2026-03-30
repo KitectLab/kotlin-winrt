@@ -677,7 +677,12 @@ internal class RuntimeMethodRenderer(
                     argumentKindsLiteral,
                     callbackInvocation,
                 )
+                beginControlFlow("try")
                 addStatement("%N(%T(delegateHandle.pointer))", functionName, delegateClass)
+                nextControlFlow("catch (t: Throwable)")
+                addStatement("delegateHandle.close()")
+                addStatement("throw t")
+                endControlFlow()
                 addStatement("return delegateHandle")
             }
             .build()

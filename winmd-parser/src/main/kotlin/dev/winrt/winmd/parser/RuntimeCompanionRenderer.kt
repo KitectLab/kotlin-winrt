@@ -335,7 +335,12 @@ internal class RuntimeCompanionRenderer(
             argumentKindsLiteral,
             callbackInvocation,
         )
+        builder.beginControlFlow("try")
         builder.addStatement("statics.%L(%T(delegateHandle.pointer))", companionForwardTargetName(method), delegateClass)
+        builder.nextControlFlow("catch (t: Throwable)")
+        builder.addStatement("delegateHandle.close()")
+        builder.addStatement("throw t")
+        builder.endControlFlow()
         builder.addStatement("return delegateHandle")
         return builder.build()
     }
