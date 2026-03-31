@@ -9,11 +9,14 @@ import dev.winrt.kom.PlatformComInterop
 
 public open class IAsyncOperationWithProgress<TResult, TProgress>(
   pointer: ComPtr,
-  public open val resultSignature: String,
+  public open val resultType: AsyncResultType<TResult>,
   public open val progressSignature: String,
   public open val progressArgumentKind: WinRtDelegateValueKind,
   public open val decodeProgress: (Any?) -> TProgress,
 ) : IAsyncInfo(pointer) {
+  public open val resultSignature: String
+    get() = resultType.signature
+
   public open var progress: AsyncOperationProgressHandler<TResult, TProgress>
     get() = get_Progress()
     set(value) {
@@ -40,7 +43,21 @@ public open class IAsyncOperationWithProgress<TResult, TProgress>(
   public open fun get_Completed(): AsyncOperationWithProgressCompletedHandler<TResult, TProgress> =
       AsyncOperationWithProgressCompletedHandler(PlatformComInterop.invokeObjectMethod(pointer, 14).getOrThrow())
 
-  public open fun getResults(): TResult = error("Generic async operation with progress projection requires an override")
+  public constructor(
+    pointer: ComPtr,
+    resultSignature: String,
+    progressSignature: String,
+    progressArgumentKind: WinRtDelegateValueKind,
+    decodeProgress: (Any?) -> TProgress,
+  ) : this(
+      pointer = pointer,
+      resultType = AsyncResultTypes.signature(resultSignature),
+      progressSignature = progressSignature,
+      progressArgumentKind = progressArgumentKind,
+      decodeProgress = decodeProgress,
+  )
+
+  public open fun getResults(): TResult = resultType.getResults(pointer, 15)
 
   public companion object {
     private const val genericInterfaceGuid: String = "b5d036d7-e297-498f-ba60-0289e76e23dd"

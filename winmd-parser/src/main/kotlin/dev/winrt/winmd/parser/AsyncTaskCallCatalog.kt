@@ -1,6 +1,7 @@
 package dev.winrt.winmd.parser
 
 import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.CodeBlock
 
 internal object AsyncTaskCallCatalog {
     fun asyncAction(returnType: TypeName, invocationFormat: String, platformComInteropClass: Any): AsyncTaskCallPlan {
@@ -13,12 +14,12 @@ internal object AsyncTaskCallCatalog {
     fun asyncOperation(
         returnType: TypeName,
         invocationFormat: String,
-        resultSignature: String,
+        resultType: CodeBlock,
         platformComInteropClass: Any,
     ): AsyncTaskCallPlan {
         return AsyncTaskCallPlan(
-            statementFormat = "return %T($invocationFormat, %S)",
-            args = arrayOf(returnType, platformComInteropClass, resultSignature),
+            statementFormat = "return %T($invocationFormat, %L)",
+            args = arrayOf(returnType, platformComInteropClass, resultType),
         )
     }
 
@@ -44,15 +45,16 @@ internal object AsyncTaskCallCatalog {
     fun asyncOperationWithProgress(
         returnType: TypeName,
         invocationFormat: String,
+        resultType: CodeBlock,
         progressPlan: AsyncOperationWithProgressPlan,
         platformComInteropClass: Any,
     ): AsyncTaskCallPlan {
         return AsyncTaskCallPlan(
-            statementFormat = "return %T($invocationFormat, %S, %S, %T.%L, %L)",
+            statementFormat = "return %T($invocationFormat, %L, %S, %T.%L, %L)",
             args = arrayOf(
                 returnType,
                 platformComInteropClass,
-                progressPlan.resultSignature,
+                resultType,
                 progressPlan.progressSignature,
                 PoetSymbols.winRtDelegateValueKindClass,
                 progressPlan.valueKind,

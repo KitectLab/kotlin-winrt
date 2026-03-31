@@ -6721,6 +6721,79 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun async_operation_object_results_use_projected_result_descriptors() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "9fc2b0bb-e446-44e2-aa61-9cab8f636af2",
+                            genericParameters = listOf("TResult"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Async",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "12345678-1234-1234-1234-1234567890ab",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IAsyncSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<Example.Async.IWidget>",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "AsyncSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Async.IAsyncSource",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<Example.Async.IWidget>",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Async/IAsyncSource.kt" }.content
+        val runtimeBinding = files.first { it.relativePath == "Example/Async/AsyncSource.kt" }.content
+        val normalizedInterfaceBinding = interfaceBinding.replace(Regex("\\s+"), "")
+        val normalizedRuntimeBinding = runtimeBinding.replace(Regex("\\s+"), "")
+        val projectedDescriptor = "AsyncResultTypes.projected(\"{12345678-1234-1234-1234-1234567890ab}\"){IWidget(it)}"
+
+        assertTrue(interfaceBinding.contains("val readAsyncResultType: AsyncResultType<IWidget>"))
+        assertTrue(interfaceBinding.contains("AsyncResultTypes.projected(\"{12345678-1234-1234-1234-1234567890ab}\") { IWidget(it) }"))
+        assertTrue(interfaceBinding.contains("fun readAsync(): IAsyncOperation<IWidget>"))
+        assertEquals(2, normalizedInterfaceBinding.split(projectedDescriptor).size - 1)
+
+        assertTrue(runtimeBinding.contains("fun readAsync(): IAsyncOperation<IWidget>"))
+        assertEquals(1, normalizedRuntimeBinding.split(projectedDescriptor).size - 1)
+    }
+
+    @Test
     fun generates_suspend_async_static_method_projections() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

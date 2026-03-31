@@ -551,7 +551,11 @@ internal class InterfaceTypeRenderer(
         val resultType = asyncMethodRuleRegistry.plan(method, currentNamespace, genericParameters)
             ?.let { asyncMethodProjectionPlanner.asyncResultTypeName(method.returnType, currentNamespace, genericParameters) }
             ?: return null
-        val descriptorExpression = asyncMethodProjectionPlanner.asyncResultDescriptorExpression(method.returnType, currentNamespace)
+        val descriptorExpression = asyncMethodProjectionPlanner.asyncResultDescriptorExpression(
+            method.returnType,
+            currentNamespace,
+            genericParameters,
+        )
             ?: return null
         return PropertySpec.builder("${kotlinMethodName(method.name)}ResultType", PoetSymbols.asyncResultTypeClass.parameterizedBy(resultType))
             .initializer("%L", descriptorExpression)

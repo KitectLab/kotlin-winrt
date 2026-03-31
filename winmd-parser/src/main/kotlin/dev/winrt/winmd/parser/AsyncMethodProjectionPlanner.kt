@@ -57,14 +57,31 @@ internal class AsyncMethodProjectionPlanner(
     ): TypeName? = awaitReturnType(returnType, currentNamespace, genericParameters)
 
     fun asyncResultDescriptorExpression(returnType: String, currentNamespace: String): CodeBlock? {
-        val signature = when {
+        return asyncResultDescriptorExpression(returnType, currentNamespace, emptySet())
+    }
+
+    fun asyncResultDescriptorExpression(
+        returnType: String,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): CodeBlock? {
+        val resultTypeName = when {
             returnType.startsWith("Windows.Foundation.IAsyncOperation<") ->
-                asyncOperationResultSignature(returnType, currentNamespace)
+                returnType.substringAfter('<').substringBeforeLast('>')
             returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") ->
-                asyncOperationWithProgressPlan(returnType, currentNamespace)?.resultSignature
+                splitGenericArguments(returnType.substringAfter('<').substringBeforeLast('>')).firstOrNull()
             else -> null
         } ?: return null
-        return CodeBlock.of("%T.signature(%S)", PoetSymbols.asyncResultTypesClass, signature)
+        val signature = winRtSignatureMapper.signatureFor(resultTypeName, currentNamespace)
+        if (resultTypeName in genericParameters || isScalarAsyncResultType(resultTypeName)) {
+            return CodeBlock.of("%T.signature(%S)", PoetSymbols.asyncResultTypesClass, signature)
+        }
+        return CodeBlock.of(
+            "%T.projected(%S) { %T(it) }",
+            PoetSymbols.asyncResultTypesClass,
+            signature,
+            typeNameMapper.mapTypeName(resultTypeName, currentNamespace, genericParameters),
+        )
     }
 
     fun progressLambdaType(
@@ -172,6 +189,19 @@ internal class AsyncMethodProjectionPlanner(
         arguments += source.substring(start).trim()
         return arguments
     }
+}
+
+private fun isScalarAsyncResultType(typeName: String): Boolean {
+    return typeName in setOf(
+        "String",
+        "Boolean",
+        "Int32",
+        "UInt32",
+        "Int64",
+        "UInt64",
+        "Float32",
+        "Float64",
+    )
 }
 
 internal data class AsyncProgressPlan(

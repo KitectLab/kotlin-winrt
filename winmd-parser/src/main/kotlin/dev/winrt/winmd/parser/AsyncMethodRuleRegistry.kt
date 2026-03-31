@@ -40,15 +40,16 @@ internal class AsyncMethodRuleRegistry(
                     AsyncTaskCallCatalog.asyncAction(rawReturnType, invocation, PoetSymbols.platformComInteropClass)
                 }
             method.returnType.startsWith("Windows.Foundation.IAsyncOperation<") -> {
-                val resultSignature = asyncMethodProjectionPlanner.asyncOperationResultSignature(
+                val resultType = asyncMethodProjectionPlanner.asyncResultDescriptorExpression(
                     method.returnType,
                     currentNamespace,
+                    genericParameters,
                 ) ?: return null
                 AsyncRawTaskCallFactory { invocation ->
                     AsyncTaskCallCatalog.asyncOperation(
                         rawReturnType,
                         invocation,
-                        resultSignature,
+                        resultType,
                         PoetSymbols.platformComInteropClass,
                     )
                 }
@@ -72,10 +73,16 @@ internal class AsyncMethodRuleRegistry(
                     method.returnType,
                     currentNamespace,
                 ) ?: return null
+                val resultType = asyncMethodProjectionPlanner.asyncResultDescriptorExpression(
+                    method.returnType,
+                    currentNamespace,
+                    genericParameters,
+                ) ?: return null
                 AsyncRawTaskCallFactory { invocation ->
                     AsyncTaskCallCatalog.asyncOperationWithProgress(
                         rawReturnType,
                         invocation,
+                        resultType,
                         progressPlan,
                         PoetSymbols.platformComInteropClass,
                     )
