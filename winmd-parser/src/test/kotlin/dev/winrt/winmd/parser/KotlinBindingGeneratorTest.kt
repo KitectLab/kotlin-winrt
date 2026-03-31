@@ -6196,6 +6196,77 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun folds_versioned_overrides_interfaces_into_runtime_class_hooks() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "LaunchArgs",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "CloseArgs",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            implementedInterfaces = listOf(
+                                "Example.Xaml.IWidgetOverrides",
+                                "Example.Xaml.IWidgetOverrides2",
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidgetOverrides",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "OnLaunch",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter("args", "Example.Xaml.LaunchArgs")),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidgetOverrides2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "OnClose",
+                                    returnType = "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter("args", "Example.Xaml.CloseArgs")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val widgetBinding = files.first { it.relativePath == "Example/Xaml/Widget.kt" }.content
+
+        assertFalse(files.any { it.relativePath == "Example/Xaml/IWidgetOverrides.kt" })
+        assertFalse(files.any { it.relativePath == "Example/Xaml/IWidgetOverrides2.kt" })
+        assertTrue(widgetBinding.contains("protected open fun onLaunch(args: LaunchArgs)"))
+        assertTrue(widgetBinding.contains("invokeObjectSetter(pointer, 6, (args as Inspectable).pointer).getOrThrow()"))
+        assertTrue(widgetBinding.contains("protected open fun onClose(args: CloseArgs)"))
+        assertTrue(widgetBinding.contains("invokeObjectSetter(pointer, 7, (args as Inspectable).pointer).getOrThrow()"))
+    }
+
+    @Test
     fun generates_delegate_types_as_projection_metadata() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

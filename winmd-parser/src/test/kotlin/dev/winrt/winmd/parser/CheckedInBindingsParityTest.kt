@@ -1,7 +1,6 @@
 package dev.winrt.winmd.parser
 
 import dev.winrt.winmd.plugin.WinMdModelFactory
-import dev.winrt.winmd.plugin.WinMdNamespace
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -51,7 +50,7 @@ class CheckedInBindingsParityTest {
         "Windows.Globalization" to setOf("ApplicationLanguages", "Calendar", "CalendarIdentifiers", "ClockIdentifiers", "DayOfWeek", "IApplicationLanguagesStatics", "ICalendar", "ICalendarIdentifiersStatics", "IClockIdentifiersStatics"),
         "Windows.Globalization.NumberFormatting" to setOf("INumeralSystemTranslator", "NumeralSystemTranslator"),
         "Windows.System.UserProfile" to setOf("GlobalizationPreferences", "IGlobalizationPreferencesStatics"),
-        "Microsoft.UI.Xaml" to setOf("Application", "IApplicationOverrides", "Window"),
+        "Microsoft.UI.Xaml" to setOf("Application", "Window"),
     )
 
     @Test
@@ -67,24 +66,15 @@ class CheckedInBindingsParityTest {
             primary = WinMdModelFactory.metadataModel(inputs.sources),
             supplemental = WinMdModelFactory.sampleSupplementalModel(),
         )
-        val trackedModel = model.copy(
-            namespaces = model.namespaces.mapNotNull { namespace ->
-                val allowedTypes = trackedTypes[namespace.name] ?: return@mapNotNull null
-                val types = namespace.types.filter { it.name in allowedTypes }
-                if (types.isEmpty()) {
-                    null
-                } else {
-                    WinMdNamespace(namespace.name, types)
-                }
-            },
-        )
+        val trackedModel = WinMdProjectionModelClosure.retainTypesWithHiddenProjectionDependencies(model, trackedTypes)
         val generatedFiles = KotlinBindingGenerator().generate(trackedModel)
             .associateBy { it.relativePath.lowercase() }
         val checkedInRoot = Path.of("../generated-winrt-bindings/src/commonMain/kotlin")
+        val generatedTrackedFiles = generatedFiles.filterKeys { it in trackedRelativePaths.map { path -> path.lowercase() }.toSet() }
 
-        assertEquals(trackedRelativePaths.size, generatedFiles.size)
+        assertEquals(trackedRelativePaths.size, generatedTrackedFiles.size)
         trackedRelativePaths.forEach { relativePath ->
-            val generated = generatedFiles[relativePath.replace('\\', '/').lowercase()]
+            val generated = generatedTrackedFiles[relativePath.replace('\\', '/').lowercase()]
             assertTrue("Missing generated file: $relativePath", generated != null)
             val checkedIn = checkedInRoot.resolve(relativePath).readText()
             assertTrue("Generated content should not be blank: $relativePath", generated!!.content.isNotBlank())
@@ -105,13 +95,7 @@ class CheckedInBindingsParityTest {
             primary = WinMdModelFactory.metadataModel(inputs.sources),
             supplemental = WinMdModelFactory.sampleSupplementalModel(),
         )
-        val trackedModel = model.copy(
-            namespaces = model.namespaces.mapNotNull { namespace ->
-                val allowedTypes = trackedTypes[namespace.name] ?: return@mapNotNull null
-                val types = namespace.types.filter { it.name in allowedTypes }
-                if (types.isEmpty()) null else WinMdNamespace(namespace.name, types)
-            },
-        )
+        val trackedModel = WinMdProjectionModelClosure.retainTypesWithHiddenProjectionDependencies(model, trackedTypes)
         val generatedFiles = KotlinBindingGenerator().generate(trackedModel)
             .associateBy { it.relativePath.lowercase() }
         val checkedInRoot = Path.of("../generated-winrt-bindings/src/commonMain/kotlin")
