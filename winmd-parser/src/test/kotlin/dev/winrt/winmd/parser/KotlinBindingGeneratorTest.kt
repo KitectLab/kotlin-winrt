@@ -6794,6 +6794,59 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun async_progress_object_types_use_object_decode_lambdas() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncActionWithProgress`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "1f6db258-e803-48a1-9546-eb7353398884",
+                            genericParameters = listOf("TProgress"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Async",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "12345678-1234-1234-1234-1234567890ab",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IProgressSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "UploadAsync",
+                                    returnType = "Windows.Foundation.IAsyncActionWithProgress<Example.Async.IWidget>",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Async/IProgressSource.kt" }.content
+
+        assertTrue(interfaceBinding.contains("val uploadAsyncProgressType: AsyncProgressType<IWidget>"))
+        assertTrue(interfaceBinding.contains("AsyncProgressTypes.signature(\"{12345678-1234-1234-1234-1234567890ab}\""))
+        assertTrue(interfaceBinding.contains("OBJECT"))
+        assertTrue(interfaceBinding.contains("suspend fun uploadAsyncAwait(onProgress: (IWidget) -> Unit = { _ -> }): Unit"))
+    }
+
+    @Test
     fun generates_suspend_async_static_method_projections() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

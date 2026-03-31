@@ -58,6 +58,7 @@ internal class AsyncMethodRuleRegistry(
                 val progressPlan = asyncMethodProjectionPlanner.asyncProgressPlan(
                     method.returnType,
                     currentNamespace,
+                    genericParameters,
                 ) ?: return null
                 AsyncRawTaskCallFactory { invocation ->
                     AsyncTaskCallCatalog.asyncActionWithProgress(
@@ -72,6 +73,7 @@ internal class AsyncMethodRuleRegistry(
                 val progressPlan = asyncMethodProjectionPlanner.asyncOperationWithProgressPlan(
                     method.returnType,
                     currentNamespace,
+                    genericParameters,
                 ) ?: return null
                 val resultType = asyncMethodProjectionPlanner.asyncResultDescriptorExpression(
                     method.returnType,

@@ -569,7 +569,11 @@ internal class InterfaceTypeRenderer(
     ): PropertySpec? {
         val progressType = asyncMethodProjectionPlanner.asyncProgressTypeName(method.returnType, currentNamespace, genericParameters)
             ?: return null
-        val descriptorExpression = asyncMethodProjectionPlanner.asyncProgressDescriptorExpression(method.returnType, currentNamespace)
+        val descriptorExpression = asyncMethodProjectionPlanner.asyncProgressDescriptorExpression(
+            method.returnType,
+            currentNamespace,
+            genericParameters,
+        )
             ?: return null
         return PropertySpec.builder("${kotlinMethodName(method.name)}ProgressType", PoetSymbols.asyncProgressTypeClass.parameterizedBy(progressType))
             .initializer("%L", descriptorExpression)

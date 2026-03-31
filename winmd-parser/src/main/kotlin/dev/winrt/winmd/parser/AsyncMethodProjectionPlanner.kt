@@ -111,12 +111,16 @@ internal class AsyncMethodProjectionPlanner(
         return progressLambda.parameters.singleOrNull()?.type
     }
 
-    fun asyncProgressDescriptorExpression(returnType: String, currentNamespace: String): CodeBlock? {
+    fun asyncProgressDescriptorExpression(
+        returnType: String,
+        currentNamespace: String,
+        genericParameters: Set<String> = emptySet(),
+    ): CodeBlock? {
         val progressPlan = when {
             returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") ->
-                asyncProgressPlan(returnType, currentNamespace)
+                asyncProgressPlan(returnType, currentNamespace, genericParameters)
             returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") ->
-                asyncOperationWithProgressPlan(returnType, currentNamespace)?.let {
+                asyncOperationWithProgressPlan(returnType, currentNamespace, genericParameters)?.let {
                     AsyncProgressPlan(it.progressSignature, it.valueKind, it.decodeLambda)
                 }
             else -> null
@@ -130,22 +134,30 @@ internal class AsyncMethodProjectionPlanner(
         )
     }
 
-    fun asyncProgressPlan(returnType: String, currentNamespace: String): AsyncProgressPlan? {
+    fun asyncProgressPlan(
+        returnType: String,
+        currentNamespace: String,
+        genericParameters: Set<String> = emptySet(),
+    ): AsyncProgressPlan? {
         if (!returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") || !returnType.endsWith(">")) {
             return null
         }
         val progressType = returnType.substringAfter('<').substringBeforeLast('>')
-        return scalarAsyncProgressPlan(progressType, currentNamespace)
+        return asyncProgressPlanForType(progressType, currentNamespace, genericParameters)
     }
 
-    fun asyncOperationWithProgressPlan(returnType: String, currentNamespace: String): AsyncOperationWithProgressPlan? {
+    fun asyncOperationWithProgressPlan(
+        returnType: String,
+        currentNamespace: String,
+        genericParameters: Set<String> = emptySet(),
+    ): AsyncOperationWithProgressPlan? {
         if (!returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") || !returnType.endsWith(">")) {
             return null
         }
         val arguments = splitGenericArguments(returnType.substringAfter('<').substringBeforeLast('>'))
         if (arguments.size != 2) return null
         val resultSignature = winRtSignatureMapper.signatureFor(arguments[0], currentNamespace)
-        val progressPlan = scalarAsyncProgressPlan(arguments[1], currentNamespace) ?: return null
+        val progressPlan = asyncProgressPlanForType(arguments[1], currentNamespace, genericParameters) ?: return null
         return AsyncOperationWithProgressPlan(
             resultSignature = resultSignature,
             progressSignature = progressPlan.progressSignature,
@@ -154,18 +166,31 @@ internal class AsyncMethodProjectionPlanner(
         )
     }
 
-    private fun scalarAsyncProgressPlan(typeName: String, currentNamespace: String): AsyncProgressPlan? {
+    private fun asyncProgressPlanForType(
+        typeName: String,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): AsyncProgressPlan? {
         val signature = winRtSignatureMapper.signatureFor(typeName, currentNamespace)
         return when (typeName) {
-            "String" -> AsyncProgressPlan(signature, "STRING", "{ it as String }")
-            "Boolean" -> AsyncProgressPlan(signature, "BOOLEAN", "{ it as Boolean }")
-            "Int32" -> AsyncProgressPlan(signature, "INT32", "{ it as Int }")
-            "UInt32" -> AsyncProgressPlan(signature, "UINT32", "{ it as UInt32 }")
-            "Int64" -> AsyncProgressPlan(signature, "INT64", "{ it as Long }")
-            "UInt64" -> AsyncProgressPlan(signature, "UINT64", "{ it as ULong }")
-            "Float32" -> AsyncProgressPlan(signature, "FLOAT32", "{ it as Float }")
-            "Float64" -> AsyncProgressPlan(signature, "FLOAT64", "{ it as Double }")
-            else -> null
+            "String" -> AsyncProgressPlan(signature, "STRING", CodeBlock.of("{ it as String }"))
+            "Boolean" -> AsyncProgressPlan(signature, "BOOLEAN", CodeBlock.of("{ it as Boolean }"))
+            "Int32" -> AsyncProgressPlan(signature, "INT32", CodeBlock.of("{ it as Int }"))
+            "UInt32" -> AsyncProgressPlan(signature, "UINT32", CodeBlock.of("{ it as UInt32 }"))
+            "Int64" -> AsyncProgressPlan(signature, "INT64", CodeBlock.of("{ it as Long }"))
+            "UInt64" -> AsyncProgressPlan(signature, "UINT64", CodeBlock.of("{ it as ULong }"))
+            "Float32" -> AsyncProgressPlan(signature, "FLOAT32", CodeBlock.of("{ it as Float }"))
+            "Float64" -> AsyncProgressPlan(signature, "FLOAT64", CodeBlock.of("{ it as Double }"))
+            in genericParameters -> null
+            else -> AsyncProgressPlan(
+                progressSignature = signature,
+                valueKind = "OBJECT",
+                decodeLambda = CodeBlock.of(
+                    "{ %T(it as %T) }",
+                    typeNameMapper.mapTypeName(typeName, currentNamespace, genericParameters),
+                    PoetSymbols.comPtrClass,
+                ),
+            )
         }
     }
 
@@ -207,12 +232,12 @@ private fun isScalarAsyncResultType(typeName: String): Boolean {
 internal data class AsyncProgressPlan(
     val progressSignature: String,
     val valueKind: String,
-    val decodeLambda: String,
+    val decodeLambda: CodeBlock,
 )
 
 internal data class AsyncOperationWithProgressPlan(
     val resultSignature: String,
     val progressSignature: String,
     val valueKind: String,
-    val decodeLambda: String,
+    val decodeLambda: CodeBlock,
 )
