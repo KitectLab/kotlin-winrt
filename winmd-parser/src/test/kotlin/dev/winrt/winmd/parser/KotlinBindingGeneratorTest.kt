@@ -6267,6 +6267,50 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun folds_overrides_interface_properties_into_runtime_class_hooks() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            implementedInterfaces = listOf("Example.Xaml.IWidgetOverrides"),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidgetOverrides",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "33333333-3333-3333-3333-333333333333",
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Title",
+                                    type = "String",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val widgetBinding = files.first { it.relativePath == "Example/Xaml/Widget.kt" }.content
+
+        assertFalse(files.any { it.relativePath == "Example/Xaml/IWidgetOverrides.kt" })
+        assertTrue(widgetBinding.contains("private val backing_Title"))
+        assertTrue(widgetBinding.contains("protected open var title: String"))
+        assertTrue(widgetBinding.contains("invokeHStringMethod(pointer, 6).getOrThrow()"))
+        assertTrue(widgetBinding.contains("invokeStringSetter(pointer, 7, value).getOrThrow()"))
+    }
+
+    @Test
     fun generates_delegate_types_as_projection_metadata() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

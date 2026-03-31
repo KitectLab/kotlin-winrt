@@ -45,6 +45,10 @@ internal class RuntimeTypeRenderer(
         val runtimeProperties = dedupeRuntimeProperties(
             type.properties.filter { runtimePropertyRenderer.canRenderRuntimeProperty(it, type.namespace) },
         )
+        val overrideProperties = dedupeRuntimeProperties(
+            overrideInterfaceProperties(type, overrideInterfaceTypes)
+                .filter { runtimePropertyRenderer.canRenderRuntimeProperty(it, type.namespace) },
+        )
         val runtimeMethods = dedupeRuntimeMethods(
             type.methods.filter { runtimeMethodRenderer.canRenderRuntimeMethod(it, type.namespace) },
         )
@@ -126,6 +130,15 @@ internal class RuntimeTypeRenderer(
                 },
             )
         }
+        overrideProperties.forEach { property ->
+            builder.addProperty(runtimePropertyRenderer.renderBackingProperty(property, type.namespace))
+            builder.addProperty(
+                runtimePropertyRenderer.renderRuntimeProperty(property, type.namespace)
+                    .toBuilder()
+                    .addModifiers(KModifier.PROTECTED, KModifier.OPEN)
+                    .build(),
+            )
+        }
         runtimeMethods
             .flatMap { method ->
                 runtimeMethodRenderer.renderRuntimeMethods(method, type.namespace).map { rendered ->
@@ -192,6 +205,14 @@ internal class RuntimeTypeRenderer(
             .flatMap(::allInterfaceMethods)
             .filterNot { runtimeMethodRenderKey(it) in existingKeys }
             .distinctBy(::runtimeMethodRenderKey)
+    }
+
+    private fun overrideInterfaceProperties(type: WinMdType, overrideInterfaceTypes: List<WinMdType>): List<dev.winrt.winmd.plugin.WinMdProperty> {
+        val existingNames = type.properties.mapTo(linkedSetOf()) { it.name }
+        return overrideInterfaceTypes
+            .flatMap(::allInterfaceProperties)
+            .filterNot { it.name in existingNames }
+            .distinctBy { it.name }
     }
 
     private fun helperAccessorName(typeName: String): String {
@@ -490,6 +511,14 @@ internal class RuntimeTypeRenderer(
                 .filter { it.kind == dev.winrt.winmd.plugin.WinMdTypeKind.Interface }
                 .forEach { addAll(allInterfacePropertyNames(it)) }
         }
+    }
+
+    private fun allInterfaceProperties(type: WinMdType): List<dev.winrt.winmd.plugin.WinMdProperty> {
+        val inherited = type.baseInterfaces
+            .mapNotNull { baseInterface -> typeRegistry.findType(baseInterface, type.namespace) }
+            .filter { it.kind == dev.winrt.winmd.plugin.WinMdTypeKind.Interface }
+            .flatMap(::allInterfaceProperties)
+        return (inherited + type.properties).distinctBy { it.name }
     }
 
     private data class RuntimeProjectionMembers(
