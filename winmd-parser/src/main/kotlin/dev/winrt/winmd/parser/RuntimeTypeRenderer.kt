@@ -150,7 +150,7 @@ internal class RuntimeTypeRenderer(
     private fun renderFactoryConstructors(type: WinMdType): List<FunSpec> {
         return typeRegistry.findRuntimeClassFactoryTypes(type.name, type.namespace)
             .flatMap { factoryType ->
-                val factoryPropertyName = factoryType.name.removePrefix("I").replaceFirstChar(Char::lowercase)
+                val factoryPropertyName = helperAccessorName(factoryType.name)
                 factoryType.methods
                     .filter { method -> method.returnType == "${type.namespace}.${type.name}" }
                     .map { method ->
@@ -174,6 +174,18 @@ internal class RuntimeTypeRenderer(
                             .build()
                     }
             }
+    }
+
+    private fun helperAccessorName(typeName: String): String {
+        val rawName = typeName.removePrefix("I")
+        Regex(".*(Statics|Factory)(\\d*)$")
+            .matchEntire(rawName)
+            ?.let { match ->
+                val kind = match.groupValues[1].replaceFirstChar(Char::lowercase)
+                val version = match.groupValues[2]
+                return kind + version
+            }
+        return rawName.replaceFirstChar(Char::lowercase)
     }
 
     private fun renderEventSlotMembers(methods: List<WinMdMethod>, currentNamespace: String): RuntimeEventMembers {

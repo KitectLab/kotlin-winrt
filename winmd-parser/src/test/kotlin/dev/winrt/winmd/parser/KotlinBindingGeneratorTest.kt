@@ -71,11 +71,11 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Microsoft/UI/Xaml/Application.kt" }.content
 
-        assertTrue(binding, binding.contains("private val applicationStatics: IApplicationStatics by lazy"))
+        assertTrue(binding, binding.contains("private val statics: IApplicationStatics by lazy"))
         assertTrue(binding, binding.contains("val current: Application"))
-        assertTrue(binding, binding.contains("get() = applicationStatics.get_Current()"))
+        assertTrue(binding, binding.contains("get() = statics.get_Current()"))
         assertTrue(binding, binding.contains("fun start(callback: ApplicationInitializationCallback)"))
-        assertTrue(binding, binding.contains("applicationStatics.start(callback)"))
+        assertTrue(binding, binding.contains("statics.start(callback)"))
         assertTrue(binding, binding.contains("fun start(callback: (IApplicationInitializationCallbackParams) -> Unit)"))
         assertTrue(binding, binding.contains("WinRtDelegateBridge.createUnitDelegate"))
     }
@@ -116,11 +116,11 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Windows/Globalization/ApplicationLanguages.kt" }.content
 
-        assertTrue(binding, binding.contains("private val applicationLanguagesStatics: IApplicationLanguagesStatics by lazy"))
+        assertTrue(binding, binding.contains("private val statics: IApplicationLanguagesStatics by lazy"))
         assertTrue(binding, binding.contains("val languages: List<String>"))
-        assertTrue(binding, binding.contains("get() = applicationLanguagesStatics.languages"))
+        assertTrue(binding, binding.contains("get() = statics.languages"))
         assertTrue(binding, binding.contains("val manifestLanguages: List<String>"))
-        assertTrue(binding, binding.contains("get() = applicationLanguagesStatics.manifestLanguages"))
+        assertTrue(binding, binding.contains("get() = statics.manifestLanguages"))
     }
 
     @Test
@@ -178,10 +178,10 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Windows/Data/Json/JsonValue.kt" }.content
 
-        assertTrue(binding, binding.contains("private val jsonValueStatics: IJsonValueStatics by lazy"))
-        assertTrue(binding, binding.contains("private val jsonValueStatics2: IJsonValueStatics2 by lazy"))
-        assertTrue(binding, binding.contains("fun parse(input: String): JsonValue = jsonValueStatics.parse(input)"))
-        assertTrue(binding, binding.contains("fun createNullValue(): JsonValue = jsonValueStatics2.createNullValue()"))
+        assertTrue(binding, binding.contains("private val statics: IJsonValueStatics by lazy"))
+        assertTrue(binding, binding.contains("private val statics2: IJsonValueStatics2 by lazy"))
+        assertTrue(binding, binding.contains("fun parse(input: String): JsonValue = statics.parse(input)"))
+        assertTrue(binding, binding.contains("fun createNullValue(): JsonValue = statics2.createNullValue()"))
     }
 
     @Test
@@ -381,12 +381,12 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Windows/Globalization/Language.kt" }.content
-        val normalizedBinding = binding.replace("\n", "").replace(" ", "")
+        val normalizedBinding = binding.replace(Regex("\\s+"), "")
 
         assertTrue(binding, binding.contains("override val activationKind: WinRtActivationKind = WinRtActivationKind.Factory"))
-        assertTrue(binding, binding.contains("private val languageFactory: ILanguageFactory by lazy"))
-        assertTrue(binding, binding.contains("private fun languageFactoryCreateLanguage(languageTag: String): Language"))
-        assertTrue(normalizedBinding.contains("constructor(languageTag:String):this(Companion.languageFactoryCreateLanguage(languageTag).pointer)"))
+        assertTrue(binding, binding.contains("private val factory: ILanguageFactory by lazy"))
+        assertTrue(binding, binding.contains("private fun factoryCreateLanguage(languageTag: String): Language"))
+        assertTrue(normalizedBinding.contains("constructor(languageTag:String):this(Companion.factoryCreateLanguage(languageTag).pointer)"))
     }
 
     @Test
@@ -407,12 +407,12 @@ class KotlinBindingGeneratorTest {
         assertTrue(files.any { it.relativePath == "Microsoft/UI/Xaml/Window.kt" })
 
         val iStringableBinding = files.first { it.relativePath == "Windows/Foundation/IStringable.kt" }.content
-        val normalizedIStringableBinding = iStringableBinding.replace("\n", "").replace(" ", "")
+        val normalizedIStringableBinding = iStringableBinding.replace(Regex("\\s+"), "")
         val pointBinding = files.first { it.relativePath == "Windows/Foundation/Point.kt" }.content
         val asyncStatusBinding = files.first { it.relativePath == "Windows/Foundation/AsyncStatus.kt" }.content
         val applicationBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/Application.kt" }.content
         val windowBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/Window.kt" }.content
-        val normalizedWindowBinding = windowBinding.replace("\n", "").replace(" ", "")
+        val normalizedWindowBinding = windowBinding.replace(Regex("\\s+"), "")
         assertTrue(pointBinding.contains("data class Point("))
         assertTrue(pointBinding.contains("val x: Float64"))
         assertTrue(pointBinding.contains("val y: Float64"))
@@ -3601,7 +3601,7 @@ class KotlinBindingGeneratorTest {
         val dispatcherQueueBinding = files.first {
             it.relativePath == "Microsoft/UI/Dispatching/IDispatcherQueue.kt"
         }.content
-        val normalizedDispatcherQueueBinding = dispatcherQueueBinding.replace("\n", "").replace(" ", "")
+        val normalizedDispatcherQueueBinding = dispatcherQueueBinding.replace(Regex("\\s+"), "")
 
         assertTrue(dispatcherQueueBinding.contains("fun tryEnqueue(callback: DispatcherQueueHandler): WinRtBoolean"))
         assertTrue(dispatcherQueueBinding.contains("fun tryEnqueue("))
@@ -3655,7 +3655,7 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Microsoft/UI/Dispatching/IDispatcherQueue.kt" }.content
-        val normalizedBinding = binding.replace("\n", "").replace(" ", "")
+        val normalizedBinding = binding.replace(Regex("\\s+"), "")
 
         assertTrue(binding.contains("DispatchQueue"))
         assertTrue(binding.contains("fun dispatch("))
@@ -6479,7 +6479,7 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val interfaceBinding = files.first { it.relativePath == "Example/Async/IProgressSource.kt" }.content
         val runtimeBinding = files.first { it.relativePath == "Example/Async/ProgressSource.kt" }.content
-        val normalizedInterfaceBinding = interfaceBinding.replace("\n", "").replace(" ", "")
+        val normalizedInterfaceBinding = interfaceBinding.replace(Regex("\\s+"), "")
 
         assertTrue(interfaceBinding.contains("fun uploadAsync(): IAsyncActionWithProgress<UInt32>"))
         assertTrue(interfaceBinding.contains("suspend fun uploadAsyncAwait(onProgress: (UInt32) -> Unit = { _ -> }): Unit"))
@@ -6631,7 +6631,7 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Example/Async/ProgressStaticsSource.kt" }.content
-        val normalizedBinding = binding.replace("\n", "").replace(" ", "")
+        val normalizedBinding = binding.replace(Regex("\\s+"), "")
 
         assertTrue(binding.contains("fun uploadAsync(): IAsyncActionWithProgress<UInt32>"))
         assertTrue(binding.contains("suspend fun uploadAsyncAwait(onProgress: (UInt32) -> Unit = { _ -> }): Unit"))
@@ -6871,8 +6871,8 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val interfaceBinding = files.first { it.relativePath == "Example/Events/IWidget.kt" }.content
         val runtimeBinding = files.first { it.relativePath == "Example/Events/Widget.kt" }.content
-        val normalizedInterfaceBinding = interfaceBinding.replace("\n", "").replace(" ", "")
-        val normalizedRuntimeBinding = runtimeBinding.replace("\n", "").replace(" ", "")
+        val normalizedInterfaceBinding = interfaceBinding.replace(Regex("\\s+"), "")
+        val normalizedRuntimeBinding = runtimeBinding.replace(Regex("\\s+"), "")
 
         assertTrue(interfaceBinding.contains("val closedEvent: ClosedEvent"))
         assertTrue(interfaceBinding.contains("private val closedEventSlot: ClosedEvent = ClosedEvent()"))
@@ -6977,7 +6977,7 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val runtimeBinding = files.first { it.relativePath == "Example/Events/Widget.kt" }.content
-        val normalizedRuntimeBinding = runtimeBinding.replace("\n", "").replace(" ", "")
+        val normalizedRuntimeBinding = runtimeBinding.replace(Regex("\\s+"), "")
 
         assertTrue(runtimeBinding.contains("val closedEvent: ClosedStaticEvent"))
         assertTrue(runtimeBinding.contains("private val closedEventSlot: ClosedStaticEvent = ClosedStaticEvent { statics }"))
@@ -7070,7 +7070,7 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val interfaceBinding = files.first { it.relativePath == "Example/Events/IWidget.kt" }.content
-        val normalizedInterfaceBinding = interfaceBinding.replace("\n", "").replace(" ", "")
+        val normalizedInterfaceBinding = interfaceBinding.replace(Regex("\\s+"), "")
 
         assertTrue(normalizedInterfaceBinding.contains("funsubscribe(handler:TypedEventHandler<IWidgetSource,IWidgetClosedEventArgs>):EventRegistrationToken"))
         assertTrue(normalizedInterfaceBinding.contains("funsubscribe(handler:(IWidgetSource,IWidgetClosedEventArgs)->Unit):EventRegistrationToken"))
