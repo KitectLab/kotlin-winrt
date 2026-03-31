@@ -6,7 +6,7 @@ class KotlinBindingGenerator {
     fun generate(model: WinMdModel): List<GeneratedFile> {
         val typeFileEmitter = TypeFileEmitter(TypeRegistry(model))
         return model.namespaces.flatMap { namespace ->
-            namespace.types.map { type -> typeFileEmitter.emit(namespace, type) }
+            namespace.types.mapNotNull { type -> typeFileEmitter.emit(namespace, type) }
         }
     }
 }

@@ -28,6 +28,9 @@ internal class InterfaceTypeRenderer(
     private val kotlinCollectionProjectionMapper: KotlinCollectionProjectionMapper = KotlinCollectionProjectionMapper(),
 ) {
     fun render(type: WinMdType): List<TypeSpec> {
+        if (typeRegistry.isRuntimeClassOverridesInterface(type.name, type.namespace)) {
+            return emptyList()
+        }
         return if (typeRegistry.isRuntimeProjectedInterface(type.name, type.namespace)) {
             listOf(renderInterfaceContract(type), renderInterfaceProjection(type))
         } else {

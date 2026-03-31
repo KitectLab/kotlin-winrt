@@ -6137,6 +6137,12 @@ class KotlinBindingGeneratorTest {
                         ),
                         WinMdType(
                             namespace = "Microsoft.UI.Xaml",
+                            name = "Application",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            implementedInterfaces = listOf("Microsoft.UI.Xaml.IApplicationOverrides"),
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
                             name = "IWindow",
                             kind = WinMdTypeKind.Interface,
                             guid = "61f0ec79-5d52-56b5-86fb-40fa4af288b0",
@@ -6177,15 +6183,16 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val iWindowBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/IWindow.kt" }.content
-        val iOverridesBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/IApplicationOverrides.kt" }.content
+        val applicationBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/Application.kt" }.content
         assertTrue(iWindowBinding.contains("fun activate()"))
         assertTrue(iWindowBinding.contains("PlatformComInterop.invokeUnitMethod(pointer, 26).getOrThrow()"))
         assertTrue(iWindowBinding.contains("fun put_Title("))
         assertTrue(iWindowBinding.contains("PlatformComInterop.invokeStringSetter(pointer, 15,"))
         assertTrue(iWindowBinding.contains("fun put_Content("))
         assertTrue(iWindowBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 9,"))
-        assertTrue(iOverridesBinding.contains("fun onLaunched("))
-        assertTrue(iOverridesBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 6,"))
+        assertFalse(files.any { it.relativePath == "Microsoft/UI/Xaml/IApplicationOverrides.kt" })
+        assertTrue(applicationBinding.contains("protected open fun onLaunched(args: LaunchActivatedEventArgs)"))
+        assertTrue(applicationBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 6, (args as Inspectable).pointer).getOrThrow()"))
     }
 
     @Test

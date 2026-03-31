@@ -51,7 +51,7 @@ class CheckedInBindingsParityTest {
         "Windows.Globalization" to setOf("ApplicationLanguages", "Calendar", "CalendarIdentifiers", "ClockIdentifiers", "DayOfWeek", "IApplicationLanguagesStatics", "ICalendar", "ICalendarIdentifiersStatics", "IClockIdentifiersStatics"),
         "Windows.Globalization.NumberFormatting" to setOf("INumeralSystemTranslator", "NumeralSystemTranslator"),
         "Windows.System.UserProfile" to setOf("GlobalizationPreferences", "IGlobalizationPreferencesStatics"),
-        "Microsoft.UI.Xaml" to setOf("Application", "Window"),
+        "Microsoft.UI.Xaml" to setOf("Application", "IApplicationOverrides", "Window"),
     )
 
     @Test

@@ -49,6 +49,10 @@ internal class TypeRegistry(
         return findRuntimeClassHelperTypes(typeName, currentNamespace, "Factory")
     }
 
+    fun findRuntimeClassOverridesTypes(typeName: String, currentNamespace: String): List<WinMdType> {
+        return findRuntimeClassHelperTypes(typeName, currentNamespace, "Overrides")
+    }
+
     private fun findRuntimeClassHelperTypes(typeName: String, currentNamespace: String, helperKind: String): List<WinMdType> {
         val runtimeClass = findType(typeName, currentNamespace) ?: return emptyList()
         if (runtimeClass.kind != WinMdTypeKind.RuntimeClass) {
@@ -117,6 +121,16 @@ internal class TypeRegistry(
             type.kind == WinMdTypeKind.RuntimeClass &&
                 type.namespace == interfaceType.namespace &&
                 interfaceType.name == "I${type.name}"
+        }
+    }
+
+    fun isRuntimeClassOverridesInterface(typeName: String, currentNamespace: String): Boolean {
+        val interfaceType = findType(typeName, currentNamespace) ?: return false
+        if (interfaceType.kind != WinMdTypeKind.Interface) return false
+        return allTypes.any { type ->
+            type.kind == WinMdTypeKind.RuntimeClass &&
+                type.namespace == interfaceType.namespace &&
+                helperInterfaceOrder(interfaceType.name, "I${type.name}Overrides") != null
         }
     }
 

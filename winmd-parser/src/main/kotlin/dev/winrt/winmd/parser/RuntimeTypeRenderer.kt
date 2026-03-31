@@ -34,9 +34,11 @@ internal class RuntimeTypeRenderer(
 
     private fun renderRuntimeClass(type: WinMdType): TypeSpec {
         val runtimeInterfaceTypes = runtimeInterfaceTypes(type)
+        val overrideInterfaceTypes = typeRegistry.findRuntimeClassOverridesTypes(type.name, type.namespace)
         val exposedRuntimeInterfaceTypes = runtimeInterfaceTypes.filterNot { interfaceType ->
             typeRegistry.isVersionedRuntimeClassInterface(interfaceType.name, interfaceType.namespace) ||
-                typeRegistry.isPrimaryRuntimeClassInterface(interfaceType.name, interfaceType.namespace)
+                typeRegistry.isPrimaryRuntimeClassInterface(interfaceType.name, interfaceType.namespace) ||
+                typeRegistry.isRuntimeClassOverridesInterface(interfaceType.name, interfaceType.namespace)
         }
         val overridePropertyNames = exposedRuntimeInterfaceTypes.flatMapTo(linkedSetOf(), ::allInterfacePropertyNames)
         val overrideMethodKeys = exposedRuntimeInterfaceTypes.flatMapTo(linkedSetOf(), ::allInterfaceMethodKeys)
@@ -138,6 +140,14 @@ internal class RuntimeTypeRenderer(
         runtimeLambdaMethods
             .mapNotNull { runtimeMethodRenderer.renderRuntimeLambdaOverload(it, type.namespace) }
             .forEach(builder::addFunction)
+        overrideInterfaceMethods(type, overrideInterfaceTypes)
+            .mapNotNull { runtimeMethodRenderer.renderRuntimeMethod(it, type.namespace) }
+            .map { rendered ->
+                rendered.toBuilder()
+                    .addModifiers(KModifier.PROTECTED, KModifier.OPEN)
+                    .build()
+            }
+            .forEach(builder::addFunction)
         renderEventSlotMembers(type.methods, type.namespace).let { projection ->
             projection.properties.forEach(builder::addProperty)
             projection.types.forEach(builder::addType)
@@ -174,6 +184,14 @@ internal class RuntimeTypeRenderer(
                             .build()
                     }
             }
+    }
+
+    private fun overrideInterfaceMethods(type: WinMdType, overrideInterfaceTypes: List<WinMdType>): List<WinMdMethod> {
+        val existingKeys = type.methods.mapTo(linkedSetOf(), ::runtimeMethodRenderKey)
+        return overrideInterfaceTypes
+            .flatMap(::allInterfaceMethods)
+            .filterNot { runtimeMethodRenderKey(it) in existingKeys }
+            .distinctBy(::runtimeMethodRenderKey)
     }
 
     private fun helperAccessorName(typeName: String): String {
@@ -454,6 +472,14 @@ internal class RuntimeTypeRenderer(
                 .filter { it.kind == dev.winrt.winmd.plugin.WinMdTypeKind.Interface }
                 .forEach { addAll(allInterfaceMethodKeys(it)) }
         }
+    }
+
+    private fun allInterfaceMethods(type: WinMdType): List<WinMdMethod> {
+        val inherited = type.baseInterfaces
+            .mapNotNull { baseInterface -> typeRegistry.findType(baseInterface, type.namespace) }
+            .filter { it.kind == dev.winrt.winmd.plugin.WinMdTypeKind.Interface }
+            .flatMap(::allInterfaceMethods)
+        return (inherited + type.methods).distinctBy(::runtimeMethodRenderKey)
     }
 
     private fun allInterfacePropertyNames(type: WinMdType): Set<String> {
