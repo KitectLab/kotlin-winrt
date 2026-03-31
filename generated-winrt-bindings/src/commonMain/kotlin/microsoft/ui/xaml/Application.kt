@@ -13,6 +13,11 @@ import dev.winrt.kom.PlatformComInterop
 open class Application(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
     constructor() : this(Companion.activate().pointer)
 
+    protected open fun onLaunched(args: LaunchActivatedEventArgs) {
+        if (pointer.isNull) return
+        PlatformComInterop.invokeObjectSetter(pointer, 6, args.pointer).getOrThrow()
+    }
+
     fun start() {
         if (pointer.isNull) return
         PlatformComInterop.invokeUnitMethod(pointer, 6).getOrThrow()
