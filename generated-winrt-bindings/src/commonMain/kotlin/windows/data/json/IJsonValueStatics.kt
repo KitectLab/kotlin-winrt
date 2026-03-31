@@ -33,5 +33,7 @@ internal open class IJsonValueStatics(
 
     public fun from(inspectable: Inspectable): IJsonValueStatics =
         inspectable.projectInterface(this, ::IJsonValueStatics)
+
+    public operator fun invoke(inspectable: Inspectable): IJsonValueStatics = from(inspectable)
   }
 }

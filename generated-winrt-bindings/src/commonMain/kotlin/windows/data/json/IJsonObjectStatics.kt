@@ -25,5 +25,7 @@ internal open class IJsonObjectStatics(
 
     public fun from(inspectable: Inspectable): IJsonObjectStatics =
         inspectable.projectInterface(this, ::IJsonObjectStatics)
+
+    public operator fun invoke(inspectable: Inspectable): IJsonObjectStatics = from(inspectable)
   }
 }

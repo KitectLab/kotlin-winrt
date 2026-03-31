@@ -25,5 +25,7 @@ internal open class IJsonArrayStatics(
 
     public fun from(inspectable: Inspectable): IJsonArrayStatics =
         inspectable.projectInterface(this, ::IJsonArrayStatics)
+
+    public operator fun invoke(inspectable: Inspectable): IJsonArrayStatics = from(inspectable)
   }
 }

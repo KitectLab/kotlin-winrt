@@ -185,6 +185,51 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun renders_helper_interfaces_with_enum_return_and_int32_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Data.Json",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "JsonErrorStatus",
+                            kind = WinMdTypeKind.Enum,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "JsonError",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonErrorStatics2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "404030da-87d0-436c-83ab-fc7b12c0cc26",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetJsonStatus",
+                                    returnType = "Windows.Data.Json.JsonErrorStatus",
+                                    parameters = listOf(WinMdParameter("hresult", "Int32")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonErrorStatics2.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun getJsonStatus(hresult: Int32): JsonErrorStatus"))
+        assertTrue(normalizedStaticsBinding.contains("JsonErrorStatus.fromValue(PlatformComInterop.invokeUInt32MethodWithInt32Arg(pointer,6,hresult.value).getOrThrow().toInt())"))
+    }
+
+    @Test
     fun emits_runtime_helper_interfaces_as_internal_types() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

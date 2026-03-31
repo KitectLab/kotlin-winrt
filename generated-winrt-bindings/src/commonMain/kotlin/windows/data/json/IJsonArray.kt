@@ -33,6 +33,8 @@ public interface IJsonArray : IJsonValue {
 
     public fun from(inspectable: Inspectable): IJsonArray = inspectable.projectInterface(this,
         ::IJsonArrayProjection)
+
+    public operator fun invoke(inspectable: Inspectable): IJsonArray = from(inspectable)
   }
 }
 

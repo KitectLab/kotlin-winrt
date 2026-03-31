@@ -1155,6 +1155,23 @@ internal class InterfaceTypeRenderer(
                     )
                     .build()
             }
+            typeRegistry.isEnumType(method.returnType, currentNamespace) &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "Int32" &&
+                method.vtableIndex != null -> {
+                val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                val vtableIndex = method.vtableIndex!!
+                val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
+                builder
+                    .addStatement(
+                        "return %T.fromValue(%T.invokeUInt32MethodWithInt32Arg(pointer, %L, %N.value).getOrThrow().toInt())",
+                        returnType,
+                        PoetSymbols.platformComInteropClass,
+                        vtableIndex,
+                        argumentName,
+                    )
+                    .build()
+            }
             supportsInterfaceObjectType(method.returnType) &&
                 method.parameters.isEmpty() &&
                 method.vtableIndex != null -> {
@@ -1390,6 +1407,10 @@ internal class InterfaceTypeRenderer(
                 method.vtableIndex != null) ||
             (typeRegistry.isEnumType(method.returnType, currentNamespace) &&
                 method.parameters.isEmpty() &&
+                method.vtableIndex != null) ||
+            (typeRegistry.isEnumType(method.returnType, currentNamespace) &&
+                method.parameters.size == 1 &&
+                method.parameters[0].type == "Int32" &&
                 method.vtableIndex != null) ||
             (method.returnType == "Unit" &&
                 method.parameters.isEmpty() &&

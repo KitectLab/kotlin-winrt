@@ -22,6 +22,9 @@ public interface IJsonObjectWithDefaultValues : IJsonObject {
 
     public fun from(inspectable: Inspectable): IJsonObjectWithDefaultValues =
         inspectable.projectInterface(this, ::IJsonObjectWithDefaultValuesProjection)
+
+    public operator fun invoke(inspectable: Inspectable): IJsonObjectWithDefaultValues =
+        from(inspectable)
   }
 }
 

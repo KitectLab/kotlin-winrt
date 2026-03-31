@@ -14,12 +14,11 @@ import kotlin.String
 
 public open class JsonValue(
   pointer: ComPtr,
-) : Inspectable(pointer),
-    IJsonValue {
+) : Inspectable(pointer) {
   private val backing_ValueType: RuntimeProperty<JsonValueType> =
       RuntimeProperty<JsonValueType>(JsonValueType.fromValue(0))
 
-  override val valueType: JsonValueType
+  public val valueType: JsonValueType
     get() {
       if (pointer.isNull) {
         return backing_ValueType.get()
@@ -38,7 +37,7 @@ public open class JsonValue(
         }
   }
 
-  override fun stringify(): String {
+  public fun stringify(): String {
     if (pointer.isNull) {
       return ""
     }
@@ -46,7 +45,7 @@ public open class JsonValue(
         }
   }
 
-  override fun getString(): String {
+  public fun getString(): String {
     if (pointer.isNull) {
       return ""
     }
@@ -54,35 +53,35 @@ public open class JsonValue(
         }
   }
 
-  override fun getNumber(): Float64 {
+  public fun getNumber(): Float64 {
     if (pointer.isNull) {
       return Float64(0.0)
     }
     return Float64(PlatformComInterop.invokeFloat64Method(pointer, 9).getOrThrow())
   }
 
-  override fun getBoolean(): WinRtBoolean {
+  public fun getBoolean(): WinRtBoolean {
     if (pointer.isNull) {
       return WinRtBoolean.FALSE
     }
     return WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 10).getOrThrow())
   }
 
-  override fun getObject(): JsonObject {
+  public fun getObject(): JsonObject {
     if (pointer.isNull) {
       error("Null runtime object pointer: GetObject")
     }
     return JsonObject(PlatformComInterop.invokeObjectMethod(pointer, 12).getOrThrow())
   }
 
-  override fun getArray(): JsonArray {
+  public fun getArray(): JsonArray {
     if (pointer.isNull) {
       error("Null runtime object pointer: GetArray")
     }
     return JsonArray(PlatformComInterop.invokeObjectMethod(pointer, 11).getOrThrow())
   }
 
-  override fun get_ValueType(): JsonValueType {
+  public fun get_ValueType(): JsonValueType {
     if (pointer.isNull) {
       error("Null runtime object pointer: get_ValueType")
     }
@@ -102,6 +101,9 @@ public open class JsonValue(
     private val statics: IJsonValueStatics by lazy { WinRtRuntime.projectActivationFactory(this,
         IJsonValueStatics, ::IJsonValueStatics) }
 
+    private val statics2: IJsonValueStatics2 by lazy { WinRtRuntime.projectActivationFactory(this,
+        IJsonValueStatics2, ::IJsonValueStatics2) }
+
     public fun activate(): JsonValue = WinRtRuntime.activate(this, ::JsonValue)
 
     public fun parse(input: String): JsonValue = statics.parse(input)
@@ -110,5 +112,7 @@ public open class JsonValue(
         statics.createBooleanValue(input)
 
     public fun createStringValue(input: String): JsonValue = statics.createStringValue(input)
+
+    public fun createNullValue(): JsonValue = statics2.createNullValue()
   }
 }

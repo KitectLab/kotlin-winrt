@@ -1,6 +1,7 @@
 package windows.`data`.json
 
 import dev.winrt.core.Inspectable
+import dev.winrt.core.Int32
 import dev.winrt.core.RuntimeClassId
 import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtRuntime
@@ -22,6 +23,11 @@ public open class JsonError(
 
     override val activationKind: WinRtActivationKind = WinRtActivationKind.Factory
 
+    private val statics2: IJsonErrorStatics2 by lazy { WinRtRuntime.projectActivationFactory(this,
+        IJsonErrorStatics2, ::IJsonErrorStatics2) }
+
     public fun activate(): JsonError = WinRtRuntime.activate(this, ::JsonError)
+
+    public fun getJsonStatus(hresult: Int32): JsonErrorStatus = statics2.getJsonStatus(hresult)
   }
 }

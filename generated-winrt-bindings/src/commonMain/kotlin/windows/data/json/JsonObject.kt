@@ -15,8 +15,7 @@ import kotlin.String
 
 public open class JsonObject(
   pointer: ComPtr,
-) : Inspectable(pointer),
-    IJsonObject {
+) : Inspectable(pointer) {
   private val backing_Size: RuntimeProperty<UInt32> = RuntimeProperty<UInt32>(UInt32(0u))
 
   public val size: UInt32
@@ -30,7 +29,7 @@ public open class JsonObject(
   private val backing_ValueType: RuntimeProperty<JsonValueType> =
       RuntimeProperty<JsonValueType>(JsonValueType.fromValue(0))
 
-  override val valueType: JsonValueType
+  public val valueType: JsonValueType
     get() {
       if (pointer.isNull) {
         return backing_ValueType.get()
@@ -86,7 +85,7 @@ public open class JsonObject(
         }
   }
 
-  override fun getNamedValue(name: String): IJsonValue {
+  public fun getNamedValue(name: String): IJsonValue {
     if (pointer.isNull) {
       error("Null runtime object pointer: GetNamedValue")
     }
@@ -94,7 +93,7 @@ public open class JsonObject(
         6, name).getOrThrow()))
   }
 
-  override fun getNamedString(name: String): String {
+  public fun getNamedString(name: String): String {
     if (pointer.isNull) {
       return ""
     }
@@ -102,7 +101,7 @@ public open class JsonObject(
         it.toKotlinString() }
   }
 
-  override fun getNamedObject(name: String): JsonObject {
+  public fun getNamedObject(name: String): JsonObject {
     if (pointer.isNull) {
       error("Null runtime object pointer: GetNamedObject")
     }
@@ -110,7 +109,7 @@ public open class JsonObject(
         name).getOrThrow())
   }
 
-  override fun getNamedArray(name: String): JsonArray {
+  public fun getNamedArray(name: String): JsonArray {
     if (pointer.isNull) {
       error("Null runtime object pointer: GetNamedArray")
     }
@@ -118,7 +117,7 @@ public open class JsonObject(
         name).getOrThrow())
   }
 
-  override fun getNamedNumber(name: String): Float64 {
+  public fun getNamedNumber(name: String): Float64 {
     if (pointer.isNull) {
       return Float64(0.0)
     }
@@ -126,7 +125,7 @@ public open class JsonObject(
         name).getOrThrow())
   }
 
-  override fun getNamedBoolean(name: String): WinRtBoolean {
+  public fun getNamedBoolean(name: String): WinRtBoolean {
     if (pointer.isNull) {
       return WinRtBoolean.FALSE
     }
@@ -134,7 +133,7 @@ public open class JsonObject(
         name).getOrThrow())
   }
 
-  override fun get_ValueType(): JsonValueType {
+  public fun get_ValueType(): JsonValueType {
     if (pointer.isNull) {
       error("Null runtime object pointer: Get_ValueType")
     }
@@ -142,7 +141,7 @@ public open class JsonObject(
         6).getOrThrow().toInt())
   }
 
-  override fun stringify(): String {
+  public fun stringify(): String {
     if (pointer.isNull) {
       return ""
     }
@@ -150,7 +149,7 @@ public open class JsonObject(
         }
   }
 
-  override fun getString(): String {
+  public fun getString(): String {
     if (pointer.isNull) {
       return ""
     }
@@ -158,28 +157,28 @@ public open class JsonObject(
         }
   }
 
-  override fun getNumber(): Float64 {
+  public fun getNumber(): Float64 {
     if (pointer.isNull) {
       return Float64(0.0)
     }
     return Float64(PlatformComInterop.invokeFloat64Method(pointer, 9).getOrThrow())
   }
 
-  override fun getBoolean(): WinRtBoolean {
+  public fun getBoolean(): WinRtBoolean {
     if (pointer.isNull) {
       return WinRtBoolean.FALSE
     }
     return WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 10).getOrThrow())
   }
 
-  override fun getObject(): JsonObject {
+  public fun getObject(): JsonObject {
     if (pointer.isNull) {
       error("Null runtime object pointer: GetObject")
     }
     return JsonObject(PlatformComInterop.invokeObjectMethod(pointer, 12).getOrThrow())
   }
 
-  override fun getArray(): JsonArray {
+  public fun getArray(): JsonArray {
     if (pointer.isNull) {
       error("Null runtime object pointer: GetArray")
     }

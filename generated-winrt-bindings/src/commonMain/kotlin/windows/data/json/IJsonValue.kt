@@ -38,6 +38,8 @@ public interface IJsonValue {
 
     public fun from(inspectable: Inspectable): IJsonValue = inspectable.projectInterface(this,
         ::IJsonValueProjection)
+
+    public operator fun invoke(inspectable: Inspectable): IJsonValue = from(inspectable)
   }
 }
 
