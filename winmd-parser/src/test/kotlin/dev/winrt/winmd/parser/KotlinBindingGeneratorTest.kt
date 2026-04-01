@@ -311,6 +311,74 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun renders_helper_async_methods_with_two_object_parameters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-5555-5555-5555-aaaaaaaaaaaa",
+                            genericParameters = listOf("TResult"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "LauncherOptions",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "cccccccc-5555-5555-5555-cccccccccccc",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "LaunchUriAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(
+                                        WinMdParameter("uri", "Windows.Foundation.Uri"),
+                                        WinMdParameter("options", "Windows.System.LauncherOptions"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Windows/System/Launcher.kt" }.content
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("fun launchUriAsync(uri: Uri, options: LauncherOptions): IAsyncOperation<String>"))
+        assertTrue(runtimeBinding.contains("statics.launchUriAsync(uri, options)"))
+        assertTrue(staticsBinding.contains("fun launchUriAsync(uri: Uri, options: LauncherOptions): IAsyncOperation<String>"))
+        assertTrue(normalizedStaticsBinding.contains("IAsyncOperation<String>(PlatformComInterop.invokeObjectMethodWithTwoObjectArgs(pointer,6,uri.pointer,options.pointer).getOrThrow()"))
+    }
+
+    @Test
     fun renders_helper_interfaces_with_enum_return_and_int32_parameter() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

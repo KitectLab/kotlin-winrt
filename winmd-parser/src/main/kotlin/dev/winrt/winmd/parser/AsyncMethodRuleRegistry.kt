@@ -15,19 +15,7 @@ internal class AsyncMethodRuleRegistry(
         if (!isKotlinIdentifier(method.name) || method.vtableIndex == null) {
             return null
         }
-        val invocationShape = methodSignatureShape(
-            parameterTypes = method.parameters.map { it.type },
-            supportsObjectType = ::supportsAsyncObjectInput,
-        )?.takeIf {
-            it == MethodSignatureShape.EMPTY ||
-                it == MethodSignatureShape.STRING ||
-                it == MethodSignatureShape.OBJECT
-        } ?: return null
-        val parameterName = when (invocationShape) {
-            MethodSignatureShape.STRING -> method.parameters.single().name.replaceFirstChar(Char::lowercase)
-            MethodSignatureShape.OBJECT -> method.parameters.single().name.replaceFirstChar(Char::lowercase)
-            else -> null
-        }
+        val invocation = asyncInvocation(method) ?: return null
         val rawReturnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace, genericParameters)
         val awaitReturnType = asyncMethodProjectionPlanner.awaitReturnType(
             method.returnType,
@@ -101,17 +89,25 @@ internal class AsyncMethodRuleRegistry(
             rawReturnType = rawReturnType,
             awaitReturnType = awaitReturnType,
             progressLambdaType = progressLambdaType,
-            invocation = when (invocationShape) {
-                MethodSignatureShape.EMPTY ->
-                    "%T.invokeObjectMethod(pointer, ${method.vtableIndex}).getOrThrow()"
-                MethodSignatureShape.STRING ->
-                    "%T.invokeObjectMethodWithStringArg(pointer, ${method.vtableIndex}, $parameterName).getOrThrow()"
-                MethodSignatureShape.OBJECT ->
-                    "%T.invokeObjectMethodWithObjectArg(pointer, ${method.vtableIndex}, $parameterName.pointer).getOrThrow()"
-                else -> error("Unsupported async invocation shape: $invocationShape")
-            },
+            invocation = invocation,
             rawTaskCallFactory = rawTaskCallFactory,
         )
+    }
+
+    private fun asyncInvocation(method: WinMdMethod): String? {
+        val parameterNames = method.parameters.map { it.name.replaceFirstChar(Char::lowercase) }
+        val parameterTypes = method.parameters.map { it.type }
+        return when {
+            parameterTypes.isEmpty() ->
+                "%T.invokeObjectMethod(pointer, ${method.vtableIndex}).getOrThrow()"
+            parameterTypes == listOf("String") ->
+                "%T.invokeObjectMethodWithStringArg(pointer, ${method.vtableIndex}, ${parameterNames.single()}).getOrThrow()"
+            parameterTypes.size == 1 && supportsAsyncObjectInput(parameterTypes.single()) ->
+                "%T.invokeObjectMethodWithObjectArg(pointer, ${method.vtableIndex}, ${parameterNames.single()}.pointer).getOrThrow()"
+            parameterTypes.size == 2 && parameterTypes.all(::supportsAsyncObjectInput) ->
+                "%T.invokeObjectMethodWithTwoObjectArgs(pointer, ${method.vtableIndex}, ${parameterNames[0]}.pointer, ${parameterNames[1]}.pointer).getOrThrow()"
+            else -> null
+        }
     }
 
     private fun supportsAsyncObjectInput(typeName: String): Boolean {

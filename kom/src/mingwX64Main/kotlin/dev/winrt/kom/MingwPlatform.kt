@@ -89,6 +89,17 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeObjectMethodWithTwoObjectArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        first: ComPtr,
+        second: ComPtr,
+    ): Result<ComPtr> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with two object inputs is not wired yet"),
+        )
+    }
+
     override fun invokeObjectSetter(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Unit> {
         return Result.failure(
             UnsupportedOperationException("Native object setter invocation is not wired yet"),

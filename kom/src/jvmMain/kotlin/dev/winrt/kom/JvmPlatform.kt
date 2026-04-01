@@ -286,6 +286,34 @@ private object JvmPlatformComInterop : ComInterop {
         }
     }
 
+    override fun invokeObjectMethodWithTwoObjectArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        first: ComPtr,
+        second: ComPtr,
+    ): Result<ComPtr> {
+        if (instance.isNull) {
+            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
+        }
+
+        return runCatching {
+            Arena.ofConfined().use { arena ->
+                val resultSegment = arena.allocate(ValueLayout.ADDRESS)
+                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                val hresult = HResult(
+                    Jdk22Foreign.objectMethodWithTwoObjectInputsHandle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        Jdk22Foreign.pointerOf(first),
+                        Jdk22Foreign.pointerOf(second),
+                        resultSegment,
+                    ) as Int,
+                )
+                hresult.requireSuccess("invokeObjectMethodWithTwoObjectArgs($vtableIndex)")
+                Jdk22Foreign.addressResult(resultSegment.get(ValueLayout.ADDRESS, 0L))
+            }
+        }
+    }
+
     override fun invokeHStringMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<HString> {
         if (instance.isNull) {
             return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
