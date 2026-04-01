@@ -104,6 +104,14 @@ internal class AsyncMethodRuleRegistry(
                 "%T.invokeObjectMethodWithStringArg(pointer, ${method.vtableIndex}, ${parameterNames.single()}).getOrThrow()"
             parameterTypes.size == 1 && supportsAsyncObjectInput(parameterTypes.single()) ->
                 "%T.invokeObjectMethodWithObjectArg(pointer, ${method.vtableIndex}, ${parameterNames.single()}.pointer).getOrThrow()"
+            parameterTypes.size == 2 &&
+                supportsAsyncObjectInput(parameterTypes[0]) &&
+                parameterTypes[1] == "String" ->
+                "%T.invokeObjectMethodWithObjectAndStringArgs(pointer, ${method.vtableIndex}, ${parameterNames[0]}.pointer, ${parameterNames[1]}).getOrThrow()"
+            parameterTypes.size == 2 &&
+                parameterTypes[0] == "String" &&
+                supportsAsyncObjectInput(parameterTypes[1]) ->
+                "%T.invokeObjectMethodWithStringAndObjectArgs(pointer, ${method.vtableIndex}, ${parameterNames[0]}, ${parameterNames[1]}.pointer).getOrThrow()"
             parameterTypes.size == 2 && parameterTypes.all(::supportsAsyncObjectInput) ->
                 "%T.invokeObjectMethodWithTwoObjectArgs(pointer, ${method.vtableIndex}, ${parameterNames[0]}.pointer, ${parameterNames[1]}.pointer).getOrThrow()"
             else -> null

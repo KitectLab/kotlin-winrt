@@ -379,6 +379,147 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun renders_helper_async_methods_with_object_and_string_parameters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-6666-6666-6666-aaaaaaaaaaaa",
+                            genericParameters = listOf("TResult"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Storage",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Storage",
+                            name = "StorageFile",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics4",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "cccccccc-6666-6666-6666-cccccccccccc",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "LaunchUriWithDisplayNameAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(
+                                        WinMdParameter("uri", "Windows.Foundation.Uri"),
+                                        WinMdParameter("displayName", "String"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Windows/System/Launcher.kt" }.content
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics4.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("fun launchUriWithDisplayNameAsync(uri: Uri, displayName: String): IAsyncOperation<String>"))
+        assertTrue(runtimeBinding.contains("statics4.launchUriWithDisplayNameAsync(uri, displayName)"))
+        assertTrue(staticsBinding.contains("fun launchUriWithDisplayNameAsync(uri: Uri, displayName: String): IAsyncOperation<String>"))
+        assertTrue(normalizedStaticsBinding.contains("IAsyncOperation<String>(PlatformComInterop.invokeObjectMethodWithObjectAndStringArgs(pointer,6,uri.pointer,displayName).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_helper_async_methods_with_string_and_object_parameters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-7777-7777-7777-aaaaaaaaaaaa",
+                            genericParameters = listOf("TResult"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Storage",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Storage",
+                            name = "StorageFile",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics5",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "cccccccc-7777-7777-7777-cccccccccccc",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "LaunchNamedFileAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                        WinMdParameter("file", "Windows.Storage.StorageFile"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Windows/System/Launcher.kt" }.content
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics5.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("fun launchNamedFileAsync("))
+        assertTrue(runtimeBinding.contains("statics5.launchNamedFileAsync(name, file)"))
+        assertTrue(staticsBinding.contains("fun launchNamedFileAsync("))
+        assertTrue(normalizedStaticsBinding.contains("IAsyncOperation<String>(PlatformComInterop.invokeObjectMethodWithStringAndObjectArgs(pointer,6,name,file.pointer).getOrThrow()"))
+    }
+
+    @Test
     fun renders_helper_interfaces_with_enum_return_and_int32_parameter() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

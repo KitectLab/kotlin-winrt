@@ -400,7 +400,7 @@ private object JvmComMethodExecutor {
         allocator: (Arena) -> MemorySegment,
         reader: (MemorySegment) -> T,
         value: String,
-    ): Result<T> {
+        ): Result<T> {
         return runCatching {
             requireInstance(instance)
             val hString = JvmWinRtRuntime.createHString(value)
@@ -412,6 +412,74 @@ private object JvmComMethodExecutor {
                         handle.bindTo(function).invokeWithArguments(
                             Jdk22Foreign.pointerOf(instance),
                             MemorySegment.ofAddress(hString.raw),
+                            resultSegment,
+                        ) as Int,
+                    )
+                    hresult.requireSuccess("$operation($vtableIndex)")
+                    reader(resultSegment)
+                }
+            } finally {
+                JvmWinRtRuntime.releaseHString(hString)
+            }
+        }
+    }
+
+    fun <T> invokeWithOutSegment(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        allocator: (Arena) -> MemorySegment,
+        reader: (MemorySegment) -> T,
+        first: ComPtr,
+        second: String,
+    ): Result<T> {
+        return runCatching {
+            requireInstance(instance)
+            val hString = JvmWinRtRuntime.createHString(second)
+            try {
+                Arena.ofConfined().use { arena ->
+                    val resultSegment = allocator(arena)
+                    val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                    val hresult = HResult(
+                        handle.bindTo(function).invokeWithArguments(
+                            Jdk22Foreign.pointerOf(instance),
+                            if (first.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(first),
+                            MemorySegment.ofAddress(hString.raw),
+                            resultSegment,
+                        ) as Int,
+                    )
+                    hresult.requireSuccess("$operation($vtableIndex)")
+                    reader(resultSegment)
+                }
+            } finally {
+                JvmWinRtRuntime.releaseHString(hString)
+            }
+        }
+    }
+
+    fun <T> invokeWithOutSegment(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        allocator: (Arena) -> MemorySegment,
+        reader: (MemorySegment) -> T,
+        first: String,
+        second: ComPtr,
+    ): Result<T> {
+        return runCatching {
+            requireInstance(instance)
+            val hString = JvmWinRtRuntime.createHString(first)
+            try {
+                Arena.ofConfined().use { arena ->
+                    val resultSegment = allocator(arena)
+                    val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+                    val hresult = HResult(
+                        handle.bindTo(function).invokeWithArguments(
+                            Jdk22Foreign.pointerOf(instance),
+                            MemorySegment.ofAddress(hString.raw),
+                            if (second.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(second),
                             resultSegment,
                         ) as Int,
                     )
@@ -723,6 +791,18 @@ private object JvmPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeObjectMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<ComPtr> {
+        return JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeObjectMethodWithObjectArg",
+            handle = Jdk22Foreign.objectMethodWithInputHandle,
+            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
+            value,
+        )
+    }
+
     override fun invokeObjectMethod(instance: ComPtr, vtableIndex: Int): Result<ComPtr> {
         return JvmComMethodExecutor.invokeWithOutSegment(
             instance = instance,
@@ -743,6 +823,42 @@ private object JvmPlatformComInterop : ComInterop {
             allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
             reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
             value,
+        )
+    }
+
+    override fun invokeObjectMethodWithObjectAndStringArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        first: ComPtr,
+        second: String,
+    ): Result<ComPtr> {
+        return JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeObjectMethodWithObjectAndStringArgs",
+            handle = Jdk22Foreign.objectMethodWithTwoObjectInputsHandle,
+            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
+            first,
+            second,
+        )
+    }
+
+    override fun invokeObjectMethodWithStringAndObjectArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        first: String,
+        second: ComPtr,
+    ): Result<ComPtr> {
+        return JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeObjectMethodWithStringAndObjectArgs",
+            handle = Jdk22Foreign.objectMethodWithTwoObjectInputsHandle,
+            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
+            first,
+            second,
         )
     }
 
