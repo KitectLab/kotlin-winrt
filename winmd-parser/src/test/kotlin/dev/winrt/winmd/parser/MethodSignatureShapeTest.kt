@@ -45,18 +45,18 @@ class MethodSignatureShapeTest {
     @Test
     fun exposes_two_argument_parameter_categories_for_supported_shapes() {
         assertEquals(
-            MethodParameterCategory.OBJECT to MethodParameterCategory.STRING,
-            MethodSignatureShape.OBJECT_STRING.toTwoArgumentParameterCategories(),
+            MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING),
+            MethodSignatureShape.OBJECT_STRING.toTwoArgumentParameterPair(),
         )
         assertEquals(
-            MethodParameterCategory.STRING to MethodParameterCategory.OBJECT,
-            MethodSignatureShape.STRING_OBJECT.toTwoArgumentParameterCategories(),
+            MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.OBJECT),
+            MethodSignatureShape.STRING_OBJECT.toTwoArgumentParameterPair(),
         )
         assertEquals(
-            MethodParameterCategory.OBJECT to MethodParameterCategory.OBJECT,
-            MethodSignatureShape.TWO_OBJECT.toTwoArgumentParameterCategories(),
+            MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.OBJECT),
+            MethodSignatureShape.TWO_OBJECT.toTwoArgumentParameterPair(),
         )
-        assertEquals(null, MethodSignatureShape.STRING.toTwoArgumentParameterCategories())
+        assertEquals(null, MethodSignatureShape.STRING.toTwoArgumentParameterPair())
     }
 
     private fun supportsObjectType(type: String): Boolean {

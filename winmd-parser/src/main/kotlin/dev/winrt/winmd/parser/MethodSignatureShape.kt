@@ -44,16 +44,21 @@ internal data class MethodSignatureKey(
     val shape: MethodSignatureShape,
 )
 
+internal data class MethodParameterPair(
+    val first: MethodParameterCategory,
+    val second: MethodParameterCategory,
+)
+
 internal fun MethodSignatureShape.isTwoArgumentObjectShape(): Boolean =
     this == MethodSignatureShape.OBJECT_STRING ||
         this == MethodSignatureShape.STRING_OBJECT ||
         this == MethodSignatureShape.TWO_OBJECT
 
-internal fun MethodSignatureShape.toTwoArgumentParameterCategories(): Pair<MethodParameterCategory, MethodParameterCategory>? =
+internal fun MethodSignatureShape.toTwoArgumentParameterPair(): MethodParameterPair? =
     when (this) {
-        MethodSignatureShape.OBJECT_STRING -> MethodParameterCategory.OBJECT to MethodParameterCategory.STRING
-        MethodSignatureShape.STRING_OBJECT -> MethodParameterCategory.STRING to MethodParameterCategory.OBJECT
-        MethodSignatureShape.TWO_OBJECT -> MethodParameterCategory.OBJECT to MethodParameterCategory.OBJECT
+        MethodSignatureShape.OBJECT_STRING -> MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING)
+        MethodSignatureShape.STRING_OBJECT -> MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.OBJECT)
+        MethodSignatureShape.TWO_OBJECT -> MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.OBJECT)
         else -> null
     }
 

@@ -751,16 +751,15 @@ internal class RuntimeMethodRenderer(
         },
         returnStatement = "return %L",
         statementArgs = { method, currentNamespace, parameterBindings ->
-            val (firstCategory, secondCategory) = signatureKey.shape.toTwoArgumentParameterCategories()
+            val parameterPair = signatureKey.shape.toTwoArgumentParameterPair()
                 ?: error("Unsupported two-argument return shape: ${signatureKey.shape}")
             val abiCall = AbiCallCatalog.resultMethodWithTwoArguments(
                 method.vtableIndex!!,
                 resultKindName(method.returnType),
                 resultExtractor(method.returnType),
-                firstCategory,
-                secondCategory,
-                if (firstCategory == MethodParameterCategory.OBJECT) "${parameterBindings[0].name}.pointer" else parameterBindings[0].name,
-                if (secondCategory == MethodParameterCategory.OBJECT) "${parameterBindings[1].name}.pointer" else parameterBindings[1].name,
+                parameterPair,
+                if (parameterPair.first == MethodParameterCategory.OBJECT) "${parameterBindings[0].name}.pointer" else parameterBindings[0].name,
+                if (parameterPair.second == MethodParameterCategory.OBJECT) "${parameterBindings[1].name}.pointer" else parameterBindings[1].name,
             )
             arrayOf(
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) {

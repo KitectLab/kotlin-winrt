@@ -62,18 +62,17 @@ internal object AbiCallCatalog {
 
     fun unitMethodWithTwoArguments(
         vtableIndex: Int,
-        firstCategory: MethodParameterCategory,
-        secondCategory: MethodParameterCategory,
+        parameterPair: MethodParameterPair,
         firstArgumentExpression: String,
         secondArgumentExpression: String,
-    ): CodeBlock = when (firstCategory to secondCategory) {
-        MethodParameterCategory.OBJECT to MethodParameterCategory.STRING ->
+    ): CodeBlock = when (parameterPair) {
+        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING) ->
             unitMethodWithObjectAndString(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterCategory.STRING to MethodParameterCategory.OBJECT ->
+        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.OBJECT) ->
             unitMethodWithStringAndObject(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterCategory.OBJECT to MethodParameterCategory.OBJECT ->
+        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.OBJECT) ->
             unitMethodWithTwoObject(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        else -> error("Unsupported two-argument unit categories: $firstCategory, $secondCategory")
+        else -> error("Unsupported two-argument unit categories: $parameterPair")
     }
 
     fun objectSetter(vtableIndex: Int, argumentName: String): CodeBlock =
@@ -224,13 +223,12 @@ internal object AbiCallCatalog {
         vtableIndex: Int,
         resultKindName: String,
         extractor: Any,
-        firstCategory: MethodParameterCategory,
-        secondCategory: MethodParameterCategory,
+        parameterPair: MethodParameterPair,
         firstArgumentExpression: String,
         secondArgumentExpression: String,
         pointerExpression: String = "pointer",
-    ): CodeBlock = when (firstCategory to secondCategory) {
-        MethodParameterCategory.OBJECT to MethodParameterCategory.STRING ->
+    ): CodeBlock = when (parameterPair) {
+        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING) ->
             resultMethodWithObjectAndString(
                 vtableIndex,
                 resultKindName,
@@ -239,7 +237,7 @@ internal object AbiCallCatalog {
                 secondArgumentExpression,
                 pointerExpression,
             )
-        MethodParameterCategory.STRING to MethodParameterCategory.OBJECT ->
+        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.OBJECT) ->
             resultMethodWithStringAndObject(
                 vtableIndex,
                 resultKindName,
@@ -248,7 +246,7 @@ internal object AbiCallCatalog {
                 secondArgumentExpression,
                 pointerExpression,
             )
-        MethodParameterCategory.OBJECT to MethodParameterCategory.OBJECT ->
+        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.OBJECT) ->
             resultMethodWithTwoObject(
                 vtableIndex,
                 resultKindName,
@@ -257,7 +255,7 @@ internal object AbiCallCatalog {
                 secondArgumentExpression,
                 pointerExpression,
             )
-        else -> error("Unsupported two-argument result categories: $firstCategory, $secondCategory")
+        else -> error("Unsupported two-argument result categories: $parameterPair")
     }
 
     fun booleanMethod(vtableIndex: Int): CodeBlock =

@@ -1966,13 +1966,12 @@ internal class InterfaceTypeRenderer(
                 args = { method, _ ->
                     val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
                     val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
-                    val (firstCategory, secondCategory) = MethodSignatureShape.TWO_OBJECT.toTwoArgumentParameterCategories()
+                    val parameterPair = MethodSignatureShape.TWO_OBJECT.toTwoArgumentParameterPair()
                         ?: error("Unsupported two-argument unit shape")
                     arrayOf(
                         AbiCallCatalog.unitMethodWithTwoArguments(
                             method.vtableIndex!!,
-                            firstCategory,
-                            secondCategory,
+                            parameterPair,
                             "$firstArgumentName.pointer",
                             "$secondArgumentName.pointer",
                         ),
@@ -1991,16 +1990,15 @@ internal class InterfaceTypeRenderer(
         args = { method, namespace ->
             val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
             val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
-            val (firstCategory, secondCategory) = signatureKey.shape.toTwoArgumentParameterCategories()
+            val parameterPair = signatureKey.shape.toTwoArgumentParameterPair()
                 ?: error("Unsupported two-argument return shape: ${signatureKey.shape}")
             val abiCall = AbiCallCatalog.resultMethodWithTwoArguments(
                 method.vtableIndex!!,
                 resultKindName(method.returnType),
                 resultExtractor(method.returnType),
-                firstCategory,
-                secondCategory,
-                if (firstCategory == MethodParameterCategory.OBJECT) "$firstArgumentName.pointer" else firstArgumentName,
-                if (secondCategory == MethodParameterCategory.OBJECT) secondArgumentName.let { "$it.pointer" } else secondArgumentName,
+                parameterPair,
+                if (parameterPair.first == MethodParameterCategory.OBJECT) "$firstArgumentName.pointer" else firstArgumentName,
+                if (parameterPair.second == MethodParameterCategory.OBJECT) secondArgumentName.let { "$it.pointer" } else secondArgumentName,
             )
             arrayOf(
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) {
