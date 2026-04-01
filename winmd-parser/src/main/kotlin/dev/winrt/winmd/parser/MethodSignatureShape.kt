@@ -123,57 +123,26 @@ private val unaryShapes = mapOf(
     MethodParameterCategory.OBJECT to MethodSignatureShape.OBJECT,
 )
 
-private val twoArgumentShapes = mapOf(
-    MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.INT32) to MethodSignatureShape.STRING_INT32,
-    MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.STRING) to MethodSignatureShape.INT32_STRING,
-    MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.UINT32) to MethodSignatureShape.STRING_UINT32,
-    MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.STRING) to MethodSignatureShape.UINT32_STRING,
-    MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.BOOLEAN) to MethodSignatureShape.STRING_BOOLEAN,
-    MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.STRING) to MethodSignatureShape.BOOLEAN_STRING,
-    MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.INT64) to MethodSignatureShape.STRING_INT64,
-    MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.STRING) to MethodSignatureShape.INT64_STRING,
-    MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) to MethodSignatureShape.STRING_EVENT_REGISTRATION_TOKEN,
-    MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.STRING) to MethodSignatureShape.EVENT_REGISTRATION_TOKEN_STRING,
-    MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.STRING) to MethodSignatureShape.STRING_STRING,
-    MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.INT32) to MethodSignatureShape.INT32_INT32,
-    MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.UINT32) to MethodSignatureShape.INT32_UINT32,
-    MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.BOOLEAN) to MethodSignatureShape.INT32_BOOLEAN,
-    MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.INT64) to MethodSignatureShape.INT32_INT64,
-    MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) to MethodSignatureShape.INT32_EVENT_REGISTRATION_TOKEN,
-    MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.INT32) to MethodSignatureShape.UINT32_INT32,
-    MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.UINT32) to MethodSignatureShape.UINT32_UINT32,
-    MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.BOOLEAN) to MethodSignatureShape.UINT32_BOOLEAN,
-    MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.INT64) to MethodSignatureShape.UINT32_INT64,
-    MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) to MethodSignatureShape.UINT32_EVENT_REGISTRATION_TOKEN,
-    MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.INT32) to MethodSignatureShape.BOOLEAN_INT32,
-    MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.UINT32) to MethodSignatureShape.BOOLEAN_UINT32,
-    MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.BOOLEAN) to MethodSignatureShape.BOOLEAN_BOOLEAN,
-    MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.INT64) to MethodSignatureShape.BOOLEAN_INT64,
-    MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) to MethodSignatureShape.BOOLEAN_EVENT_REGISTRATION_TOKEN,
-    MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.INT32) to MethodSignatureShape.INT64_INT32,
-    MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.UINT32) to MethodSignatureShape.INT64_UINT32,
-    MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.BOOLEAN) to MethodSignatureShape.INT64_BOOLEAN,
-    MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.INT64) to MethodSignatureShape.INT64_INT64,
-    MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) to MethodSignatureShape.INT64_EVENT_REGISTRATION_TOKEN,
-    MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.INT32) to MethodSignatureShape.EVENT_REGISTRATION_TOKEN_INT32,
-    MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.UINT32) to MethodSignatureShape.EVENT_REGISTRATION_TOKEN_UINT32,
-    MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.BOOLEAN) to MethodSignatureShape.EVENT_REGISTRATION_TOKEN_BOOLEAN,
-    MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.INT64) to MethodSignatureShape.EVENT_REGISTRATION_TOKEN_INT64,
-    MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) to MethodSignatureShape.EVENT_REGISTRATION_TOKEN_EVENT_REGISTRATION_TOKEN,
-    MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.INT32) to MethodSignatureShape.OBJECT_INT32,
-    MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.UINT32) to MethodSignatureShape.OBJECT_UINT32,
-    MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.BOOLEAN) to MethodSignatureShape.OBJECT_BOOLEAN,
-    MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.INT64) to MethodSignatureShape.OBJECT_INT64,
-    MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) to MethodSignatureShape.OBJECT_EVENT_REGISTRATION_TOKEN,
-    MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.OBJECT) to MethodSignatureShape.INT32_OBJECT,
-    MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.OBJECT) to MethodSignatureShape.UINT32_OBJECT,
-    MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.OBJECT) to MethodSignatureShape.BOOLEAN_OBJECT,
-    MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.OBJECT) to MethodSignatureShape.INT64_OBJECT,
-    MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.OBJECT) to MethodSignatureShape.EVENT_REGISTRATION_TOKEN_OBJECT,
-    MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING) to MethodSignatureShape.OBJECT_STRING,
-    MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.OBJECT) to MethodSignatureShape.STRING_OBJECT,
-    MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.OBJECT) to MethodSignatureShape.TWO_OBJECT,
-)
+private fun twoArgumentShape(
+    first: MethodParameterCategory,
+    second: MethodParameterCategory,
+): MethodSignatureShape =
+    if (first == MethodParameterCategory.OBJECT && second == MethodParameterCategory.OBJECT) {
+        MethodSignatureShape.TWO_OBJECT
+    } else {
+        MethodSignatureShape.valueOf("${first.name}_${second.name}")
+    }
+
+private val twoArgumentShapes = buildMap {
+    for (first in MethodParameterCategory.entries) {
+        for (second in MethodParameterCategory.entries) {
+            put(
+                MethodParameterPair(first, second),
+                twoArgumentShape(first, second),
+            )
+        }
+    }
+}
 
 private val twoArgumentPairsByShape = twoArgumentShapes.entries.associate { (pair, shape) -> shape to pair }
 
