@@ -1868,6 +1868,100 @@ internal class InterfaceTypeRenderer(
                     ))
                 },
             )
+            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.TWO_OBJECT) -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, namespace ->
+                    val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                    val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
+                    arrayOf(objectReturnCode(
+                        method,
+                        namespace,
+                        AbiCallCatalog.resultMethodWithTwoObject(
+                            method.vtableIndex!!,
+                            "OBJECT",
+                            PoetSymbols.requireObjectMember,
+                            "$firstArgumentName.pointer",
+                            "$secondArgumentName.pointer",
+                        ),
+                        genericParameters,
+                    ))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.OBJECT_STRING),
+            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.OBJECT_STRING),
+            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.OBJECT_STRING),
+            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.OBJECT_STRING),
+            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.OBJECT_STRING),
+            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.OBJECT_STRING),
+            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT_STRING),
+            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT_STRING),
+            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.OBJECT_STRING) -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ ->
+                    val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                    val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
+                    arrayOf(twoArgumentReturnCode(
+                        method,
+                        AbiCallCatalog.resultMethodWithObjectAndString(
+                            method.vtableIndex!!,
+                            resultKindName(method.returnType),
+                            resultExtractor(method.returnType),
+                            "$firstArgumentName.pointer",
+                            secondArgumentName,
+                        ),
+                    ))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING_OBJECT),
+            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.STRING_OBJECT),
+            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.STRING_OBJECT),
+            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.STRING_OBJECT),
+            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.STRING_OBJECT),
+            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.STRING_OBJECT),
+            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.STRING_OBJECT),
+            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.STRING_OBJECT),
+            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.STRING_OBJECT) -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ ->
+                    val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                    val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
+                    arrayOf(twoArgumentReturnCode(
+                        method,
+                        AbiCallCatalog.resultMethodWithStringAndObject(
+                            method.vtableIndex!!,
+                            resultKindName(method.returnType),
+                            resultExtractor(method.returnType),
+                            firstArgumentName,
+                            "$secondArgumentName.pointer",
+                        ),
+                    ))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.TWO_OBJECT),
+            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.TWO_OBJECT),
+            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.TWO_OBJECT),
+            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.TWO_OBJECT),
+            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.TWO_OBJECT),
+            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.TWO_OBJECT),
+            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.TWO_OBJECT),
+            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.TWO_OBJECT),
+            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.TWO_OBJECT) -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ ->
+                    val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                    val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
+                    arrayOf(twoArgumentReturnCode(
+                        method,
+                        AbiCallCatalog.resultMethodWithTwoObject(
+                            method.vtableIndex!!,
+                            resultKindName(method.returnType),
+                            resultExtractor(method.returnType),
+                            "$firstArgumentName.pointer",
+                            "$secondArgumentName.pointer",
+                        ),
+                    ))
+                },
+            )
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
                 statement = "%L",
                 args = { method, _ ->
@@ -2015,6 +2109,51 @@ internal class InterfaceTypeRenderer(
             )
         } else {
             CodeBlock.of("%T(%L)", mappedType, abiCall)
+        }
+    }
+
+    private fun twoArgumentReturnCode(method: WinMdMethod, abiCall: CodeBlock): CodeBlock {
+        return when (method.returnType) {
+            "String" -> HStringSupport.fromCall(abiCall)
+            "Float32" -> CodeBlock.of("%T(%L)", PoetSymbols.float32Class, abiCall)
+            "Float64" -> CodeBlock.of("%T(%L)", PoetSymbols.float64Class, abiCall)
+            "Boolean" -> CodeBlock.of("%T(%L)", PoetSymbols.winRtBooleanClass, abiCall)
+            "Int32" -> CodeBlock.of("%T(%L)", PoetSymbols.int32Class, abiCall)
+            "UInt32" -> CodeBlock.of("%T(%L)", PoetSymbols.uint32Class, abiCall)
+            "Int64" -> CodeBlock.of("%T(%L)", PoetSymbols.int64Class, abiCall)
+            "UInt64" -> CodeBlock.of("%T(%L)", PoetSymbols.uint64Class, abiCall)
+            "Guid" -> CodeBlock.of("%T(%L.toString())", PoetSymbols.guidValueClass, abiCall)
+            else -> error("Unsupported two-argument return type: ${method.returnType}")
+        }
+    }
+
+    private fun resultKindName(returnType: String): String {
+        return when (returnType) {
+            "String" -> "HSTRING"
+            "Float32" -> "FLOAT32"
+            "Float64" -> "FLOAT64"
+            "Boolean" -> "BOOLEAN"
+            "Int32" -> "INT32"
+            "UInt32" -> "UINT32"
+            "Int64" -> "INT64"
+            "UInt64" -> "UINT64"
+            "Guid" -> "GUID"
+            else -> error("Unsupported result kind for two-argument return type: $returnType")
+        }
+    }
+
+    private fun resultExtractor(returnType: String): Any {
+        return when (returnType) {
+            "String" -> PoetSymbols.requireHStringMember
+            "Float32" -> PoetSymbols.requireFloat32Member
+            "Float64" -> PoetSymbols.requireFloat64Member
+            "Boolean" -> PoetSymbols.requireBooleanMember
+            "Int32" -> PoetSymbols.requireInt32Member
+            "UInt32" -> PoetSymbols.requireUInt32Member
+            "Int64" -> PoetSymbols.requireInt64Member
+            "UInt64" -> PoetSymbols.requireUInt64Member
+            "Guid" -> PoetSymbols.requireGuidMember
+            else -> error("Unsupported result extractor for two-argument return type: $returnType")
         }
     }
 

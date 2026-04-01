@@ -535,6 +535,69 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun renders_helper_interfaces_with_two_object_parameters_and_object_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Storage",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Storage",
+                            name = "StorageFile",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics11",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-1111-1111-1111-dddddddddddd",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "ResolvePair",
+                                    returnType = "Windows.Storage.StorageFile",
+                                    parameters = listOf(
+                                        WinMdParameter("first", "Windows.Foundation.Uri"),
+                                        WinMdParameter("second", "Windows.Foundation.Uri"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics11.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun resolvePair("))
+        assertTrue(normalizedStaticsBinding.contains("StorageFile(PlatformComInterop.invokeMethodWithTwoObjectArgs(pointer,6,ComMethodResultKind.OBJECT,first.pointer,second.pointer).getOrThrow().requireObject())"))
+    }
+
+    @Test
     fun renders_helper_async_methods_with_single_object_parameter() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

@@ -715,6 +715,97 @@ internal class RuntimeMethodRenderer(
                     )
                 },
             )
+            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.TWO_OBJECT) -> RuntimeMethodPlan(
+                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
+                returnStatement = "return %L",
+                statementArgs = { method, currentNamespace, parameterBindings ->
+                    arrayOf(
+                        runtimeObjectReturnCode(
+                            method,
+                            currentNamespace,
+                            AbiCallCatalog.resultMethodWithTwoObject(
+                                method.vtableIndex!!,
+                                "OBJECT",
+                                PoetSymbols.requireObjectMember,
+                                "${parameterBindings[0].name}.pointer",
+                                "${parameterBindings[1].name}.pointer",
+                            ),
+                        ),
+                    )
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.OBJECT_STRING),
+            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.OBJECT_STRING),
+            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.OBJECT_STRING),
+            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.OBJECT_STRING),
+            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.OBJECT_STRING),
+            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.OBJECT_STRING),
+            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT_STRING),
+            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT_STRING),
+            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.OBJECT_STRING) -> RuntimeMethodPlan(
+                nullPointerReturn = { method -> twoArgumentNullReturn(method.returnType, method.name) },
+                returnStatement = "return %L",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(twoArgumentReturnCode(
+                        method.returnType,
+                        AbiCallCatalog.resultMethodWithObjectAndString(
+                            method.vtableIndex!!,
+                            resultKindName(method.returnType),
+                            resultExtractor(method.returnType),
+                            "${parameterBindings[0].name}.pointer",
+                            parameterBindings[1].name,
+                        ),
+                    ))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING_OBJECT),
+            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.STRING_OBJECT),
+            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.STRING_OBJECT),
+            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.STRING_OBJECT),
+            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.STRING_OBJECT),
+            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.STRING_OBJECT),
+            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.STRING_OBJECT),
+            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.STRING_OBJECT),
+            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.STRING_OBJECT) -> RuntimeMethodPlan(
+                nullPointerReturn = { method -> twoArgumentNullReturn(method.returnType, method.name) },
+                returnStatement = "return %L",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(twoArgumentReturnCode(
+                        method.returnType,
+                        AbiCallCatalog.resultMethodWithStringAndObject(
+                            method.vtableIndex!!,
+                            resultKindName(method.returnType),
+                            resultExtractor(method.returnType),
+                            parameterBindings[0].name,
+                            "${parameterBindings[1].name}.pointer",
+                        ),
+                    ))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.TWO_OBJECT),
+            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.TWO_OBJECT),
+            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.TWO_OBJECT),
+            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.TWO_OBJECT),
+            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.TWO_OBJECT),
+            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.TWO_OBJECT),
+            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.TWO_OBJECT),
+            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.TWO_OBJECT),
+            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.TWO_OBJECT) -> RuntimeMethodPlan(
+                nullPointerReturn = { method -> twoArgumentNullReturn(method.returnType, method.name) },
+                returnStatement = "return %L",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(twoArgumentReturnCode(
+                        method.returnType,
+                        AbiCallCatalog.resultMethodWithTwoObject(
+                            method.vtableIndex!!,
+                            resultKindName(method.returnType),
+                            resultExtractor(method.returnType),
+                            "${parameterBindings[0].name}.pointer",
+                            "${parameterBindings[1].name}.pointer",
+                        ),
+                    ))
+                },
+            )
             else -> null
         }
     }
@@ -805,6 +896,66 @@ internal class RuntimeMethodRenderer(
             CodeBlock.of("%T.from(%T(%L))", mappedType, PoetSymbols.inspectableClass, abiCall)
         } else {
             CodeBlock.of("%T(%L)", mappedType, abiCall)
+        }
+    }
+
+    private fun twoArgumentReturnCode(returnType: String, abiCall: CodeBlock): CodeBlock {
+        return when (returnType) {
+            "String" -> HStringSupport.fromCall(abiCall)
+            "Float32" -> CodeBlock.of("%T(%L)", PoetSymbols.float32Class, abiCall)
+            "Float64" -> CodeBlock.of("%T(%L)", PoetSymbols.float64Class, abiCall)
+            "Boolean" -> CodeBlock.of("%T(%L)", PoetSymbols.winRtBooleanClass, abiCall)
+            "Int32" -> CodeBlock.of("%T(%L)", PoetSymbols.int32Class, abiCall)
+            "UInt32" -> CodeBlock.of("%T(%L)", PoetSymbols.uint32Class, abiCall)
+            "Int64" -> CodeBlock.of("%T(%L)", PoetSymbols.int64Class, abiCall)
+            "UInt64" -> CodeBlock.of("%T(%L)", PoetSymbols.uint64Class, abiCall)
+            "Guid" -> CodeBlock.of("%T(%L.toString())", PoetSymbols.guidValueClass, abiCall)
+            else -> error("Unsupported two-argument return type: $returnType")
+        }
+    }
+
+    private fun twoArgumentNullReturn(returnType: String, methodName: String): PlannedStatement {
+        return when (returnType) {
+            "String" -> PlannedStatement("return %S", arrayOf(""))
+            "Float32" -> PlannedStatement("return %T(0f)", arrayOf(PoetSymbols.float32Class))
+            "Float64" -> PlannedStatement("return %T(0.0)", arrayOf(PoetSymbols.float64Class))
+            "Boolean" -> PlannedStatement("return %T(false)", arrayOf(PoetSymbols.winRtBooleanClass))
+            "Int32" -> PlannedStatement("return %T(0)", arrayOf(PoetSymbols.int32Class))
+            "UInt32" -> PlannedStatement("return %T(0u)", arrayOf(PoetSymbols.uint32Class))
+            "Int64" -> PlannedStatement("return %T(0L)", arrayOf(PoetSymbols.int64Class))
+            "UInt64" -> PlannedStatement("return %T(0uL)", arrayOf(PoetSymbols.uint64Class))
+            "Guid" -> PlannedStatement("return %T(%S)", arrayOf(PoetSymbols.guidValueClass, ""))
+            else -> error("Unsupported two-argument null return type for $methodName: $returnType")
+        }
+    }
+
+    private fun resultKindName(returnType: String): String {
+        return when (returnType) {
+            "String" -> "HSTRING"
+            "Float32" -> "FLOAT32"
+            "Float64" -> "FLOAT64"
+            "Boolean" -> "BOOLEAN"
+            "Int32" -> "INT32"
+            "UInt32" -> "UINT32"
+            "Int64" -> "INT64"
+            "UInt64" -> "UINT64"
+            "Guid" -> "GUID"
+            else -> error("Unsupported result kind for two-argument return type: $returnType")
+        }
+    }
+
+    private fun resultExtractor(returnType: String): Any {
+        return when (returnType) {
+            "String" -> PoetSymbols.requireHStringMember
+            "Float32" -> PoetSymbols.requireFloat32Member
+            "Float64" -> PoetSymbols.requireFloat64Member
+            "Boolean" -> PoetSymbols.requireBooleanMember
+            "Int32" -> PoetSymbols.requireInt32Member
+            "UInt32" -> PoetSymbols.requireUInt32Member
+            "Int64" -> PoetSymbols.requireInt64Member
+            "UInt64" -> PoetSymbols.requireUInt64Member
+            "Guid" -> PoetSymbols.requireGuidMember
+            else -> error("Unsupported result extractor for two-argument return type: $returnType")
         }
     }
 

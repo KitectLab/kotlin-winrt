@@ -153,6 +153,57 @@ internal object AbiCallCatalog {
         PoetSymbols.requireObjectMember,
     )
 
+    fun resultMethodWithObjectAndString(
+        vtableIndex: Int,
+        resultKindName: String,
+        extractor: Any,
+        firstArgumentExpression: String,
+        secondArgumentName: String,
+        pointerExpression: String = "pointer",
+    ): CodeBlock = CodeBlock.of(
+        "%T.invokeMethodWithObjectAndStringArgs($pointerExpression, $vtableIndex, %T.%L, %L, %N).getOrThrow().%M()",
+        PoetSymbols.platformComInteropClass,
+        PoetSymbols.comMethodResultKindClass,
+        resultKindName,
+        firstArgumentExpression,
+        secondArgumentName,
+        extractor,
+    )
+
+    fun resultMethodWithStringAndObject(
+        vtableIndex: Int,
+        resultKindName: String,
+        extractor: Any,
+        firstArgumentName: String,
+        secondArgumentExpression: String,
+        pointerExpression: String = "pointer",
+    ): CodeBlock = CodeBlock.of(
+        "%T.invokeMethodWithStringAndObjectArgs($pointerExpression, $vtableIndex, %T.%L, %N, %L).getOrThrow().%M()",
+        PoetSymbols.platformComInteropClass,
+        PoetSymbols.comMethodResultKindClass,
+        resultKindName,
+        firstArgumentName,
+        secondArgumentExpression,
+        extractor,
+    )
+
+    fun resultMethodWithTwoObject(
+        vtableIndex: Int,
+        resultKindName: String,
+        extractor: Any,
+        firstArgumentExpression: String,
+        secondArgumentExpression: String,
+        pointerExpression: String = "pointer",
+    ): CodeBlock = CodeBlock.of(
+        "%T.invokeMethodWithTwoObjectArgs($pointerExpression, $vtableIndex, %T.%L, %L, %L).getOrThrow().%M()",
+        PoetSymbols.platformComInteropClass,
+        PoetSymbols.comMethodResultKindClass,
+        resultKindName,
+        firstArgumentExpression,
+        secondArgumentExpression,
+        extractor,
+    )
+
     fun booleanMethod(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeBooleanGetter(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
