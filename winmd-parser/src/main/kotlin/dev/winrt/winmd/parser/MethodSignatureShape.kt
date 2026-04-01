@@ -182,8 +182,23 @@ private val twoArgumentShapes = mapOf(
 
 private val twoArgumentPairsByShape = twoArgumentShapes.entries.associate { (pair, shape) -> shape to pair }
 
+private val parameterCategoriesByShape = buildMap {
+    put(MethodSignatureShape.EMPTY, emptyList())
+    unaryShapes.forEach { (category, shape) -> put(shape, listOf(category)) }
+    twoArgumentShapes.forEach { (pair, shape) -> put(shape, listOf(pair.first, pair.second)) }
+}
+
+internal fun MethodSignatureShape.toParameterCategories(): List<MethodParameterCategory>? =
+    parameterCategoriesByShape[this]
+
 internal fun MethodSignatureShape.toTwoArgumentParameterPair(): MethodParameterPair? =
     twoArgumentPairsByShape[this]
+
+internal fun List<MethodParameterCategory>.isSupportedTwoArgumentUnitCategories(): Boolean =
+    size == 2 && MethodParameterPair(this[0], this[1]).isSupportedTwoArgumentUnitPair()
+
+internal fun List<MethodParameterCategory>.isSupportedTwoArgumentUnifiedReturnCategories(): Boolean =
+    size == 2 && MethodParameterPair(this[0], this[1]).isSupportedTwoArgumentUnifiedReturnPair()
 
 internal fun MethodParameterPair.isSupportedTwoArgumentUnitPair(): Boolean =
     first == MethodParameterCategory.STRING ||
@@ -230,7 +245,7 @@ internal fun MethodSignatureKey.isTwoArgumentUnifiedReturnShape(): Boolean =
         MethodReturnKind.INT64,
         MethodReturnKind.UINT64,
         MethodReturnKind.GUID,
-    ) && shape.toTwoArgumentParameterPair()?.isSupportedTwoArgumentUnifiedReturnPair() == true
+    ) && shape.toParameterCategories()?.isSupportedTwoArgumentUnifiedReturnCategories() == true
 
 internal fun methodParameterCategory(
     type: String,

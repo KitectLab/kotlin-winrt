@@ -111,6 +111,22 @@ class MethodSignatureShapeTest {
         )
     }
 
+    @Test
+    fun exposes_parameter_categories_for_supported_shapes() {
+        assertEquals(
+            listOf(MethodParameterCategory.STRING, MethodParameterCategory.INT32),
+            MethodSignatureShape.STRING_INT32.toParameterCategories(),
+        )
+        assertEquals(
+            listOf(MethodParameterCategory.OBJECT, MethodParameterCategory.OBJECT),
+            MethodSignatureShape.TWO_OBJECT.toParameterCategories(),
+        )
+        assertEquals(
+            listOf(MethodParameterCategory.OBJECT),
+            MethodSignatureShape.OBJECT.toParameterCategories(),
+        )
+    }
+
     private fun supportsObjectType(type: String): Boolean {
         return (type == "Object" || type.contains('.')) &&
             !type.contains('`') &&

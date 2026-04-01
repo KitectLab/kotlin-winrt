@@ -55,19 +55,19 @@ internal object MethodRuleRegistry {
         sharedMethodRules[signatureKey] ?: sharedTwoArgumentMethodRuleFamily(signatureKey)
 
     private fun sharedTwoArgumentMethodRuleFamily(signatureKey: MethodSignatureKey): SharedMethodRuleFamily? {
-        val parameterPair = signatureKey.shape.toTwoArgumentParameterPair() ?: return null
+        val parameterCategories = signatureKey.shape.toParameterCategories() ?: return null
         return when (signatureKey.returnKind) {
-            MethodReturnKind.UNIT -> if (parameterPair.isSupportedTwoArgumentUnitPair()) SharedMethodRuleFamily.UNIT else null
-            MethodReturnKind.STRING -> if (parameterPair.isSupportedTwoArgumentUnifiedReturnPair()) SharedMethodRuleFamily.STRING else null
-            MethodReturnKind.FLOAT32 -> if (parameterPair.isSupportedTwoArgumentUnifiedReturnPair()) SharedMethodRuleFamily.FLOAT32 else null
-            MethodReturnKind.FLOAT64 -> if (parameterPair.isSupportedTwoArgumentUnifiedReturnPair()) SharedMethodRuleFamily.FLOAT64 else null
-            MethodReturnKind.BOOLEAN -> if (parameterPair.isSupportedTwoArgumentUnifiedReturnPair()) SharedMethodRuleFamily.BOOLEAN else null
+            MethodReturnKind.UNIT -> if (parameterCategories.isSupportedTwoArgumentUnitCategories()) SharedMethodRuleFamily.UNIT else null
+            MethodReturnKind.STRING -> if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.STRING else null
+            MethodReturnKind.FLOAT32 -> if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.FLOAT32 else null
+            MethodReturnKind.FLOAT64 -> if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.FLOAT64 else null
+            MethodReturnKind.BOOLEAN -> if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.BOOLEAN else null
             MethodReturnKind.INT32,
             MethodReturnKind.UINT32,
             MethodReturnKind.INT64,
             MethodReturnKind.UINT64,
             MethodReturnKind.GUID,
-            MethodReturnKind.OBJECT -> if (parameterPair.isSupportedTwoArgumentUnifiedReturnPair()) SharedMethodRuleFamily.OBJECT else null
+            MethodReturnKind.OBJECT -> if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.OBJECT else null
             MethodReturnKind.EVENT_REGISTRATION_TOKEN -> null
         }
     }
