@@ -164,77 +164,38 @@ internal object AbiCallCatalog {
         parameterPair: MethodParameterPair,
         firstArgumentExpression: String,
         secondArgumentExpression: String,
-    ): CodeBlock = when (parameterPair) {
-        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.INT32) ->
-            unitMethodWithStringAndInt32(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.STRING) ->
-            unitMethodWithInt32AndString(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.UINT32) ->
-            unitMethodWithStringAndInt32(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.STRING) ->
-            unitMethodWithInt32AndString(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.BOOLEAN) ->
-            unitMethodWithStringAndInt32(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.STRING) ->
-            unitMethodWithInt32AndString(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.INT64) ->
-            CodeBlock.of("%T.invokeUnitMethodWithStringAndInt64Args(pointer, %L, %N, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.STRING) ->
-            CodeBlock.of("%T.invokeUnitMethodWithInt64AndStringArgs(pointer, %L, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) ->
-            CodeBlock.of("%T.invokeUnitMethodWithStringAndInt64Args(pointer, %L, %N, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.STRING) ->
-            CodeBlock.of("%T.invokeUnitMethodWithInt64AndStringArgs(pointer, %L, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.STRING) ->
+    ): CodeBlock = when (parameterPair.toAbiFamilyPair()) {
+        MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.STRING) ->
             unitMethodWithTwoStrings(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.INT32),
-        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.UINT32),
-        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.BOOLEAN),
-        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.INT32),
-        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.UINT32),
-        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.BOOLEAN),
-        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.INT32),
-        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.UINT32),
-        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.BOOLEAN) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.INT32_LIKE) ->
+            unitMethodWithStringAndInt32(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterFamilyPair(MethodParameterAbiFamily.INT32_LIKE, MethodParameterAbiFamily.STRING) ->
+            unitMethodWithInt32AndString(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.INT64_LIKE) ->
+            CodeBlock.of("%T.invokeUnitMethodWithStringAndInt64Args(pointer, %L, %N, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterFamilyPair(MethodParameterAbiFamily.INT64_LIKE, MethodParameterAbiFamily.STRING) ->
+            CodeBlock.of("%T.invokeUnitMethodWithInt64AndStringArgs(pointer, %L, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterFamilyPair(MethodParameterAbiFamily.INT32_LIKE, MethodParameterAbiFamily.INT32_LIKE) ->
             unitMethodWithTwoInt32s(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.INT64),
-        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.EVENT_REGISTRATION_TOKEN),
-        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.INT64),
-        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.EVENT_REGISTRATION_TOKEN),
-        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.INT64),
-        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.INT32_LIKE, MethodParameterAbiFamily.INT64_LIKE) ->
             unitMethodWithInt32AndInt64(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.INT32),
-        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.UINT32),
-        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.BOOLEAN),
-        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.INT32),
-        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.UINT32),
-        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.BOOLEAN) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.INT64_LIKE, MethodParameterAbiFamily.INT32_LIKE) ->
             unitMethodWithInt64AndInt32(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.INT64),
-        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.EVENT_REGISTRATION_TOKEN),
-        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.INT64),
-        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.INT64_LIKE, MethodParameterAbiFamily.INT64_LIKE) ->
             unitMethodWithTwoInt64s(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.INT32),
-        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.UINT32),
-        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.BOOLEAN) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.OBJECT, MethodParameterAbiFamily.INT32_LIKE) ->
             unitMethodWithObjectAndInt32(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.INT64),
-        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) ->
-            unitMethodWithObjectAndInt64(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.OBJECT),
-        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.OBJECT),
-        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.OBJECT) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.INT32_LIKE, MethodParameterAbiFamily.OBJECT) ->
             unitMethodWithInt32AndObject(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.OBJECT),
-        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.OBJECT) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.OBJECT, MethodParameterAbiFamily.INT64_LIKE) ->
+            unitMethodWithObjectAndInt64(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterFamilyPair(MethodParameterAbiFamily.INT64_LIKE, MethodParameterAbiFamily.OBJECT) ->
             unitMethodWithInt64AndObject(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.OBJECT, MethodParameterAbiFamily.STRING) ->
             unitMethodWithObjectAndString(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.OBJECT) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.OBJECT) ->
             unitMethodWithStringAndObject(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.OBJECT) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.OBJECT, MethodParameterAbiFamily.OBJECT) ->
             unitMethodWithTwoObject(vtableIndex, firstArgumentExpression, secondArgumentExpression)
         else -> error("Unsupported two-argument unit categories: $parameterPair")
     }
@@ -595,10 +556,8 @@ internal object AbiCallCatalog {
         firstArgumentExpression: String,
         secondArgumentExpression: String,
         pointerExpression: String = "pointer",
-    ): CodeBlock = when (parameterPair) {
-        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.INT32),
-        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.UINT32),
-        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.BOOLEAN) ->
+    ): CodeBlock = when (parameterPair.toAbiFamilyPair()) {
+        MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.INT32_LIKE) ->
             resultMethodWithStringAndInt32(
                 vtableIndex,
                 resultKindName,
@@ -607,9 +566,7 @@ internal object AbiCallCatalog {
                 secondArgumentExpression,
                 pointerExpression,
             )
-        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.STRING),
-        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.STRING),
-        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.STRING) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.INT32_LIKE, MethodParameterAbiFamily.STRING) ->
             resultMethodWithInt32AndString(
                 vtableIndex,
                 resultKindName,
@@ -618,8 +575,7 @@ internal object AbiCallCatalog {
                 secondArgumentExpression,
                 pointerExpression,
             )
-        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.INT64),
-        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.INT64_LIKE) ->
             resultMethodWithStringAndInt64(
                 vtableIndex,
                 resultKindName,
@@ -628,8 +584,7 @@ internal object AbiCallCatalog {
                 secondArgumentExpression,
                 pointerExpression,
             )
-        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.STRING),
-        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.STRING) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.INT64_LIKE, MethodParameterAbiFamily.STRING) ->
             resultMethodWithInt64AndString(
                 vtableIndex,
                 resultKindName,
@@ -638,15 +593,7 @@ internal object AbiCallCatalog {
                 secondArgumentExpression,
                 pointerExpression,
             )
-        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.INT32),
-        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.UINT32),
-        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.BOOLEAN),
-        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.INT32),
-        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.UINT32),
-        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.BOOLEAN),
-        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.INT32),
-        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.UINT32),
-        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.BOOLEAN) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.INT32_LIKE, MethodParameterAbiFamily.INT32_LIKE) ->
             resultMethodWithTwoInt32s(
                 vtableIndex,
                 resultKindName,
@@ -655,12 +602,7 @@ internal object AbiCallCatalog {
                 secondArgumentExpression,
                 pointerExpression,
             )
-        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.INT64),
-        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.EVENT_REGISTRATION_TOKEN),
-        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.INT64),
-        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.EVENT_REGISTRATION_TOKEN),
-        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.INT64),
-        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.INT32_LIKE, MethodParameterAbiFamily.INT64_LIKE) ->
             resultMethodWithInt32AndInt64(
                 vtableIndex,
                 resultKindName,
@@ -669,12 +611,7 @@ internal object AbiCallCatalog {
                 secondArgumentExpression,
                 pointerExpression,
             )
-        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.INT32),
-        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.UINT32),
-        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.BOOLEAN),
-        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.INT32),
-        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.UINT32),
-        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.BOOLEAN) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.INT64_LIKE, MethodParameterAbiFamily.INT32_LIKE) ->
             resultMethodWithInt64AndInt32(
                 vtableIndex,
                 resultKindName,
@@ -683,10 +620,7 @@ internal object AbiCallCatalog {
                 secondArgumentExpression,
                 pointerExpression,
             )
-        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.INT64),
-        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.EVENT_REGISTRATION_TOKEN),
-        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.INT64),
-        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.INT64_LIKE, MethodParameterAbiFamily.INT64_LIKE) ->
             resultMethodWithTwoInt64s(
                 vtableIndex,
                 resultKindName,
@@ -695,9 +629,7 @@ internal object AbiCallCatalog {
                 secondArgumentExpression,
                 pointerExpression,
             )
-        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.INT32),
-        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.UINT32),
-        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.BOOLEAN) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.OBJECT, MethodParameterAbiFamily.INT32_LIKE) ->
             resultMethodWithObjectAndInt32(
                 vtableIndex,
                 resultKindName,
@@ -706,9 +638,7 @@ internal object AbiCallCatalog {
                 secondArgumentExpression,
                 pointerExpression,
             )
-        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.OBJECT),
-        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.OBJECT),
-        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.OBJECT) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.INT32_LIKE, MethodParameterAbiFamily.OBJECT) ->
             resultMethodWithInt32AndObject(
                 vtableIndex,
                 resultKindName,
@@ -717,8 +647,7 @@ internal object AbiCallCatalog {
                 secondArgumentExpression,
                 pointerExpression,
             )
-        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.INT64),
-        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.OBJECT, MethodParameterAbiFamily.INT64_LIKE) ->
             resultMethodWithObjectAndInt64(
                 vtableIndex,
                 resultKindName,
@@ -727,8 +656,7 @@ internal object AbiCallCatalog {
                 secondArgumentExpression,
                 pointerExpression,
             )
-        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.OBJECT),
-        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.OBJECT) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.INT64_LIKE, MethodParameterAbiFamily.OBJECT) ->
             resultMethodWithInt64AndObject(
                 vtableIndex,
                 resultKindName,
@@ -737,7 +665,7 @@ internal object AbiCallCatalog {
                 secondArgumentExpression,
                 pointerExpression,
             )
-        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.OBJECT, MethodParameterAbiFamily.STRING) ->
             resultMethodWithObjectAndString(
                 vtableIndex,
                 resultKindName,
@@ -746,7 +674,7 @@ internal object AbiCallCatalog {
                 secondArgumentExpression,
                 pointerExpression,
             )
-        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.OBJECT) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.OBJECT) ->
             resultMethodWithStringAndObject(
                 vtableIndex,
                 resultKindName,
@@ -755,7 +683,7 @@ internal object AbiCallCatalog {
                 secondArgumentExpression,
                 pointerExpression,
             )
-        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.OBJECT) ->
+        MethodParameterFamilyPair(MethodParameterAbiFamily.OBJECT, MethodParameterAbiFamily.OBJECT) ->
             resultMethodWithTwoObject(
                 vtableIndex,
                 resultKindName,

@@ -95,6 +95,18 @@ internal data class MethodParameterPair(
     val second: MethodParameterCategory,
 )
 
+internal enum class MethodParameterAbiFamily {
+    STRING,
+    OBJECT,
+    INT32_LIKE,
+    INT64_LIKE,
+}
+
+internal data class MethodParameterFamilyPair(
+    val first: MethodParameterAbiFamily,
+    val second: MethodParameterAbiFamily,
+)
+
 private val int32LikeCategories = setOf(
     MethodParameterCategory.INT32,
     MethodParameterCategory.UINT32,
@@ -185,6 +197,20 @@ internal fun MethodParameterPair.isSupportedTwoArgumentUnitPair(): Boolean =
 
 internal fun MethodParameterPair.isSupportedTwoArgumentUnifiedReturnPair(): Boolean =
     isSupportedTwoArgumentUnitPair() && this != MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.STRING)
+
+internal fun MethodParameterCategory.toAbiFamily(): MethodParameterAbiFamily =
+    when (this) {
+        MethodParameterCategory.STRING -> MethodParameterAbiFamily.STRING
+        MethodParameterCategory.OBJECT -> MethodParameterAbiFamily.OBJECT
+        MethodParameterCategory.INT32,
+        MethodParameterCategory.UINT32,
+        MethodParameterCategory.BOOLEAN -> MethodParameterAbiFamily.INT32_LIKE
+        MethodParameterCategory.INT64,
+        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> MethodParameterAbiFamily.INT64_LIKE
+    }
+
+internal fun MethodParameterPair.toAbiFamilyPair(): MethodParameterFamilyPair =
+    MethodParameterFamilyPair(first.toAbiFamily(), second.toAbiFamily())
 
 internal fun MethodSignatureKey.isTwoArgumentUnifiedReturnShape(): Boolean =
     returnKind in setOf(

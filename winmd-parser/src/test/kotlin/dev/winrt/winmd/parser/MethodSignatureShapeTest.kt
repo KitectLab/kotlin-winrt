@@ -99,6 +99,18 @@ class MethodSignatureShapeTest {
         assertFalse(MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.STRING).isSupportedTwoArgumentUnifiedReturnPair())
     }
 
+    @Test
+    fun folds_parameter_pairs_into_abi_families() {
+        assertEquals(
+            MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.INT32_LIKE),
+            MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.BOOLEAN).toAbiFamilyPair(),
+        )
+        assertEquals(
+            MethodParameterFamilyPair(MethodParameterAbiFamily.INT64_LIKE, MethodParameterAbiFamily.OBJECT),
+            MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.OBJECT).toAbiFamilyPair(),
+        )
+    }
+
     private fun supportsObjectType(type: String): Boolean {
         return (type == "Object" || type.contains('.')) &&
             !type.contains('`') &&
