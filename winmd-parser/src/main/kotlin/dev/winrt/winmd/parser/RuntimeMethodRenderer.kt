@@ -642,6 +642,40 @@ internal class RuntimeMethodRenderer(
                     )
                 },
             )
+            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.OBJECT_STRING) -> RuntimeMethodPlan(
+                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
+                returnStatement = "return %L",
+                statementArgs = { method, currentNamespace, parameterBindings ->
+                    arrayOf(
+                        runtimeObjectReturnCode(
+                            method,
+                            currentNamespace,
+                            AbiCallCatalog.objectMethodWithObjectAndString(
+                                method.vtableIndex!!,
+                                "${parameterBindings[0].name}.pointer",
+                                parameterBindings[1].name,
+                            ),
+                        ),
+                    )
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.STRING_OBJECT) -> RuntimeMethodPlan(
+                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
+                returnStatement = "return %L",
+                statementArgs = { method, currentNamespace, parameterBindings ->
+                    arrayOf(
+                        runtimeObjectReturnCode(
+                            method,
+                            currentNamespace,
+                            AbiCallCatalog.objectMethodWithStringAndObject(
+                                method.vtableIndex!!,
+                                parameterBindings[0].name,
+                                "${parameterBindings[1].name}.pointer",
+                            ),
+                        ),
+                    )
+                },
+            )
             else -> null
         }
     }

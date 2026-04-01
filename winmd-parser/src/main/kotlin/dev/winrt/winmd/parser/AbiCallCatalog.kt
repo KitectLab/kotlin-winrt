@@ -98,6 +98,30 @@ internal object AbiCallCatalog {
             argumentExpression,
         )
 
+    fun objectMethodWithObjectAndString(
+        vtableIndex: Int,
+        firstArgumentExpression: String,
+        secondArgumentName: String,
+        pointerExpression: String = "pointer",
+    ): CodeBlock = CodeBlock.of(
+        "%T.invokeObjectMethodWithObjectAndStringArgs($pointerExpression, $vtableIndex, %L, %N).getOrThrow()",
+        PoetSymbols.platformComInteropClass,
+        firstArgumentExpression,
+        secondArgumentName,
+    )
+
+    fun objectMethodWithStringAndObject(
+        vtableIndex: Int,
+        firstArgumentName: String,
+        secondArgumentExpression: String,
+        pointerExpression: String = "pointer",
+    ): CodeBlock = CodeBlock.of(
+        "%T.invokeObjectMethodWithStringAndObjectArgs($pointerExpression, $vtableIndex, %N, %L).getOrThrow()",
+        PoetSymbols.platformComInteropClass,
+        firstArgumentName,
+        secondArgumentExpression,
+    )
+
     fun booleanMethod(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeBooleanGetter(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 

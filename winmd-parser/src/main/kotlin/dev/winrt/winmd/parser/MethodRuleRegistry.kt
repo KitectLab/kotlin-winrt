@@ -57,6 +57,8 @@ internal object MethodRuleRegistry {
         put(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.UINT32), SharedMethodRuleFamily.OBJECT)
         put(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.BOOLEAN), SharedMethodRuleFamily.OBJECT)
         put(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.OBJECT)
+        put(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.OBJECT_STRING), SharedMethodRuleFamily.OBJECT)
+        put(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.STRING_OBJECT), SharedMethodRuleFamily.OBJECT)
 
         put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EMPTY), SharedMethodRuleFamily.UNIT)
         put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING), SharedMethodRuleFamily.UNIT)

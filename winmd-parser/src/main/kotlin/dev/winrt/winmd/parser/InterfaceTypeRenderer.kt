@@ -1834,6 +1834,40 @@ internal class InterfaceTypeRenderer(
                     ))
                 },
             )
+            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.OBJECT_STRING) -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, namespace ->
+                    val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                    val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
+                    arrayOf(objectReturnCode(
+                        method,
+                        namespace,
+                        AbiCallCatalog.objectMethodWithObjectAndString(
+                            method.vtableIndex!!,
+                            "$firstArgumentName.pointer",
+                            secondArgumentName,
+                        ),
+                        genericParameters,
+                    ))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.STRING_OBJECT) -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, namespace ->
+                    val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                    val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
+                    arrayOf(objectReturnCode(
+                        method,
+                        namespace,
+                        AbiCallCatalog.objectMethodWithStringAndObject(
+                            method.vtableIndex!!,
+                            firstArgumentName,
+                            "$secondArgumentName.pointer",
+                        ),
+                        genericParameters,
+                    ))
+                },
+            )
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
                 statement = "%L",
                 args = { method, _ ->

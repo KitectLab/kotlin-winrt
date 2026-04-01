@@ -244,6 +244,138 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun renders_helper_interfaces_with_object_and_string_parameters_and_object_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Storage",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Storage",
+                            name = "StorageFile",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics6",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-6666-6666-6666-dddddddddddd",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetFileForUri",
+                                    returnType = "Windows.Storage.StorageFile",
+                                    parameters = listOf(
+                                        WinMdParameter("uri", "Windows.Foundation.Uri"),
+                                        WinMdParameter("name", "String"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Windows/System/Launcher.kt" }.content
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics6.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("fun getFileForUri(uri: Uri, name: String): StorageFile"))
+        assertTrue(runtimeBinding.contains("fun getFileForUri("))
+        assertTrue(staticsBinding.contains("fun getFileForUri("))
+        assertTrue(normalizedStaticsBinding.contains("StorageFile(PlatformComInterop.invokeObjectMethodWithObjectAndStringArgs(pointer,6,uri.pointer,name).getOrThrow())"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_string_and_object_parameters_and_object_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Storage",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Storage",
+                            name = "StorageFile",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics7",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-7777-7777-7777-dddddddddddd",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetFileByName",
+                                    returnType = "Windows.Storage.StorageFile",
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                        WinMdParameter("uri", "Windows.Foundation.Uri"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Windows/System/Launcher.kt" }.content
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics7.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("fun getFileByName(name: String, uri: Uri): StorageFile"))
+        assertTrue(runtimeBinding.contains("fun getFileByName("))
+        assertTrue(staticsBinding.contains("fun getFileByName("))
+        assertTrue(normalizedStaticsBinding.contains("StorageFile(PlatformComInterop.invokeObjectMethodWithStringAndObjectArgs(pointer,6,name,uri.pointer).getOrThrow())"))
+    }
+
+    @Test
     fun renders_helper_async_methods_with_single_object_parameter() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
