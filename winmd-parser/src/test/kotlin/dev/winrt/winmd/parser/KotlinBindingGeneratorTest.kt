@@ -712,6 +712,54 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun renders_helper_interfaces_with_object_and_int32_parameters_and_object_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "User",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics16",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "16161616-1616-1616-1616-161616161616",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "FindUserByCount",
+                                    returnType = "Windows.System.User",
+                                    parameters = listOf(
+                                        WinMdParameter("first", "Windows.System.User"),
+                                        WinMdParameter("second", "Int32"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics16.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun findUserByCount("))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeMethodWithObjectAndInt32Args(pointer,6,ComMethodResultKind.OBJECT,first.pointer,second.value).getOrThrow().requireObject()"))
+    }
+
+    @Test
     fun renders_helper_interfaces_with_two_object_parameters_and_object_return() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

@@ -1136,6 +1136,90 @@ private object JvmComMethodExecutor {
             second,
         )
     }
+
+    fun invokeWithOutResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: ComPtr,
+        second: Int,
+    ): Result<ComMethodResult> {
+        return invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = operation,
+            handle = handle,
+            allocator = { arena -> allocateResultSegment(arena, resultKind) },
+            reader = { segment -> readResult(segment, resultKind) },
+            first,
+            second,
+        )
+    }
+
+    fun invokeWithOutResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: Int,
+        second: ComPtr,
+    ): Result<ComMethodResult> {
+        return invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = operation,
+            handle = handle,
+            allocator = { arena -> allocateResultSegment(arena, resultKind) },
+            reader = { segment -> readResult(segment, resultKind) },
+            first,
+            second,
+        )
+    }
+
+    fun invokeWithOutResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: ComPtr,
+        second: Long,
+    ): Result<ComMethodResult> {
+        return invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = operation,
+            handle = handle,
+            allocator = { arena -> allocateResultSegment(arena, resultKind) },
+            reader = { segment -> readResult(segment, resultKind) },
+            first,
+            second,
+        )
+    }
+
+    fun invokeWithOutResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: Long,
+        second: ComPtr,
+    ): Result<ComMethodResult> {
+        return invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = operation,
+            handle = handle,
+            allocator = { arena -> allocateResultSegment(arena, resultKind) },
+            reader = { segment -> readResult(segment, resultKind) },
+            first,
+            second,
+        )
+    }
 }
 
 private object JvmPlatformComInterop : ComInterop {
@@ -1193,6 +1277,22 @@ private object JvmPlatformComInterop : ComInterop {
 
     private val twoAddressOutHandle by lazy {
         Jdk22Foreign.methodWithTwoInputsHandle(ValueLayout.ADDRESS, ValueLayout.ADDRESS)
+    }
+
+    private val addressInt32OutHandle by lazy {
+        Jdk22Foreign.methodWithTwoInputsHandle(ValueLayout.ADDRESS, ValueLayout.JAVA_INT)
+    }
+
+    private val int32AddressOutHandle by lazy {
+        Jdk22Foreign.methodWithTwoInputsHandle(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)
+    }
+
+    private val addressInt64OutHandle by lazy {
+        Jdk22Foreign.methodWithTwoInputsHandle(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG)
+    }
+
+    private val int64AddressOutHandle by lazy {
+        Jdk22Foreign.methodWithTwoInputsHandle(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)
     }
 
     override fun queryInterface(instance: ComPtr, iid: Guid): Result<ComPtr> {
@@ -1517,6 +1617,78 @@ private object JvmPlatformComInterop : ComInterop {
             vtableIndex = vtableIndex,
             operation = "invokeMethodWithObjectAndStringArgs",
             handle = twoAddressOutHandle,
+            resultKind = resultKind,
+            first,
+            second,
+        )
+    }
+
+    override fun invokeMethodWithObjectAndInt32Args(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: ComPtr,
+        second: Int,
+    ): Result<ComMethodResult> {
+        return JvmComMethodExecutor.invokeWithOutResultKind(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeMethodWithObjectAndInt32Args",
+            handle = addressInt32OutHandle,
+            resultKind = resultKind,
+            first,
+            second,
+        )
+    }
+
+    override fun invokeMethodWithInt32AndObjectArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: Int,
+        second: ComPtr,
+    ): Result<ComMethodResult> {
+        return JvmComMethodExecutor.invokeWithOutResultKind(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeMethodWithInt32AndObjectArgs",
+            handle = int32AddressOutHandle,
+            resultKind = resultKind,
+            first,
+            second,
+        )
+    }
+
+    override fun invokeMethodWithObjectAndInt64Args(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: ComPtr,
+        second: Long,
+    ): Result<ComMethodResult> {
+        return JvmComMethodExecutor.invokeWithOutResultKind(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeMethodWithObjectAndInt64Args",
+            handle = addressInt64OutHandle,
+            resultKind = resultKind,
+            first,
+            second,
+        )
+    }
+
+    override fun invokeMethodWithInt64AndObjectArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: Long,
+        second: ComPtr,
+    ): Result<ComMethodResult> {
+        return JvmComMethodExecutor.invokeWithOutResultKind(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeMethodWithInt64AndObjectArgs",
+            handle = int64AddressOutHandle,
             resultKind = resultKind,
             first,
             second,

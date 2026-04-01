@@ -96,7 +96,17 @@ internal data class MethodParameterPair(
 )
 
 internal fun MethodSignatureShape.isTwoArgumentObjectShape(): Boolean =
-    this == MethodSignatureShape.OBJECT_STRING ||
+    this == MethodSignatureShape.OBJECT_INT32 ||
+        this == MethodSignatureShape.OBJECT_UINT32 ||
+        this == MethodSignatureShape.OBJECT_BOOLEAN ||
+        this == MethodSignatureShape.OBJECT_INT64 ||
+        this == MethodSignatureShape.OBJECT_EVENT_REGISTRATION_TOKEN ||
+        this == MethodSignatureShape.INT32_OBJECT ||
+        this == MethodSignatureShape.UINT32_OBJECT ||
+        this == MethodSignatureShape.BOOLEAN_OBJECT ||
+        this == MethodSignatureShape.INT64_OBJECT ||
+        this == MethodSignatureShape.EVENT_REGISTRATION_TOKEN_OBJECT ||
+        this == MethodSignatureShape.OBJECT_STRING ||
         this == MethodSignatureShape.STRING_OBJECT ||
         this == MethodSignatureShape.TWO_OBJECT
 
@@ -156,6 +166,7 @@ internal fun MethodSignatureShape.toTwoArgumentParameterPair(): MethodParameterP
 
 internal fun MethodSignatureKey.isTwoArgumentUnifiedReturnShape(): Boolean =
     returnKind in setOf(
+        MethodReturnKind.OBJECT,
         MethodReturnKind.STRING,
         MethodReturnKind.FLOAT32,
         MethodReturnKind.FLOAT64,

@@ -832,11 +832,27 @@ internal class RuntimeMethodRenderer(
                 ?: error("Unsupported two-argument return shape: ${signatureKey.shape}")
             val abiCall = AbiCallCatalog.resultMethodWithTwoArguments(
                 method.vtableIndex!!,
-                resultKindName(method.returnType),
-                resultExtractor(method.returnType),
+                if (signatureKey.returnKind == MethodReturnKind.OBJECT) "OBJECT" else resultKindName(method.returnType),
+                if (signatureKey.returnKind == MethodReturnKind.OBJECT) PoetSymbols.requireObjectMember else resultExtractor(method.returnType),
                 parameterPair,
-                if (parameterPair.first == MethodParameterCategory.OBJECT) "${parameterBindings[0].name}.pointer" else parameterBindings[0].name,
-                if (parameterPair.second == MethodParameterCategory.OBJECT) "${parameterBindings[1].name}.pointer" else parameterBindings[1].name,
+                when (parameterPair.first) {
+                    MethodParameterCategory.OBJECT -> "${parameterBindings[0].name}.pointer"
+                    MethodParameterCategory.INT32,
+                    MethodParameterCategory.UINT32,
+                    MethodParameterCategory.BOOLEAN,
+                    MethodParameterCategory.INT64,
+                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "${parameterBindings[0].name}.value"
+                    else -> parameterBindings[0].name
+                },
+                when (parameterPair.second) {
+                    MethodParameterCategory.OBJECT -> "${parameterBindings[1].name}.pointer"
+                    MethodParameterCategory.INT32,
+                    MethodParameterCategory.UINT32,
+                    MethodParameterCategory.BOOLEAN,
+                    MethodParameterCategory.INT64,
+                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "${parameterBindings[1].name}.value"
+                    else -> parameterBindings[1].name
+                },
             )
             arrayOf(
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) {

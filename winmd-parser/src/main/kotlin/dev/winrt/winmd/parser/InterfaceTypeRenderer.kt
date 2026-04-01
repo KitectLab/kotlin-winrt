@@ -2072,11 +2072,27 @@ internal class InterfaceTypeRenderer(
                 ?: error("Unsupported two-argument return shape: ${signatureKey.shape}")
             val abiCall = AbiCallCatalog.resultMethodWithTwoArguments(
                 method.vtableIndex!!,
-                resultKindName(method.returnType),
-                resultExtractor(method.returnType),
+                if (signatureKey.returnKind == MethodReturnKind.OBJECT) "OBJECT" else resultKindName(method.returnType),
+                if (signatureKey.returnKind == MethodReturnKind.OBJECT) PoetSymbols.requireObjectMember else resultExtractor(method.returnType),
                 parameterPair,
-                if (parameterPair.first == MethodParameterCategory.OBJECT) "$firstArgumentName.pointer" else firstArgumentName,
-                if (parameterPair.second == MethodParameterCategory.OBJECT) secondArgumentName.let { "$it.pointer" } else secondArgumentName,
+                when (parameterPair.first) {
+                    MethodParameterCategory.OBJECT -> "$firstArgumentName.pointer"
+                    MethodParameterCategory.INT32,
+                    MethodParameterCategory.UINT32,
+                    MethodParameterCategory.BOOLEAN,
+                    MethodParameterCategory.INT64,
+                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$firstArgumentName.value"
+                    else -> firstArgumentName
+                },
+                when (parameterPair.second) {
+                    MethodParameterCategory.OBJECT -> "$secondArgumentName.pointer"
+                    MethodParameterCategory.INT32,
+                    MethodParameterCategory.UINT32,
+                    MethodParameterCategory.BOOLEAN,
+                    MethodParameterCategory.INT64,
+                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$secondArgumentName.value"
+                    else -> secondArgumentName
+                },
             )
             arrayOf(
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) {
