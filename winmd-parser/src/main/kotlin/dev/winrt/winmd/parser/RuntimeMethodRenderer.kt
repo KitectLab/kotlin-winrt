@@ -159,22 +159,18 @@ internal class RuntimeMethodRenderer(
         if (signatureKey.isTwoArgumentUnifiedReturnShape()) {
             return plannedTwoArgumentRuntimeMethod(signatureKey)
         }
-        signatureKey.shape.toTwoArgumentParameterPair()
-            ?.takeIf { signatureKey.returnKind == MethodReturnKind.UNIT && it.isSupportedTwoArgumentUnitPair() }
+        signatureKey.shape.toParameterCategories()
+            ?.takeIf { signatureKey.returnKind == MethodReturnKind.UNIT && it.isSupportedTwoArgumentUnitCategories() }
             ?.let {
                 return RuntimeMethodPlan(
                     nullPointerReturn = { PlannedStatement("return") },
                     returnStatement = "%L",
                     statementArgs = { method, _, parameterBindings ->
-                        val parameterCategories = methodParameterCategories(
-                            method.parameters.map { parameter -> parameter.type },
-                            ::supportsRuntimeObjectType,
-                        ) ?: error("Unsupported two-argument unit parameters")
                         arrayOf(
                             AbiCallCatalog.unitMethodWithTwoArguments(
                                 method.vtableIndex!!,
-                                parameterCategories,
-                                when (parameterCategories[0]) {
+                                it,
+                                when (it[0]) {
                                     MethodParameterCategory.OBJECT -> "${parameterBindings[0].name}.pointer"
                                     MethodParameterCategory.INT32,
                                     MethodParameterCategory.UINT32,
@@ -183,7 +179,7 @@ internal class RuntimeMethodRenderer(
                                     MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "${parameterBindings[0].name}.value"
                                     else -> parameterBindings[0].name
                                 },
-                                when (parameterCategories[1]) {
+                                when (it[1]) {
                                     MethodParameterCategory.OBJECT -> "${parameterBindings[1].name}.pointer"
                                     MethodParameterCategory.INT32,
                                     MethodParameterCategory.UINT32,

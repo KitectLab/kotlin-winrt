@@ -45,58 +45,13 @@ class MethodSignatureShapeTest {
     }
 
     @Test
-    fun exposes_two_argument_parameter_categories_for_supported_shapes() {
-        assertEquals(
-            MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.STRING),
-            MethodSignatureShape.STRING_STRING.toTwoArgumentParameterPair(),
-        )
-        assertEquals(
-            MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.INT32),
-            MethodSignatureShape.STRING_INT32.toTwoArgumentParameterPair(),
-        )
-        assertEquals(
-            MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.STRING),
-            MethodSignatureShape.INT32_STRING.toTwoArgumentParameterPair(),
-        )
-        assertEquals(
-            MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.INT64),
-            MethodSignatureShape.INT32_INT64.toTwoArgumentParameterPair(),
-        )
-        assertEquals(
-            MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.BOOLEAN),
-            MethodSignatureShape.EVENT_REGISTRATION_TOKEN_BOOLEAN.toTwoArgumentParameterPair(),
-        )
-        assertEquals(
-            MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.INT32),
-            MethodSignatureShape.OBJECT_INT32.toTwoArgumentParameterPair(),
-        )
-        assertEquals(
-            MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.OBJECT),
-            MethodSignatureShape.INT64_OBJECT.toTwoArgumentParameterPair(),
-        )
-        assertEquals(
-            MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING),
-            MethodSignatureShape.OBJECT_STRING.toTwoArgumentParameterPair(),
-        )
-        assertEquals(
-            MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.OBJECT),
-            MethodSignatureShape.STRING_OBJECT.toTwoArgumentParameterPair(),
-        )
-        assertEquals(
-            MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.OBJECT),
-            MethodSignatureShape.TWO_OBJECT.toTwoArgumentParameterPair(),
-        )
-        assertEquals(null, MethodSignatureShape.STRING.toTwoArgumentParameterPair())
-    }
-
-    @Test
-    fun classifies_supported_two_argument_parameter_pairs() {
-        assertTrue(MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.STRING).isSupportedTwoArgumentUnitPair())
-        assertTrue(MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.INT32).isSupportedTwoArgumentUnitPair())
-        assertTrue(MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.INT64).isSupportedTwoArgumentUnitPair())
-        assertTrue(MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.INT32).isSupportedTwoArgumentUnifiedReturnPair())
-        assertTrue(MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.OBJECT).isSupportedTwoArgumentUnifiedReturnPair())
-        assertFalse(MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.STRING).isSupportedTwoArgumentUnifiedReturnPair())
+    fun classifies_supported_two_argument_parameter_categories() {
+        assertTrue(listOf(MethodParameterCategory.STRING, MethodParameterCategory.STRING).isSupportedTwoArgumentUnitCategories())
+        assertTrue(listOf(MethodParameterCategory.OBJECT, MethodParameterCategory.INT32).isSupportedTwoArgumentUnitCategories())
+        assertTrue(listOf(MethodParameterCategory.INT32, MethodParameterCategory.INT64).isSupportedTwoArgumentUnitCategories())
+        assertTrue(listOf(MethodParameterCategory.STRING, MethodParameterCategory.INT32).isSupportedTwoArgumentUnifiedReturnCategories())
+        assertTrue(listOf(MethodParameterCategory.INT64, MethodParameterCategory.OBJECT).isSupportedTwoArgumentUnifiedReturnCategories())
+        assertFalse(listOf(MethodParameterCategory.STRING, MethodParameterCategory.STRING).isSupportedTwoArgumentUnifiedReturnCategories())
     }
 
     @Test

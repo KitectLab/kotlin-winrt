@@ -186,16 +186,16 @@ private val parameterCategoriesByShape = buildMap {
 internal fun MethodSignatureShape.toParameterCategories(): List<MethodParameterCategory>? =
     parameterCategoriesByShape[this]
 
-internal fun MethodSignatureShape.toTwoArgumentParameterPair(): MethodParameterPair? =
-    twoArgumentPairsByShape[this]
-
 internal fun List<MethodParameterCategory>.isSupportedTwoArgumentUnitCategories(): Boolean =
-    size == 2 && MethodParameterPair(this[0], this[1]).isSupportedTwoArgumentUnitPair()
+    size == 2 && supportedTwoArgumentUnitCategories(this[0], this[1])
 
 internal fun List<MethodParameterCategory>.isSupportedTwoArgumentUnifiedReturnCategories(): Boolean =
-    size == 2 && MethodParameterPair(this[0], this[1]).isSupportedTwoArgumentUnifiedReturnPair()
+    size == 2 && supportedTwoArgumentUnifiedReturnCategories(this[0], this[1])
 
-internal fun MethodParameterPair.isSupportedTwoArgumentUnitPair(): Boolean =
+private fun supportedTwoArgumentUnitCategories(
+    first: MethodParameterCategory,
+    second: MethodParameterCategory,
+): Boolean =
     first == MethodParameterCategory.STRING ||
         second == MethodParameterCategory.STRING ||
         first == MethodParameterCategory.OBJECT ||
@@ -205,8 +205,12 @@ internal fun MethodParameterPair.isSupportedTwoArgumentUnitPair(): Boolean =
         (first in int64LikeCategories && second in int32LikeCategories) ||
         (first in int64LikeCategories && second in int64LikeCategories)
 
-internal fun MethodParameterPair.isSupportedTwoArgumentUnifiedReturnPair(): Boolean =
-    isSupportedTwoArgumentUnitPair() && this != MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.STRING)
+private fun supportedTwoArgumentUnifiedReturnCategories(
+    first: MethodParameterCategory,
+    second: MethodParameterCategory,
+): Boolean =
+    supportedTwoArgumentUnitCategories(first, second) &&
+        !(first == MethodParameterCategory.STRING && second == MethodParameterCategory.STRING)
 
 internal fun MethodParameterCategory.toAbiToken(): MethodParameterAbiToken =
     when (this) {

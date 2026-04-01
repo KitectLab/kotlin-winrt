@@ -1501,23 +1501,19 @@ internal class InterfaceTypeRenderer(
         if (signatureKey.isTwoArgumentUnifiedReturnShape()) {
             return plannedTwoArgumentReturnMethod(signatureKey, genericParameters)
         }
-        signatureKey.shape.toTwoArgumentParameterPair()
-            ?.takeIf { signatureKey.returnKind == MethodReturnKind.UNIT && it.isSupportedTwoArgumentUnitPair() }
+        signatureKey.shape.toParameterCategories()
+            ?.takeIf { signatureKey.returnKind == MethodReturnKind.UNIT && it.isSupportedTwoArgumentUnitCategories() }
             ?.let {
                 return PlannedInterfaceMethod(
                     statement = "%L",
                     args = { method, _ ->
                         val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
                         val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
-                        val parameterCategories = methodParameterCategories(
-                            method.parameters.map { parameter -> parameter.type },
-                            ::supportsInterfaceObjectInput,
-                        ) ?: error("Unsupported two-argument unit parameters")
                         arrayOf(
                             AbiCallCatalog.unitMethodWithTwoArguments(
                                 method.vtableIndex!!,
-                                parameterCategories,
-                                when (parameterCategories[0]) {
+                                it,
+                                when (it[0]) {
                                     MethodParameterCategory.OBJECT -> "$firstArgumentName.pointer"
                                     MethodParameterCategory.INT32,
                                     MethodParameterCategory.UINT32,
@@ -1526,7 +1522,7 @@ internal class InterfaceTypeRenderer(
                                     MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$firstArgumentName.value"
                                     else -> firstArgumentName
                                 },
-                                when (parameterCategories[1]) {
+                                when (it[1]) {
                                     MethodParameterCategory.OBJECT -> "$secondArgumentName.pointer"
                                     MethodParameterCategory.INT32,
                                     MethodParameterCategory.UINT32,
