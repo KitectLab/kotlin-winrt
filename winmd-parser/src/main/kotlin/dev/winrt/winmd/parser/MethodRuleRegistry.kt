@@ -31,6 +31,9 @@ internal object MethodRuleRegistry {
         MethodSignatureShape.STRING_OBJECT,
         MethodSignatureShape.TWO_OBJECT,
     )
+    private val twoArgumentUnitScalarShapes = listOf(
+        MethodSignatureShape.STRING_STRING,
+    )
 
     private val sharedMethodRules: Map<MethodSignatureKey, SharedMethodRuleFamily> = buildMap {
         register(SharedMethodRuleFamily.STRING, MethodReturnKind.STRING, emptyShapes + unaryStringLikeShapes + twoArgumentObjectShapes)
@@ -41,7 +44,7 @@ internal object MethodRuleRegistry {
         register(SharedMethodRuleFamily.UNIT, MethodReturnKind.UINT32, emptyShapes + listOf(MethodSignatureShape.STRING, MethodSignatureShape.INT32, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN, MethodSignatureShape.OBJECT) + twoArgumentObjectShapes)
         register(SharedMethodRuleFamily.EVENT_REGISTRATION_TOKEN, MethodReturnKind.EVENT_REGISTRATION_TOKEN, emptyShapes)
         register(SharedMethodRuleFamily.OBJECT, MethodReturnKind.OBJECT, emptyShapes + listOf(MethodSignatureShape.STRING, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN, MethodSignatureShape.OBJECT) + twoArgumentObjectShapes)
-        register(SharedMethodRuleFamily.UNIT, MethodReturnKind.UNIT, emptyShapes + unaryStringLikeShapes + unaryUnitOnlyShapes + twoArgumentObjectShapes)
+        register(SharedMethodRuleFamily.UNIT, MethodReturnKind.UNIT, emptyShapes + unaryStringLikeShapes + unaryUnitOnlyShapes + twoArgumentUnitScalarShapes + twoArgumentObjectShapes)
         register(SharedMethodRuleFamily.OBJECT, MethodReturnKind.INT64, listOf(MethodSignatureShape.STRING, MethodSignatureShape.INT32, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN, MethodSignatureShape.OBJECT) + twoArgumentObjectShapes)
         register(SharedMethodRuleFamily.OBJECT, MethodReturnKind.UINT64, listOf(MethodSignatureShape.STRING, MethodSignatureShape.INT32, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN, MethodSignatureShape.OBJECT) + twoArgumentObjectShapes)
         register(SharedMethodRuleFamily.UNIT, MethodReturnKind.GUID, twoArgumentObjectShapes)

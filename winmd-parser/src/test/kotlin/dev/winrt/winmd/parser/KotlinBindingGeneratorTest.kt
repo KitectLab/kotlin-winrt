@@ -535,6 +535,49 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun renders_helper_interfaces_with_two_string_parameters_and_unit_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics12",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-1212-1212-1212-dddddddddddd",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "TrackNames",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("first", "String"),
+                                        WinMdParameter("second", "String"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics12.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun trackNames("))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithTwoStringArgs(pointer,6,first,second).getOrThrow()"))
+    }
+
+    @Test
     fun renders_helper_interfaces_with_two_object_parameters_and_object_return() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

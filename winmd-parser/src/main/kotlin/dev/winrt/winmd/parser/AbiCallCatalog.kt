@@ -33,6 +33,15 @@ internal object AbiCallCatalog {
     fun unitMethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
         CodeBlock.of("%T.invokeUnitMethodWithStringArg(pointer, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
 
+    fun unitMethodWithTwoStrings(vtableIndex: Int, firstArgumentName: String, secondArgumentName: String): CodeBlock =
+        CodeBlock.of(
+            "%T.invokeUnitMethodWithTwoStringArgs(pointer, %L, %N, %N).getOrThrow()",
+            PoetSymbols.platformComInteropClass,
+            vtableIndex,
+            firstArgumentName,
+            secondArgumentName,
+        )
+
     fun unitMethodWithObjectAndString(vtableIndex: Int, firstArgumentExpression: String, secondArgumentName: String): CodeBlock =
         CodeBlock.of(
             "%T.invokeUnitMethodWithObjectAndStringArgs(pointer, %L, %L, %N).getOrThrow()",
@@ -66,6 +75,8 @@ internal object AbiCallCatalog {
         firstArgumentExpression: String,
         secondArgumentExpression: String,
     ): CodeBlock = when (parameterPair) {
+        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.STRING) ->
+            unitMethodWithTwoStrings(vtableIndex, firstArgumentExpression, secondArgumentExpression)
         MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING) ->
             unitMethodWithObjectAndString(vtableIndex, firstArgumentExpression, secondArgumentExpression)
         MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.OBJECT) ->

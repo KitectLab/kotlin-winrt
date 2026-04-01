@@ -1945,6 +1945,14 @@ internal class InterfaceTypeRenderer(
                     arrayOf(AbiCallCatalog.objectSetter(method.vtableIndex!!, argumentName))
                 },
             )
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_STRING) -> PlannedInterfaceMethod(
+                statement = "%L",
+                args = { method, _ ->
+                    val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                    val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
+                    arrayOf(AbiCallCatalog.unitMethodWithTwoStrings(method.vtableIndex!!, firstArgumentName, secondArgumentName))
+                },
+            )
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_STRING) -> PlannedInterfaceMethod(
                 statement = "%L",
                 args = { method, _ ->

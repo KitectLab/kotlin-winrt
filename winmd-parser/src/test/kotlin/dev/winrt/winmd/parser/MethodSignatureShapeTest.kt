@@ -44,6 +44,7 @@ class MethodSignatureShapeTest {
 
     @Test
     fun exposes_two_argument_parameter_categories_for_supported_shapes() {
+        assertEquals(null, MethodSignatureShape.STRING_STRING.toTwoArgumentParameterPair())
         assertEquals(
             MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING),
             MethodSignatureShape.OBJECT_STRING.toTwoArgumentParameterPair(),

@@ -204,6 +204,38 @@ private object JvmComMethodExecutor {
         vtableIndex: Int,
         operation: String,
         handle: java.lang.invoke.MethodHandle,
+        first: String,
+        second: String,
+    ): Result<Unit> {
+        return runCatching {
+            requireInstance(instance)
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            val firstHString = JvmWinRtRuntime.createHString(first)
+            try {
+                val secondHString = JvmWinRtRuntime.createHString(second)
+                try {
+                    val hresult = HResult(
+                        handle.bindTo(function).invokeWithArguments(
+                            Jdk22Foreign.pointerOf(instance),
+                            MemorySegment.ofAddress(firstHString.raw),
+                            MemorySegment.ofAddress(secondHString.raw),
+                        ) as Int,
+                    )
+                    hresult.requireSuccess("$operation($vtableIndex)")
+                } finally {
+                    JvmWinRtRuntime.releaseHString(secondHString)
+                }
+            } finally {
+                JvmWinRtRuntime.releaseHString(firstHString)
+            }
+        }
+    }
+
+    fun invokeWithoutOut(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
         value: ComPtr,
     ): Result<Unit> {
         return runCatching {
@@ -892,6 +924,22 @@ private object JvmPlatformComInterop : ComInterop {
             operation = "invokeUnitMethodWithStringArg",
             handle = Jdk22Foreign.hstringSetterHandle,
             value,
+        )
+    }
+
+    override fun invokeUnitMethodWithTwoStringArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        first: String,
+        second: String,
+    ): Result<Unit> {
+        return JvmComMethodExecutor.invokeWithoutOut(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeUnitMethodWithTwoStringArgs",
+            handle = twoAddressUnitHandle,
+            first,
+            second,
         )
     }
 

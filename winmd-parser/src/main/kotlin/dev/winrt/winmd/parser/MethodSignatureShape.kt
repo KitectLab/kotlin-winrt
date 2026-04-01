@@ -9,6 +9,7 @@ internal enum class MethodSignatureShape {
     UINT32,
     EVENT_REGISTRATION_TOKEN,
     OBJECT,
+    STRING_STRING,
     OBJECT_STRING,
     STRING_OBJECT,
     TWO_OBJECT,
@@ -107,6 +108,7 @@ internal fun methodSignatureShape(
         parameterCategories == listOf(MethodParameterCategory.UINT32) -> MethodSignatureShape.UINT32
         parameterCategories == listOf(MethodParameterCategory.EVENT_REGISTRATION_TOKEN) -> MethodSignatureShape.EVENT_REGISTRATION_TOKEN
         parameterCategories == listOf(MethodParameterCategory.OBJECT) -> MethodSignatureShape.OBJECT
+        parameterCategories == listOf(MethodParameterCategory.STRING, MethodParameterCategory.STRING) -> MethodSignatureShape.STRING_STRING
         parameterCategories == listOf(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING) ->
             MethodSignatureShape.OBJECT_STRING
         parameterCategories == listOf(MethodParameterCategory.STRING, MethodParameterCategory.OBJECT) ->

@@ -43,6 +43,12 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeUnitMethodWithTwoStringArgs(instance: ComPtr, vtableIndex: Int, first: String, second: String): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with two String inputs is not wired yet"),
+        )
+    }
+
     override fun invokeUnitMethodWithObjectAndStringArgs(
         instance: ComPtr,
         vtableIndex: Int,
