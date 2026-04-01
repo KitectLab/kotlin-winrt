@@ -1980,6 +1980,16 @@ internal class InterfaceTypeRenderer(
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_BOOLEAN),
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_INT64),
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_EVENT_REGISTRATION_TOKEN),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_INT32),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_UINT32),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_BOOLEAN),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_INT64),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_EVENT_REGISTRATION_TOKEN),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32_OBJECT),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32_OBJECT),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN_OBJECT),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64_OBJECT),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_OBJECT),
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_STRING) -> PlannedInterfaceMethod(
                 statement = "%L",
                 args = { method, _ ->

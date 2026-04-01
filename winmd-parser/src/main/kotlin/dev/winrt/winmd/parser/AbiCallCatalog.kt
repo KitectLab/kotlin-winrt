@@ -114,6 +114,42 @@ internal object AbiCallCatalog {
             secondArgumentExpression,
         )
 
+    fun unitMethodWithObjectAndInt32(vtableIndex: Int, firstArgumentExpression: String, secondArgumentExpression: String): CodeBlock =
+        CodeBlock.of(
+            "%T.invokeUnitMethodWithObjectAndInt32Args(pointer, %L, %L, %L).getOrThrow()",
+            PoetSymbols.platformComInteropClass,
+            vtableIndex,
+            firstArgumentExpression,
+            secondArgumentExpression,
+        )
+
+    fun unitMethodWithInt32AndObject(vtableIndex: Int, firstArgumentExpression: String, secondArgumentExpression: String): CodeBlock =
+        CodeBlock.of(
+            "%T.invokeUnitMethodWithInt32AndObjectArgs(pointer, %L, %L, %L).getOrThrow()",
+            PoetSymbols.platformComInteropClass,
+            vtableIndex,
+            firstArgumentExpression,
+            secondArgumentExpression,
+        )
+
+    fun unitMethodWithObjectAndInt64(vtableIndex: Int, firstArgumentExpression: String, secondArgumentExpression: String): CodeBlock =
+        CodeBlock.of(
+            "%T.invokeUnitMethodWithObjectAndInt64Args(pointer, %L, %L, %L).getOrThrow()",
+            PoetSymbols.platformComInteropClass,
+            vtableIndex,
+            firstArgumentExpression,
+            secondArgumentExpression,
+        )
+
+    fun unitMethodWithInt64AndObject(vtableIndex: Int, firstArgumentExpression: String, secondArgumentExpression: String): CodeBlock =
+        CodeBlock.of(
+            "%T.invokeUnitMethodWithInt64AndObjectArgs(pointer, %L, %L, %L).getOrThrow()",
+            PoetSymbols.platformComInteropClass,
+            vtableIndex,
+            firstArgumentExpression,
+            secondArgumentExpression,
+        )
+
     fun unitMethodWithTwoObject(vtableIndex: Int, firstArgumentExpression: String, secondArgumentExpression: String): CodeBlock =
         CodeBlock.of(
             "%T.invokeUnitMethodWithTwoObjectArgs(pointer, %L, %L, %L).getOrThrow()",
@@ -180,6 +216,20 @@ internal object AbiCallCatalog {
         MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.INT64),
         MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) ->
             unitMethodWithTwoInt64s(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.INT32),
+        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.UINT32),
+        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.BOOLEAN) ->
+            unitMethodWithObjectAndInt32(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.INT64),
+        MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) ->
+            unitMethodWithObjectAndInt64(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.OBJECT),
+        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.OBJECT),
+        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.OBJECT) ->
+            unitMethodWithInt32AndObject(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.OBJECT),
+        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.OBJECT) ->
+            unitMethodWithInt64AndObject(vtableIndex, firstArgumentExpression, secondArgumentExpression)
         MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING) ->
             unitMethodWithObjectAndString(vtableIndex, firstArgumentExpression, secondArgumentExpression)
         MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.OBJECT) ->

@@ -65,6 +65,14 @@ class MethodSignatureShapeTest {
             MethodSignatureShape.EVENT_REGISTRATION_TOKEN_BOOLEAN.toTwoArgumentParameterPair(),
         )
         assertEquals(
+            MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.INT32),
+            MethodSignatureShape.OBJECT_INT32.toTwoArgumentParameterPair(),
+        )
+        assertEquals(
+            MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.OBJECT),
+            MethodSignatureShape.INT64_OBJECT.toTwoArgumentParameterPair(),
+        )
+        assertEquals(
             MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING),
             MethodSignatureShape.OBJECT_STRING.toTwoArgumentParameterPair(),
         )

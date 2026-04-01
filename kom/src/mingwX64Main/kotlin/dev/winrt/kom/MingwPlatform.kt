@@ -67,6 +67,30 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeUnitMethodWithObjectAndInt32Args(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: Int): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with Object and Int32 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithInt32AndObjectArgs(instance: ComPtr, vtableIndex: Int, first: Int, second: ComPtr): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with Int32 and Object inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithObjectAndInt64Args(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: Long): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with Object and Int64 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithInt64AndObjectArgs(instance: ComPtr, vtableIndex: Int, first: Long, second: ComPtr): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with Int64 and Object inputs is not wired yet"),
+        )
+    }
+
     override fun invokeUnitMethodWithStringAndInt32Args(instance: ComPtr, vtableIndex: Int, first: String, second: Int): Result<Unit> {
         return Result.failure(
             UnsupportedOperationException("Native Unit method invocation with String and Int32 inputs is not wired yet"),

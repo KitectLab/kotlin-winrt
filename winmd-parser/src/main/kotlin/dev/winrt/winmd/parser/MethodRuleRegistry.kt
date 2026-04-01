@@ -27,6 +27,16 @@ internal object MethodRuleRegistry {
         MethodSignatureShape.OBJECT,
     )
     private val twoArgumentObjectShapes = listOf(
+        MethodSignatureShape.OBJECT_INT32,
+        MethodSignatureShape.OBJECT_UINT32,
+        MethodSignatureShape.OBJECT_BOOLEAN,
+        MethodSignatureShape.OBJECT_INT64,
+        MethodSignatureShape.OBJECT_EVENT_REGISTRATION_TOKEN,
+        MethodSignatureShape.INT32_OBJECT,
+        MethodSignatureShape.UINT32_OBJECT,
+        MethodSignatureShape.BOOLEAN_OBJECT,
+        MethodSignatureShape.INT64_OBJECT,
+        MethodSignatureShape.EVENT_REGISTRATION_TOKEN_OBJECT,
         MethodSignatureShape.OBJECT_STRING,
         MethodSignatureShape.STRING_OBJECT,
         MethodSignatureShape.TWO_OBJECT,

@@ -39,6 +39,94 @@ private object JvmComMethodExecutor {
         vtableIndex: Int,
         operation: String,
         handle: java.lang.invoke.MethodHandle,
+        first: ComPtr,
+        second: Int,
+    ): Result<Unit> {
+        return runCatching {
+            requireInstance(instance)
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            val hresult = HResult(
+                handle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    if (first.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(first),
+                    second,
+                ) as Int,
+            )
+            hresult.requireSuccess("$operation($vtableIndex)")
+        }
+    }
+
+    fun invokeWithoutOut(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: Int,
+        second: ComPtr,
+    ): Result<Unit> {
+        return runCatching {
+            requireInstance(instance)
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            val hresult = HResult(
+                handle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    first,
+                    if (second.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(second),
+                ) as Int,
+            )
+            hresult.requireSuccess("$operation($vtableIndex)")
+        }
+    }
+
+    fun invokeWithoutOut(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: ComPtr,
+        second: Long,
+    ): Result<Unit> {
+        return runCatching {
+            requireInstance(instance)
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            val hresult = HResult(
+                handle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    if (first.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(first),
+                    second,
+                ) as Int,
+            )
+            hresult.requireSuccess("$operation($vtableIndex)")
+        }
+    }
+
+    fun invokeWithoutOut(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: Long,
+        second: ComPtr,
+    ): Result<Unit> {
+        return runCatching {
+            requireInstance(instance)
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            val hresult = HResult(
+                handle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    first,
+                    if (second.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(second),
+                ) as Int,
+            )
+            hresult.requireSuccess("$operation($vtableIndex)")
+        }
+    }
+
+    fun invokeWithoutOut(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
         value: Int,
     ): Result<Unit> {
         return runCatching {
@@ -1087,6 +1175,22 @@ private object JvmPlatformComInterop : ComInterop {
         Jdk22Foreign.unitMethodWithTwoInputsHandle(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG)
     }
 
+    private val addressInt32UnitHandle by lazy {
+        Jdk22Foreign.unitMethodWithTwoInputsHandle(ValueLayout.ADDRESS, ValueLayout.JAVA_INT)
+    }
+
+    private val int32AddressUnitHandle by lazy {
+        Jdk22Foreign.unitMethodWithTwoInputsHandle(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)
+    }
+
+    private val addressInt64UnitHandle by lazy {
+        Jdk22Foreign.unitMethodWithTwoInputsHandle(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG)
+    }
+
+    private val int64AddressUnitHandle by lazy {
+        Jdk22Foreign.unitMethodWithTwoInputsHandle(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)
+    }
+
     private val twoAddressOutHandle by lazy {
         Jdk22Foreign.methodWithTwoInputsHandle(ValueLayout.ADDRESS, ValueLayout.ADDRESS)
     }
@@ -1205,6 +1309,22 @@ private object JvmPlatformComInterop : ComInterop {
 
     override fun invokeUnitMethodWithTwoInt64Args(instance: ComPtr, vtableIndex: Int, first: Long, second: Long): Result<Unit> {
         return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithTwoInt64Args", twoInt64UnitHandle, first, second)
+    }
+
+    override fun invokeUnitMethodWithObjectAndInt32Args(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: Int): Result<Unit> {
+        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithObjectAndInt32Args", addressInt32UnitHandle, first, second)
+    }
+
+    override fun invokeUnitMethodWithInt32AndObjectArgs(instance: ComPtr, vtableIndex: Int, first: Int, second: ComPtr): Result<Unit> {
+        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithInt32AndObjectArgs", int32AddressUnitHandle, first, second)
+    }
+
+    override fun invokeUnitMethodWithObjectAndInt64Args(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: Long): Result<Unit> {
+        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithObjectAndInt64Args", addressInt64UnitHandle, first, second)
+    }
+
+    override fun invokeUnitMethodWithInt64AndObjectArgs(instance: ComPtr, vtableIndex: Int, first: Long, second: ComPtr): Result<Unit> {
+        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithInt64AndObjectArgs", int64AddressUnitHandle, first, second)
     }
 
     override fun invokeUnitMethodWithStringAndInt32Args(instance: ComPtr, vtableIndex: Int, first: String, second: Int): Result<Unit> {

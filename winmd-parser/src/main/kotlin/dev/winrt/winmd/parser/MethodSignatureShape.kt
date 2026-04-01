@@ -45,6 +45,16 @@ internal enum class MethodSignatureShape {
     EVENT_REGISTRATION_TOKEN_BOOLEAN,
     EVENT_REGISTRATION_TOKEN_INT64,
     EVENT_REGISTRATION_TOKEN_EVENT_REGISTRATION_TOKEN,
+    OBJECT_INT32,
+    OBJECT_UINT32,
+    OBJECT_BOOLEAN,
+    OBJECT_INT64,
+    OBJECT_EVENT_REGISTRATION_TOKEN,
+    INT32_OBJECT,
+    UINT32_OBJECT,
+    BOOLEAN_OBJECT,
+    INT64_OBJECT,
+    EVENT_REGISTRATION_TOKEN_OBJECT,
     OBJECT_STRING,
     STRING_OBJECT,
     TWO_OBJECT,
@@ -128,6 +138,16 @@ internal fun MethodSignatureShape.toTwoArgumentParameterPair(): MethodParameterP
         MethodSignatureShape.EVENT_REGISTRATION_TOKEN_BOOLEAN -> MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.BOOLEAN)
         MethodSignatureShape.EVENT_REGISTRATION_TOKEN_INT64 -> MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.INT64)
         MethodSignatureShape.EVENT_REGISTRATION_TOKEN_EVENT_REGISTRATION_TOKEN -> MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.EVENT_REGISTRATION_TOKEN)
+        MethodSignatureShape.OBJECT_INT32 -> MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.INT32)
+        MethodSignatureShape.OBJECT_UINT32 -> MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.UINT32)
+        MethodSignatureShape.OBJECT_BOOLEAN -> MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.BOOLEAN)
+        MethodSignatureShape.OBJECT_INT64 -> MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.INT64)
+        MethodSignatureShape.OBJECT_EVENT_REGISTRATION_TOKEN -> MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.EVENT_REGISTRATION_TOKEN)
+        MethodSignatureShape.INT32_OBJECT -> MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.OBJECT)
+        MethodSignatureShape.UINT32_OBJECT -> MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.OBJECT)
+        MethodSignatureShape.BOOLEAN_OBJECT -> MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.OBJECT)
+        MethodSignatureShape.INT64_OBJECT -> MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.OBJECT)
+        MethodSignatureShape.EVENT_REGISTRATION_TOKEN_OBJECT -> MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.OBJECT)
         MethodSignatureShape.OBJECT_STRING -> MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING)
         MethodSignatureShape.STRING_OBJECT -> MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.OBJECT)
         MethodSignatureShape.TWO_OBJECT -> MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.OBJECT)
@@ -215,6 +235,16 @@ internal fun methodSignatureShape(
         parameterCategories == listOf(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.BOOLEAN) -> MethodSignatureShape.EVENT_REGISTRATION_TOKEN_BOOLEAN
         parameterCategories == listOf(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.INT64) -> MethodSignatureShape.EVENT_REGISTRATION_TOKEN_INT64
         parameterCategories == listOf(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) -> MethodSignatureShape.EVENT_REGISTRATION_TOKEN_EVENT_REGISTRATION_TOKEN
+        parameterCategories == listOf(MethodParameterCategory.OBJECT, MethodParameterCategory.INT32) -> MethodSignatureShape.OBJECT_INT32
+        parameterCategories == listOf(MethodParameterCategory.OBJECT, MethodParameterCategory.UINT32) -> MethodSignatureShape.OBJECT_UINT32
+        parameterCategories == listOf(MethodParameterCategory.OBJECT, MethodParameterCategory.BOOLEAN) -> MethodSignatureShape.OBJECT_BOOLEAN
+        parameterCategories == listOf(MethodParameterCategory.OBJECT, MethodParameterCategory.INT64) -> MethodSignatureShape.OBJECT_INT64
+        parameterCategories == listOf(MethodParameterCategory.OBJECT, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) -> MethodSignatureShape.OBJECT_EVENT_REGISTRATION_TOKEN
+        parameterCategories == listOf(MethodParameterCategory.INT32, MethodParameterCategory.OBJECT) -> MethodSignatureShape.INT32_OBJECT
+        parameterCategories == listOf(MethodParameterCategory.UINT32, MethodParameterCategory.OBJECT) -> MethodSignatureShape.UINT32_OBJECT
+        parameterCategories == listOf(MethodParameterCategory.BOOLEAN, MethodParameterCategory.OBJECT) -> MethodSignatureShape.BOOLEAN_OBJECT
+        parameterCategories == listOf(MethodParameterCategory.INT64, MethodParameterCategory.OBJECT) -> MethodSignatureShape.INT64_OBJECT
+        parameterCategories == listOf(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.OBJECT) -> MethodSignatureShape.EVENT_REGISTRATION_TOKEN_OBJECT
         parameterCategories == listOf(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING) ->
             MethodSignatureShape.OBJECT_STRING
         parameterCategories == listOf(MethodParameterCategory.STRING, MethodParameterCategory.OBJECT) ->
