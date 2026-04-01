@@ -661,6 +661,9 @@ internal object AbiCallCatalog {
     fun booleanMethodWithInt64(vtableIndex: Int, argumentExpression: String): CodeBlock =
         CodeBlock.of("%T.invokeBooleanMethodWithInt64Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
 
+    fun booleanMethodWithObject(vtableIndex: Int, argumentExpression: String): CodeBlock =
+        CodeBlock.of("%T.invokeBooleanMethodWithObjectArg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+
     fun float64Method(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeFloat64Method(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 

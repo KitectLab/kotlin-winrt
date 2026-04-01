@@ -230,6 +230,20 @@ internal class RuntimeMethodRenderer(
                     arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithUInt32(method.vtableIndex!!, "if (${argumentName}.value) 1u else 0u")))
                 },
             )
+            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.INT64) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %S", arrayOf("")) },
+                returnStatement = "return %L",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithInt64(method.vtableIndex!!, "${parameterBindings.single().name}.value")))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %S", arrayOf("")) },
+                returnStatement = "return %L",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithObject(method.vtableIndex!!, "${parameterBindings.single().name}.pointer")))
+                },
+            )
             MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %T(0f)", arrayOf(PoetSymbols.float32Class)) },
                 returnStatement = "return %T(%L)",
@@ -371,6 +385,13 @@ internal class RuntimeMethodRenderer(
                 returnStatement = "return %T(%L)",
                 statementArgs = { method, _, parameterBindings ->
                     arrayOf(PoetSymbols.winRtBooleanClass, AbiCallCatalog.booleanMethodWithInt64(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return %T.FALSE", arrayOf(PoetSymbols.winRtBooleanClass)) },
+                returnStatement = "return %T(%L)",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(PoetSymbols.winRtBooleanClass, AbiCallCatalog.booleanMethodWithObject(method.vtableIndex!!, "${parameterBindings.single().name}.pointer"))
                 },
             )
             MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
