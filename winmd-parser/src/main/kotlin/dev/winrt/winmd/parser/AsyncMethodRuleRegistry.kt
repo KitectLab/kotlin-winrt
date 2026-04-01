@@ -17,10 +17,15 @@ internal class AsyncMethodRuleRegistry(
         }
         val invocationShape = methodSignatureShape(
             parameterTypes = method.parameters.map { it.type },
-            supportsObjectType = { false },
-        )?.takeIf { it == MethodSignatureShape.EMPTY || it == MethodSignatureShape.STRING } ?: return null
+            supportsObjectType = ::supportsAsyncObjectInput,
+        )?.takeIf {
+            it == MethodSignatureShape.EMPTY ||
+                it == MethodSignatureShape.STRING ||
+                it == MethodSignatureShape.OBJECT
+        } ?: return null
         val parameterName = when (invocationShape) {
             MethodSignatureShape.STRING -> method.parameters.single().name.replaceFirstChar(Char::lowercase)
+            MethodSignatureShape.OBJECT -> method.parameters.single().name.replaceFirstChar(Char::lowercase)
             else -> null
         }
         val rawReturnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace, genericParameters)
@@ -101,10 +106,19 @@ internal class AsyncMethodRuleRegistry(
                     "%T.invokeObjectMethod(pointer, ${method.vtableIndex}).getOrThrow()"
                 MethodSignatureShape.STRING ->
                     "%T.invokeObjectMethodWithStringArg(pointer, ${method.vtableIndex}, $parameterName).getOrThrow()"
+                MethodSignatureShape.OBJECT ->
+                    "%T.invokeObjectMethodWithObjectArg(pointer, ${method.vtableIndex}, $parameterName.pointer).getOrThrow()"
                 else -> error("Unsupported async invocation shape: $invocationShape")
             },
             rawTaskCallFactory = rawTaskCallFactory,
         )
+    }
+
+    private fun supportsAsyncObjectInput(typeName: String): Boolean {
+        return (typeName == "Object" || typeName.contains('.')) &&
+            !typeName.contains('<') &&
+            !typeName.contains('`') &&
+            !typeName.endsWith("[]")
     }
 }
 
