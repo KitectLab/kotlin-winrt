@@ -95,55 +95,19 @@ internal data class MethodParameterPair(
     val second: MethodParameterCategory,
 )
 
+private val int32LikeCategories = setOf(
+    MethodParameterCategory.INT32,
+    MethodParameterCategory.UINT32,
+    MethodParameterCategory.BOOLEAN,
+)
+
+private val int64LikeCategories = setOf(
+    MethodParameterCategory.INT64,
+    MethodParameterCategory.EVENT_REGISTRATION_TOKEN,
+)
+
 internal fun MethodSignatureShape.isTwoArgumentObjectShape(): Boolean =
-    this == MethodSignatureShape.STRING_INT32 ||
-        this == MethodSignatureShape.INT32_STRING ||
-        this == MethodSignatureShape.STRING_UINT32 ||
-        this == MethodSignatureShape.UINT32_STRING ||
-        this == MethodSignatureShape.STRING_BOOLEAN ||
-        this == MethodSignatureShape.BOOLEAN_STRING ||
-        this == MethodSignatureShape.STRING_INT64 ||
-        this == MethodSignatureShape.INT64_STRING ||
-        this == MethodSignatureShape.STRING_EVENT_REGISTRATION_TOKEN ||
-        this == MethodSignatureShape.EVENT_REGISTRATION_TOKEN_STRING ||
-        this == MethodSignatureShape.INT32_INT32 ||
-        this == MethodSignatureShape.INT32_UINT32 ||
-        this == MethodSignatureShape.INT32_BOOLEAN ||
-        this == MethodSignatureShape.INT32_INT64 ||
-        this == MethodSignatureShape.INT32_EVENT_REGISTRATION_TOKEN ||
-        this == MethodSignatureShape.UINT32_INT32 ||
-        this == MethodSignatureShape.UINT32_UINT32 ||
-        this == MethodSignatureShape.UINT32_BOOLEAN ||
-        this == MethodSignatureShape.UINT32_INT64 ||
-        this == MethodSignatureShape.UINT32_EVENT_REGISTRATION_TOKEN ||
-        this == MethodSignatureShape.BOOLEAN_INT32 ||
-        this == MethodSignatureShape.BOOLEAN_UINT32 ||
-        this == MethodSignatureShape.BOOLEAN_BOOLEAN ||
-        this == MethodSignatureShape.BOOLEAN_INT64 ||
-        this == MethodSignatureShape.BOOLEAN_EVENT_REGISTRATION_TOKEN ||
-        this == MethodSignatureShape.INT64_INT32 ||
-        this == MethodSignatureShape.INT64_UINT32 ||
-        this == MethodSignatureShape.INT64_BOOLEAN ||
-        this == MethodSignatureShape.INT64_INT64 ||
-        this == MethodSignatureShape.INT64_EVENT_REGISTRATION_TOKEN ||
-        this == MethodSignatureShape.EVENT_REGISTRATION_TOKEN_INT32 ||
-        this == MethodSignatureShape.EVENT_REGISTRATION_TOKEN_UINT32 ||
-        this == MethodSignatureShape.EVENT_REGISTRATION_TOKEN_BOOLEAN ||
-        this == MethodSignatureShape.EVENT_REGISTRATION_TOKEN_INT64 ||
-        this == MethodSignatureShape.EVENT_REGISTRATION_TOKEN_EVENT_REGISTRATION_TOKEN ||
-        this == MethodSignatureShape.OBJECT_INT32 ||
-        this == MethodSignatureShape.OBJECT_UINT32 ||
-        this == MethodSignatureShape.OBJECT_BOOLEAN ||
-        this == MethodSignatureShape.OBJECT_INT64 ||
-        this == MethodSignatureShape.OBJECT_EVENT_REGISTRATION_TOKEN ||
-        this == MethodSignatureShape.INT32_OBJECT ||
-        this == MethodSignatureShape.UINT32_OBJECT ||
-        this == MethodSignatureShape.BOOLEAN_OBJECT ||
-        this == MethodSignatureShape.INT64_OBJECT ||
-        this == MethodSignatureShape.EVENT_REGISTRATION_TOKEN_OBJECT ||
-        this == MethodSignatureShape.OBJECT_STRING ||
-        this == MethodSignatureShape.STRING_OBJECT ||
-        this == MethodSignatureShape.TWO_OBJECT
+    toTwoArgumentParameterPair() != null
 
 internal fun MethodSignatureShape.toTwoArgumentParameterPair(): MethodParameterPair? =
     when (this) {
@@ -199,6 +163,19 @@ internal fun MethodSignatureShape.toTwoArgumentParameterPair(): MethodParameterP
         else -> null
     }
 
+internal fun MethodParameterPair.isSupportedTwoArgumentUnitPair(): Boolean =
+    first == MethodParameterCategory.STRING ||
+        second == MethodParameterCategory.STRING ||
+        first == MethodParameterCategory.OBJECT ||
+        second == MethodParameterCategory.OBJECT ||
+        (first in int32LikeCategories && second in int32LikeCategories) ||
+        (first in int32LikeCategories && second in int64LikeCategories) ||
+        (first in int64LikeCategories && second in int32LikeCategories) ||
+        (first in int64LikeCategories && second in int64LikeCategories)
+
+internal fun MethodParameterPair.isSupportedTwoArgumentUnifiedReturnPair(): Boolean =
+    isSupportedTwoArgumentUnitPair() && this != MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.STRING)
+
 internal fun MethodSignatureKey.isTwoArgumentUnifiedReturnShape(): Boolean =
     returnKind in setOf(
         MethodReturnKind.OBJECT,
@@ -211,7 +188,7 @@ internal fun MethodSignatureKey.isTwoArgumentUnifiedReturnShape(): Boolean =
         MethodReturnKind.INT64,
         MethodReturnKind.UINT64,
         MethodReturnKind.GUID,
-    ) && shape.isTwoArgumentObjectShape()
+    ) && shape.toTwoArgumentParameterPair()?.isSupportedTwoArgumentUnifiedReturnPair() == true
 
 internal fun methodParameterCategory(
     type: String,

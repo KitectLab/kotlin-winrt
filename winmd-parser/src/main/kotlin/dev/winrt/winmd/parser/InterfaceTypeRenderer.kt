@@ -1501,6 +1501,41 @@ internal class InterfaceTypeRenderer(
         if (signatureKey.isTwoArgumentUnifiedReturnShape()) {
             return plannedTwoArgumentReturnMethod(signatureKey, genericParameters)
         }
+        signatureKey.shape.toTwoArgumentParameterPair()
+            ?.takeIf { signatureKey.returnKind == MethodReturnKind.UNIT && it.isSupportedTwoArgumentUnitPair() }
+            ?.let { parameterPair ->
+                return PlannedInterfaceMethod(
+                    statement = "%L",
+                    args = { method, _ ->
+                        val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                        val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
+                        arrayOf(
+                            AbiCallCatalog.unitMethodWithTwoArguments(
+                                method.vtableIndex!!,
+                                parameterPair,
+                                when (parameterPair.first) {
+                                    MethodParameterCategory.OBJECT -> "$firstArgumentName.pointer"
+                                    MethodParameterCategory.INT32,
+                                    MethodParameterCategory.UINT32,
+                                    MethodParameterCategory.BOOLEAN,
+                                    MethodParameterCategory.INT64,
+                                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$firstArgumentName.value"
+                                    else -> firstArgumentName
+                                },
+                                when (parameterPair.second) {
+                                    MethodParameterCategory.OBJECT -> "$secondArgumentName.pointer"
+                                    MethodParameterCategory.INT32,
+                                    MethodParameterCategory.UINT32,
+                                    MethodParameterCategory.BOOLEAN,
+                                    MethodParameterCategory.INT64,
+                                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$secondArgumentName.value"
+                                    else -> secondArgumentName
+                                },
+                            ),
+                        )
+                    },
+                )
+            }
         return when (signatureKey) {
             MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
                 statement = "return %L",
@@ -1943,117 +1978,6 @@ internal class InterfaceTypeRenderer(
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
                     arrayOf(AbiCallCatalog.objectSetter(method.vtableIndex!!, argumentName))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_INT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32_STRING),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_UINT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32_STRING),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_BOOLEAN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN_STRING),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_INT64),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64_STRING),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_EVENT_REGISTRATION_TOKEN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_STRING),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32_INT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32_UINT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32_BOOLEAN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32_INT64),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32_EVENT_REGISTRATION_TOKEN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32_INT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32_UINT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32_BOOLEAN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32_INT64),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32_EVENT_REGISTRATION_TOKEN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN_INT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN_UINT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN_BOOLEAN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN_INT64),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN_EVENT_REGISTRATION_TOKEN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64_INT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64_UINT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64_BOOLEAN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64_INT64),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64_EVENT_REGISTRATION_TOKEN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_INT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_UINT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_BOOLEAN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_INT64),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_EVENT_REGISTRATION_TOKEN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_INT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_UINT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_BOOLEAN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_INT64),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_EVENT_REGISTRATION_TOKEN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32_OBJECT),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32_OBJECT),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN_OBJECT),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64_OBJECT),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_OBJECT),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_STRING) -> PlannedInterfaceMethod(
-                statement = "%L",
-                args = { method, _ ->
-                    val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-                    val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
-                    val parameterPair = signatureKey.shape.toTwoArgumentParameterPair()
-                        ?: error("Unsupported two-argument unit shape")
-                    arrayOf(
-                        AbiCallCatalog.unitMethodWithTwoArguments(
-                            method.vtableIndex!!,
-                            parameterPair,
-                            when (parameterPair.first) {
-                                MethodParameterCategory.OBJECT -> "$firstArgumentName.pointer"
-                                MethodParameterCategory.INT32,
-                                MethodParameterCategory.UINT32,
-                                MethodParameterCategory.BOOLEAN,
-                                MethodParameterCategory.INT64,
-                                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$firstArgumentName.value"
-                                else -> firstArgumentName
-                            },
-                            when (parameterPair.second) {
-                                MethodParameterCategory.OBJECT -> "$secondArgumentName.pointer"
-                                MethodParameterCategory.INT32,
-                                MethodParameterCategory.UINT32,
-                                MethodParameterCategory.BOOLEAN,
-                                MethodParameterCategory.INT64,
-                                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$secondArgumentName.value"
-                                else -> secondArgumentName
-                            },
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_STRING) -> PlannedInterfaceMethod(
-                statement = "%L",
-                args = { method, _ ->
-                    val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-                    val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
-                    arrayOf(AbiCallCatalog.unitMethodWithObjectAndString(method.vtableIndex!!, "$firstArgumentName.pointer", secondArgumentName))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_OBJECT) -> PlannedInterfaceMethod(
-                statement = "%L",
-                args = { method, _ ->
-                    val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-                    val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
-                    arrayOf(AbiCallCatalog.unitMethodWithStringAndObject(method.vtableIndex!!, firstArgumentName, "$secondArgumentName.pointer"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.TWO_OBJECT) -> PlannedInterfaceMethod(
-                statement = "%L",
-                args = { method, _ ->
-                    val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-                    val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
-                    val parameterPair = MethodSignatureShape.TWO_OBJECT.toTwoArgumentParameterPair()
-                        ?: error("Unsupported two-argument unit shape")
-                    arrayOf(
-                        AbiCallCatalog.unitMethodWithTwoArguments(
-                            method.vtableIndex!!,
-                            parameterPair,
-                            "$firstArgumentName.pointer",
-                            "$secondArgumentName.pointer",
-                        ),
-                    )
                 },
             )
             else -> null

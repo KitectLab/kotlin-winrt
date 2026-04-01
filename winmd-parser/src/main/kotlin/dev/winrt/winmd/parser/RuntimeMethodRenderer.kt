@@ -159,6 +159,40 @@ internal class RuntimeMethodRenderer(
         if (signatureKey.isTwoArgumentUnifiedReturnShape()) {
             return plannedTwoArgumentRuntimeMethod(signatureKey)
         }
+        signatureKey.shape.toTwoArgumentParameterPair()
+            ?.takeIf { signatureKey.returnKind == MethodReturnKind.UNIT && it.isSupportedTwoArgumentUnitPair() }
+            ?.let { parameterPair ->
+                return RuntimeMethodPlan(
+                    nullPointerReturn = { PlannedStatement("return") },
+                    returnStatement = "%L",
+                    statementArgs = { method, _, parameterBindings ->
+                        arrayOf(
+                            AbiCallCatalog.unitMethodWithTwoArguments(
+                                method.vtableIndex!!,
+                                parameterPair,
+                                when (parameterPair.first) {
+                                    MethodParameterCategory.OBJECT -> "${parameterBindings[0].name}.pointer"
+                                    MethodParameterCategory.INT32,
+                                    MethodParameterCategory.UINT32,
+                                    MethodParameterCategory.BOOLEAN,
+                                    MethodParameterCategory.INT64,
+                                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "${parameterBindings[0].name}.value"
+                                    else -> parameterBindings[0].name
+                                },
+                                when (parameterPair.second) {
+                                    MethodParameterCategory.OBJECT -> "${parameterBindings[1].name}.pointer"
+                                    MethodParameterCategory.INT32,
+                                    MethodParameterCategory.UINT32,
+                                    MethodParameterCategory.BOOLEAN,
+                                    MethodParameterCategory.INT64,
+                                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "${parameterBindings[1].name}.value"
+                                    else -> parameterBindings[1].name
+                                },
+                            ),
+                        )
+                    },
+                )
+            }
         return when (signatureKey) {
             MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %S", arrayOf("")) },
@@ -587,122 +621,7 @@ internal class RuntimeMethodRenderer(
                     arrayOf(AbiCallCatalog.objectSetter(method.vtableIndex!!, parameterBindings.single().name))
                 },
             )
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_INT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32_STRING),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_UINT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32_STRING),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_BOOLEAN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN_STRING),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_INT64),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64_STRING),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_EVENT_REGISTRATION_TOKEN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_STRING),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32_INT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32_UINT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32_BOOLEAN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32_INT64),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32_EVENT_REGISTRATION_TOKEN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32_INT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32_UINT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32_BOOLEAN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32_INT64),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32_EVENT_REGISTRATION_TOKEN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN_INT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN_UINT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN_BOOLEAN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN_INT64),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN_EVENT_REGISTRATION_TOKEN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64_INT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64_UINT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64_BOOLEAN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64_INT64),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64_EVENT_REGISTRATION_TOKEN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_INT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_UINT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_BOOLEAN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_INT64),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_EVENT_REGISTRATION_TOKEN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_INT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_UINT32),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_BOOLEAN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_INT64),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_EVENT_REGISTRATION_TOKEN),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32_OBJECT),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32_OBJECT),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN_OBJECT),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64_OBJECT),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_OBJECT),
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_STRING) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return") },
-                returnStatement = "%L",
-                statementArgs = { method, _, parameterBindings ->
-                    val parameterPair = signatureKey.shape.toTwoArgumentParameterPair()
-                        ?: error("Unsupported two-argument unit shape")
-                    arrayOf(
-                        AbiCallCatalog.unitMethodWithTwoArguments(
-                            method.vtableIndex!!,
-                            parameterPair,
-                            when (parameterPair.first) {
-                                MethodParameterCategory.OBJECT -> "${parameterBindings[0].name}.pointer"
-                                MethodParameterCategory.INT32,
-                                MethodParameterCategory.UINT32,
-                                MethodParameterCategory.BOOLEAN,
-                                MethodParameterCategory.INT64,
-                                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "${parameterBindings[0].name}.value"
-                                else -> parameterBindings[0].name
-                            },
-                            when (parameterPair.second) {
-                                MethodParameterCategory.OBJECT -> "${parameterBindings[1].name}.pointer"
-                                MethodParameterCategory.INT32,
-                                MethodParameterCategory.UINT32,
-                                MethodParameterCategory.BOOLEAN,
-                                MethodParameterCategory.INT64,
-                                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "${parameterBindings[1].name}.value"
-                                else -> parameterBindings[1].name
-                            },
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_STRING) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return") },
-                returnStatement = "%L",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(
-                        AbiCallCatalog.unitMethodWithObjectAndString(
-                            method.vtableIndex!!,
-                            "${parameterBindings[0].name}.pointer",
-                            parameterBindings[1].name,
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_OBJECT) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return") },
-                returnStatement = "%L",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(
-                        AbiCallCatalog.unitMethodWithStringAndObject(
-                            method.vtableIndex!!,
-                            parameterBindings[0].name,
-                            "${parameterBindings[1].name}.pointer",
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.TWO_OBJECT) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return") },
-                returnStatement = "%L",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(
-                        AbiCallCatalog.unitMethodWithTwoObject(
-                            method.vtableIndex!!,
-                            "${parameterBindings[0].name}.pointer",
-                            "${parameterBindings[1].name}.pointer",
-                        ),
-                    )
-                },
-            )
+            else -> when (signatureKey) {
             MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
                 nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
                 returnStatement = "return %L",
@@ -815,6 +734,7 @@ internal class RuntimeMethodRenderer(
                 },
             )
             else -> null
+        }
         }
     }
 
