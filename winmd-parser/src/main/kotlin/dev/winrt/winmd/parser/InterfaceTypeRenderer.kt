@@ -1498,6 +1498,9 @@ internal class InterfaceTypeRenderer(
         signatureKey: MethodSignatureKey,
         genericParameters: Set<String>,
     ): PlannedInterfaceMethod? {
+        if (signatureKey.isTwoArgumentUnifiedReturnShape()) {
+            return plannedTwoArgumentReturnMethod(signatureKey, genericParameters)
+        }
         return when (signatureKey) {
             MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
                 statement = "return %L",
@@ -1887,81 +1890,6 @@ internal class InterfaceTypeRenderer(
                     ))
                 },
             )
-            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.OBJECT_STRING),
-            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.OBJECT_STRING),
-            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.OBJECT_STRING),
-            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.OBJECT_STRING),
-            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.OBJECT_STRING),
-            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.OBJECT_STRING),
-            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT_STRING),
-            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT_STRING),
-            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.OBJECT_STRING) -> PlannedInterfaceMethod(
-                statement = "return %L",
-                args = { method, _ ->
-                    val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-                    val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
-                    arrayOf(twoArgumentReturnCode(
-                        method,
-                        AbiCallCatalog.resultMethodWithObjectAndString(
-                            method.vtableIndex!!,
-                            resultKindName(method.returnType),
-                            resultExtractor(method.returnType),
-                            "$firstArgumentName.pointer",
-                            secondArgumentName,
-                        ),
-                    ))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING_OBJECT),
-            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.STRING_OBJECT),
-            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.STRING_OBJECT),
-            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.STRING_OBJECT),
-            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.STRING_OBJECT),
-            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.STRING_OBJECT),
-            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.STRING_OBJECT),
-            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.STRING_OBJECT),
-            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.STRING_OBJECT) -> PlannedInterfaceMethod(
-                statement = "return %L",
-                args = { method, _ ->
-                    val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-                    val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
-                    arrayOf(twoArgumentReturnCode(
-                        method,
-                        AbiCallCatalog.resultMethodWithStringAndObject(
-                            method.vtableIndex!!,
-                            resultKindName(method.returnType),
-                            resultExtractor(method.returnType),
-                            firstArgumentName,
-                            "$secondArgumentName.pointer",
-                        ),
-                    ))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.TWO_OBJECT),
-            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.TWO_OBJECT),
-            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.TWO_OBJECT),
-            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.TWO_OBJECT),
-            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.TWO_OBJECT),
-            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.TWO_OBJECT),
-            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.TWO_OBJECT),
-            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.TWO_OBJECT),
-            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.TWO_OBJECT) -> PlannedInterfaceMethod(
-                statement = "return %L",
-                args = { method, _ ->
-                    val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-                    val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
-                    arrayOf(twoArgumentReturnCode(
-                        method,
-                        AbiCallCatalog.resultMethodWithTwoObject(
-                            method.vtableIndex!!,
-                            resultKindName(method.returnType),
-                            resultExtractor(method.returnType),
-                            "$firstArgumentName.pointer",
-                            "$secondArgumentName.pointer",
-                        ),
-                    ))
-                },
-            )
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
                 statement = "%L",
                 args = { method, _ ->
@@ -2044,6 +1972,48 @@ internal class InterfaceTypeRenderer(
             else -> null
         }
     }
+
+    private fun plannedTwoArgumentReturnMethod(
+        signatureKey: MethodSignatureKey,
+        genericParameters: Set<String>,
+    ): PlannedInterfaceMethod = PlannedInterfaceMethod(
+        statement = "return %L",
+        args = { method, namespace ->
+            val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+            val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
+            val abiCall = when (signatureKey.shape) {
+                MethodSignatureShape.OBJECT_STRING -> AbiCallCatalog.resultMethodWithObjectAndString(
+                    method.vtableIndex!!,
+                    resultKindName(method.returnType),
+                    resultExtractor(method.returnType),
+                    "$firstArgumentName.pointer",
+                    secondArgumentName,
+                )
+                MethodSignatureShape.STRING_OBJECT -> AbiCallCatalog.resultMethodWithStringAndObject(
+                    method.vtableIndex!!,
+                    resultKindName(method.returnType),
+                    resultExtractor(method.returnType),
+                    firstArgumentName,
+                    "$secondArgumentName.pointer",
+                )
+                MethodSignatureShape.TWO_OBJECT -> AbiCallCatalog.resultMethodWithTwoObject(
+                    method.vtableIndex!!,
+                    resultKindName(method.returnType),
+                    resultExtractor(method.returnType),
+                    "$firstArgumentName.pointer",
+                    "$secondArgumentName.pointer",
+                )
+                else -> error("Unsupported two-argument return shape: ${signatureKey.shape}")
+            }
+            arrayOf(
+                if (signatureKey.returnKind == MethodReturnKind.OBJECT) {
+                    objectReturnCode(method, namespace, abiCall, genericParameters)
+                } else {
+                    twoArgumentReturnCode(method, abiCall)
+                },
+            )
+        },
+    )
 
     private data class PlannedInterfaceMethod(
         val statement: String,

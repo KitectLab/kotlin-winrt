@@ -156,6 +156,9 @@ internal class RuntimeMethodRenderer(
     }
 
     private fun runtimeMethodPlanForKey(signatureKey: MethodSignatureKey): RuntimeMethodPlan? {
+        if (signatureKey.isTwoArgumentUnifiedReturnShape()) {
+            return plannedTwoArgumentRuntimeMethod(signatureKey)
+        }
         return when (signatureKey) {
             MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %S", arrayOf("")) },
@@ -734,81 +737,53 @@ internal class RuntimeMethodRenderer(
                     )
                 },
             )
-            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.OBJECT_STRING),
-            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.OBJECT_STRING),
-            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.OBJECT_STRING),
-            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.OBJECT_STRING),
-            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.OBJECT_STRING),
-            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.OBJECT_STRING),
-            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT_STRING),
-            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT_STRING),
-            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.OBJECT_STRING) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> twoArgumentNullReturn(method.returnType, method.name) },
-                returnStatement = "return %L",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(twoArgumentReturnCode(
-                        method.returnType,
-                        AbiCallCatalog.resultMethodWithObjectAndString(
-                            method.vtableIndex!!,
-                            resultKindName(method.returnType),
-                            resultExtractor(method.returnType),
-                            "${parameterBindings[0].name}.pointer",
-                            parameterBindings[1].name,
-                        ),
-                    ))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING_OBJECT),
-            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.STRING_OBJECT),
-            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.STRING_OBJECT),
-            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.STRING_OBJECT),
-            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.STRING_OBJECT),
-            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.STRING_OBJECT),
-            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.STRING_OBJECT),
-            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.STRING_OBJECT),
-            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.STRING_OBJECT) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> twoArgumentNullReturn(method.returnType, method.name) },
-                returnStatement = "return %L",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(twoArgumentReturnCode(
-                        method.returnType,
-                        AbiCallCatalog.resultMethodWithStringAndObject(
-                            method.vtableIndex!!,
-                            resultKindName(method.returnType),
-                            resultExtractor(method.returnType),
-                            parameterBindings[0].name,
-                            "${parameterBindings[1].name}.pointer",
-                        ),
-                    ))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.TWO_OBJECT),
-            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.TWO_OBJECT),
-            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.TWO_OBJECT),
-            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.TWO_OBJECT),
-            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.TWO_OBJECT),
-            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.TWO_OBJECT),
-            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.TWO_OBJECT),
-            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.TWO_OBJECT),
-            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.TWO_OBJECT) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> twoArgumentNullReturn(method.returnType, method.name) },
-                returnStatement = "return %L",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(twoArgumentReturnCode(
-                        method.returnType,
-                        AbiCallCatalog.resultMethodWithTwoObject(
-                            method.vtableIndex!!,
-                            resultKindName(method.returnType),
-                            resultExtractor(method.returnType),
-                            "${parameterBindings[0].name}.pointer",
-                            "${parameterBindings[1].name}.pointer",
-                        ),
-                    ))
-                },
-            )
             else -> null
         }
     }
+
+    private fun plannedTwoArgumentRuntimeMethod(signatureKey: MethodSignatureKey): RuntimeMethodPlan = RuntimeMethodPlan(
+        nullPointerReturn = { method ->
+            if (signatureKey.returnKind == MethodReturnKind.OBJECT) {
+                PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}"))
+            } else {
+                twoArgumentNullReturn(method.returnType, method.name)
+            }
+        },
+        returnStatement = "return %L",
+        statementArgs = { method, currentNamespace, parameterBindings ->
+            val abiCall = when (signatureKey.shape) {
+                MethodSignatureShape.OBJECT_STRING -> AbiCallCatalog.resultMethodWithObjectAndString(
+                    method.vtableIndex!!,
+                    resultKindName(method.returnType),
+                    resultExtractor(method.returnType),
+                    "${parameterBindings[0].name}.pointer",
+                    parameterBindings[1].name,
+                )
+                MethodSignatureShape.STRING_OBJECT -> AbiCallCatalog.resultMethodWithStringAndObject(
+                    method.vtableIndex!!,
+                    resultKindName(method.returnType),
+                    resultExtractor(method.returnType),
+                    parameterBindings[0].name,
+                    "${parameterBindings[1].name}.pointer",
+                )
+                MethodSignatureShape.TWO_OBJECT -> AbiCallCatalog.resultMethodWithTwoObject(
+                    method.vtableIndex!!,
+                    resultKindName(method.returnType),
+                    resultExtractor(method.returnType),
+                    "${parameterBindings[0].name}.pointer",
+                    "${parameterBindings[1].name}.pointer",
+                )
+                else -> error("Unsupported two-argument return shape: ${signatureKey.shape}")
+            }
+            arrayOf(
+                if (signatureKey.returnKind == MethodReturnKind.OBJECT) {
+                    runtimeObjectReturnCode(method, currentNamespace, abiCall)
+                } else {
+                    twoArgumentReturnCode(method.returnType, abiCall)
+                },
+            )
+        },
+    )
 
     fun renderRuntimeLambdaOverload(method: WinMdMethod, currentNamespace: String): FunSpec? {
         if (method.parameters.size != 1 || method.vtableIndex == null || method.returnType != "Unit") {

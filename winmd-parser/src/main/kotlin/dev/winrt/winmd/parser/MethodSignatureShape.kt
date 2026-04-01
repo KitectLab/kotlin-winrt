@@ -34,6 +34,24 @@ internal data class MethodSignatureKey(
     val shape: MethodSignatureShape,
 )
 
+internal fun MethodSignatureShape.isTwoArgumentObjectShape(): Boolean =
+    this == MethodSignatureShape.OBJECT_STRING ||
+        this == MethodSignatureShape.STRING_OBJECT ||
+        this == MethodSignatureShape.TWO_OBJECT
+
+internal fun MethodSignatureKey.isTwoArgumentUnifiedReturnShape(): Boolean =
+    returnKind in setOf(
+        MethodReturnKind.STRING,
+        MethodReturnKind.FLOAT32,
+        MethodReturnKind.FLOAT64,
+        MethodReturnKind.BOOLEAN,
+        MethodReturnKind.INT32,
+        MethodReturnKind.UINT32,
+        MethodReturnKind.INT64,
+        MethodReturnKind.UINT64,
+        MethodReturnKind.GUID,
+    ) && shape.isTwoArgumentObjectShape()
+
 internal fun methodSignatureShape(
     parameterTypes: List<String>,
     supportsObjectType: (String) -> Boolean,
