@@ -144,8 +144,6 @@ private val twoArgumentShapes = buildMap {
     }
 }
 
-private val twoArgumentPairsByShape = twoArgumentShapes.entries.associate { (pair, shape) -> shape to pair }
-
 private val parameterCategoriesByShape = buildMap {
     put(MethodSignatureShape.EMPTY, emptyList())
     unaryShapes.forEach { (category, shape) -> put(shape, listOf(category)) }
