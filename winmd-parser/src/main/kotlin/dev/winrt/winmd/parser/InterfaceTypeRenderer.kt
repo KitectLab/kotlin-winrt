@@ -1822,6 +1822,18 @@ internal class InterfaceTypeRenderer(
                     ))
                 },
             )
+            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, namespace ->
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    arrayOf(objectReturnCode(
+                        method,
+                        namespace,
+                        AbiCallCatalog.objectMethodWithObject(method.vtableIndex!!, "$argumentName.pointer"),
+                        genericParameters,
+                    ))
+                },
+            )
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
                 statement = "%L",
                 args = { method, _ ->

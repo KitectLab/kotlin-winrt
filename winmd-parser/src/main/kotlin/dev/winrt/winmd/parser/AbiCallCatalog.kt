@@ -91,6 +91,13 @@ internal object AbiCallCatalog {
     fun objectMethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
         CodeBlock.of("%T.invokeObjectMethodWithUInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
 
+    fun objectMethodWithObject(vtableIndex: Int, argumentExpression: String, pointerExpression: String = "pointer"): CodeBlock =
+        CodeBlock.of(
+            "%T.invokeObjectMethodWithObjectArg($pointerExpression, $vtableIndex, %L).getOrThrow()",
+            PoetSymbols.platformComInteropClass,
+            argumentExpression,
+        )
+
     fun booleanMethod(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeBooleanGetter(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 

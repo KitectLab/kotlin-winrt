@@ -185,6 +185,65 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun renders_helper_interfaces_with_object_parameter_and_object_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "User",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System.UserProfile",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System.UserProfile",
+                            name = "AdvertisingManager",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System.UserProfile",
+                            name = "AdvertisingManagerForUser",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System.UserProfile",
+                            name = "IAdvertisingManagerStatics2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-3333-3333-3333-dddddddddddd",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetForUser",
+                                    returnType = "Windows.System.UserProfile.AdvertisingManagerForUser",
+                                    parameters = listOf(WinMdParameter("user", "Windows.System.User")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Windows/System/UserProfile/AdvertisingManager.kt" }.content
+        val staticsBinding = files.first { it.relativePath == "Windows/System/UserProfile/IAdvertisingManagerStatics2.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("private val statics2: IAdvertisingManagerStatics2 by lazy"))
+        assertTrue(runtimeBinding.contains("fun getForUser(user: User): AdvertisingManagerForUser"))
+        assertTrue(runtimeBinding.contains("statics2.getForUser(user)"))
+        assertTrue(staticsBinding.contains("fun getForUser(user: User): AdvertisingManagerForUser"))
+        assertTrue(normalizedStaticsBinding.contains("AdvertisingManagerForUser(PlatformComInterop.invokeObjectMethodWithObjectArg(pointer,6,user.pointer).getOrThrow())"))
+    }
+
+    @Test
     fun renders_helper_interfaces_with_enum_return_and_int32_parameter() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
