@@ -275,7 +275,13 @@ private object JvmComMethodExecutor {
         reader: (MemorySegment) -> T,
         value: Int,
     ): Result<T> {
-        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader, value)
+        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader) { resultSegment ->
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                value,
+                resultSegment,
+            ) as Int
+        }
     }
 
     fun <T> invokeWithOutSegment(
@@ -287,7 +293,13 @@ private object JvmComMethodExecutor {
         reader: (MemorySegment) -> T,
         value: UInt,
     ): Result<T> {
-        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader, value.toInt())
+        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader) { resultSegment ->
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                value.toInt(),
+                resultSegment,
+            ) as Int
+        }
     }
 
     fun <T> invokeWithOutSegment(
@@ -299,7 +311,13 @@ private object JvmComMethodExecutor {
         reader: (MemorySegment) -> T,
         value: Long,
     ): Result<T> {
-        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader, value)
+        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader) { resultSegment ->
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                value,
+                resultSegment,
+            ) as Int
+        }
     }
 
     fun <T> invokeWithOutSegment(
@@ -311,7 +329,13 @@ private object JvmComMethodExecutor {
         reader: (MemorySegment) -> T,
         value: ULong,
     ): Result<T> {
-        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader, value.toLong())
+        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader) { resultSegment ->
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                value.toLong(),
+                resultSegment,
+            ) as Int
+        }
     }
 
     fun <T> invokeWithOutSegment(
@@ -323,7 +347,13 @@ private object JvmComMethodExecutor {
         reader: (MemorySegment) -> T,
         value: Boolean,
     ): Result<T> {
-        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader, if (value) 1 else 0)
+        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader) { resultSegment ->
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                if (value) 1 else 0,
+                resultSegment,
+            ) as Int
+        }
     }
 
     fun <T> invokeWithOutSegment(
@@ -335,7 +365,13 @@ private object JvmComMethodExecutor {
         reader: (MemorySegment) -> T,
         value: Float,
     ): Result<T> {
-        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader, value)
+        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader) { resultSegment ->
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                value,
+                resultSegment,
+            ) as Int
+        }
     }
 
     fun <T> invokeWithOutSegment(
@@ -347,7 +383,13 @@ private object JvmComMethodExecutor {
         reader: (MemorySegment) -> T,
         value: Double,
     ): Result<T> {
-        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader, value)
+        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader) { resultSegment ->
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                value,
+                resultSegment,
+            ) as Int
+        }
     }
 
     fun <T> invokeWithOutSegment(
@@ -398,8 +440,13 @@ private object JvmComMethodExecutor {
             handle,
             allocator,
             reader,
-            if (value.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(value),
-        )
+        ) { resultSegment ->
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                if (value.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(value),
+                resultSegment,
+            ) as Int
+        }
     }
 
     fun <T> invokeWithOutSegment(
@@ -438,17 +485,13 @@ private object JvmComMethodExecutor {
         handle: java.lang.invoke.MethodHandle,
         arguments: Array<out Any>,
     ): Result<Unit> {
-        return invokePrepared(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = operation,
-            handle = handle,
-            arguments = arguments,
-        ) {
+        return runCatching {
+            requireInstance(instance)
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
             val hresult = HResult(
                 handle.bindTo(function).invokeWithArguments(
                     Jdk22Foreign.pointerOf(instance),
-                    *preparedArguments,
+                    *arguments,
                 ) as Int,
             )
             hresult.requireSuccess("$operation($vtableIndex)")
@@ -474,19 +517,15 @@ private object JvmComMethodExecutor {
         reader: (MemorySegment) -> T,
         arguments: Array<out Any>,
     ): Result<T> {
-        return invokePrepared(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = operation,
-            handle = handle,
-            arguments = arguments,
-        ) {
+        return runCatching {
+            requireInstance(instance)
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
             Arena.ofConfined().use { arena ->
                 val resultSegment = allocator(arena)
                 val hresult = HResult(
                     handle.bindTo(function).invokeWithArguments(
                         Jdk22Foreign.pointerOf(instance),
-                        *preparedArguments,
+                        *arguments,
                         resultSegment,
                     ) as Int,
                 )
@@ -515,54 +554,24 @@ private object JvmComMethodExecutor {
         handle: java.lang.invoke.MethodHandle,
         allocator: (Arena) -> MemorySegment,
         reader: (MemorySegment) -> T,
-        value: Any,
+        invoke: DirectOutInvocationScope.(MemorySegment) -> Int,
     ): Result<T> {
         return runCatching {
             requireInstance(instance)
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
             Arena.ofConfined().use { arena ->
                 val resultSegment = allocator(arena)
-                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-                val hresult = HResult(
-                    handle.bindTo(function).invokeWithArguments(
-                        Jdk22Foreign.pointerOf(instance),
-                        value,
-                        resultSegment,
-                    ) as Int,
-                )
+                val hresult = HResult(DirectOutInvocationScope(instance, function, handle).invoke(resultSegment))
                 hresult.requireSuccess("$operation($vtableIndex)")
                 reader(resultSegment)
             }
         }
     }
 
-    private fun <T> invokePrepared(
-        instance: ComPtr,
-        vtableIndex: Int,
-        operation: String,
-        handle: java.lang.invoke.MethodHandle,
-        arguments: Array<out Any>,
-        block: InvocationScope.() -> T,
-    ): Result<T> {
-        return runCatching {
-            requireInstance(instance)
-            InvocationScope(
-                instance = instance,
-                vtableIndex = vtableIndex,
-                operation = operation,
-                handle = handle,
-                function = Jdk22Foreign.vtableEntry(instance, vtableIndex),
-                preparedArguments = arguments,
-            ).block()
-        }
-    }
-
-    class InvocationScope internal constructor(
+    class DirectOutInvocationScope internal constructor(
         val instance: ComPtr,
-        val vtableIndex: Int,
-        val operation: String,
-        val handle: java.lang.invoke.MethodHandle,
         val function: MemorySegment,
-        val preparedArguments: Array<out Any>,
+        val handle: java.lang.invoke.MethodHandle,
     )
 }
 
