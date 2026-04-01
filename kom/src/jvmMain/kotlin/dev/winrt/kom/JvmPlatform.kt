@@ -110,15 +110,6 @@ private object JvmComMethodExecutor {
         )
     }
 
-    fun <T> withHStringArg(value: String, block: (MemorySegment) -> T): T {
-        val hString = JvmWinRtRuntime.createHString(value)
-        try {
-            return block(MemorySegment.ofAddress(hString.raw))
-        } finally {
-            JvmWinRtRuntime.releaseHString(hString)
-        }
-    }
-
     private fun <T> invokePrepared(
         instance: ComPtr,
         vtableIndex: Int,
@@ -317,25 +308,15 @@ private object JvmPlatformComInterop : ComInterop {
     }
 
     override fun invokeHStringMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<HString> {
-        if (instance.isNull) {
-            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
-        }
-
-        return runCatching {
-            Arena.ofConfined().use { arena ->
-                val resultSegment = arena.allocate(ValueLayout.ADDRESS)
-                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-                val hresult = HResult(
-                    Jdk22Foreign.hstringMethodWithInt32Handle.bindTo(function).invokeWithArguments(
-                        Jdk22Foreign.pointerOf(instance),
-                        value,
-                        resultSegment,
-                    ) as Int,
-                )
-                hresult.requireSuccess("invokeHStringMethodWithInt32Arg($vtableIndex)")
-                HString(resultSegment.get(ValueLayout.ADDRESS, 0L).address())
-            }
-        }
+        return JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeHStringMethodWithInt32Arg",
+            handle = Jdk22Foreign.hstringMethodWithInt32Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+            reader = { segment -> HString(segment.get(ValueLayout.ADDRESS, 0L).address()) },
+            value,
+        )
     }
 
     override fun invokeObjectMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ComPtr> {
@@ -351,46 +332,26 @@ private object JvmPlatformComInterop : ComInterop {
     }
 
     override fun invokeObjectMethod(instance: ComPtr, vtableIndex: Int): Result<ComPtr> {
-        if (instance.isNull) {
-            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
-        }
-
-        return runCatching {
-            Arena.ofConfined().use { arena ->
-                val resultSegment = arena.allocate(ValueLayout.ADDRESS)
-                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-                val hresult = HResult(
-                    Jdk22Foreign.objectMethodHandle.bindTo(function).invokeWithArguments(
-                        Jdk22Foreign.pointerOf(instance),
-                        resultSegment,
-                    ) as Int,
-                )
-                hresult.requireSuccess("invokeObjectMethod($vtableIndex)")
-                Jdk22Foreign.addressResult(resultSegment.get(ValueLayout.ADDRESS, 0L))
-            }
-        }
+        return JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeObjectMethod",
+            handle = Jdk22Foreign.objectMethodHandle,
+            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
+        )
     }
 
     override fun invokeObjectMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ComPtr> {
-        if (instance.isNull) {
-            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
-        }
-
-        return runCatching {
-            Arena.ofConfined().use { arena ->
-                val resultSegment = arena.allocate(ValueLayout.ADDRESS)
-                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-                val hresult = HResult(
-                    Jdk22Foreign.objectMethodWithUInt32Handle.bindTo(function).invokeWithArguments(
-                        Jdk22Foreign.pointerOf(instance),
-                        value.toInt(),
-                        resultSegment,
-                    ) as Int,
-                )
-                hresult.requireSuccess("invokeObjectMethodWithUInt32Arg($vtableIndex)")
-                Jdk22Foreign.addressResult(resultSegment.get(ValueLayout.ADDRESS, 0L))
-            }
-        }
+        return JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeObjectMethodWithUInt32Arg",
+            handle = Jdk22Foreign.objectMethodWithUInt32Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
+            value,
+        )
     }
 
     override fun invokeObjectMethodWithTwoObjectArgs(
@@ -414,25 +375,15 @@ private object JvmPlatformComInterop : ComInterop {
     }
 
     override fun invokeHStringMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<HString> {
-        if (instance.isNull) {
-            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
-        }
-
-        return runCatching {
-            Arena.ofConfined().use { arena ->
-                val resultSegment = arena.allocate(ValueLayout.ADDRESS)
-                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-                val hresult = HResult(
-                    Jdk22Foreign.hstringMethodWithUInt32Handle.bindTo(function).invokeWithArguments(
-                        Jdk22Foreign.pointerOf(instance),
-                        value.toInt(),
-                        resultSegment,
-                    ) as Int,
-                )
-                hresult.requireSuccess("invokeHStringMethodWithUInt32Arg($vtableIndex)")
-                HString(resultSegment.get(ValueLayout.ADDRESS, 0L).address())
-            }
-        }
+        return JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeHStringMethodWithUInt32Arg",
+            handle = Jdk22Foreign.hstringMethodWithUInt32Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+            reader = { segment -> HString(segment.get(ValueLayout.ADDRESS, 0L).address()) },
+            value,
+        )
     }
 
     override fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit> {
@@ -903,45 +854,25 @@ private object JvmPlatformComInterop : ComInterop {
     }
 
     override fun invokeGuidGetter(instance: ComPtr, vtableIndex: Int): Result<Guid> {
-        if (instance.isNull) {
-            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
-        }
-
-        return runCatching {
-            Arena.ofConfined().use { arena ->
-                val resultSegment = arena.allocate(16)
-                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-                val hresult = HResult(
-                    Jdk22Foreign.guidGetterHandle.bindTo(function).invokeWithArguments(
-                        Jdk22Foreign.pointerOf(instance),
-                        resultSegment,
-                    ) as Int,
-                )
-                hresult.requireSuccess("invokeGuidGetter($vtableIndex)")
-                Jdk22Foreign.guidFromSegment(resultSegment)
-            }
-        }
+        return JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeGuidGetter",
+            handle = Jdk22Foreign.guidGetterHandle,
+            allocator = { arena -> arena.allocate(16) },
+            reader = Jdk22Foreign::guidFromSegment,
+        )
     }
 
     override fun invokeInt64Getter(instance: ComPtr, vtableIndex: Int): Result<Long> {
-        if (instance.isNull) {
-            return Result.failure(KomException("Method invocation requires a non-null COM pointer"))
-        }
-
-        return runCatching {
-            Arena.ofConfined().use { arena ->
-                val resultSegment = arena.allocate(ValueLayout.JAVA_LONG)
-                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-                val hresult = HResult(
-                    Jdk22Foreign.int64GetterHandle.bindTo(function).invokeWithArguments(
-                        Jdk22Foreign.pointerOf(instance),
-                        resultSegment,
-                    ) as Int,
-                )
-                hresult.requireSuccess("invokeInt64Getter($vtableIndex)")
-                resultSegment.get(ValueLayout.JAVA_LONG, 0L)
-            }
-        }
+        return JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeInt64Getter",
+            handle = Jdk22Foreign.int64GetterHandle,
+            allocator = { arena -> arena.allocate(ValueLayout.JAVA_LONG) },
+            reader = { segment -> segment.get(ValueLayout.JAVA_LONG, 0L) },
+        )
     }
 }
 
