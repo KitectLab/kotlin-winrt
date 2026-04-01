@@ -49,6 +49,14 @@ internal fun MethodSignatureShape.isTwoArgumentObjectShape(): Boolean =
         this == MethodSignatureShape.STRING_OBJECT ||
         this == MethodSignatureShape.TWO_OBJECT
 
+internal fun MethodSignatureShape.toTwoArgumentParameterCategories(): Pair<MethodParameterCategory, MethodParameterCategory>? =
+    when (this) {
+        MethodSignatureShape.OBJECT_STRING -> MethodParameterCategory.OBJECT to MethodParameterCategory.STRING
+        MethodSignatureShape.STRING_OBJECT -> MethodParameterCategory.STRING to MethodParameterCategory.OBJECT
+        MethodSignatureShape.TWO_OBJECT -> MethodParameterCategory.OBJECT to MethodParameterCategory.OBJECT
+        else -> null
+    }
+
 internal fun MethodSignatureKey.isTwoArgumentUnifiedReturnShape(): Boolean =
     returnKind in setOf(
         MethodReturnKind.STRING,

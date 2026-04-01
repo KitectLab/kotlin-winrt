@@ -42,6 +42,23 @@ class MethodSignatureShapeTest {
         assertFalse(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING).isTwoArgumentUnifiedReturnShape())
     }
 
+    @Test
+    fun exposes_two_argument_parameter_categories_for_supported_shapes() {
+        assertEquals(
+            MethodParameterCategory.OBJECT to MethodParameterCategory.STRING,
+            MethodSignatureShape.OBJECT_STRING.toTwoArgumentParameterCategories(),
+        )
+        assertEquals(
+            MethodParameterCategory.STRING to MethodParameterCategory.OBJECT,
+            MethodSignatureShape.STRING_OBJECT.toTwoArgumentParameterCategories(),
+        )
+        assertEquals(
+            MethodParameterCategory.OBJECT to MethodParameterCategory.OBJECT,
+            MethodSignatureShape.TWO_OBJECT.toTwoArgumentParameterCategories(),
+        )
+        assertEquals(null, MethodSignatureShape.STRING.toTwoArgumentParameterCategories())
+    }
+
     private fun supportsObjectType(type: String): Boolean {
         return (type == "Object" || type.contains('.')) &&
             !type.contains('`') &&
