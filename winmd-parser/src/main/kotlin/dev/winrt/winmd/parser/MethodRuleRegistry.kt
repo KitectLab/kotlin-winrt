@@ -11,107 +11,50 @@ internal enum class SharedMethodRuleFamily {
 }
 
 internal object MethodRuleRegistry {
+    private val emptyShapes = listOf(MethodSignatureShape.EMPTY)
+    private val unaryStringLikeShapes = listOf(
+        MethodSignatureShape.STRING,
+        MethodSignatureShape.INT32,
+        MethodSignatureShape.UINT32,
+        MethodSignatureShape.BOOLEAN,
+    )
+    private val unaryUnitOnlyShapes = listOf(
+        MethodSignatureShape.INT64,
+        MethodSignatureShape.EVENT_REGISTRATION_TOKEN,
+        MethodSignatureShape.OBJECT,
+    )
+    private val unaryObjectCapableShapes = listOf(
+        MethodSignatureShape.OBJECT,
+    )
+    private val twoArgumentObjectShapes = listOf(
+        MethodSignatureShape.OBJECT_STRING,
+        MethodSignatureShape.STRING_OBJECT,
+        MethodSignatureShape.TWO_OBJECT,
+    )
+
     private val sharedMethodRules: Map<MethodSignatureKey, SharedMethodRuleFamily> = buildMap {
-        put(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.EMPTY), SharedMethodRuleFamily.STRING)
-        put(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING), SharedMethodRuleFamily.STRING)
-        put(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.INT32), SharedMethodRuleFamily.STRING)
-        put(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.UINT32), SharedMethodRuleFamily.STRING)
-        put(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.BOOLEAN), SharedMethodRuleFamily.STRING)
-        put(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.OBJECT_STRING), SharedMethodRuleFamily.STRING)
-        put(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING_OBJECT), SharedMethodRuleFamily.STRING)
-        put(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.TWO_OBJECT), SharedMethodRuleFamily.STRING)
+        register(SharedMethodRuleFamily.STRING, MethodReturnKind.STRING, emptyShapes + unaryStringLikeShapes + twoArgumentObjectShapes)
+        register(SharedMethodRuleFamily.FLOAT32, MethodReturnKind.FLOAT32, emptyShapes + listOf(MethodSignatureShape.STRING, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN) + twoArgumentObjectShapes)
+        register(SharedMethodRuleFamily.FLOAT64, MethodReturnKind.FLOAT64, emptyShapes + listOf(MethodSignatureShape.STRING, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN) + twoArgumentObjectShapes)
+        register(SharedMethodRuleFamily.BOOLEAN, MethodReturnKind.BOOLEAN, emptyShapes + unaryStringLikeShapes + unaryObjectCapableShapes + twoArgumentObjectShapes)
+        register(SharedMethodRuleFamily.UNIT, MethodReturnKind.INT32, listOf(MethodSignatureShape.STRING, MethodSignatureShape.INT32, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN, MethodSignatureShape.OBJECT) + twoArgumentObjectShapes)
+        register(SharedMethodRuleFamily.UNIT, MethodReturnKind.UINT32, emptyShapes + listOf(MethodSignatureShape.STRING, MethodSignatureShape.INT32, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN, MethodSignatureShape.OBJECT) + twoArgumentObjectShapes)
+        register(SharedMethodRuleFamily.EVENT_REGISTRATION_TOKEN, MethodReturnKind.EVENT_REGISTRATION_TOKEN, emptyShapes)
+        register(SharedMethodRuleFamily.OBJECT, MethodReturnKind.OBJECT, emptyShapes + listOf(MethodSignatureShape.STRING, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN, MethodSignatureShape.OBJECT) + twoArgumentObjectShapes)
+        register(SharedMethodRuleFamily.UNIT, MethodReturnKind.UNIT, emptyShapes + unaryStringLikeShapes + unaryUnitOnlyShapes + twoArgumentObjectShapes)
+        register(SharedMethodRuleFamily.OBJECT, MethodReturnKind.INT64, listOf(MethodSignatureShape.STRING, MethodSignatureShape.INT32, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN, MethodSignatureShape.OBJECT) + twoArgumentObjectShapes)
+        register(SharedMethodRuleFamily.OBJECT, MethodReturnKind.UINT64, listOf(MethodSignatureShape.STRING, MethodSignatureShape.INT32, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN, MethodSignatureShape.OBJECT) + twoArgumentObjectShapes)
+        register(SharedMethodRuleFamily.UNIT, MethodReturnKind.GUID, twoArgumentObjectShapes)
+    }
 
-        put(MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.EMPTY), SharedMethodRuleFamily.FLOAT32)
-        put(MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.STRING), SharedMethodRuleFamily.FLOAT32)
-        put(MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.UINT32), SharedMethodRuleFamily.FLOAT32)
-        put(MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.BOOLEAN), SharedMethodRuleFamily.FLOAT32)
-        put(MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.OBJECT_STRING), SharedMethodRuleFamily.FLOAT32)
-        put(MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.STRING_OBJECT), SharedMethodRuleFamily.FLOAT32)
-        put(MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.TWO_OBJECT), SharedMethodRuleFamily.FLOAT32)
-
-        put(MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.EMPTY), SharedMethodRuleFamily.FLOAT64)
-        put(MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.STRING), SharedMethodRuleFamily.FLOAT64)
-        put(MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.UINT32), SharedMethodRuleFamily.FLOAT64)
-        put(MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.BOOLEAN), SharedMethodRuleFamily.FLOAT64)
-        put(MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.OBJECT_STRING), SharedMethodRuleFamily.FLOAT64)
-        put(MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.STRING_OBJECT), SharedMethodRuleFamily.FLOAT64)
-        put(MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.TWO_OBJECT), SharedMethodRuleFamily.FLOAT64)
-
-        put(MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.EMPTY), SharedMethodRuleFamily.BOOLEAN)
-        put(MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.STRING), SharedMethodRuleFamily.BOOLEAN)
-        put(MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.UINT32), SharedMethodRuleFamily.BOOLEAN)
-        put(MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.BOOLEAN), SharedMethodRuleFamily.BOOLEAN)
-        put(MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.BOOLEAN)
-        put(MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.OBJECT_STRING), SharedMethodRuleFamily.BOOLEAN)
-        put(MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.STRING_OBJECT), SharedMethodRuleFamily.BOOLEAN)
-        put(MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.TWO_OBJECT), SharedMethodRuleFamily.BOOLEAN)
-
-        put(MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.STRING), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.INT32), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.UINT32), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.BOOLEAN), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.OBJECT_STRING), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.STRING_OBJECT), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.TWO_OBJECT), SharedMethodRuleFamily.UNIT)
-
-        put(MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.EMPTY), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.STRING), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.INT32), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.UINT32), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.BOOLEAN), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.OBJECT_STRING), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.STRING_OBJECT), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.TWO_OBJECT), SharedMethodRuleFamily.UNIT)
-
-        put(
-            MethodSignatureKey(MethodReturnKind.EVENT_REGISTRATION_TOKEN, MethodSignatureShape.EMPTY),
-            SharedMethodRuleFamily.EVENT_REGISTRATION_TOKEN,
-        )
-
-        put(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.EMPTY), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.STRING), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.UINT32), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.BOOLEAN), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.OBJECT_STRING), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.STRING_OBJECT), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.TWO_OBJECT), SharedMethodRuleFamily.OBJECT)
-
-        put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EMPTY), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_STRING), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_OBJECT), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.TWO_OBJECT), SharedMethodRuleFamily.UNIT)
-
-        put(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.STRING), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.INT32), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.UINT32), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.BOOLEAN), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT_STRING), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.STRING_OBJECT), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.TWO_OBJECT), SharedMethodRuleFamily.OBJECT)
-
-        put(MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.STRING), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.INT32), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.UINT32), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.BOOLEAN), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT_STRING), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.STRING_OBJECT), SharedMethodRuleFamily.OBJECT)
-        put(MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.TWO_OBJECT), SharedMethodRuleFamily.OBJECT)
-
-        put(MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.OBJECT_STRING), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.STRING_OBJECT), SharedMethodRuleFamily.UNIT)
-        put(MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.TWO_OBJECT), SharedMethodRuleFamily.UNIT)
+    private fun MutableMap<MethodSignatureKey, SharedMethodRuleFamily>.register(
+        family: SharedMethodRuleFamily,
+        returnKind: MethodReturnKind,
+        shapes: List<MethodSignatureShape>,
+    ) {
+        for (shape in shapes) {
+            put(MethodSignatureKey(returnKind, shape), family)
+        }
     }
 
     fun sharedMethodRuleFamily(signatureKey: MethodSignatureKey): SharedMethodRuleFamily? =
