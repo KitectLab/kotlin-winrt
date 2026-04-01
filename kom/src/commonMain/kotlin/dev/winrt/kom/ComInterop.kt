@@ -82,6 +82,10 @@ interface ComInterop {
     fun invokeMethodWithInt32AndObjectArgs(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: Int, second: ComPtr): Result<ComMethodResult>
     fun invokeMethodWithObjectAndInt64Args(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: ComPtr, second: Long): Result<ComMethodResult>
     fun invokeMethodWithInt64AndObjectArgs(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: Long, second: ComPtr): Result<ComMethodResult>
+    fun invokeMethodWithStringAndInt32Args(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: String, second: Int): Result<ComMethodResult>
+    fun invokeMethodWithInt32AndStringArgs(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: Int, second: String): Result<ComMethodResult>
+    fun invokeMethodWithStringAndInt64Args(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: String, second: Long): Result<ComMethodResult>
+    fun invokeMethodWithInt64AndStringArgs(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: Long, second: String): Result<ComMethodResult>
     fun invokeMethodWithObjectAndStringArgs(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: ComPtr, second: String): Result<ComMethodResult>
     fun invokeMethodWithStringAndObjectArgs(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: String, second: ComPtr): Result<ComMethodResult>
     fun invokeMethodWithTwoObjectArgs(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: ComPtr, second: ComPtr): Result<ComMethodResult>

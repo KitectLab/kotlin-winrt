@@ -40,6 +40,7 @@ class MethodSignatureShapeTest {
         assertTrue(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.TWO_OBJECT).isTwoArgumentUnifiedReturnShape())
         assertTrue(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.TWO_OBJECT).isTwoArgumentUnifiedReturnShape())
         assertTrue(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.OBJECT_INT32).isTwoArgumentUnifiedReturnShape())
+        assertTrue(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.STRING_INT32).isTwoArgumentUnifiedReturnShape())
         assertFalse(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING).isTwoArgumentUnifiedReturnShape())
     }
 
