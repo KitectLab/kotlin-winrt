@@ -14,6 +14,16 @@ internal enum class MethodSignatureShape {
     TWO_OBJECT,
 }
 
+internal enum class MethodParameterCategory {
+    STRING,
+    INT32,
+    BOOLEAN,
+    INT64,
+    UINT32,
+    EVENT_REGISTRATION_TOKEN,
+    OBJECT,
+}
+
 internal enum class MethodReturnKind {
     UNIT,
     STRING,
@@ -52,24 +62,43 @@ internal fun MethodSignatureKey.isTwoArgumentUnifiedReturnShape(): Boolean =
         MethodReturnKind.GUID,
     ) && shape.isTwoArgumentObjectShape()
 
+internal fun methodParameterCategory(
+    type: String,
+    supportsObjectType: (String) -> Boolean,
+): MethodParameterCategory? {
+    return when {
+        type == "String" -> MethodParameterCategory.STRING
+        type == "Int32" -> MethodParameterCategory.INT32
+        type == "Boolean" -> MethodParameterCategory.BOOLEAN
+        type == "Int64" -> MethodParameterCategory.INT64
+        type == "UInt32" -> MethodParameterCategory.UINT32
+        type == "EventRegistrationToken" -> MethodParameterCategory.EVENT_REGISTRATION_TOKEN
+        supportsObjectType(type) -> MethodParameterCategory.OBJECT
+        else -> null
+    }
+}
+
 internal fun methodSignatureShape(
     parameterTypes: List<String>,
     supportsObjectType: (String) -> Boolean,
 ): MethodSignatureShape? {
+    val parameterCategories = parameterTypes.map { type ->
+        methodParameterCategory(type, supportsObjectType) ?: return null
+    }
     return when {
-        parameterTypes.isEmpty() -> MethodSignatureShape.EMPTY
-        parameterTypes == listOf("String") -> MethodSignatureShape.STRING
-        parameterTypes == listOf("Int32") -> MethodSignatureShape.INT32
-        parameterTypes == listOf("Boolean") -> MethodSignatureShape.BOOLEAN
-        parameterTypes == listOf("Int64") -> MethodSignatureShape.INT64
-        parameterTypes == listOf("UInt32") -> MethodSignatureShape.UINT32
-        parameterTypes == listOf("EventRegistrationToken") -> MethodSignatureShape.EVENT_REGISTRATION_TOKEN
-        parameterTypes.size == 1 && supportsObjectType(parameterTypes.single()) -> MethodSignatureShape.OBJECT
-        parameterTypes.size == 2 && supportsObjectType(parameterTypes[0]) && parameterTypes[1] == "String" ->
+        parameterCategories.isEmpty() -> MethodSignatureShape.EMPTY
+        parameterCategories == listOf(MethodParameterCategory.STRING) -> MethodSignatureShape.STRING
+        parameterCategories == listOf(MethodParameterCategory.INT32) -> MethodSignatureShape.INT32
+        parameterCategories == listOf(MethodParameterCategory.BOOLEAN) -> MethodSignatureShape.BOOLEAN
+        parameterCategories == listOf(MethodParameterCategory.INT64) -> MethodSignatureShape.INT64
+        parameterCategories == listOf(MethodParameterCategory.UINT32) -> MethodSignatureShape.UINT32
+        parameterCategories == listOf(MethodParameterCategory.EVENT_REGISTRATION_TOKEN) -> MethodSignatureShape.EVENT_REGISTRATION_TOKEN
+        parameterCategories == listOf(MethodParameterCategory.OBJECT) -> MethodSignatureShape.OBJECT
+        parameterCategories == listOf(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING) ->
             MethodSignatureShape.OBJECT_STRING
-        parameterTypes.size == 2 && parameterTypes[0] == "String" && supportsObjectType(parameterTypes[1]) ->
+        parameterCategories == listOf(MethodParameterCategory.STRING, MethodParameterCategory.OBJECT) ->
             MethodSignatureShape.STRING_OBJECT
-        parameterTypes.size == 2 && supportsObjectType(parameterTypes[0]) && supportsObjectType(parameterTypes[1]) ->
+        parameterCategories == listOf(MethodParameterCategory.OBJECT, MethodParameterCategory.OBJECT) ->
             MethodSignatureShape.TWO_OBJECT
         else -> null
     }

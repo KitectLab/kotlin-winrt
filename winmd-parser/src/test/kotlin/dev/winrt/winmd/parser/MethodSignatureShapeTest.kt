@@ -1,0 +1,51 @@
+package dev.winrt.winmd.parser
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class MethodSignatureShapeTest {
+    @Test
+    fun classifies_parameter_categories() {
+        assertEquals(MethodParameterCategory.STRING, methodParameterCategory("String", ::supportsObjectType))
+        assertEquals(MethodParameterCategory.INT32, methodParameterCategory("Int32", ::supportsObjectType))
+        assertEquals(MethodParameterCategory.BOOLEAN, methodParameterCategory("Boolean", ::supportsObjectType))
+        assertEquals(MethodParameterCategory.INT64, methodParameterCategory("Int64", ::supportsObjectType))
+        assertEquals(MethodParameterCategory.UINT32, methodParameterCategory("UInt32", ::supportsObjectType))
+        assertEquals(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, methodParameterCategory("EventRegistrationToken", ::supportsObjectType))
+        assertEquals(MethodParameterCategory.OBJECT, methodParameterCategory("Windows.Foundation.Uri", ::supportsObjectType))
+        assertEquals(MethodParameterCategory.OBJECT, methodParameterCategory("Object", ::supportsObjectType))
+    }
+
+    @Test
+    fun derives_supported_two_argument_object_shapes_from_categories() {
+        assertEquals(
+            MethodSignatureShape.OBJECT_STRING,
+            methodSignatureShape(listOf("Windows.Foundation.Uri", "String"), ::supportsObjectType),
+        )
+        assertEquals(
+            MethodSignatureShape.STRING_OBJECT,
+            methodSignatureShape(listOf("String", "Windows.Foundation.Uri"), ::supportsObjectType),
+        )
+        assertEquals(
+            MethodSignatureShape.TWO_OBJECT,
+            methodSignatureShape(listOf("Windows.Foundation.Uri", "Windows.System.User"), ::supportsObjectType),
+        )
+    }
+
+    @Test
+    fun identifies_two_argument_unified_return_keys() {
+        assertTrue(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.OBJECT_STRING).isTwoArgumentUnifiedReturnShape())
+        assertTrue(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.TWO_OBJECT).isTwoArgumentUnifiedReturnShape())
+        assertFalse(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.TWO_OBJECT).isTwoArgumentUnifiedReturnShape())
+        assertFalse(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING).isTwoArgumentUnifiedReturnShape())
+    }
+
+    private fun supportsObjectType(type: String): Boolean {
+        return (type == "Object" || type.contains('.')) &&
+            !type.contains('`') &&
+            !type.contains('<') &&
+            !type.endsWith("[]")
+    }
+}
