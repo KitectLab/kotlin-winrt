@@ -1501,6 +1501,7 @@ internal class InterfaceTypeRenderer(
         if (signatureKey.isTwoArgumentUnifiedReturnShape()) {
             return plannedTwoArgumentReturnMethod(signatureKey, genericParameters)
         }
+        plannedUnaryInterfaceMethod(signatureKey, genericParameters)?.let { return it }
         signatureKey.shape.toParameterCategories()
             ?.takeIf { signatureKey.returnKind == MethodReturnKind.UNIT && it.isSupportedTwoArgumentUnitCategories() }
             ?.let {
@@ -1537,150 +1538,6 @@ internal class InterfaceTypeRenderer(
                 )
             }
         return when (signatureKey) {
-            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
-                statement = "return %L",
-                args = { method, _ ->
-                    arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethod(method.vtableIndex!!)))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING) -> PlannedInterfaceMethod(
-                statement = "return %L",
-                args = { method, _ ->
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithString(method.vtableIndex!!, argumentName)))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.INT32) -> PlannedInterfaceMethod(
-                statement = "return %L",
-                args = { method, _ ->
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithInt32(method.vtableIndex!!, "$argumentName.value")))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.UINT32) -> PlannedInterfaceMethod(
-                statement = "return %L",
-                args = { method, _ ->
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithUInt32(method.vtableIndex!!, "$argumentName.value")))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.BOOLEAN) -> PlannedInterfaceMethod(
-                statement = "return %L",
-                args = { method, _ ->
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithBoolean(method.vtableIndex!!, "${argumentName}.value")))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.INT64) -> PlannedInterfaceMethod(
-                statement = "return %L",
-                args = { method, _ ->
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithInt64(method.vtableIndex!!, "${argumentName}.value")))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
-                statement = "return %L",
-                args = { method, _ ->
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethodWithObject(method.vtableIndex!!, "${argumentName}.pointer")))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
-                statement = "return %T(%L)",
-                args = { method, _ ->
-                    arrayOf(PoetSymbols.float32Class, AbiCallCatalog.float32Method(method.vtableIndex!!))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.STRING) -> PlannedInterfaceMethod(
-                statement = "return %T(%L)",
-                args = { method, _ ->
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.float32Class, AbiCallCatalog.float32MethodWithString(method.vtableIndex!!, argumentName))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.UINT32) -> PlannedInterfaceMethod(
-                statement = "return %T(%L)",
-                args = { method, _ ->
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.float32Class, AbiCallCatalog.float32MethodWithUInt32(method.vtableIndex!!, "${argumentName}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.INT32) -> PlannedInterfaceMethod(
-                statement = "return %T(%L)",
-                args = { method, _ ->
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.float32Class, AbiCallCatalog.float32MethodWithInt32(method.vtableIndex!!, "${argumentName}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.BOOLEAN) -> PlannedInterfaceMethod(
-                statement = "return %T(%L)",
-                args = { method, _ ->
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.float32Class, AbiCallCatalog.float32MethodWithBoolean(method.vtableIndex!!, "${argumentName}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.INT64) -> PlannedInterfaceMethod(
-                statement = "return %T(%L)",
-                args = { method, _ ->
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.float32Class, AbiCallCatalog.float32MethodWithInt64(method.vtableIndex!!, "${argumentName}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.FLOAT32, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
-                statement = "return %T(%L)",
-                args = { method, _ ->
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.float32Class, AbiCallCatalog.float32MethodWithObject(method.vtableIndex!!, "${argumentName}.pointer"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
-                statement = "return %T(%L)",
-                args = { method, _ ->
-                    arrayOf(PoetSymbols.float64Class, AbiCallCatalog.float64Method(method.vtableIndex!!))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.STRING) -> PlannedInterfaceMethod(
-                statement = "return %T(%L)",
-                args = { method, _ ->
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.float64Class, AbiCallCatalog.float64MethodWithString(method.vtableIndex!!, argumentName))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.UINT32) -> PlannedInterfaceMethod(
-                statement = "return %T(%L)",
-                args = { method, _ ->
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.float64Class, AbiCallCatalog.float64MethodWithUInt32(method.vtableIndex!!, "${argumentName}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.INT32) -> PlannedInterfaceMethod(
-                statement = "return %T(%L)",
-                args = { method, _ ->
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.float64Class, AbiCallCatalog.float64MethodWithInt32(method.vtableIndex!!, "${argumentName}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.BOOLEAN) -> PlannedInterfaceMethod(
-                statement = "return %T(%L)",
-                args = { method, _ ->
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.float64Class, AbiCallCatalog.float64MethodWithBoolean(method.vtableIndex!!, "${argumentName}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.INT64) -> PlannedInterfaceMethod(
-                statement = "return %T(%L)",
-                args = { method, _ ->
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.float64Class, AbiCallCatalog.float64MethodWithInt64(method.vtableIndex!!, "${argumentName}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.FLOAT64, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
-                statement = "return %T(%L)",
-                args = { method, _ ->
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.float64Class, AbiCallCatalog.float64MethodWithObject(method.vtableIndex!!, "${argumentName}.pointer"))
-                },
-            )
             MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
                 statement = "return %T(%L)",
                 args = { method, _ ->
@@ -2138,6 +1995,159 @@ internal class InterfaceTypeRenderer(
             )
             else -> null
         }
+    }
+
+    private fun plannedUnaryInterfaceMethod(
+        signatureKey: MethodSignatureKey,
+        genericParameters: Set<String>,
+    ): PlannedInterfaceMethod? {
+        val parameterCategories = signatureKey.shape.toParameterCategories() ?: return null
+        if (parameterCategories.size > 1) return null
+        val parameterCategory = parameterCategories.singleOrNull()
+        return when (signatureKey.returnKind) {
+            MethodReturnKind.STRING -> plannedUnaryHStringInterfaceMethod(parameterCategory)
+            MethodReturnKind.FLOAT32 -> plannedUnaryWrappedInterfaceMethod(
+                parameterCategory = parameterCategory,
+                wrapperType = PoetSymbols.float32Class,
+                emptyCall = AbiCallCatalog::float32Method,
+                unaryCall = ::float32UnaryCall,
+            )
+            MethodReturnKind.FLOAT64 -> plannedUnaryWrappedInterfaceMethod(
+                parameterCategory = parameterCategory,
+                wrapperType = PoetSymbols.float64Class,
+                emptyCall = AbiCallCatalog::float64Method,
+                unaryCall = ::float64UnaryCall,
+            )
+            MethodReturnKind.OBJECT -> plannedUnaryObjectInterfaceMethod(parameterCategory, genericParameters)
+            MethodReturnKind.UNIT -> plannedUnaryUnitInterfaceMethod(parameterCategory)
+            else -> null
+        }
+    }
+
+    private fun plannedUnaryHStringInterfaceMethod(parameterCategory: MethodParameterCategory?): PlannedInterfaceMethod? {
+        if (parameterCategory == null) {
+            return PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ -> arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethod(method.vtableIndex!!))) },
+            )
+        }
+        return PlannedInterfaceMethod(
+            statement = "return %L",
+            args = { method, _ ->
+                val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                arrayOf(HStringSupport.fromCall(hstringUnaryCall(method.vtableIndex!!, parameterCategory, argumentName)))
+            },
+        )
+    }
+
+    private fun plannedUnaryWrappedInterfaceMethod(
+        parameterCategory: MethodParameterCategory?,
+        wrapperType: Any,
+        emptyCall: (Int) -> CodeBlock,
+        unaryCall: (Int, MethodParameterCategory, String) -> CodeBlock,
+    ): PlannedInterfaceMethod? =
+        PlannedInterfaceMethod(
+            statement = "return %T(%L)",
+            args = { method, _ ->
+                val abiCall = if (parameterCategory == null) {
+                    emptyCall(method.vtableIndex!!)
+                } else {
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    unaryCall(method.vtableIndex!!, parameterCategory, argumentName)
+                }
+                arrayOf(wrapperType, abiCall)
+            },
+        )
+
+    private fun plannedUnaryObjectInterfaceMethod(
+        parameterCategory: MethodParameterCategory?,
+        genericParameters: Set<String>,
+    ): PlannedInterfaceMethod? =
+        PlannedInterfaceMethod(
+            statement = "return %L",
+            args = { method, namespace ->
+                val abiCall = if (parameterCategory == null) {
+                    AbiCallCatalog.objectMethod(method.vtableIndex!!)
+                } else {
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    objectUnaryCall(method.vtableIndex!!, parameterCategory, argumentName)
+                }
+                arrayOf(objectReturnCode(method, namespace, abiCall, genericParameters))
+            },
+        )
+
+    private fun plannedUnaryUnitInterfaceMethod(parameterCategory: MethodParameterCategory?): PlannedInterfaceMethod? =
+        PlannedInterfaceMethod(
+            statement = "%L",
+            args = { method, _ ->
+                val abiCall = if (parameterCategory == null) {
+                    AbiCallCatalog.unitMethod(method.vtableIndex!!)
+                } else {
+                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+                    unitUnaryCall(method.vtableIndex!!, parameterCategory, argumentName)
+                }
+                arrayOf(abiCall)
+            },
+        )
+
+    private fun hstringUnaryCall(vtableIndex: Int, category: MethodParameterCategory, argumentName: String): CodeBlock = when (category) {
+        MethodParameterCategory.STRING -> AbiCallCatalog.hstringMethodWithString(vtableIndex, argumentName)
+        MethodParameterCategory.INT32 -> AbiCallCatalog.hstringMethodWithInt32(vtableIndex, unaryArgumentExpression(argumentName, category))
+        MethodParameterCategory.UINT32 -> AbiCallCatalog.hstringMethodWithUInt32(vtableIndex, unaryArgumentExpression(argumentName, category))
+        MethodParameterCategory.BOOLEAN -> AbiCallCatalog.hstringMethodWithBoolean(vtableIndex, unaryArgumentExpression(argumentName, category))
+        MethodParameterCategory.INT64,
+        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.hstringMethodWithInt64(vtableIndex, unaryArgumentExpression(argumentName, category))
+        MethodParameterCategory.OBJECT -> AbiCallCatalog.hstringMethodWithObject(vtableIndex, unaryArgumentExpression(argumentName, category))
+    }
+
+    private fun float32UnaryCall(vtableIndex: Int, category: MethodParameterCategory, argumentName: String): CodeBlock = when (category) {
+        MethodParameterCategory.STRING -> AbiCallCatalog.float32MethodWithString(vtableIndex, argumentName)
+        MethodParameterCategory.INT32 -> AbiCallCatalog.float32MethodWithInt32(vtableIndex, unaryArgumentExpression(argumentName, category))
+        MethodParameterCategory.UINT32 -> AbiCallCatalog.float32MethodWithUInt32(vtableIndex, unaryArgumentExpression(argumentName, category))
+        MethodParameterCategory.BOOLEAN -> AbiCallCatalog.float32MethodWithBoolean(vtableIndex, unaryArgumentExpression(argumentName, category))
+        MethodParameterCategory.INT64,
+        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.float32MethodWithInt64(vtableIndex, unaryArgumentExpression(argumentName, category))
+        MethodParameterCategory.OBJECT -> AbiCallCatalog.float32MethodWithObject(vtableIndex, unaryArgumentExpression(argumentName, category))
+    }
+
+    private fun float64UnaryCall(vtableIndex: Int, category: MethodParameterCategory, argumentName: String): CodeBlock = when (category) {
+        MethodParameterCategory.STRING -> AbiCallCatalog.float64MethodWithString(vtableIndex, argumentName)
+        MethodParameterCategory.INT32 -> AbiCallCatalog.float64MethodWithInt32(vtableIndex, unaryArgumentExpression(argumentName, category))
+        MethodParameterCategory.UINT32 -> AbiCallCatalog.float64MethodWithUInt32(vtableIndex, unaryArgumentExpression(argumentName, category))
+        MethodParameterCategory.BOOLEAN -> AbiCallCatalog.float64MethodWithBoolean(vtableIndex, unaryArgumentExpression(argumentName, category))
+        MethodParameterCategory.INT64,
+        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.float64MethodWithInt64(vtableIndex, unaryArgumentExpression(argumentName, category))
+        MethodParameterCategory.OBJECT -> AbiCallCatalog.float64MethodWithObject(vtableIndex, unaryArgumentExpression(argumentName, category))
+    }
+
+    private fun objectUnaryCall(vtableIndex: Int, category: MethodParameterCategory, argumentName: String): CodeBlock = when (category) {
+        MethodParameterCategory.STRING -> AbiCallCatalog.objectMethodWithString(vtableIndex, argumentName)
+        MethodParameterCategory.INT32 -> AbiCallCatalog.objectMethodWithInt32(vtableIndex, unaryArgumentExpression(argumentName, category))
+        MethodParameterCategory.UINT32 -> AbiCallCatalog.objectMethodWithUInt32(vtableIndex, unaryArgumentExpression(argumentName, category))
+        MethodParameterCategory.BOOLEAN -> AbiCallCatalog.objectMethodWithBoolean(vtableIndex, unaryArgumentExpression(argumentName, category))
+        MethodParameterCategory.INT64,
+        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.objectMethodWithInt64(vtableIndex, unaryArgumentExpression(argumentName, category))
+        MethodParameterCategory.OBJECT -> AbiCallCatalog.objectMethodWithObject(vtableIndex, unaryArgumentExpression(argumentName, category))
+    }
+
+    private fun unitUnaryCall(vtableIndex: Int, category: MethodParameterCategory, argumentName: String): CodeBlock = when (category) {
+        MethodParameterCategory.INT32 -> AbiCallCatalog.unitMethodWithInt32(vtableIndex, argumentName)
+        MethodParameterCategory.UINT32 -> AbiCallCatalog.unitMethodWithUInt32(vtableIndex, argumentName)
+        MethodParameterCategory.BOOLEAN -> AbiCallCatalog.unitMethodWithInt32Expression(vtableIndex, "if (${unaryArgumentExpression(argumentName, category)}) 1 else 0")
+        MethodParameterCategory.INT64,
+        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.unitMethodWithInt64(vtableIndex, argumentName)
+        MethodParameterCategory.STRING -> AbiCallCatalog.unitMethodWithString(vtableIndex, argumentName)
+        MethodParameterCategory.OBJECT -> AbiCallCatalog.objectSetter(vtableIndex, argumentName)
+    }
+
+    private fun unaryArgumentExpression(argumentName: String, category: MethodParameterCategory): String = when (category) {
+        MethodParameterCategory.OBJECT -> "$argumentName.pointer"
+        MethodParameterCategory.INT32,
+        MethodParameterCategory.UINT32,
+        MethodParameterCategory.BOOLEAN,
+        MethodParameterCategory.INT64,
+        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$argumentName.value"
+        MethodParameterCategory.STRING -> argumentName
     }
 
     private fun plannedTwoArgumentReturnMethod(
