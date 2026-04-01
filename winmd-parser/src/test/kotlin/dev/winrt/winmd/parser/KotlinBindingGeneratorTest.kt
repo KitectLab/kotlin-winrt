@@ -1240,6 +1240,116 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun renders_helper_interfaces_with_string_return_and_object_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(namespace = "Windows.System", name = "Launcher", kind = WinMdTypeKind.RuntimeClass),
+                        WinMdType(namespace = "Windows.System", name = "User", kind = WinMdTypeKind.RuntimeClass),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics16",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "16161616-1616-1616-1616-161616161616",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "ResolveUserName",
+                                    returnType = "String",
+                                    parameters = listOf(WinMdParameter("user", "Windows.System.User")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics16.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun resolveUserName(user: User): String"))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeHStringMethodWithObjectArg(pointer,6,user.pointer).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_guid_return_and_object_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(namespace = "Windows.System", name = "Launcher", kind = WinMdTypeKind.RuntimeClass),
+                        WinMdType(namespace = "Windows.System", name = "User", kind = WinMdTypeKind.RuntimeClass),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics17",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "17171717-1717-1717-1717-171717171717",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "ResolveUserId",
+                                    returnType = "Guid",
+                                    parameters = listOf(WinMdParameter("user", "Windows.System.User")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics17.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun resolveUserId(user: User): Guid"))
+        assertTrue(normalizedStaticsBinding.contains("Guid(PlatformComInterop.invokeGuidMethodWithObjectArg(pointer,6,user.pointer).getOrThrow().toString())"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_float64_return_and_int64_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(namespace = "Windows.System", name = "Launcher", kind = WinMdTypeKind.RuntimeClass),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics18",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "18181818-1818-1818-1818-181818181818",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "ScoreLongValue",
+                                    returnType = "Float64",
+                                    parameters = listOf(WinMdParameter("value", "Int64")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics18.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun scoreLongValue("))
+        assertTrue(normalizedStaticsBinding.contains("Float64(PlatformComInterop.invokeFloat64MethodWithInt64Arg(pointer,6,value.value).getOrThrow())"))
+    }
+
+    @Test
     fun emits_runtime_helper_interfaces_as_internal_types() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

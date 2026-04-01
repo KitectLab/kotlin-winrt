@@ -6,6 +6,7 @@ internal enum class SharedMethodRuleFamily {
     FLOAT64,
     BOOLEAN,
     EVENT_REGISTRATION_TOKEN,
+    GUID,
     OBJECT,
     UNIT,
 }
@@ -28,17 +29,18 @@ internal object MethodRuleRegistry {
     )
 
     private val sharedMethodRules: Map<MethodSignatureKey, SharedMethodRuleFamily> = buildMap {
-        register(SharedMethodRuleFamily.STRING, MethodReturnKind.STRING, emptyShapes + unaryStringLikeShapes)
-        register(SharedMethodRuleFamily.FLOAT32, MethodReturnKind.FLOAT32, emptyShapes + listOf(MethodSignatureShape.STRING, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN))
-        register(SharedMethodRuleFamily.FLOAT64, MethodReturnKind.FLOAT64, emptyShapes + listOf(MethodSignatureShape.STRING, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN))
-        register(SharedMethodRuleFamily.BOOLEAN, MethodReturnKind.BOOLEAN, emptyShapes + unaryStringLikeShapes + unaryObjectCapableShapes)
+        register(SharedMethodRuleFamily.STRING, MethodReturnKind.STRING, emptyShapes + unaryStringLikeShapes + listOf(MethodSignatureShape.INT64, MethodSignatureShape.OBJECT))
+        register(SharedMethodRuleFamily.FLOAT32, MethodReturnKind.FLOAT32, emptyShapes + unaryStringLikeShapes + unaryUnitOnlyShapes)
+        register(SharedMethodRuleFamily.FLOAT64, MethodReturnKind.FLOAT64, emptyShapes + unaryStringLikeShapes + unaryUnitOnlyShapes)
+        register(SharedMethodRuleFamily.BOOLEAN, MethodReturnKind.BOOLEAN, emptyShapes + unaryStringLikeShapes + unaryUnitOnlyShapes)
         register(SharedMethodRuleFamily.UNIT, MethodReturnKind.INT32, listOf(MethodSignatureShape.STRING, MethodSignatureShape.INT32, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN, MethodSignatureShape.OBJECT))
         register(SharedMethodRuleFamily.UNIT, MethodReturnKind.UINT32, emptyShapes + listOf(MethodSignatureShape.STRING, MethodSignatureShape.INT32, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN, MethodSignatureShape.OBJECT))
         register(SharedMethodRuleFamily.EVENT_REGISTRATION_TOKEN, MethodReturnKind.EVENT_REGISTRATION_TOKEN, emptyShapes)
-        register(SharedMethodRuleFamily.OBJECT, MethodReturnKind.OBJECT, emptyShapes + listOf(MethodSignatureShape.STRING, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN, MethodSignatureShape.OBJECT))
+        register(SharedMethodRuleFamily.OBJECT, MethodReturnKind.OBJECT, emptyShapes + unaryStringLikeShapes + unaryUnitOnlyShapes)
         register(SharedMethodRuleFamily.UNIT, MethodReturnKind.UNIT, emptyShapes + unaryStringLikeShapes + unaryUnitOnlyShapes)
-        register(SharedMethodRuleFamily.OBJECT, MethodReturnKind.INT64, listOf(MethodSignatureShape.STRING, MethodSignatureShape.INT32, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN, MethodSignatureShape.OBJECT))
-        register(SharedMethodRuleFamily.OBJECT, MethodReturnKind.UINT64, listOf(MethodSignatureShape.STRING, MethodSignatureShape.INT32, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN, MethodSignatureShape.OBJECT))
+        register(SharedMethodRuleFamily.OBJECT, MethodReturnKind.INT64, unaryStringLikeShapes + unaryUnitOnlyShapes)
+        register(SharedMethodRuleFamily.OBJECT, MethodReturnKind.UINT64, unaryStringLikeShapes + unaryUnitOnlyShapes)
+        register(SharedMethodRuleFamily.GUID, MethodReturnKind.GUID, emptyShapes + unaryStringLikeShapes + unaryUnitOnlyShapes)
     }
 
     private fun MutableMap<MethodSignatureKey, SharedMethodRuleFamily>.register(

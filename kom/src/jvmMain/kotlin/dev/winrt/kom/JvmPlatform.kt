@@ -1773,6 +1773,39 @@ private object JvmPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeObjectMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<ComPtr> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeObjectMethodWithInt32Arg",
+            handle = Jdk22Foreign.objectMethodWithUInt32Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
+            value,
+        )
+
+    override fun invokeObjectMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<ComPtr> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeObjectMethodWithBooleanArg",
+            handle = Jdk22Foreign.objectMethodWithUInt32Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
+            if (value) 1 else 0,
+        )
+
+    override fun invokeObjectMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<ComPtr> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeObjectMethodWithInt64Arg",
+            handle = Jdk22Foreign.objectMethodWithInt64Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
+            value,
+        )
+
     override fun invokeMethodWithObjectAndStringArgs(
         instance: ComPtr,
         vtableIndex: Int,
@@ -2054,6 +2087,39 @@ private object JvmPlatformComInterop : ComInterop {
             value,
         )
     }
+
+    override fun invokeHStringMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<HString> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeHStringMethodWithBooleanArg",
+            handle = Jdk22Foreign.hstringMethodWithUInt32Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+            reader = { segment -> HString(segment.get(ValueLayout.ADDRESS, 0L).address()) },
+            if (value) 1u else 0u,
+        )
+
+    override fun invokeHStringMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<HString> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeHStringMethodWithObjectArg",
+            handle = Jdk22Foreign.hstringMethodWithInputHandle,
+            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+            reader = { segment -> HString(segment.get(ValueLayout.ADDRESS, 0L).address()) },
+            value,
+        )
+
+    override fun invokeHStringMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<HString> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeHStringMethodWithInt64Arg",
+            handle = Jdk22Foreign.hstringMethodWithInt64Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+            reader = { segment -> HString(segment.get(ValueLayout.ADDRESS, 0L).address()) },
+            value,
+        )
 
     override fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit> {
         return JvmComMethodExecutor.invokeWithoutOut(
@@ -2346,6 +2412,28 @@ private object JvmPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeInt32MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Int> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeInt32MethodWithBooleanArg",
+            handle = Jdk22Foreign.int32MethodWithUInt32Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.JAVA_INT) },
+            reader = { segment -> segment.get(ValueLayout.JAVA_INT, 0L) },
+            if (value) 1 else 0,
+        )
+
+    override fun invokeInt32MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Int> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeInt32MethodWithInt64Arg",
+            handle = Jdk22Foreign.int32MethodWithInt64Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.JAVA_INT) },
+            reader = { segment -> segment.get(ValueLayout.JAVA_INT, 0L) },
+            value,
+        )
+
     override fun invokeUInt32Method(instance: ComPtr, vtableIndex: Int): Result<UInt> {
         return JvmComMethodExecutor.invokeWithOutSegment(
             instance = instance,
@@ -2405,6 +2493,28 @@ private object JvmPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeUInt32MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<UInt> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeUInt32MethodWithBooleanArg",
+            handle = Jdk22Foreign.uint32MethodWithUInt32Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.JAVA_INT) },
+            reader = { segment -> segment.get(ValueLayout.JAVA_INT, 0L).toUInt() },
+            if (value) 1 else 0,
+        )
+
+    override fun invokeUInt32MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<UInt> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeUInt32MethodWithInt64Arg",
+            handle = Jdk22Foreign.uint32MethodWithInt64Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.JAVA_INT) },
+            reader = { segment -> segment.get(ValueLayout.JAVA_INT, 0L).toUInt() },
+            value,
+        )
+
     override fun invokeBooleanGetter(instance: ComPtr, vtableIndex: Int): Result<Boolean> {
         return JvmComMethodExecutor.invokeWithOutSegment(
             instance = instance,
@@ -2452,6 +2562,39 @@ private object JvmPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeBooleanMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Boolean> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeBooleanMethodWithInt32Arg",
+            handle = Jdk22Foreign.booleanMethodWithUInt32Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.JAVA_INT) },
+            reader = { segment -> segment.get(ValueLayout.JAVA_INT, 0L) != 0 },
+            value,
+        )
+
+    override fun invokeBooleanMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Boolean> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeBooleanMethodWithBooleanArg",
+            handle = Jdk22Foreign.booleanMethodWithUInt32Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.JAVA_INT) },
+            reader = { segment -> segment.get(ValueLayout.JAVA_INT, 0L) != 0 },
+            if (value) 1 else 0,
+        )
+
+    override fun invokeBooleanMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Boolean> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeBooleanMethodWithInt64Arg",
+            handle = Jdk22Foreign.booleanMethodWithInt64Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.JAVA_INT) },
+            reader = { segment -> segment.get(ValueLayout.JAVA_INT, 0L) != 0 },
+            value,
+        )
+
     override fun invokeFloat64Method(instance: ComPtr, vtableIndex: Int): Result<Double> {
         return JvmComMethodExecutor.invokeWithOutSegment(
             instance = instance,
@@ -2498,6 +2641,50 @@ private object JvmPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeFloat32MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Float> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeFloat32MethodWithInt32Arg",
+            handle = Jdk22Foreign.float32MethodWithUInt32Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.JAVA_FLOAT) },
+            reader = { segment -> segment.get(ValueLayout.JAVA_FLOAT, 0L) },
+            value,
+        )
+
+    override fun invokeFloat32MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Float> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeFloat32MethodWithBooleanArg",
+            handle = Jdk22Foreign.float32MethodWithUInt32Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.JAVA_FLOAT) },
+            reader = { segment -> segment.get(ValueLayout.JAVA_FLOAT, 0L) },
+            if (value) 1 else 0,
+        )
+
+    override fun invokeFloat32MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Float> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeFloat32MethodWithObjectArg",
+            handle = Jdk22Foreign.float32MethodWithInputHandle,
+            allocator = { arena -> arena.allocate(ValueLayout.JAVA_FLOAT) },
+            reader = { segment -> segment.get(ValueLayout.JAVA_FLOAT, 0L) },
+            value,
+        )
+
+    override fun invokeFloat32MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Float> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeFloat32MethodWithInt64Arg",
+            handle = Jdk22Foreign.float32MethodWithInt64Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.JAVA_FLOAT) },
+            reader = { segment -> segment.get(ValueLayout.JAVA_FLOAT, 0L) },
+            value,
+        )
+
     override fun invokeFloat64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Double> {
         return JvmComMethodExecutor.invokeWithOutSegment(
             instance = instance,
@@ -2522,6 +2709,50 @@ private object JvmPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeFloat64MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Double> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeFloat64MethodWithInt32Arg",
+            handle = Jdk22Foreign.float64MethodWithUInt32Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.JAVA_DOUBLE) },
+            reader = { segment -> segment.get(ValueLayout.JAVA_DOUBLE, 0L) },
+            value,
+        )
+
+    override fun invokeFloat64MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Double> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeFloat64MethodWithBooleanArg",
+            handle = Jdk22Foreign.float64MethodWithUInt32Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.JAVA_DOUBLE) },
+            reader = { segment -> segment.get(ValueLayout.JAVA_DOUBLE, 0L) },
+            if (value) 1 else 0,
+        )
+
+    override fun invokeFloat64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Double> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeFloat64MethodWithObjectArg",
+            handle = Jdk22Foreign.float64MethodWithInputHandle,
+            allocator = { arena -> arena.allocate(ValueLayout.JAVA_DOUBLE) },
+            reader = { segment -> segment.get(ValueLayout.JAVA_DOUBLE, 0L) },
+            value,
+        )
+
+    override fun invokeFloat64MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Double> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeFloat64MethodWithInt64Arg",
+            handle = Jdk22Foreign.float64MethodWithInt64Handle,
+            allocator = { arena -> arena.allocate(ValueLayout.JAVA_DOUBLE) },
+            reader = { segment -> segment.get(ValueLayout.JAVA_DOUBLE, 0L) },
+            value,
+        )
+
     override fun invokeGuidGetter(instance: ComPtr, vtableIndex: Int): Result<Guid> {
         return JvmComMethodExecutor.invokeWithOutSegment(
             instance = instance,
@@ -2532,6 +2763,72 @@ private object JvmPlatformComInterop : ComInterop {
             reader = Jdk22Foreign::guidFromSegment,
         )
     }
+
+    override fun invokeGuidMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Guid> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeGuidMethodWithStringArg",
+            handle = Jdk22Foreign.guidMethodWithInputHandle,
+            allocator = { arena -> arena.allocate(16) },
+            reader = Jdk22Foreign::guidFromSegment,
+            value,
+        )
+
+    override fun invokeGuidMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Guid> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeGuidMethodWithInt32Arg",
+            handle = Jdk22Foreign.guidMethodWithInt32Handle,
+            allocator = { arena -> arena.allocate(16) },
+            reader = Jdk22Foreign::guidFromSegment,
+            value,
+        )
+
+    override fun invokeGuidMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Guid> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeGuidMethodWithUInt32Arg",
+            handle = Jdk22Foreign.guidMethodWithInt32Handle,
+            allocator = { arena -> arena.allocate(16) },
+            reader = Jdk22Foreign::guidFromSegment,
+            value.toInt(),
+        )
+
+    override fun invokeGuidMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Guid> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeGuidMethodWithBooleanArg",
+            handle = Jdk22Foreign.guidMethodWithInt32Handle,
+            allocator = { arena -> arena.allocate(16) },
+            reader = Jdk22Foreign::guidFromSegment,
+            if (value) 1 else 0,
+        )
+
+    override fun invokeGuidMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Guid> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeGuidMethodWithObjectArg",
+            handle = Jdk22Foreign.guidMethodWithInputHandle,
+            allocator = { arena -> arena.allocate(16) },
+            reader = Jdk22Foreign::guidFromSegment,
+            value,
+        )
+
+    override fun invokeGuidMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Guid> =
+        JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeGuidMethodWithInt64Arg",
+            handle = Jdk22Foreign.guidMethodWithInt64Handle,
+            allocator = { arena -> arena.allocate(16) },
+            reader = Jdk22Foreign::guidFromSegment,
+            value,
+        )
 
     override fun invokeInt64Getter(instance: ComPtr, vtableIndex: Int): Result<Long> {
         return JvmComMethodExecutor.invokeWithOutSegment(
