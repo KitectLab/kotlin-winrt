@@ -519,6 +519,74 @@ internal object AbiCallCatalog {
         extractor,
     )
 
+    fun resultMethodWithTwoInt32s(
+        vtableIndex: Int,
+        resultKindName: String,
+        extractor: Any,
+        firstArgumentExpression: String,
+        secondArgumentExpression: String,
+        pointerExpression: String = "pointer",
+    ): CodeBlock = CodeBlock.of(
+        "%T.invokeMethodWithTwoInt32Args($pointerExpression, $vtableIndex, %T.%L, %L, %L).getOrThrow().%M()",
+        PoetSymbols.platformComInteropClass,
+        PoetSymbols.comMethodResultKindClass,
+        resultKindName,
+        firstArgumentExpression,
+        secondArgumentExpression,
+        extractor,
+    )
+
+    fun resultMethodWithInt32AndInt64(
+        vtableIndex: Int,
+        resultKindName: String,
+        extractor: Any,
+        firstArgumentExpression: String,
+        secondArgumentExpression: String,
+        pointerExpression: String = "pointer",
+    ): CodeBlock = CodeBlock.of(
+        "%T.invokeMethodWithInt32AndInt64Args($pointerExpression, $vtableIndex, %T.%L, %L, %L).getOrThrow().%M()",
+        PoetSymbols.platformComInteropClass,
+        PoetSymbols.comMethodResultKindClass,
+        resultKindName,
+        firstArgumentExpression,
+        secondArgumentExpression,
+        extractor,
+    )
+
+    fun resultMethodWithInt64AndInt32(
+        vtableIndex: Int,
+        resultKindName: String,
+        extractor: Any,
+        firstArgumentExpression: String,
+        secondArgumentExpression: String,
+        pointerExpression: String = "pointer",
+    ): CodeBlock = CodeBlock.of(
+        "%T.invokeMethodWithInt64AndInt32Args($pointerExpression, $vtableIndex, %T.%L, %L, %L).getOrThrow().%M()",
+        PoetSymbols.platformComInteropClass,
+        PoetSymbols.comMethodResultKindClass,
+        resultKindName,
+        firstArgumentExpression,
+        secondArgumentExpression,
+        extractor,
+    )
+
+    fun resultMethodWithTwoInt64s(
+        vtableIndex: Int,
+        resultKindName: String,
+        extractor: Any,
+        firstArgumentExpression: String,
+        secondArgumentExpression: String,
+        pointerExpression: String = "pointer",
+    ): CodeBlock = CodeBlock.of(
+        "%T.invokeMethodWithTwoInt64Args($pointerExpression, $vtableIndex, %T.%L, %L, %L).getOrThrow().%M()",
+        PoetSymbols.platformComInteropClass,
+        PoetSymbols.comMethodResultKindClass,
+        resultKindName,
+        firstArgumentExpression,
+        secondArgumentExpression,
+        extractor,
+    )
+
     fun resultMethodWithTwoArguments(
         vtableIndex: Int,
         resultKindName: String,
@@ -563,6 +631,63 @@ internal object AbiCallCatalog {
         MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.STRING),
         MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.STRING) ->
             resultMethodWithInt64AndString(
+                vtableIndex,
+                resultKindName,
+                extractor,
+                firstArgumentExpression,
+                secondArgumentExpression,
+                pointerExpression,
+            )
+        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.INT32),
+        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.UINT32),
+        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.BOOLEAN),
+        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.INT32),
+        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.UINT32),
+        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.BOOLEAN),
+        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.INT32),
+        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.UINT32),
+        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.BOOLEAN) ->
+            resultMethodWithTwoInt32s(
+                vtableIndex,
+                resultKindName,
+                extractor,
+                firstArgumentExpression,
+                secondArgumentExpression,
+                pointerExpression,
+            )
+        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.INT64),
+        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.EVENT_REGISTRATION_TOKEN),
+        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.INT64),
+        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.EVENT_REGISTRATION_TOKEN),
+        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.INT64),
+        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) ->
+            resultMethodWithInt32AndInt64(
+                vtableIndex,
+                resultKindName,
+                extractor,
+                firstArgumentExpression,
+                secondArgumentExpression,
+                pointerExpression,
+            )
+        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.INT32),
+        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.UINT32),
+        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.BOOLEAN),
+        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.INT32),
+        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.UINT32),
+        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.BOOLEAN) ->
+            resultMethodWithInt64AndInt32(
+                vtableIndex,
+                resultKindName,
+                extractor,
+                firstArgumentExpression,
+                secondArgumentExpression,
+                pointerExpression,
+            )
+        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.INT64),
+        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.EVENT_REGISTRATION_TOKEN),
+        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.INT64),
+        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) ->
+            resultMethodWithTwoInt64s(
                 vtableIndex,
                 resultKindName,
                 extractor,

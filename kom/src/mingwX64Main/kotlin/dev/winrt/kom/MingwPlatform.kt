@@ -314,6 +314,54 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeMethodWithTwoInt32Args(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: Int,
+        second: Int,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with two Int32 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeMethodWithInt32AndInt64Args(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: Int,
+        second: Long,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with Int32 and Int64 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeMethodWithInt64AndInt32Args(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: Long,
+        second: Int,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with Int64 and Int32 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeMethodWithTwoInt64Args(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: Long,
+        second: Long,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with two Int64 inputs is not wired yet"),
+        )
+    }
+
     override fun invokeMethodWithInt64AndStringArgs(
         instance: ComPtr,
         vtableIndex: Int,

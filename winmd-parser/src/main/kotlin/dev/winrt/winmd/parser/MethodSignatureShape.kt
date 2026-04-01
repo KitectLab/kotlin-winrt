@@ -106,6 +106,31 @@ internal fun MethodSignatureShape.isTwoArgumentObjectShape(): Boolean =
         this == MethodSignatureShape.INT64_STRING ||
         this == MethodSignatureShape.STRING_EVENT_REGISTRATION_TOKEN ||
         this == MethodSignatureShape.EVENT_REGISTRATION_TOKEN_STRING ||
+        this == MethodSignatureShape.INT32_INT32 ||
+        this == MethodSignatureShape.INT32_UINT32 ||
+        this == MethodSignatureShape.INT32_BOOLEAN ||
+        this == MethodSignatureShape.INT32_INT64 ||
+        this == MethodSignatureShape.INT32_EVENT_REGISTRATION_TOKEN ||
+        this == MethodSignatureShape.UINT32_INT32 ||
+        this == MethodSignatureShape.UINT32_UINT32 ||
+        this == MethodSignatureShape.UINT32_BOOLEAN ||
+        this == MethodSignatureShape.UINT32_INT64 ||
+        this == MethodSignatureShape.UINT32_EVENT_REGISTRATION_TOKEN ||
+        this == MethodSignatureShape.BOOLEAN_INT32 ||
+        this == MethodSignatureShape.BOOLEAN_UINT32 ||
+        this == MethodSignatureShape.BOOLEAN_BOOLEAN ||
+        this == MethodSignatureShape.BOOLEAN_INT64 ||
+        this == MethodSignatureShape.BOOLEAN_EVENT_REGISTRATION_TOKEN ||
+        this == MethodSignatureShape.INT64_INT32 ||
+        this == MethodSignatureShape.INT64_UINT32 ||
+        this == MethodSignatureShape.INT64_BOOLEAN ||
+        this == MethodSignatureShape.INT64_INT64 ||
+        this == MethodSignatureShape.INT64_EVENT_REGISTRATION_TOKEN ||
+        this == MethodSignatureShape.EVENT_REGISTRATION_TOKEN_INT32 ||
+        this == MethodSignatureShape.EVENT_REGISTRATION_TOKEN_UINT32 ||
+        this == MethodSignatureShape.EVENT_REGISTRATION_TOKEN_BOOLEAN ||
+        this == MethodSignatureShape.EVENT_REGISTRATION_TOKEN_INT64 ||
+        this == MethodSignatureShape.EVENT_REGISTRATION_TOKEN_EVENT_REGISTRATION_TOKEN ||
         this == MethodSignatureShape.OBJECT_INT32 ||
         this == MethodSignatureShape.OBJECT_UINT32 ||
         this == MethodSignatureShape.OBJECT_BOOLEAN ||

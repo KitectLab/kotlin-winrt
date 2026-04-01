@@ -1101,6 +1101,90 @@ private object JvmComMethodExecutor {
         operation: String,
         handle: java.lang.invoke.MethodHandle,
         resultKind: ComMethodResultKind,
+        first: Int,
+        second: Int,
+    ): Result<ComMethodResult> {
+        return invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = operation,
+            handle = handle,
+            allocator = { arena -> allocateResultSegment(arena, resultKind) },
+            reader = { segment -> readResult(segment, resultKind) },
+            first,
+            second,
+        )
+    }
+
+    fun invokeWithOutResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: Int,
+        second: Long,
+    ): Result<ComMethodResult> {
+        return invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = operation,
+            handle = handle,
+            allocator = { arena -> allocateResultSegment(arena, resultKind) },
+            reader = { segment -> readResult(segment, resultKind) },
+            first,
+            second,
+        )
+    }
+
+    fun invokeWithOutResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: Long,
+        second: Int,
+    ): Result<ComMethodResult> {
+        return invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = operation,
+            handle = handle,
+            allocator = { arena -> allocateResultSegment(arena, resultKind) },
+            reader = { segment -> readResult(segment, resultKind) },
+            first,
+            second,
+        )
+    }
+
+    fun invokeWithOutResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: Long,
+        second: Long,
+    ): Result<ComMethodResult> {
+        return invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = operation,
+            handle = handle,
+            allocator = { arena -> allocateResultSegment(arena, resultKind) },
+            reader = { segment -> readResult(segment, resultKind) },
+            first,
+            second,
+        )
+    }
+
+    fun invokeWithOutResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
         first: String,
         second: Int,
     ): Result<ComMethodResult> {
@@ -1809,6 +1893,78 @@ private object JvmPlatformComInterop : ComInterop {
             vtableIndex = vtableIndex,
             operation = "invokeMethodWithStringAndInt64Args",
             handle = stringInt64UnitHandle,
+            resultKind = resultKind,
+            first,
+            second,
+        )
+    }
+
+    override fun invokeMethodWithTwoInt32Args(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: Int,
+        second: Int,
+    ): Result<ComMethodResult> {
+        return JvmComMethodExecutor.invokeWithOutResultKind(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeMethodWithTwoInt32Args",
+            handle = twoInt32UnitHandle,
+            resultKind = resultKind,
+            first,
+            second,
+        )
+    }
+
+    override fun invokeMethodWithInt32AndInt64Args(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: Int,
+        second: Long,
+    ): Result<ComMethodResult> {
+        return JvmComMethodExecutor.invokeWithOutResultKind(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeMethodWithInt32AndInt64Args",
+            handle = int32Int64UnitHandle,
+            resultKind = resultKind,
+            first,
+            second,
+        )
+    }
+
+    override fun invokeMethodWithInt64AndInt32Args(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: Long,
+        second: Int,
+    ): Result<ComMethodResult> {
+        return JvmComMethodExecutor.invokeWithOutResultKind(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeMethodWithInt64AndInt32Args",
+            handle = int64Int32UnitHandle,
+            resultKind = resultKind,
+            first,
+            second,
+        )
+    }
+
+    override fun invokeMethodWithTwoInt64Args(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: Long,
+        second: Long,
+    ): Result<ComMethodResult> {
+        return JvmComMethodExecutor.invokeWithOutResultKind(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeMethodWithTwoInt64Args",
+            handle = twoInt64UnitHandle,
             resultKind = resultKind,
             first,
             second,
