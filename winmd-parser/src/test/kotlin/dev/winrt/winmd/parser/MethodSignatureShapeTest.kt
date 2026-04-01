@@ -100,14 +100,22 @@ class MethodSignatureShapeTest {
     }
 
     @Test
-    fun folds_parameter_pairs_into_abi_families() {
+    fun folds_parameter_categories_into_abi_tokens() {
         assertEquals(
-            MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.INT32_LIKE),
-            MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.BOOLEAN).toAbiFamilyPair(),
+            MethodParameterAbiToken.STRING,
+            MethodParameterCategory.STRING.toAbiToken(),
         )
         assertEquals(
-            MethodParameterFamilyPair(MethodParameterAbiFamily.INT64_LIKE, MethodParameterAbiFamily.OBJECT),
-            MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.OBJECT).toAbiFamilyPair(),
+            MethodParameterAbiToken.INT32,
+            MethodParameterCategory.BOOLEAN.toAbiToken(),
+        )
+        assertEquals(
+            MethodParameterAbiToken.INT64,
+            MethodParameterCategory.EVENT_REGISTRATION_TOKEN.toAbiToken(),
+        )
+        assertEquals(
+            MethodParameterAbiToken.OBJECT,
+            MethodParameterCategory.OBJECT.toAbiToken(),
         )
     }
 

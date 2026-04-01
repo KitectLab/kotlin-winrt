@@ -3,6 +3,92 @@ package dev.winrt.winmd.parser
 import com.squareup.kotlinpoet.CodeBlock
 
 internal object AbiCallCatalog {
+    private fun MethodParameterAbiToken.methodNamePart(): String = when (this) {
+        MethodParameterAbiToken.STRING -> "String"
+        MethodParameterAbiToken.OBJECT -> "Object"
+        MethodParameterAbiToken.INT32 -> "Int32"
+        MethodParameterAbiToken.INT64 -> "Int64"
+    }
+
+    private fun MethodParameterAbiToken.argumentPlaceholder(): String = when (this) {
+        MethodParameterAbiToken.STRING -> "%N"
+        MethodParameterAbiToken.OBJECT,
+        MethodParameterAbiToken.INT32,
+        MethodParameterAbiToken.INT64 -> "%L"
+    }
+
+    private fun twoArgumentMethodName(prefix: String, parameterCategories: List<MethodParameterCategory>): String =
+        buildString {
+            val abiTokens = parameterCategories.map(MethodParameterCategory::toAbiToken)
+            append(prefix)
+            append(
+                if (abiTokens[0] == abiTokens[1]) {
+                    "Two${abiTokens[0].methodNamePart()}"
+                } else {
+                    abiTokens.joinToString("And") { it.methodNamePart() }
+                },
+            )
+            append("Args")
+        }
+
+    private fun unitTwoArgumentCall(
+        methodName: String,
+        vtableIndex: Int,
+        parameterCategories: List<MethodParameterCategory>,
+        firstArgumentExpression: String,
+        secondArgumentExpression: String,
+    ): CodeBlock {
+        val abiTokens = parameterCategories.map(MethodParameterCategory::toAbiToken)
+        return CodeBlock.of(
+            buildString {
+                append("%T.")
+                append(methodName)
+                append("(pointer, %L, ")
+                append(abiTokens[0].argumentPlaceholder())
+                append(", ")
+                append(abiTokens[1].argumentPlaceholder())
+                append(").getOrThrow()")
+            },
+            PoetSymbols.platformComInteropClass,
+            vtableIndex,
+            firstArgumentExpression,
+            secondArgumentExpression,
+        )
+    }
+
+    private fun resultTwoArgumentCall(
+        methodName: String,
+        vtableIndex: Int,
+        resultKindName: String,
+        extractor: Any,
+        parameterCategories: List<MethodParameterCategory>,
+        firstArgumentExpression: String,
+        secondArgumentExpression: String,
+        pointerExpression: String,
+    ): CodeBlock {
+        val abiTokens = parameterCategories.map(MethodParameterCategory::toAbiToken)
+        return CodeBlock.of(
+            buildString {
+                append("%T.")
+                append(methodName)
+                append("(")
+                append(pointerExpression)
+                append(", %L, %T.%L, ")
+                append(abiTokens[0].argumentPlaceholder())
+                append(", ")
+                append(abiTokens[1].argumentPlaceholder())
+                append(").getOrThrow().%M()")
+            },
+            PoetSymbols.platformComInteropClass,
+            vtableIndex,
+            PoetSymbols.comMethodResultKindClass,
+            resultKindName,
+            firstArgumentExpression,
+            secondArgumentExpression,
+            extractor,
+        )
+    }
+
     fun hstringMethod(vtableIndex: Int, pointerExpression: String = "pointer"): CodeBlock =
         CodeBlock.of("%T.invokeHStringMethod($pointerExpression, $vtableIndex).getOrThrow()", PoetSymbols.platformComInteropClass)
 
@@ -164,41 +250,13 @@ internal object AbiCallCatalog {
         parameterCategories: List<MethodParameterCategory>,
         firstArgumentExpression: String,
         secondArgumentExpression: String,
-    ): CodeBlock = when (MethodParameterFamilyPair(parameterCategories[0].toAbiFamily(), parameterCategories[1].toAbiFamily())) {
-        MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.STRING) ->
-            unitMethodWithTwoStrings(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.INT32_LIKE) ->
-            unitMethodWithStringAndInt32(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterFamilyPair(MethodParameterAbiFamily.INT32_LIKE, MethodParameterAbiFamily.STRING) ->
-            unitMethodWithInt32AndString(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.INT64_LIKE) ->
-            CodeBlock.of("%T.invokeUnitMethodWithStringAndInt64Args(pointer, %L, %N, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterFamilyPair(MethodParameterAbiFamily.INT64_LIKE, MethodParameterAbiFamily.STRING) ->
-            CodeBlock.of("%T.invokeUnitMethodWithInt64AndStringArgs(pointer, %L, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterFamilyPair(MethodParameterAbiFamily.INT32_LIKE, MethodParameterAbiFamily.INT32_LIKE) ->
-            unitMethodWithTwoInt32s(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterFamilyPair(MethodParameterAbiFamily.INT32_LIKE, MethodParameterAbiFamily.INT64_LIKE) ->
-            unitMethodWithInt32AndInt64(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterFamilyPair(MethodParameterAbiFamily.INT64_LIKE, MethodParameterAbiFamily.INT32_LIKE) ->
-            unitMethodWithInt64AndInt32(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterFamilyPair(MethodParameterAbiFamily.INT64_LIKE, MethodParameterAbiFamily.INT64_LIKE) ->
-            unitMethodWithTwoInt64s(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterFamilyPair(MethodParameterAbiFamily.OBJECT, MethodParameterAbiFamily.INT32_LIKE) ->
-            unitMethodWithObjectAndInt32(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterFamilyPair(MethodParameterAbiFamily.INT32_LIKE, MethodParameterAbiFamily.OBJECT) ->
-            unitMethodWithInt32AndObject(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterFamilyPair(MethodParameterAbiFamily.OBJECT, MethodParameterAbiFamily.INT64_LIKE) ->
-            unitMethodWithObjectAndInt64(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterFamilyPair(MethodParameterAbiFamily.INT64_LIKE, MethodParameterAbiFamily.OBJECT) ->
-            unitMethodWithInt64AndObject(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterFamilyPair(MethodParameterAbiFamily.OBJECT, MethodParameterAbiFamily.STRING) ->
-            unitMethodWithObjectAndString(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.OBJECT) ->
-            unitMethodWithStringAndObject(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        MethodParameterFamilyPair(MethodParameterAbiFamily.OBJECT, MethodParameterAbiFamily.OBJECT) ->
-            unitMethodWithTwoObject(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        else -> error("Unsupported two-argument unit categories: $parameterCategories")
-    }
+    ): CodeBlock = unitTwoArgumentCall(
+        methodName = twoArgumentMethodName("invokeUnitMethodWith", parameterCategories),
+        vtableIndex = vtableIndex,
+        parameterCategories = parameterCategories,
+        firstArgumentExpression = firstArgumentExpression,
+        secondArgumentExpression = secondArgumentExpression,
+    )
 
     fun objectSetter(vtableIndex: Int, argumentName: String): CodeBlock =
         CodeBlock.of(
@@ -556,144 +614,16 @@ internal object AbiCallCatalog {
         firstArgumentExpression: String,
         secondArgumentExpression: String,
         pointerExpression: String = "pointer",
-    ): CodeBlock = when (MethodParameterFamilyPair(parameterCategories[0].toAbiFamily(), parameterCategories[1].toAbiFamily())) {
-        MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.INT32_LIKE) ->
-            resultMethodWithStringAndInt32(
-                vtableIndex,
-                resultKindName,
-                extractor,
-                firstArgumentExpression,
-                secondArgumentExpression,
-                pointerExpression,
-            )
-        MethodParameterFamilyPair(MethodParameterAbiFamily.INT32_LIKE, MethodParameterAbiFamily.STRING) ->
-            resultMethodWithInt32AndString(
-                vtableIndex,
-                resultKindName,
-                extractor,
-                firstArgumentExpression,
-                secondArgumentExpression,
-                pointerExpression,
-            )
-        MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.INT64_LIKE) ->
-            resultMethodWithStringAndInt64(
-                vtableIndex,
-                resultKindName,
-                extractor,
-                firstArgumentExpression,
-                secondArgumentExpression,
-                pointerExpression,
-            )
-        MethodParameterFamilyPair(MethodParameterAbiFamily.INT64_LIKE, MethodParameterAbiFamily.STRING) ->
-            resultMethodWithInt64AndString(
-                vtableIndex,
-                resultKindName,
-                extractor,
-                firstArgumentExpression,
-                secondArgumentExpression,
-                pointerExpression,
-            )
-        MethodParameterFamilyPair(MethodParameterAbiFamily.INT32_LIKE, MethodParameterAbiFamily.INT32_LIKE) ->
-            resultMethodWithTwoInt32s(
-                vtableIndex,
-                resultKindName,
-                extractor,
-                firstArgumentExpression,
-                secondArgumentExpression,
-                pointerExpression,
-            )
-        MethodParameterFamilyPair(MethodParameterAbiFamily.INT32_LIKE, MethodParameterAbiFamily.INT64_LIKE) ->
-            resultMethodWithInt32AndInt64(
-                vtableIndex,
-                resultKindName,
-                extractor,
-                firstArgumentExpression,
-                secondArgumentExpression,
-                pointerExpression,
-            )
-        MethodParameterFamilyPair(MethodParameterAbiFamily.INT64_LIKE, MethodParameterAbiFamily.INT32_LIKE) ->
-            resultMethodWithInt64AndInt32(
-                vtableIndex,
-                resultKindName,
-                extractor,
-                firstArgumentExpression,
-                secondArgumentExpression,
-                pointerExpression,
-            )
-        MethodParameterFamilyPair(MethodParameterAbiFamily.INT64_LIKE, MethodParameterAbiFamily.INT64_LIKE) ->
-            resultMethodWithTwoInt64s(
-                vtableIndex,
-                resultKindName,
-                extractor,
-                firstArgumentExpression,
-                secondArgumentExpression,
-                pointerExpression,
-            )
-        MethodParameterFamilyPair(MethodParameterAbiFamily.OBJECT, MethodParameterAbiFamily.INT32_LIKE) ->
-            resultMethodWithObjectAndInt32(
-                vtableIndex,
-                resultKindName,
-                extractor,
-                firstArgumentExpression,
-                secondArgumentExpression,
-                pointerExpression,
-            )
-        MethodParameterFamilyPair(MethodParameterAbiFamily.INT32_LIKE, MethodParameterAbiFamily.OBJECT) ->
-            resultMethodWithInt32AndObject(
-                vtableIndex,
-                resultKindName,
-                extractor,
-                firstArgumentExpression,
-                secondArgumentExpression,
-                pointerExpression,
-            )
-        MethodParameterFamilyPair(MethodParameterAbiFamily.OBJECT, MethodParameterAbiFamily.INT64_LIKE) ->
-            resultMethodWithObjectAndInt64(
-                vtableIndex,
-                resultKindName,
-                extractor,
-                firstArgumentExpression,
-                secondArgumentExpression,
-                pointerExpression,
-            )
-        MethodParameterFamilyPair(MethodParameterAbiFamily.INT64_LIKE, MethodParameterAbiFamily.OBJECT) ->
-            resultMethodWithInt64AndObject(
-                vtableIndex,
-                resultKindName,
-                extractor,
-                firstArgumentExpression,
-                secondArgumentExpression,
-                pointerExpression,
-            )
-        MethodParameterFamilyPair(MethodParameterAbiFamily.OBJECT, MethodParameterAbiFamily.STRING) ->
-            resultMethodWithObjectAndString(
-                vtableIndex,
-                resultKindName,
-                extractor,
-                firstArgumentExpression,
-                secondArgumentExpression,
-                pointerExpression,
-            )
-        MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.OBJECT) ->
-            resultMethodWithStringAndObject(
-                vtableIndex,
-                resultKindName,
-                extractor,
-                firstArgumentExpression,
-                secondArgumentExpression,
-                pointerExpression,
-            )
-        MethodParameterFamilyPair(MethodParameterAbiFamily.OBJECT, MethodParameterAbiFamily.OBJECT) ->
-            resultMethodWithTwoObject(
-                vtableIndex,
-                resultKindName,
-                extractor,
-                firstArgumentExpression,
-                secondArgumentExpression,
-                pointerExpression,
-            )
-        else -> error("Unsupported two-argument result categories: $parameterCategories")
-    }
+    ): CodeBlock = resultTwoArgumentCall(
+        methodName = twoArgumentMethodName("invokeMethodWith", parameterCategories),
+        vtableIndex = vtableIndex,
+        resultKindName = resultKindName,
+        extractor = extractor,
+        parameterCategories = parameterCategories,
+        firstArgumentExpression = firstArgumentExpression,
+        secondArgumentExpression = secondArgumentExpression,
+        pointerExpression = pointerExpression,
+    )
 
     fun booleanMethod(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeBooleanGetter(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
