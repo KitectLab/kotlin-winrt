@@ -50,6 +50,14 @@ interface ComInterop {
     fun invokeUnitMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Unit>
     fun invokeUnitMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit>
     fun invokeUnitMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit>
+    fun invokeUnitMethodWithStringAndInt32Args(instance: ComPtr, vtableIndex: Int, first: String, second: Int): Result<Unit>
+    fun invokeUnitMethodWithInt32AndStringArgs(instance: ComPtr, vtableIndex: Int, first: Int, second: String): Result<Unit>
+    fun invokeUnitMethodWithStringAndUInt32Args(instance: ComPtr, vtableIndex: Int, first: String, second: UInt): Result<Unit>
+    fun invokeUnitMethodWithUInt32AndStringArgs(instance: ComPtr, vtableIndex: Int, first: UInt, second: String): Result<Unit>
+    fun invokeUnitMethodWithStringAndBooleanArgs(instance: ComPtr, vtableIndex: Int, first: String, second: Boolean): Result<Unit>
+    fun invokeUnitMethodWithBooleanAndStringArgs(instance: ComPtr, vtableIndex: Int, first: Boolean, second: String): Result<Unit>
+    fun invokeUnitMethodWithStringAndInt64Args(instance: ComPtr, vtableIndex: Int, first: String, second: Long): Result<Unit>
+    fun invokeUnitMethodWithInt64AndStringArgs(instance: ComPtr, vtableIndex: Int, first: Long, second: String): Result<Unit>
     fun invokeUnitMethodWithTwoStringArgs(instance: ComPtr, vtableIndex: Int, first: String, second: String): Result<Unit>
     fun invokeUnitMethodWithObjectAndStringArgs(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: String): Result<Unit>
     fun invokeUnitMethodWithStringAndObjectArgs(instance: ComPtr, vtableIndex: Int, first: String, second: ComPtr): Result<Unit>

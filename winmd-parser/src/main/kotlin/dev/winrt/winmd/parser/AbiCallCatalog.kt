@@ -42,6 +42,24 @@ internal object AbiCallCatalog {
             secondArgumentName,
         )
 
+    fun unitMethodWithStringAndInt32(vtableIndex: Int, firstArgumentName: String, secondArgumentExpression: String): CodeBlock =
+        CodeBlock.of(
+            "%T.invokeUnitMethodWithStringAndInt32Args(pointer, %L, %N, %L).getOrThrow()",
+            PoetSymbols.platformComInteropClass,
+            vtableIndex,
+            firstArgumentName,
+            secondArgumentExpression,
+        )
+
+    fun unitMethodWithInt32AndString(vtableIndex: Int, firstArgumentExpression: String, secondArgumentName: String): CodeBlock =
+        CodeBlock.of(
+            "%T.invokeUnitMethodWithInt32AndStringArgs(pointer, %L, %L, %N).getOrThrow()",
+            PoetSymbols.platformComInteropClass,
+            vtableIndex,
+            firstArgumentExpression,
+            secondArgumentName,
+        )
+
     fun unitMethodWithObjectAndString(vtableIndex: Int, firstArgumentExpression: String, secondArgumentName: String): CodeBlock =
         CodeBlock.of(
             "%T.invokeUnitMethodWithObjectAndStringArgs(pointer, %L, %L, %N).getOrThrow()",
@@ -75,6 +93,26 @@ internal object AbiCallCatalog {
         firstArgumentExpression: String,
         secondArgumentExpression: String,
     ): CodeBlock = when (parameterPair) {
+        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.INT32) ->
+            unitMethodWithStringAndInt32(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.STRING) ->
+            unitMethodWithInt32AndString(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.UINT32) ->
+            unitMethodWithStringAndInt32(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.STRING) ->
+            unitMethodWithInt32AndString(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.BOOLEAN) ->
+            unitMethodWithStringAndInt32(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.STRING) ->
+            unitMethodWithInt32AndString(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.INT64) ->
+            CodeBlock.of("%T.invokeUnitMethodWithStringAndInt64Args(pointer, %L, %N, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.STRING) ->
+            CodeBlock.of("%T.invokeUnitMethodWithInt64AndStringArgs(pointer, %L, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) ->
+            CodeBlock.of("%T.invokeUnitMethodWithStringAndInt64Args(pointer, %L, %N, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.STRING) ->
+            CodeBlock.of("%T.invokeUnitMethodWithInt64AndStringArgs(pointer, %L, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, firstArgumentExpression, secondArgumentExpression)
         MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.STRING) ->
             unitMethodWithTwoStrings(vtableIndex, firstArgumentExpression, secondArgumentExpression)
         MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING) ->

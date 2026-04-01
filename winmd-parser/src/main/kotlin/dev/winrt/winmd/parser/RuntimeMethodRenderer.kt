@@ -587,15 +587,44 @@ internal class RuntimeMethodRenderer(
                     arrayOf(AbiCallCatalog.objectSetter(method.vtableIndex!!, parameterBindings.single().name))
                 },
             )
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_INT32),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32_STRING),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_UINT32),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32_STRING),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_BOOLEAN),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN_STRING),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_INT64),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64_STRING),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_EVENT_REGISTRATION_TOKEN),
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN_STRING),
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_STRING) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return") },
                 returnStatement = "%L",
                 statementArgs = { method, _, parameterBindings ->
+                    val parameterPair = signatureKey.shape.toTwoArgumentParameterPair()
+                        ?: error("Unsupported two-argument unit shape")
                     arrayOf(
-                        AbiCallCatalog.unitMethodWithTwoStrings(
+                        AbiCallCatalog.unitMethodWithTwoArguments(
                             method.vtableIndex!!,
-                            parameterBindings[0].name,
-                            parameterBindings[1].name,
+                            parameterPair,
+                            when (parameterPair.first) {
+                                MethodParameterCategory.OBJECT -> "${parameterBindings[0].name}.pointer"
+                                MethodParameterCategory.INT32,
+                                MethodParameterCategory.UINT32,
+                                MethodParameterCategory.BOOLEAN,
+                                MethodParameterCategory.INT64,
+                                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "${parameterBindings[0].name}.value"
+                                else -> parameterBindings[0].name
+                            },
+                            when (parameterPair.second) {
+                                MethodParameterCategory.OBJECT -> "${parameterBindings[1].name}.pointer"
+                                MethodParameterCategory.INT32,
+                                MethodParameterCategory.UINT32,
+                                MethodParameterCategory.BOOLEAN,
+                                MethodParameterCategory.INT64,
+                                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "${parameterBindings[1].name}.value"
+                                else -> parameterBindings[1].name
+                            },
                         ),
                     )
                 },

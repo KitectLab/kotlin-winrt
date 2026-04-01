@@ -9,6 +9,16 @@ internal enum class MethodSignatureShape {
     UINT32,
     EVENT_REGISTRATION_TOKEN,
     OBJECT,
+    STRING_INT32,
+    INT32_STRING,
+    STRING_UINT32,
+    UINT32_STRING,
+    STRING_BOOLEAN,
+    BOOLEAN_STRING,
+    STRING_INT64,
+    INT64_STRING,
+    STRING_EVENT_REGISTRATION_TOKEN,
+    EVENT_REGISTRATION_TOKEN_STRING,
     STRING_STRING,
     OBJECT_STRING,
     STRING_OBJECT,
@@ -57,6 +67,17 @@ internal fun MethodSignatureShape.isTwoArgumentObjectShape(): Boolean =
 
 internal fun MethodSignatureShape.toTwoArgumentParameterPair(): MethodParameterPair? =
     when (this) {
+        MethodSignatureShape.STRING_INT32 -> MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.INT32)
+        MethodSignatureShape.INT32_STRING -> MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.STRING)
+        MethodSignatureShape.STRING_UINT32 -> MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.UINT32)
+        MethodSignatureShape.UINT32_STRING -> MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.STRING)
+        MethodSignatureShape.STRING_BOOLEAN -> MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.BOOLEAN)
+        MethodSignatureShape.BOOLEAN_STRING -> MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.STRING)
+        MethodSignatureShape.STRING_INT64 -> MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.INT64)
+        MethodSignatureShape.INT64_STRING -> MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.STRING)
+        MethodSignatureShape.STRING_EVENT_REGISTRATION_TOKEN -> MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.EVENT_REGISTRATION_TOKEN)
+        MethodSignatureShape.EVENT_REGISTRATION_TOKEN_STRING -> MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.STRING)
+        MethodSignatureShape.STRING_STRING -> MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.STRING)
         MethodSignatureShape.OBJECT_STRING -> MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING)
         MethodSignatureShape.STRING_OBJECT -> MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.OBJECT)
         MethodSignatureShape.TWO_OBJECT -> MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.OBJECT)
@@ -108,6 +129,16 @@ internal fun methodSignatureShape(
         parameterCategories == listOf(MethodParameterCategory.UINT32) -> MethodSignatureShape.UINT32
         parameterCategories == listOf(MethodParameterCategory.EVENT_REGISTRATION_TOKEN) -> MethodSignatureShape.EVENT_REGISTRATION_TOKEN
         parameterCategories == listOf(MethodParameterCategory.OBJECT) -> MethodSignatureShape.OBJECT
+        parameterCategories == listOf(MethodParameterCategory.STRING, MethodParameterCategory.INT32) -> MethodSignatureShape.STRING_INT32
+        parameterCategories == listOf(MethodParameterCategory.INT32, MethodParameterCategory.STRING) -> MethodSignatureShape.INT32_STRING
+        parameterCategories == listOf(MethodParameterCategory.STRING, MethodParameterCategory.UINT32) -> MethodSignatureShape.STRING_UINT32
+        parameterCategories == listOf(MethodParameterCategory.UINT32, MethodParameterCategory.STRING) -> MethodSignatureShape.UINT32_STRING
+        parameterCategories == listOf(MethodParameterCategory.STRING, MethodParameterCategory.BOOLEAN) -> MethodSignatureShape.STRING_BOOLEAN
+        parameterCategories == listOf(MethodParameterCategory.BOOLEAN, MethodParameterCategory.STRING) -> MethodSignatureShape.BOOLEAN_STRING
+        parameterCategories == listOf(MethodParameterCategory.STRING, MethodParameterCategory.INT64) -> MethodSignatureShape.STRING_INT64
+        parameterCategories == listOf(MethodParameterCategory.INT64, MethodParameterCategory.STRING) -> MethodSignatureShape.INT64_STRING
+        parameterCategories == listOf(MethodParameterCategory.STRING, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) -> MethodSignatureShape.STRING_EVENT_REGISTRATION_TOKEN
+        parameterCategories == listOf(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.STRING) -> MethodSignatureShape.EVENT_REGISTRATION_TOKEN_STRING
         parameterCategories == listOf(MethodParameterCategory.STRING, MethodParameterCategory.STRING) -> MethodSignatureShape.STRING_STRING
         parameterCategories == listOf(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING) ->
             MethodSignatureShape.OBJECT_STRING
