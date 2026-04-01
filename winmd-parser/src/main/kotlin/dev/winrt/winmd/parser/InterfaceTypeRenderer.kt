@@ -1966,7 +1966,17 @@ internal class InterfaceTypeRenderer(
                 args = { method, _ ->
                     val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
                     val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
-                    arrayOf(AbiCallCatalog.unitMethodWithTwoObject(method.vtableIndex!!, "$firstArgumentName.pointer", "$secondArgumentName.pointer"))
+                    val (firstCategory, secondCategory) = MethodSignatureShape.TWO_OBJECT.toTwoArgumentParameterCategories()
+                        ?: error("Unsupported two-argument unit shape")
+                    arrayOf(
+                        AbiCallCatalog.unitMethodWithTwoArguments(
+                            method.vtableIndex!!,
+                            firstCategory,
+                            secondCategory,
+                            "$firstArgumentName.pointer",
+                            "$secondArgumentName.pointer",
+                        ),
+                    )
                 },
             )
             else -> null
@@ -1981,30 +1991,17 @@ internal class InterfaceTypeRenderer(
         args = { method, namespace ->
             val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
             val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
-            val abiCall = when (signatureKey.shape) {
-                MethodSignatureShape.OBJECT_STRING -> AbiCallCatalog.resultMethodWithObjectAndString(
-                    method.vtableIndex!!,
-                    resultKindName(method.returnType),
-                    resultExtractor(method.returnType),
-                    "$firstArgumentName.pointer",
-                    secondArgumentName,
-                )
-                MethodSignatureShape.STRING_OBJECT -> AbiCallCatalog.resultMethodWithStringAndObject(
-                    method.vtableIndex!!,
-                    resultKindName(method.returnType),
-                    resultExtractor(method.returnType),
-                    firstArgumentName,
-                    "$secondArgumentName.pointer",
-                )
-                MethodSignatureShape.TWO_OBJECT -> AbiCallCatalog.resultMethodWithTwoObject(
-                    method.vtableIndex!!,
-                    resultKindName(method.returnType),
-                    resultExtractor(method.returnType),
-                    "$firstArgumentName.pointer",
-                    "$secondArgumentName.pointer",
-                )
-                else -> error("Unsupported two-argument return shape: ${signatureKey.shape}")
-            }
+            val (firstCategory, secondCategory) = signatureKey.shape.toTwoArgumentParameterCategories()
+                ?: error("Unsupported two-argument return shape: ${signatureKey.shape}")
+            val abiCall = AbiCallCatalog.resultMethodWithTwoArguments(
+                method.vtableIndex!!,
+                resultKindName(method.returnType),
+                resultExtractor(method.returnType),
+                firstCategory,
+                secondCategory,
+                if (firstCategory == MethodParameterCategory.OBJECT) "$firstArgumentName.pointer" else firstArgumentName,
+                if (secondCategory == MethodParameterCategory.OBJECT) secondArgumentName.let { "$it.pointer" } else secondArgumentName,
+            )
             arrayOf(
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) {
                     objectReturnCode(method, namespace, abiCall, genericParameters)

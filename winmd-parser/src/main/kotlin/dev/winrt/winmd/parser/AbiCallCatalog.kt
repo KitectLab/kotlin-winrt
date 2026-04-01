@@ -60,6 +60,22 @@ internal object AbiCallCatalog {
             secondArgumentExpression,
         )
 
+    fun unitMethodWithTwoArguments(
+        vtableIndex: Int,
+        firstCategory: MethodParameterCategory,
+        secondCategory: MethodParameterCategory,
+        firstArgumentExpression: String,
+        secondArgumentExpression: String,
+    ): CodeBlock = when (firstCategory to secondCategory) {
+        MethodParameterCategory.OBJECT to MethodParameterCategory.STRING ->
+            unitMethodWithObjectAndString(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterCategory.STRING to MethodParameterCategory.OBJECT ->
+            unitMethodWithStringAndObject(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterCategory.OBJECT to MethodParameterCategory.OBJECT ->
+            unitMethodWithTwoObject(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        else -> error("Unsupported two-argument unit categories: $firstCategory, $secondCategory")
+    }
+
     fun objectSetter(vtableIndex: Int, argumentName: String): CodeBlock =
         CodeBlock.of(
             "%T.invokeObjectSetter(pointer, %L, (%N as %T).pointer).getOrThrow()",
@@ -203,6 +219,46 @@ internal object AbiCallCatalog {
         secondArgumentExpression,
         extractor,
     )
+
+    fun resultMethodWithTwoArguments(
+        vtableIndex: Int,
+        resultKindName: String,
+        extractor: Any,
+        firstCategory: MethodParameterCategory,
+        secondCategory: MethodParameterCategory,
+        firstArgumentExpression: String,
+        secondArgumentExpression: String,
+        pointerExpression: String = "pointer",
+    ): CodeBlock = when (firstCategory to secondCategory) {
+        MethodParameterCategory.OBJECT to MethodParameterCategory.STRING ->
+            resultMethodWithObjectAndString(
+                vtableIndex,
+                resultKindName,
+                extractor,
+                firstArgumentExpression,
+                secondArgumentExpression,
+                pointerExpression,
+            )
+        MethodParameterCategory.STRING to MethodParameterCategory.OBJECT ->
+            resultMethodWithStringAndObject(
+                vtableIndex,
+                resultKindName,
+                extractor,
+                firstArgumentExpression,
+                secondArgumentExpression,
+                pointerExpression,
+            )
+        MethodParameterCategory.OBJECT to MethodParameterCategory.OBJECT ->
+            resultMethodWithTwoObject(
+                vtableIndex,
+                resultKindName,
+                extractor,
+                firstArgumentExpression,
+                secondArgumentExpression,
+                pointerExpression,
+            )
+        else -> error("Unsupported two-argument result categories: $firstCategory, $secondCategory")
+    }
 
     fun booleanMethod(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeBooleanGetter(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
