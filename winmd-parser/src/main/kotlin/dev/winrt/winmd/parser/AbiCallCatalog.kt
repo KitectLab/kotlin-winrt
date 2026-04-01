@@ -161,10 +161,10 @@ internal object AbiCallCatalog {
 
     fun unitMethodWithTwoArguments(
         vtableIndex: Int,
-        parameterPair: MethodParameterPair,
+        parameterCategories: List<MethodParameterCategory>,
         firstArgumentExpression: String,
         secondArgumentExpression: String,
-    ): CodeBlock = when (parameterPair.toAbiFamilyPair()) {
+    ): CodeBlock = when (MethodParameterFamilyPair(parameterCategories[0].toAbiFamily(), parameterCategories[1].toAbiFamily())) {
         MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.STRING) ->
             unitMethodWithTwoStrings(vtableIndex, firstArgumentExpression, secondArgumentExpression)
         MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.INT32_LIKE) ->
@@ -197,7 +197,7 @@ internal object AbiCallCatalog {
             unitMethodWithStringAndObject(vtableIndex, firstArgumentExpression, secondArgumentExpression)
         MethodParameterFamilyPair(MethodParameterAbiFamily.OBJECT, MethodParameterAbiFamily.OBJECT) ->
             unitMethodWithTwoObject(vtableIndex, firstArgumentExpression, secondArgumentExpression)
-        else -> error("Unsupported two-argument unit categories: $parameterPair")
+        else -> error("Unsupported two-argument unit categories: $parameterCategories")
     }
 
     fun objectSetter(vtableIndex: Int, argumentName: String): CodeBlock =
@@ -552,11 +552,11 @@ internal object AbiCallCatalog {
         vtableIndex: Int,
         resultKindName: String,
         extractor: Any,
-        parameterPair: MethodParameterPair,
+        parameterCategories: List<MethodParameterCategory>,
         firstArgumentExpression: String,
         secondArgumentExpression: String,
         pointerExpression: String = "pointer",
-    ): CodeBlock = when (parameterPair.toAbiFamilyPair()) {
+    ): CodeBlock = when (MethodParameterFamilyPair(parameterCategories[0].toAbiFamily(), parameterCategories[1].toAbiFamily())) {
         MethodParameterFamilyPair(MethodParameterAbiFamily.STRING, MethodParameterAbiFamily.INT32_LIKE) ->
             resultMethodWithStringAndInt32(
                 vtableIndex,
@@ -692,7 +692,7 @@ internal object AbiCallCatalog {
                 secondArgumentExpression,
                 pointerExpression,
             )
-        else -> error("Unsupported two-argument result categories: $parameterPair")
+        else -> error("Unsupported two-argument result categories: $parameterCategories")
     }
 
     fun booleanMethod(vtableIndex: Int): CodeBlock =

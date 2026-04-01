@@ -1503,17 +1503,21 @@ internal class InterfaceTypeRenderer(
         }
         signatureKey.shape.toTwoArgumentParameterPair()
             ?.takeIf { signatureKey.returnKind == MethodReturnKind.UNIT && it.isSupportedTwoArgumentUnitPair() }
-            ?.let { parameterPair ->
+            ?.let {
                 return PlannedInterfaceMethod(
                     statement = "%L",
                     args = { method, _ ->
                         val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
                         val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
+                        val parameterCategories = methodParameterCategories(
+                            method.parameters.map { parameter -> parameter.type },
+                            ::supportsInterfaceObjectInput,
+                        ) ?: error("Unsupported two-argument unit parameters")
                         arrayOf(
                             AbiCallCatalog.unitMethodWithTwoArguments(
                                 method.vtableIndex!!,
-                                parameterPair,
-                                when (parameterPair.first) {
+                                parameterCategories,
+                                when (parameterCategories[0]) {
                                     MethodParameterCategory.OBJECT -> "$firstArgumentName.pointer"
                                     MethodParameterCategory.INT32,
                                     MethodParameterCategory.UINT32,
@@ -1522,7 +1526,7 @@ internal class InterfaceTypeRenderer(
                                     MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$firstArgumentName.value"
                                     else -> firstArgumentName
                                 },
-                                when (parameterPair.second) {
+                                when (parameterCategories[1]) {
                                     MethodParameterCategory.OBJECT -> "$secondArgumentName.pointer"
                                     MethodParameterCategory.INT32,
                                     MethodParameterCategory.UINT32,
@@ -1992,14 +1996,16 @@ internal class InterfaceTypeRenderer(
         args = { method, namespace ->
             val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
             val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
-            val parameterPair = signatureKey.shape.toTwoArgumentParameterPair()
-                ?: error("Unsupported two-argument return shape: ${signatureKey.shape}")
+            val parameterCategories = methodParameterCategories(
+                method.parameters.map { parameter -> parameter.type },
+                ::supportsInterfaceObjectInput,
+            ) ?: error("Unsupported two-argument return shape: ${signatureKey.shape}")
             val abiCall = AbiCallCatalog.resultMethodWithTwoArguments(
                 method.vtableIndex!!,
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) "OBJECT" else resultKindName(method.returnType),
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) PoetSymbols.requireObjectMember else resultExtractor(method.returnType),
-                parameterPair,
-                when (parameterPair.first) {
+                parameterCategories,
+                when (parameterCategories[0]) {
                     MethodParameterCategory.OBJECT -> "$firstArgumentName.pointer"
                     MethodParameterCategory.INT32,
                     MethodParameterCategory.UINT32,
@@ -2008,7 +2014,7 @@ internal class InterfaceTypeRenderer(
                     MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$firstArgumentName.value"
                     else -> firstArgumentName
                 },
-                when (parameterPair.second) {
+                when (parameterCategories[1]) {
                     MethodParameterCategory.OBJECT -> "$secondArgumentName.pointer"
                     MethodParameterCategory.INT32,
                     MethodParameterCategory.UINT32,

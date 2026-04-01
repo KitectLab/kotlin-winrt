@@ -212,6 +212,12 @@ internal fun MethodParameterCategory.toAbiFamily(): MethodParameterAbiFamily =
 internal fun MethodParameterPair.toAbiFamilyPair(): MethodParameterFamilyPair =
     MethodParameterFamilyPair(first.toAbiFamily(), second.toAbiFamily())
 
+internal fun methodParameterCategories(
+    parameterTypes: List<String>,
+    supportsObjectType: (String) -> Boolean,
+): List<MethodParameterCategory>? =
+    parameterTypes.map { type -> methodParameterCategory(type, supportsObjectType) ?: return null }
+
 internal fun MethodSignatureKey.isTwoArgumentUnifiedReturnShape(): Boolean =
     returnKind in setOf(
         MethodReturnKind.OBJECT,
@@ -246,9 +252,7 @@ internal fun methodSignatureShape(
     parameterTypes: List<String>,
     supportsObjectType: (String) -> Boolean,
 ): MethodSignatureShape? {
-    val parameterCategories = parameterTypes.map { type ->
-        methodParameterCategory(type, supportsObjectType) ?: return null
-    }
+    val parameterCategories = methodParameterCategories(parameterTypes, supportsObjectType) ?: return null
     return when {
         parameterCategories.isEmpty() -> MethodSignatureShape.EMPTY
         parameterCategories.size == 1 -> unaryShapes[parameterCategories.single()]

@@ -161,16 +161,20 @@ internal class RuntimeMethodRenderer(
         }
         signatureKey.shape.toTwoArgumentParameterPair()
             ?.takeIf { signatureKey.returnKind == MethodReturnKind.UNIT && it.isSupportedTwoArgumentUnitPair() }
-            ?.let { parameterPair ->
+            ?.let {
                 return RuntimeMethodPlan(
                     nullPointerReturn = { PlannedStatement("return") },
                     returnStatement = "%L",
                     statementArgs = { method, _, parameterBindings ->
+                        val parameterCategories = methodParameterCategories(
+                            method.parameters.map { parameter -> parameter.type },
+                            ::supportsRuntimeObjectType,
+                        ) ?: error("Unsupported two-argument unit parameters")
                         arrayOf(
                             AbiCallCatalog.unitMethodWithTwoArguments(
                                 method.vtableIndex!!,
-                                parameterPair,
-                                when (parameterPair.first) {
+                                parameterCategories,
+                                when (parameterCategories[0]) {
                                     MethodParameterCategory.OBJECT -> "${parameterBindings[0].name}.pointer"
                                     MethodParameterCategory.INT32,
                                     MethodParameterCategory.UINT32,
@@ -179,7 +183,7 @@ internal class RuntimeMethodRenderer(
                                     MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "${parameterBindings[0].name}.value"
                                     else -> parameterBindings[0].name
                                 },
-                                when (parameterPair.second) {
+                                when (parameterCategories[1]) {
                                     MethodParameterCategory.OBJECT -> "${parameterBindings[1].name}.pointer"
                                     MethodParameterCategory.INT32,
                                     MethodParameterCategory.UINT32,
@@ -748,14 +752,16 @@ internal class RuntimeMethodRenderer(
         },
         returnStatement = "return %L",
         statementArgs = { method, currentNamespace, parameterBindings ->
-            val parameterPair = signatureKey.shape.toTwoArgumentParameterPair()
-                ?: error("Unsupported two-argument return shape: ${signatureKey.shape}")
+            val parameterCategories = methodParameterCategories(
+                method.parameters.map { parameter -> parameter.type },
+                ::supportsRuntimeObjectType,
+            ) ?: error("Unsupported two-argument return shape: ${signatureKey.shape}")
             val abiCall = AbiCallCatalog.resultMethodWithTwoArguments(
                 method.vtableIndex!!,
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) "OBJECT" else resultKindName(method.returnType),
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) PoetSymbols.requireObjectMember else resultExtractor(method.returnType),
-                parameterPair,
-                when (parameterPair.first) {
+                parameterCategories,
+                when (parameterCategories[0]) {
                     MethodParameterCategory.OBJECT -> "${parameterBindings[0].name}.pointer"
                     MethodParameterCategory.INT32,
                     MethodParameterCategory.UINT32,
@@ -764,7 +770,7 @@ internal class RuntimeMethodRenderer(
                     MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "${parameterBindings[0].name}.value"
                     else -> parameterBindings[0].name
                 },
-                when (parameterPair.second) {
+                when (parameterCategories[1]) {
                     MethodParameterCategory.OBJECT -> "${parameterBindings[1].name}.pointer"
                     MethodParameterCategory.INT32,
                     MethodParameterCategory.UINT32,
