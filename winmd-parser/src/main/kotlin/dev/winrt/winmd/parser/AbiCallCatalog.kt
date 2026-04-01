@@ -60,6 +60,42 @@ internal object AbiCallCatalog {
             secondArgumentName,
         )
 
+    fun unitMethodWithTwoInt32s(vtableIndex: Int, firstArgumentExpression: String, secondArgumentExpression: String): CodeBlock =
+        CodeBlock.of(
+            "%T.invokeUnitMethodWithTwoInt32Args(pointer, %L, %L, %L).getOrThrow()",
+            PoetSymbols.platformComInteropClass,
+            vtableIndex,
+            firstArgumentExpression,
+            secondArgumentExpression,
+        )
+
+    fun unitMethodWithInt32AndInt64(vtableIndex: Int, firstArgumentExpression: String, secondArgumentExpression: String): CodeBlock =
+        CodeBlock.of(
+            "%T.invokeUnitMethodWithInt32AndInt64Args(pointer, %L, %L, %L).getOrThrow()",
+            PoetSymbols.platformComInteropClass,
+            vtableIndex,
+            firstArgumentExpression,
+            secondArgumentExpression,
+        )
+
+    fun unitMethodWithInt64AndInt32(vtableIndex: Int, firstArgumentExpression: String, secondArgumentExpression: String): CodeBlock =
+        CodeBlock.of(
+            "%T.invokeUnitMethodWithInt64AndInt32Args(pointer, %L, %L, %L).getOrThrow()",
+            PoetSymbols.platformComInteropClass,
+            vtableIndex,
+            firstArgumentExpression,
+            secondArgumentExpression,
+        )
+
+    fun unitMethodWithTwoInt64s(vtableIndex: Int, firstArgumentExpression: String, secondArgumentExpression: String): CodeBlock =
+        CodeBlock.of(
+            "%T.invokeUnitMethodWithTwoInt64Args(pointer, %L, %L, %L).getOrThrow()",
+            PoetSymbols.platformComInteropClass,
+            vtableIndex,
+            firstArgumentExpression,
+            secondArgumentExpression,
+        )
+
     fun unitMethodWithObjectAndString(vtableIndex: Int, firstArgumentExpression: String, secondArgumentName: String): CodeBlock =
         CodeBlock.of(
             "%T.invokeUnitMethodWithObjectAndStringArgs(pointer, %L, %L, %N).getOrThrow()",
@@ -115,6 +151,35 @@ internal object AbiCallCatalog {
             CodeBlock.of("%T.invokeUnitMethodWithInt64AndStringArgs(pointer, %L, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, firstArgumentExpression, secondArgumentExpression)
         MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.STRING) ->
             unitMethodWithTwoStrings(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.INT32),
+        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.UINT32),
+        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.BOOLEAN),
+        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.INT32),
+        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.UINT32),
+        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.BOOLEAN),
+        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.INT32),
+        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.UINT32),
+        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.BOOLEAN) ->
+            unitMethodWithTwoInt32s(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.INT64),
+        MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.EVENT_REGISTRATION_TOKEN),
+        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.INT64),
+        MethodParameterPair(MethodParameterCategory.UINT32, MethodParameterCategory.EVENT_REGISTRATION_TOKEN),
+        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.INT64),
+        MethodParameterPair(MethodParameterCategory.BOOLEAN, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) ->
+            unitMethodWithInt32AndInt64(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.INT32),
+        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.UINT32),
+        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.BOOLEAN),
+        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.INT32),
+        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.UINT32),
+        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.BOOLEAN) ->
+            unitMethodWithInt64AndInt32(vtableIndex, firstArgumentExpression, secondArgumentExpression)
+        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.INT64),
+        MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.EVENT_REGISTRATION_TOKEN),
+        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.INT64),
+        MethodParameterPair(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, MethodParameterCategory.EVENT_REGISTRATION_TOKEN) ->
+            unitMethodWithTwoInt64s(vtableIndex, firstArgumentExpression, secondArgumentExpression)
         MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING) ->
             unitMethodWithObjectAndString(vtableIndex, firstArgumentExpression, secondArgumentExpression)
         MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.OBJECT) ->
