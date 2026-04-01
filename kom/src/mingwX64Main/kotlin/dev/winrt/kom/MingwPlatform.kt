@@ -43,6 +43,39 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeUnitMethodWithObjectAndStringArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        first: ComPtr,
+        second: String,
+    ): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with object and String inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithStringAndObjectArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        first: String,
+        second: ComPtr,
+    ): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with String and object inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithTwoObjectArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        first: ComPtr,
+        second: ComPtr,
+    ): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with two object inputs is not wired yet"),
+        )
+    }
+
     override fun addRef(instance: ComPtr): UInt = 1u
 
     override fun release(instance: ComPtr): UInt = 0u

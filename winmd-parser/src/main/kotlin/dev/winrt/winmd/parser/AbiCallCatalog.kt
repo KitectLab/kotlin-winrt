@@ -33,6 +33,33 @@ internal object AbiCallCatalog {
     fun unitMethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
         CodeBlock.of("%T.invokeUnitMethodWithStringArg(pointer, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
 
+    fun unitMethodWithObjectAndString(vtableIndex: Int, firstArgumentExpression: String, secondArgumentName: String): CodeBlock =
+        CodeBlock.of(
+            "%T.invokeUnitMethodWithObjectAndStringArgs(pointer, %L, %L, %N).getOrThrow()",
+            PoetSymbols.platformComInteropClass,
+            vtableIndex,
+            firstArgumentExpression,
+            secondArgumentName,
+        )
+
+    fun unitMethodWithStringAndObject(vtableIndex: Int, firstArgumentName: String, secondArgumentExpression: String): CodeBlock =
+        CodeBlock.of(
+            "%T.invokeUnitMethodWithStringAndObjectArgs(pointer, %L, %N, %L).getOrThrow()",
+            PoetSymbols.platformComInteropClass,
+            vtableIndex,
+            firstArgumentName,
+            secondArgumentExpression,
+        )
+
+    fun unitMethodWithTwoObject(vtableIndex: Int, firstArgumentExpression: String, secondArgumentExpression: String): CodeBlock =
+        CodeBlock.of(
+            "%T.invokeUnitMethodWithTwoObjectArgs(pointer, %L, %L, %L).getOrThrow()",
+            PoetSymbols.platformComInteropClass,
+            vtableIndex,
+            firstArgumentExpression,
+            secondArgumentExpression,
+        )
+
     fun objectSetter(vtableIndex: Int, argumentName: String): CodeBlock =
         CodeBlock.of(
             "%T.invokeObjectSetter(pointer, %L, (%N as %T).pointer).getOrThrow()",

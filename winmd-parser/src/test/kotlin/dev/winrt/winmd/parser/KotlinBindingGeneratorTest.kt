@@ -376,6 +376,165 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun renders_helper_interfaces_with_object_and_string_parameters_and_unit_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics8",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-8888-8888-8888-dddddddddddd",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "TrackUri",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("uri", "Windows.Foundation.Uri"),
+                                        WinMdParameter("tag", "String"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics8.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun trackUri("))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithObjectAndStringArgs(pointer,6,uri.pointer,tag).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_string_and_object_parameters_and_unit_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics9",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-9999-9999-9999-dddddddddddd",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "TrackNamedUri",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("tag", "String"),
+                                        WinMdParameter("uri", "Windows.Foundation.Uri"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics9.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun trackNamedUri("))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithStringAndObjectArgs(pointer,6,tag,uri.pointer).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_two_object_parameters_and_unit_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics10",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-1010-1010-1010-dddddddddddd",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "TrackPair",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("first", "Windows.Foundation.Uri"),
+                                        WinMdParameter("second", "Windows.Foundation.Uri"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics10.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun trackPair("))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithTwoObjectArgs(pointer,6,first.pointer,second.pointer).getOrThrow()"))
+    }
+
+    @Test
     fun renders_helper_async_methods_with_single_object_parameter() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

@@ -11,6 +11,7 @@ internal enum class MethodSignatureShape {
     OBJECT,
     OBJECT_STRING,
     STRING_OBJECT,
+    TWO_OBJECT,
 }
 
 internal enum class MethodReturnKind {
@@ -50,6 +51,8 @@ internal fun methodSignatureShape(
             MethodSignatureShape.OBJECT_STRING
         parameterTypes.size == 2 && parameterTypes[0] == "String" && supportsObjectType(parameterTypes[1]) ->
             MethodSignatureShape.STRING_OBJECT
+        parameterTypes.size == 2 && supportsObjectType(parameterTypes[0]) && supportsObjectType(parameterTypes[1]) ->
+            MethodSignatureShape.TWO_OBJECT
         else -> null
     }
 }

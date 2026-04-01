@@ -1923,6 +1923,30 @@ internal class InterfaceTypeRenderer(
                     arrayOf(AbiCallCatalog.objectSetter(method.vtableIndex!!, argumentName))
                 },
             )
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_STRING) -> PlannedInterfaceMethod(
+                statement = "%L",
+                args = { method, _ ->
+                    val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                    val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
+                    arrayOf(AbiCallCatalog.unitMethodWithObjectAndString(method.vtableIndex!!, "$firstArgumentName.pointer", secondArgumentName))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_OBJECT) -> PlannedInterfaceMethod(
+                statement = "%L",
+                args = { method, _ ->
+                    val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                    val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
+                    arrayOf(AbiCallCatalog.unitMethodWithStringAndObject(method.vtableIndex!!, firstArgumentName, "$secondArgumentName.pointer"))
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.TWO_OBJECT) -> PlannedInterfaceMethod(
+                statement = "%L",
+                args = { method, _ ->
+                    val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
+                    val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
+                    arrayOf(AbiCallCatalog.unitMethodWithTwoObject(method.vtableIndex!!, "$firstArgumentName.pointer", "$secondArgumentName.pointer"))
+                },
+            )
             else -> null
         }
     }

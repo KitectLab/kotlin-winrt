@@ -68,6 +68,9 @@ internal object MethodRuleRegistry {
         put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64), SharedMethodRuleFamily.UNIT)
         put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN), SharedMethodRuleFamily.UNIT)
         put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT), SharedMethodRuleFamily.UNIT)
+        put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_STRING), SharedMethodRuleFamily.UNIT)
+        put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_OBJECT), SharedMethodRuleFamily.UNIT)
+        put(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.TWO_OBJECT), SharedMethodRuleFamily.UNIT)
 
         put(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.STRING), SharedMethodRuleFamily.OBJECT)
         put(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.INT32), SharedMethodRuleFamily.OBJECT)

@@ -584,6 +584,45 @@ internal class RuntimeMethodRenderer(
                     arrayOf(AbiCallCatalog.objectSetter(method.vtableIndex!!, parameterBindings.single().name))
                 },
             )
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_STRING) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return") },
+                returnStatement = "%L",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(
+                        AbiCallCatalog.unitMethodWithObjectAndString(
+                            method.vtableIndex!!,
+                            "${parameterBindings[0].name}.pointer",
+                            parameterBindings[1].name,
+                        ),
+                    )
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING_OBJECT) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return") },
+                returnStatement = "%L",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(
+                        AbiCallCatalog.unitMethodWithStringAndObject(
+                            method.vtableIndex!!,
+                            parameterBindings[0].name,
+                            "${parameterBindings[1].name}.pointer",
+                        ),
+                    )
+                },
+            )
+            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.TWO_OBJECT) -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return") },
+                returnStatement = "%L",
+                statementArgs = { method, _, parameterBindings ->
+                    arrayOf(
+                        AbiCallCatalog.unitMethodWithTwoObject(
+                            method.vtableIndex!!,
+                            "${parameterBindings[0].name}.pointer",
+                            "${parameterBindings[1].name}.pointer",
+                        ),
+                    )
+                },
+            )
             MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
                 nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
                 returnStatement = "return %L",

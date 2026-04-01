@@ -225,6 +225,60 @@ private object JvmComMethodExecutor {
         operation: String,
         handle: java.lang.invoke.MethodHandle,
         first: ComPtr,
+        second: String,
+    ): Result<Unit> {
+        return runCatching {
+            requireInstance(instance)
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            val hString = JvmWinRtRuntime.createHString(second)
+            try {
+                val hresult = HResult(
+                    handle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        if (first.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(first),
+                        MemorySegment.ofAddress(hString.raw),
+                    ) as Int,
+                )
+                hresult.requireSuccess("$operation($vtableIndex)")
+            } finally {
+                JvmWinRtRuntime.releaseHString(hString)
+            }
+        }
+    }
+
+    fun invokeWithoutOut(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: String,
+        second: ComPtr,
+    ): Result<Unit> {
+        return runCatching {
+            requireInstance(instance)
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            val hString = JvmWinRtRuntime.createHString(first)
+            try {
+                val hresult = HResult(
+                    handle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        MemorySegment.ofAddress(hString.raw),
+                        if (second.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(second),
+                    ) as Int,
+                )
+                hresult.requireSuccess("$operation($vtableIndex)")
+            } finally {
+                JvmWinRtRuntime.releaseHString(hString)
+            }
+        }
+    }
+
+    fun invokeWithoutOut(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: ComPtr,
         second: ComPtr,
     ): Result<Unit> {
         return runCatching {
@@ -830,6 +884,54 @@ private object JvmPlatformComInterop : ComInterop {
             operation = "invokeUnitMethodWithStringArg",
             handle = Jdk22Foreign.hstringSetterHandle,
             value,
+        )
+    }
+
+    override fun invokeUnitMethodWithObjectAndStringArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        first: ComPtr,
+        second: String,
+    ): Result<Unit> {
+        return JvmComMethodExecutor.invokeWithoutOut(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeUnitMethodWithObjectAndStringArgs",
+            handle = Jdk22Foreign.objectMethodWithTwoObjectInputsHandle,
+            first,
+            second,
+        )
+    }
+
+    override fun invokeUnitMethodWithStringAndObjectArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        first: String,
+        second: ComPtr,
+    ): Result<Unit> {
+        return JvmComMethodExecutor.invokeWithoutOut(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeUnitMethodWithStringAndObjectArgs",
+            handle = Jdk22Foreign.objectMethodWithTwoObjectInputsHandle,
+            first,
+            second,
+        )
+    }
+
+    override fun invokeUnitMethodWithTwoObjectArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        first: ComPtr,
+        second: ComPtr,
+    ): Result<Unit> {
+        return JvmComMethodExecutor.invokeWithoutOut(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeUnitMethodWithTwoObjectArgs",
+            handle = Jdk22Foreign.objectMethodWithTwoObjectInputsHandle,
+            first,
+            second,
         )
     }
 
