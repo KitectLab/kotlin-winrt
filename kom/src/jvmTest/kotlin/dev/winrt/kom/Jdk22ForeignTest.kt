@@ -1,5 +1,6 @@
 package dev.winrt.kom
 
+import java.lang.foreign.ValueLayout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -37,6 +38,17 @@ class Jdk22ForeignTest {
         val second = Jdk22Foreign.downcallHandle(descriptor)
 
         assertSame(first, second)
+    }
+
+    @Test
+    fun typed_two_input_handle_factories_reuse_cached_handles() {
+        val firstUnit = Jdk22Foreign.unitMethodWithTwoInputsHandle(ValueLayout.ADDRESS, ValueLayout.JAVA_INT)
+        val secondUnit = Jdk22Foreign.unitMethodWithTwoInputsHandle(ValueLayout.ADDRESS, ValueLayout.JAVA_INT)
+        val firstOut = Jdk22Foreign.methodWithTwoInputsHandle(ValueLayout.ADDRESS, ValueLayout.JAVA_INT)
+        val secondOut = Jdk22Foreign.methodWithTwoInputsHandle(ValueLayout.ADDRESS, ValueLayout.JAVA_INT)
+
+        assertSame(firstUnit, secondUnit)
+        assertSame(firstOut, secondOut)
     }
 
     @Test

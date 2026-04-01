@@ -71,6 +71,20 @@ internal object Jdk22Foreign {
         }
     }
 
+    fun unitMethodWithTwoInputsHandle(
+        firstLayout: ValueLayout,
+        secondLayout: ValueLayout,
+    ): MethodHandle = downcallHandle(
+        FunctionDescriptor.of(intLayout, addressLayout, firstLayout, secondLayout),
+    )
+
+    fun methodWithTwoInputsHandle(
+        firstLayout: ValueLayout,
+        secondLayout: ValueLayout,
+    ): MethodHandle = downcallHandle(
+        FunctionDescriptor.of(intLayout, addressLayout, firstLayout, secondLayout, addressLayout),
+    )
+
     val queryInterfaceHandle: MethodHandle by lazy {
         downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout),
@@ -190,12 +204,6 @@ internal object Jdk22Foreign {
     val objectMethodWithInputHandle: MethodHandle by lazy {
         downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout),
-        )
-    }
-
-    val objectMethodWithTwoObjectInputsHandle: MethodHandle by lazy {
-        downcallHandle(
-            FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout, addressLayout),
         )
     }
 

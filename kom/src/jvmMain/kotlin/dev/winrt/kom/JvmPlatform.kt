@@ -787,6 +787,14 @@ private object JvmComMethodExecutor {
 }
 
 private object JvmPlatformComInterop : ComInterop {
+    private val twoAddressUnitHandle by lazy {
+        Jdk22Foreign.unitMethodWithTwoInputsHandle(ValueLayout.ADDRESS, ValueLayout.ADDRESS)
+    }
+
+    private val twoAddressOutHandle by lazy {
+        Jdk22Foreign.methodWithTwoInputsHandle(ValueLayout.ADDRESS, ValueLayout.ADDRESS)
+    }
+
     override fun queryInterface(instance: ComPtr, iid: Guid): Result<ComPtr> {
         if (instance.isNull) {
             return Result.failure(KomException("QueryInterface requires a non-null COM pointer"))
@@ -897,7 +905,7 @@ private object JvmPlatformComInterop : ComInterop {
             instance = instance,
             vtableIndex = vtableIndex,
             operation = "invokeUnitMethodWithObjectAndStringArgs",
-            handle = Jdk22Foreign.objectMethodWithTwoObjectInputsHandle,
+            handle = twoAddressOutHandle,
             first,
             second,
         )
@@ -913,7 +921,7 @@ private object JvmPlatformComInterop : ComInterop {
             instance = instance,
             vtableIndex = vtableIndex,
             operation = "invokeUnitMethodWithStringAndObjectArgs",
-            handle = Jdk22Foreign.objectMethodWithTwoObjectInputsHandle,
+            handle = twoAddressOutHandle,
             first,
             second,
         )
@@ -929,7 +937,7 @@ private object JvmPlatformComInterop : ComInterop {
             instance = instance,
             vtableIndex = vtableIndex,
             operation = "invokeUnitMethodWithTwoObjectArgs",
-            handle = Jdk22Foreign.objectMethodWithTwoObjectInputsHandle,
+            handle = twoAddressUnitHandle,
             first,
             second,
         )
@@ -1028,7 +1036,7 @@ private object JvmPlatformComInterop : ComInterop {
             instance = instance,
             vtableIndex = vtableIndex,
             operation = "invokeMethodWithObjectAndStringArgs",
-            handle = Jdk22Foreign.objectMethodWithTwoObjectInputsHandle,
+            handle = twoAddressOutHandle,
             resultKind = resultKind,
             first,
             second,
@@ -1046,7 +1054,7 @@ private object JvmPlatformComInterop : ComInterop {
             instance = instance,
             vtableIndex = vtableIndex,
             operation = "invokeMethodWithStringAndObjectArgs",
-            handle = Jdk22Foreign.objectMethodWithTwoObjectInputsHandle,
+            handle = twoAddressOutHandle,
             resultKind = resultKind,
             first,
             second,
@@ -1064,7 +1072,7 @@ private object JvmPlatformComInterop : ComInterop {
             instance = instance,
             vtableIndex = vtableIndex,
             operation = "invokeMethodWithTwoObjectArgs",
-            handle = Jdk22Foreign.objectMethodWithTwoObjectInputsHandle,
+            handle = twoAddressOutHandle,
             resultKind = resultKind,
             first,
             second,
