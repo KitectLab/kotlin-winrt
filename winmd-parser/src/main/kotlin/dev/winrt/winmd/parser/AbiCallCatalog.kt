@@ -104,10 +104,12 @@ internal object AbiCallCatalog {
         secondArgumentName: String,
         pointerExpression: String = "pointer",
     ): CodeBlock = CodeBlock.of(
-        "%T.invokeObjectMethodWithObjectAndStringArgs($pointerExpression, $vtableIndex, %L, %N).getOrThrow()",
+        "%T.invokeMethodWithObjectAndStringArgs($pointerExpression, $vtableIndex, %T.OBJECT, %L, %N).getOrThrow().%M()",
         PoetSymbols.platformComInteropClass,
+        PoetSymbols.comMethodResultKindClass,
         firstArgumentExpression,
         secondArgumentName,
+        PoetSymbols.requireObjectMember,
     )
 
     fun objectMethodWithStringAndObject(
@@ -116,10 +118,12 @@ internal object AbiCallCatalog {
         secondArgumentExpression: String,
         pointerExpression: String = "pointer",
     ): CodeBlock = CodeBlock.of(
-        "%T.invokeObjectMethodWithStringAndObjectArgs($pointerExpression, $vtableIndex, %N, %L).getOrThrow()",
+        "%T.invokeMethodWithStringAndObjectArgs($pointerExpression, $vtableIndex, %T.OBJECT, %N, %L).getOrThrow().%M()",
         PoetSymbols.platformComInteropClass,
+        PoetSymbols.comMethodResultKindClass,
         firstArgumentName,
         secondArgumentExpression,
+        PoetSymbols.requireObjectMember,
     )
 
     fun booleanMethod(vtableIndex: Int): CodeBlock =

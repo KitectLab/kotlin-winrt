@@ -95,34 +95,37 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
-    override fun invokeObjectMethodWithObjectAndStringArgs(
+    override fun invokeMethodWithObjectAndStringArgs(
         instance: ComPtr,
         vtableIndex: Int,
+        resultKind: ComMethodResultKind,
         first: ComPtr,
         second: String,
-    ): Result<ComPtr> {
+    ): Result<ComMethodResult> {
         return Result.failure(
             UnsupportedOperationException("Native object invocation with object and String inputs is not wired yet"),
         )
     }
 
-    override fun invokeObjectMethodWithStringAndObjectArgs(
+    override fun invokeMethodWithStringAndObjectArgs(
         instance: ComPtr,
         vtableIndex: Int,
+        resultKind: ComMethodResultKind,
         first: String,
         second: ComPtr,
-    ): Result<ComPtr> {
+    ): Result<ComMethodResult> {
         return Result.failure(
             UnsupportedOperationException("Native object invocation with String and object inputs is not wired yet"),
         )
     }
 
-    override fun invokeObjectMethodWithTwoObjectArgs(
+    override fun invokeMethodWithTwoObjectArgs(
         instance: ComPtr,
         vtableIndex: Int,
+        resultKind: ComMethodResultKind,
         first: ComPtr,
         second: ComPtr,
-    ): Result<ComPtr> {
+    ): Result<ComMethodResult> {
         return Result.failure(
             UnsupportedOperationException("Native object invocation with two object inputs is not wired yet"),
         )

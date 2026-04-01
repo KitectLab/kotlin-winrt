@@ -4,6 +4,43 @@ interface ComReference {
     val pointer: ComPtr
 }
 
+enum class ComMethodResultKind {
+    HSTRING,
+    OBJECT,
+    INT32,
+    UINT32,
+    INT64,
+    UINT64,
+    BOOLEAN,
+    FLOAT32,
+    FLOAT64,
+    GUID,
+}
+
+sealed interface ComMethodResult {
+    data class HStringValue(val value: HString) : ComMethodResult
+    data class ObjectValue(val value: ComPtr) : ComMethodResult
+    data class Int32Value(val value: Int) : ComMethodResult
+    data class UInt32Value(val value: UInt) : ComMethodResult
+    data class Int64Value(val value: Long) : ComMethodResult
+    data class UInt64Value(val value: ULong) : ComMethodResult
+    data class BooleanValue(val value: Boolean) : ComMethodResult
+    data class Float32Value(val value: Float) : ComMethodResult
+    data class Float64Value(val value: Double) : ComMethodResult
+    data class GuidValue(val value: Guid) : ComMethodResult
+}
+
+fun ComMethodResult.requireHString(): HString = (this as ComMethodResult.HStringValue).value
+fun ComMethodResult.requireObject(): ComPtr = (this as ComMethodResult.ObjectValue).value
+fun ComMethodResult.requireInt32(): Int = (this as ComMethodResult.Int32Value).value
+fun ComMethodResult.requireUInt32(): UInt = (this as ComMethodResult.UInt32Value).value
+fun ComMethodResult.requireInt64(): Long = (this as ComMethodResult.Int64Value).value
+fun ComMethodResult.requireUInt64(): ULong = (this as ComMethodResult.UInt64Value).value
+fun ComMethodResult.requireBoolean(): Boolean = (this as ComMethodResult.BooleanValue).value
+fun ComMethodResult.requireFloat32(): Float = (this as ComMethodResult.Float32Value).value
+fun ComMethodResult.requireFloat64(): Double = (this as ComMethodResult.Float64Value).value
+fun ComMethodResult.requireGuid(): Guid = (this as ComMethodResult.GuidValue).value
+
 interface ComInterop {
     fun queryInterface(instance: ComPtr, iid: Guid): Result<ComPtr>
     fun addRef(instance: ComPtr): UInt
@@ -21,9 +58,9 @@ interface ComInterop {
     fun invokeObjectMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<ComPtr>
     fun invokeObjectMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ComPtr>
     fun invokeObjectMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ComPtr>
-    fun invokeObjectMethodWithObjectAndStringArgs(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: String): Result<ComPtr>
-    fun invokeObjectMethodWithStringAndObjectArgs(instance: ComPtr, vtableIndex: Int, first: String, second: ComPtr): Result<ComPtr>
-    fun invokeObjectMethodWithTwoObjectArgs(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: ComPtr): Result<ComPtr>
+    fun invokeMethodWithObjectAndStringArgs(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: ComPtr, second: String): Result<ComMethodResult>
+    fun invokeMethodWithStringAndObjectArgs(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: String, second: ComPtr): Result<ComMethodResult>
+    fun invokeMethodWithTwoObjectArgs(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: ComPtr, second: ComPtr): Result<ComMethodResult>
     fun invokeObjectSetter(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Unit>
     fun invokeInt64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Long>
     fun invokeInt64Method(instance: ComPtr, vtableIndex: Int): Result<Long>

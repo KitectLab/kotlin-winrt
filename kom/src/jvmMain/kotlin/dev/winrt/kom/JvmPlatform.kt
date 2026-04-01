@@ -641,6 +641,95 @@ private object JvmComMethodExecutor {
         val function: MemorySegment,
         val handle: java.lang.invoke.MethodHandle,
     )
+
+    private fun allocateResultSegment(arena: Arena, resultKind: ComMethodResultKind): MemorySegment {
+        return when (resultKind) {
+            ComMethodResultKind.HSTRING, ComMethodResultKind.OBJECT -> arena.allocate(ValueLayout.ADDRESS)
+            ComMethodResultKind.INT32, ComMethodResultKind.UINT32, ComMethodResultKind.BOOLEAN -> arena.allocate(ValueLayout.JAVA_INT)
+            ComMethodResultKind.INT64, ComMethodResultKind.UINT64 -> arena.allocate(ValueLayout.JAVA_LONG)
+            ComMethodResultKind.FLOAT32 -> arena.allocate(ValueLayout.JAVA_FLOAT)
+            ComMethodResultKind.FLOAT64 -> arena.allocate(ValueLayout.JAVA_DOUBLE)
+            ComMethodResultKind.GUID -> arena.allocate(16)
+        }
+    }
+
+    private fun readResult(segment: MemorySegment, resultKind: ComMethodResultKind): ComMethodResult {
+        return when (resultKind) {
+            ComMethodResultKind.HSTRING -> ComMethodResult.HStringValue(HString(segment.get(ValueLayout.ADDRESS, 0L).address()))
+            ComMethodResultKind.OBJECT -> ComMethodResult.ObjectValue(Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)))
+            ComMethodResultKind.INT32 -> ComMethodResult.Int32Value(segment.get(ValueLayout.JAVA_INT, 0L))
+            ComMethodResultKind.UINT32 -> ComMethodResult.UInt32Value(segment.get(ValueLayout.JAVA_INT, 0L).toUInt())
+            ComMethodResultKind.BOOLEAN -> ComMethodResult.BooleanValue(segment.get(ValueLayout.JAVA_INT, 0L) != 0)
+            ComMethodResultKind.INT64 -> ComMethodResult.Int64Value(segment.get(ValueLayout.JAVA_LONG, 0L))
+            ComMethodResultKind.UINT64 -> ComMethodResult.UInt64Value(segment.get(ValueLayout.JAVA_LONG, 0L).toULong())
+            ComMethodResultKind.FLOAT32 -> ComMethodResult.Float32Value(segment.get(ValueLayout.JAVA_FLOAT, 0L))
+            ComMethodResultKind.FLOAT64 -> ComMethodResult.Float64Value(segment.get(ValueLayout.JAVA_DOUBLE, 0L))
+            ComMethodResultKind.GUID -> ComMethodResult.GuidValue(Jdk22Foreign.guidFromSegment(segment))
+        }
+    }
+
+    fun invokeWithOutResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: ComPtr,
+        second: String,
+    ): Result<ComMethodResult> {
+        return invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = operation,
+            handle = handle,
+            allocator = { arena -> allocateResultSegment(arena, resultKind) },
+            reader = { segment -> readResult(segment, resultKind) },
+            first,
+            second,
+        )
+    }
+
+    fun invokeWithOutResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: String,
+        second: ComPtr,
+    ): Result<ComMethodResult> {
+        return invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = operation,
+            handle = handle,
+            allocator = { arena -> allocateResultSegment(arena, resultKind) },
+            reader = { segment -> readResult(segment, resultKind) },
+            first,
+            second,
+        )
+    }
+
+    fun invokeWithOutResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: ComPtr,
+        second: ComPtr,
+    ): Result<ComMethodResult> {
+        return invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = operation,
+            handle = handle,
+            allocator = { arena -> allocateResultSegment(arena, resultKind) },
+            reader = { segment -> readResult(segment, resultKind) },
+            first,
+            second,
+        )
+    }
 }
 
 private object JvmPlatformComInterop : ComInterop {
@@ -826,55 +915,55 @@ private object JvmPlatformComInterop : ComInterop {
         )
     }
 
-    override fun invokeObjectMethodWithObjectAndStringArgs(
+    override fun invokeMethodWithObjectAndStringArgs(
         instance: ComPtr,
         vtableIndex: Int,
+        resultKind: ComMethodResultKind,
         first: ComPtr,
         second: String,
-    ): Result<ComPtr> {
-        return JvmComMethodExecutor.invokeWithOutSegment(
+    ): Result<ComMethodResult> {
+        return JvmComMethodExecutor.invokeWithOutResultKind(
             instance = instance,
             vtableIndex = vtableIndex,
-            operation = "invokeObjectMethodWithObjectAndStringArgs",
+            operation = "invokeMethodWithObjectAndStringArgs",
             handle = Jdk22Foreign.objectMethodWithTwoObjectInputsHandle,
-            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
-            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
+            resultKind = resultKind,
             first,
             second,
         )
     }
 
-    override fun invokeObjectMethodWithStringAndObjectArgs(
+    override fun invokeMethodWithStringAndObjectArgs(
         instance: ComPtr,
         vtableIndex: Int,
+        resultKind: ComMethodResultKind,
         first: String,
         second: ComPtr,
-    ): Result<ComPtr> {
-        return JvmComMethodExecutor.invokeWithOutSegment(
+    ): Result<ComMethodResult> {
+        return JvmComMethodExecutor.invokeWithOutResultKind(
             instance = instance,
             vtableIndex = vtableIndex,
-            operation = "invokeObjectMethodWithStringAndObjectArgs",
+            operation = "invokeMethodWithStringAndObjectArgs",
             handle = Jdk22Foreign.objectMethodWithTwoObjectInputsHandle,
-            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
-            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
+            resultKind = resultKind,
             first,
             second,
         )
     }
 
-    override fun invokeObjectMethodWithTwoObjectArgs(
+    override fun invokeMethodWithTwoObjectArgs(
         instance: ComPtr,
         vtableIndex: Int,
+        resultKind: ComMethodResultKind,
         first: ComPtr,
         second: ComPtr,
-    ): Result<ComPtr> {
-        return JvmComMethodExecutor.invokeWithOutSegment(
+    ): Result<ComMethodResult> {
+        return JvmComMethodExecutor.invokeWithOutResultKind(
             instance = instance,
             vtableIndex = vtableIndex,
-            operation = "invokeObjectMethodWithTwoObjectArgs",
+            operation = "invokeMethodWithTwoObjectArgs",
             handle = Jdk22Foreign.objectMethodWithTwoObjectInputsHandle,
-            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
-            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
+            resultKind = resultKind,
             first,
             second,
         )
