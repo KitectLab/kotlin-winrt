@@ -159,6 +159,29 @@ internal fun List<MethodParameterCategory>.isSupportedTwoArgumentUnitCategories(
 internal fun List<MethodParameterCategory>.isSupportedTwoArgumentUnifiedReturnCategories(): Boolean =
     size == 2 && supportedTwoArgumentUnifiedReturnCategories(this[0], this[1])
 
+internal fun MethodReturnKind.twoArgumentSharedRuleFamily(
+    parameterCategories: List<MethodParameterCategory>,
+): SharedMethodRuleFamily? = when (this) {
+    MethodReturnKind.UNIT ->
+        if (parameterCategories.isSupportedTwoArgumentUnitCategories()) SharedMethodRuleFamily.UNIT else null
+    MethodReturnKind.STRING ->
+        if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.STRING else null
+    MethodReturnKind.FLOAT32 ->
+        if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.FLOAT32 else null
+    MethodReturnKind.FLOAT64 ->
+        if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.FLOAT64 else null
+    MethodReturnKind.BOOLEAN ->
+        if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.BOOLEAN else null
+    MethodReturnKind.INT32,
+    MethodReturnKind.UINT32,
+    MethodReturnKind.INT64,
+    MethodReturnKind.UINT64,
+    MethodReturnKind.GUID,
+    MethodReturnKind.OBJECT ->
+        if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.OBJECT else null
+    MethodReturnKind.EVENT_REGISTRATION_TOKEN -> null
+}
+
 private fun supportedTwoArgumentUnitCategories(
     first: MethodParameterCategory,
     second: MethodParameterCategory,
@@ -197,18 +220,8 @@ internal fun methodParameterCategories(
     parameterTypes.map { type -> methodParameterCategory(type, supportsObjectType) ?: return null }
 
 internal fun MethodSignatureKey.isTwoArgumentUnifiedReturnShape(): Boolean =
-    returnKind in setOf(
-        MethodReturnKind.OBJECT,
-        MethodReturnKind.STRING,
-        MethodReturnKind.FLOAT32,
-        MethodReturnKind.FLOAT64,
-        MethodReturnKind.BOOLEAN,
-        MethodReturnKind.INT32,
-        MethodReturnKind.UINT32,
-        MethodReturnKind.INT64,
-        MethodReturnKind.UINT64,
-        MethodReturnKind.GUID,
-    ) && shape.toParameterCategories()?.isSupportedTwoArgumentUnifiedReturnCategories() == true
+    shape.toParameterCategories()?.let(returnKind::twoArgumentSharedRuleFamily) != null &&
+        returnKind != MethodReturnKind.UNIT
 
 internal fun methodParameterCategory(
     type: String,
