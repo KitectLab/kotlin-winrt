@@ -106,9 +106,6 @@ private val int64LikeCategories = setOf(
     MethodParameterCategory.EVENT_REGISTRATION_TOKEN,
 )
 
-internal fun MethodSignatureShape.isTwoArgumentObjectShape(): Boolean =
-    toTwoArgumentParameterPair() != null
-
 internal fun MethodSignatureShape.toTwoArgumentParameterPair(): MethodParameterPair? =
     when (this) {
         MethodSignatureShape.STRING_INT32 -> MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.INT32)

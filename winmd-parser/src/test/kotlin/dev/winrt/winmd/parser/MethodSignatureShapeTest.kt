@@ -89,6 +89,16 @@ class MethodSignatureShapeTest {
         assertEquals(null, MethodSignatureShape.STRING.toTwoArgumentParameterPair())
     }
 
+    @Test
+    fun classifies_supported_two_argument_parameter_pairs() {
+        assertTrue(MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.STRING).isSupportedTwoArgumentUnitPair())
+        assertTrue(MethodParameterPair(MethodParameterCategory.OBJECT, MethodParameterCategory.INT32).isSupportedTwoArgumentUnitPair())
+        assertTrue(MethodParameterPair(MethodParameterCategory.INT32, MethodParameterCategory.INT64).isSupportedTwoArgumentUnitPair())
+        assertTrue(MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.INT32).isSupportedTwoArgumentUnifiedReturnPair())
+        assertTrue(MethodParameterPair(MethodParameterCategory.INT64, MethodParameterCategory.OBJECT).isSupportedTwoArgumentUnifiedReturnPair())
+        assertFalse(MethodParameterPair(MethodParameterCategory.STRING, MethodParameterCategory.STRING).isSupportedTwoArgumentUnifiedReturnPair())
+    }
+
     private fun supportsObjectType(type: String): Boolean {
         return (type == "Object" || type.contains('.')) &&
             !type.contains('`') &&
