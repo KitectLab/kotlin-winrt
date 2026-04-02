@@ -45,6 +45,116 @@ class RuntimePropertyRendererTest {
     }
 
     @Test
+    fun renders_string_properties_as_string_accessors() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "StringCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Title",
+                                    type = "String",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/StringCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("valtitle:String"))
+        assertTrue(binding.contains("PlatformComInterop.invokeHStringMethod(pointer,6).getOrThrow().use{it.toKotlinString()}"))
+    }
+
+    @Test
+    fun renders_object_properties_as_inspectable_accessors() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "ObjectCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Payload",
+                                    type = "Object",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/ObjectCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("valpayload:Inspectable"))
+        assertTrue(binding.contains("Inspectable(PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow())"))
+    }
+
+    @Test
+    fun renders_enum_properties_as_enum_accessors() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "EnumCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "State",
+                                    type = "AsyncStatus",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "AsyncStatus",
+                            kind = WinMdTypeKind.Enum,
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/EnumCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("valstate:AsyncStatus"))
+        assertTrue(binding.contains("AsyncStatus.fromValue(PlatformComInterop.invokeUInt32Method(pointer,6).getOrThrow().toInt())"))
+    }
+
+    @Test
     fun renders_ireference_scalar_properties_as_nullable_scalar_accessors() {
         val model = WinMdModel(
             files = emptyList(),
