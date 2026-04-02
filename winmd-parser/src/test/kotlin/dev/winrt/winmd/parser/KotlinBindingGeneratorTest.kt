@@ -3589,6 +3589,39 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_runtime_methods_with_guid_return_values() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "GuidReturnHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetIdentifier",
+                                    returnType = "Guid",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/GuidReturnHost.kt" }.content
+
+        assertTrue(binding.contains("fun getIdentifier(): Uuid"))
+        assertTrue(binding.contains("PlatformComInterop.invokeGuidGetter(pointer, 6).getOrThrow()"))
+        assertTrue(binding.contains("Uuid.parse("))
+    }
+
+    @Test
     fun generates_runtime_methods_with_string_return_values() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
