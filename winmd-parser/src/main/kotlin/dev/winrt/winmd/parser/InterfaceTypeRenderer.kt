@@ -95,11 +95,7 @@ internal class InterfaceTypeRenderer(
                         PropertySpec.builder("winRtCurrent", PoetSymbols.inspectableClass)
                             .getter(
                                 FunSpec.getterBuilder()
-                                    .addStatement(
-                                        "return %T(%T.invokeObjectMethod(pointer, 6).getOrThrow())",
-                                        PoetSymbols.inspectableClass,
-                                        PoetSymbols.platformComInteropClass,
-                                    )
+                                    .addStatement("return %T(%T.invokeObjectMethod(pointer, 6).getOrThrow())", PoetSymbols.inspectableClass, PoetSymbols.platformComInteropClass)
                                     .build(),
                             )
                             .build(),
@@ -108,11 +104,7 @@ internal class InterfaceTypeRenderer(
                         PropertySpec.builder("winRtHasCurrent", PoetSymbols.winRtBooleanClass)
                             .getter(
                                 FunSpec.getterBuilder()
-                                    .addStatement(
-                                        "return %T(%T.invokeBooleanGetter(pointer, 7).getOrThrow())",
-                                        PoetSymbols.winRtBooleanClass,
-                                        PoetSymbols.platformComInteropClass,
-                                    )
+                                    .addStatement("return %M(%T.invokeBooleanGetter(pointer, 7).getOrThrow())", PoetSymbols.winRtBooleanMember, PoetSymbols.platformComInteropClass)
                                     .build(),
                             )
                             .build(),

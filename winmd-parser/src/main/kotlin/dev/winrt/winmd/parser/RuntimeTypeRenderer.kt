@@ -78,7 +78,7 @@ internal class RuntimeTypeRenderer(
                     .addModifiers(KModifier.OVERRIDE)
                     .addParameter("block", LambdaTypeName.get(returnType = Unit::class.asTypeName()))
                     .returns(Boolean::class)
-                    .addStatement("return tryEnqueue(%T(block)).value", ClassName(type.namespace.lowercase(), "DispatcherQueueHandler"))
+                    .addStatement("return %M(tryEnqueue(%T(block)))", PoetSymbols.winRtBooleanMember, ClassName(type.namespace.lowercase(), "DispatcherQueueHandler"))
                     .build(),
             )
         }

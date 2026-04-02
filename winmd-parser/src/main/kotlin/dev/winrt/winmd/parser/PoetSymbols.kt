@@ -33,6 +33,7 @@ internal object PoetSymbols {
     val winRtInterfaceProjectionClass = ClassName("dev.winrt.core", "WinRtInterfaceProjection")
     val winRtDelegateBridgeClass = ClassName("dev.winrt.core", "WinRtDelegateBridge")
     val winRtDelegateHandleClass = ClassName("dev.winrt.core", "WinRtDelegateHandle")
+    val winRtBooleanMember = MemberName("dev.winrt.core", "WinRtBoolean")
     val winRtListProjectionClass = ClassName("dev.winrt.projection", "WinRtListProjection")
     val winRtMutableListProjectionClass = ClassName("dev.winrt.projection", "WinRtMutableListProjection")
     val winRtMapProjectionClass = ClassName("dev.winrt.projection", "WinRtMapProjection")
