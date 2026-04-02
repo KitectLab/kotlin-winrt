@@ -218,4 +218,39 @@ class RuntimePropertyRendererTest {
         assertTrue(binding.contains("valcount:ULong?"))
         assertTrue(binding.contains("if(pointer.isNull)nullelseUInt64(PlatformComInterop.invokeInt64Getter(pointer,6).getOrThrow().toULong())"))
     }
+
+    @Test
+    fun renders_ireference_float32_properties_as_nullable_float_accessors() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "FloatCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Ratio",
+                                    type = "IReference<Float32>",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/FloatCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("valratio:Float?"))
+        assertTrue(binding.contains("if(pointer.isNull)nullelseFloat32(PlatformComInterop.invokeFloat32Method(pointer,6).getOrThrow())"))
+    }
 }
