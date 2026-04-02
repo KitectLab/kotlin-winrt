@@ -205,6 +205,31 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun inspectable_argument_pointer_is_stable_after_projection_alias_registration() {
+        WinRtProjectionRegistry.resetForTests()
+        WinRtProjectionRegistry.registerProjectionTypeMapping(
+            winrtTypeKey = "Microsoft.UI.Xaml.Interop.IBindableVector",
+            projectionTypeKey = "Test.CustomProjection",
+        )
+
+        val subject = object : Inspectable(ComPtr.NULL) {
+            var queryCount = 0
+
+            override fun queryInterface(iid: Guid): ComPtr {
+                queryCount += 1
+                return ComPtr.NULL
+            }
+        }
+
+        val first = subject.getInspectableArgumentPointer()
+        val second = subject.getInspectableArgumentPointer()
+
+        assertEquals(ComPtr.NULL, first)
+        assertEquals(ComPtr.NULL, second)
+        assertEquals(1, subject.queryCount)
+    }
+
+    @Test
     fun inspectable_can_cache_object_references_by_projected_type_key() {
         WinRtProjectionRegistry.resetForTests()
 
