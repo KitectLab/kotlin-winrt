@@ -186,6 +186,54 @@ This effort is moving in the right direction when:
 - Checked-in bindings can be regenerated and compared against the tracked surface without surprise diffs.
 - Runtime and generator tests pass on Windows using the repo's intended Gradle path.
 
+## Next Steps Backlog
+
+### P0
+
+- [ ] Verify whether `WinRtActivationKind` needs more than `Factory` for runtime classes that expose different activation paths.
+- [ ] Confirm that repeated `projectInterface()` calls preserve object identity and do not create redundant wrapper state.
+- [ ] Compare generic interface signature generation against the reference behavior for `IReference<T>`, `IAsyncOperation<T>`, and collection interfaces.
+- [ ] Audit delegate bridge lifetime management for a subscribe/unsubscribe cycle.
+
+### P1
+
+- [ ] Expand parity checks to more `Windows.Foundation.Collections` types.
+- [ ] Add one additional high-value namespace beyond the current checked-in subset.
+- [ ] Move any projection-specific special cases out of generated code and into shared helpers when possible.
+- [ ] Add tests that cover object, string, and value-type marshaling across the generated bindings surface.
+
+### P2
+
+- [ ] Increase the number of generated files tracked by `CheckedInBindingsParityTest`.
+- [ ] Add smoke coverage for any new runtime class or interface projection added to the checked-in bindings.
+- [ ] Re-check ABI ownership and release boundaries after the next set of generator changes.
+
+## Suggested Work Item Format
+
+When turning a backlog item into implementation work, use this format:
+
+- Goal: one sentence describing the WinRT behavior to align
+- Scope: the exact files or modules to edit
+- Validation: the smallest test or sample that proves the behavior
+- Reference: the upstream `CsWinRT` area or rule being matched
+
+## Example Work Items
+
+- Goal: preserve projected interface identity across repeated casts.
+- Scope: `winrt-core/src/commonMain/kotlin/dev/winrt/core/Inspectable.kt`, `winrt-core/src/commonMain/kotlin/dev/winrt/core/InterfaceProjection.kt`
+- Validation: repeated projection test in `winrt-core` JVM tests
+- Reference: `CsWinRT` runtime object identity and interface projection rules
+
+- Goal: normalize generic WinRT helper mapping.
+- Scope: `winrt-core/src/commonMain/kotlin/dev/winrt/core/WinRtProjectionRegistry.kt`, `winrt-core/src/commonMain/kotlin/dev/winrt/core/WinRtTypeSignature.kt`
+- Validation: parameterized IID and signature tests
+- Reference: `CsWinRT` generic interface identity rules
+
+- Goal: reduce generator special cases for interface/property rendering.
+- Scope: `winmd-parser/src/main/kotlin/dev/winrt/winmd/parser/InterfaceTypeRenderer.kt`, `winmd-parser/src/main/kotlin/dev/winrt/winmd/parser/RuntimePropertyRenderer.kt`
+- Validation: regenerated bindings diff and parity test update
+- Reference: `CsWinRT` generated projection shape for equivalent WinMD input
+
 ## Notes
 
 - This plan is based on the current repository state and the existing `CsWinRT` reference guidance.
