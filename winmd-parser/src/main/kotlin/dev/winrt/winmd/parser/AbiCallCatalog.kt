@@ -696,7 +696,7 @@ internal object AbiCallCatalog {
         CodeBlock.of("%T.invokeFloat32Method(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
     fun float32MethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
-        unaryCall(MethodParameterAbiToken.INT32, MethodParameterAbiToken.STRING, vtableIndex, argumentName)
+        singleArgumentCall("invokeFloat32MethodWithStringArg", vtableIndex, argumentName, placeholder = "%N")
 
     fun float32MethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
         singleArgumentCall("invokeFloat32MethodWithUInt32Arg", vtableIndex, "${argumentName}.value")
