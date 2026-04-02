@@ -52,6 +52,23 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun runtime_class_metadata_preserves_default_interface_name() {
+        val explicit = object : WinRtRuntimeClassMetadata {
+            override val qualifiedName: String = "Test.RuntimeClass"
+            override val classId = RuntimeClassId("Test", "RuntimeClass")
+            override val defaultInterfaceName: String? = "Test.IRuntimeClass"
+        }
+        val absent = object : WinRtRuntimeClassMetadata {
+            override val qualifiedName: String = "Test.OtherRuntimeClass"
+            override val classId = RuntimeClassId("Test", "OtherRuntimeClass")
+            override val defaultInterfaceName: String? = null
+        }
+
+        assertEquals("Test.IRuntimeClass", explicit.defaultInterfaceName)
+        assertNull(absent.defaultInterfaceName)
+    }
+
+    @Test
     fun builtin_scalar_types_wrap_values() {
         assertEquals(42, Int32(42).value)
         assertEquals(42u, UInt32(42u).value)
