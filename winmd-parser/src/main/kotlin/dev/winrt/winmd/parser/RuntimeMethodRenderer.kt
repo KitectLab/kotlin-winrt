@@ -500,49 +500,49 @@ internal class RuntimeMethodRenderer(
                 },
             )
             MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(%S)", arrayOf(PoetSymbols.guidValueClass, "")) },
+                nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
                 returnStatement = "return %T(%T.invokeGuidGetter(pointer, %L).getOrThrow().toString())",
                 statementArgs = { method, _, _ ->
                     arrayOf(PoetSymbols.guidValueClass, PoetSymbols.platformComInteropClass, method.vtableIndex!!)
                 },
             )
             MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(%S)", arrayOf(PoetSymbols.guidValueClass, "")) },
+                nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
                 returnStatement = "return %T(%L.toString())",
                 statementArgs = { method, _, parameterBindings ->
                     arrayOf(PoetSymbols.guidValueClass, AbiCallCatalog.guidMethodWithString(method.vtableIndex!!, parameterBindings.single().name))
                 },
             )
             MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.INT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(%S)", arrayOf(PoetSymbols.guidValueClass, "")) },
+                nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
                 returnStatement = "return %T(%L.toString())",
                 statementArgs = { method, _, parameterBindings ->
                     arrayOf(PoetSymbols.guidValueClass, AbiCallCatalog.guidMethodWithInt32(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
                 },
             )
             MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.UINT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(%S)", arrayOf(PoetSymbols.guidValueClass, "")) },
+                nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
                 returnStatement = "return %T(%L.toString())",
                 statementArgs = { method, _, parameterBindings ->
                     arrayOf(PoetSymbols.guidValueClass, AbiCallCatalog.guidMethodWithUInt32(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
                 },
             )
             MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.BOOLEAN) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(%S)", arrayOf(PoetSymbols.guidValueClass, "")) },
+                nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
                 returnStatement = "return %T(%L.toString())",
                 statementArgs = { method, _, parameterBindings ->
                     arrayOf(PoetSymbols.guidValueClass, AbiCallCatalog.guidMethodWithBoolean(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
                 },
             )
             MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.INT64) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(%S)", arrayOf(PoetSymbols.guidValueClass, "")) },
+                nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
                 returnStatement = "return %T(%L.toString())",
                 statementArgs = { method, _, parameterBindings ->
                     arrayOf(PoetSymbols.guidValueClass, AbiCallCatalog.guidMethodWithInt64(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
                 },
             )
             MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(%S)", arrayOf(PoetSymbols.guidValueClass, "")) },
+                nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
                 returnStatement = "return %T(%L.toString())",
                 statementArgs = { method, _, parameterBindings ->
                     arrayOf(PoetSymbols.guidValueClass, AbiCallCatalog.guidMethodWithObject(method.vtableIndex!!, "${parameterBindings.single().name}.pointer"))
@@ -1023,7 +1023,7 @@ internal class RuntimeMethodRenderer(
             "UInt32" -> CodeBlock.of("%L", abiCall)
             "Int64" -> CodeBlock.of("%L", abiCall)
             "UInt64" -> CodeBlock.of("%L", abiCall)
-            "Guid" -> CodeBlock.of("%T(%L.toString())", PoetSymbols.guidValueClass, abiCall)
+            "Guid" -> CodeBlock.of("%T.parse(%L.toString())", PoetSymbols.guidValueClass, abiCall)
             else -> error("Unsupported two-argument return type: $returnType")
         }
     }
@@ -1038,7 +1038,7 @@ internal class RuntimeMethodRenderer(
             "UInt32" -> PlannedStatement("return 0u")
             "Int64" -> PlannedStatement("return 0L")
             "UInt64" -> PlannedStatement("return 0uL")
-            "Guid" -> PlannedStatement("return %T(%S)", arrayOf(PoetSymbols.guidValueClass, ""))
+            "Guid" -> PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000"))
             else -> error("Unsupported two-argument null return type for $methodName: $returnType")
         }
     }

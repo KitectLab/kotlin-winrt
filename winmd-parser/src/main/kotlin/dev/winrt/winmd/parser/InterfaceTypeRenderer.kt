@@ -866,7 +866,7 @@ internal class InterfaceTypeRenderer(
                 )
             InterfacePropertyRuleFamily.GUID ->
                 getterBuilder.addStatement(
-                    "return %T(%T.invokeGuidGetter(pointer, %L).getOrThrow().toString())",
+                    "return %T.parse(%T.invokeGuidGetter(pointer, %L).getOrThrow().toString())",
                     PoetSymbols.guidValueClass,
                     PoetSymbols.platformComInteropClass,
                     getterVtableIndex,
@@ -2246,7 +2246,7 @@ internal class InterfaceTypeRenderer(
             "UInt32" -> CodeBlock.of("%T(%L)", PoetSymbols.uint32Class, abiCall)
             "Int64" -> CodeBlock.of("%T(%L)", PoetSymbols.int64Class, abiCall)
             "UInt64" -> CodeBlock.of("%T(%L)", PoetSymbols.uint64Class, abiCall)
-            "Guid" -> CodeBlock.of("%T(%L.toString())", PoetSymbols.guidValueClass, abiCall)
+            "Guid" -> CodeBlock.of("%T.parse(%L.toString())", PoetSymbols.guidValueClass, abiCall)
             else -> error("Unsupported two-argument return type: ${method.returnType}")
         }
     }

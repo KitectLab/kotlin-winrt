@@ -107,7 +107,7 @@ internal class RuntimePropertyRenderer(
             }
             RuntimePropertyGetterRuleFamily.GUID -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 CodeBlock.of(
-                    "%T(%L.toString())",
+                    "%T.parse(%L.toString())",
                     PoetSymbols.guidValueClass,
                     AbiCallCatalog.guidGetter(getterVtableIndex),
                 )

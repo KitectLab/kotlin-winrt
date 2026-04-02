@@ -16,7 +16,7 @@ internal object PoetSymbols {
     val float32Class = ClassName("dev.winrt.core", "Float32")
     val float64Class = ClassName("dev.winrt.core", "Float64")
     val guidClass = ClassName("dev.winrt.kom", "Guid")
-    val guidValueClass = ClassName("dev.winrt.core", "GuidValue")
+    val guidValueClass = ClassName("kotlin.uuid", "Uuid")
     val inspectableClass = ClassName("dev.winrt.core", "Inspectable")
     val int64Class = ClassName("dev.winrt.core", "Int64")
     val int32Class = ClassName("dev.winrt.core", "Int32")
