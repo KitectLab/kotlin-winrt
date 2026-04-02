@@ -252,6 +252,34 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun projected_type_reference_cache_is_separate_for_distinct_aliases() {
+        WinRtProjectionRegistry.resetForTests()
+        WinRtProjectionRegistry.registerProjectionTypeMapping(
+            winrtTypeKey = "Microsoft.UI.Xaml.Interop.IBindableVector",
+            projectionTypeKey = "Test.CustomProjection",
+        )
+
+        val iid = Guid(0, 0, 0, byteArrayOf(4, 4, 4, 4, 4, 4, 4, 4))
+        val subject = object : Inspectable(ComPtr.NULL) {
+            var queryCount = 0
+
+            override fun queryInterface(iid: Guid): ComPtr {
+                queryCount += 1
+                return ComPtr.NULL
+            }
+        }
+
+        val first = subject.getObjectReferenceForProjectedType("Microsoft.UI.Xaml.Interop.IBindableVector", iid)
+        val second = subject.getObjectReferenceForType("Test.CustomProjection", iid)
+        val third = subject.getObjectReferenceForProjectedType("Microsoft.UI.Xaml.Interop.IBindableVector", iid)
+
+        assertEquals(ComPtr.NULL, first)
+        assertEquals(ComPtr.NULL, second)
+        assertEquals(ComPtr.NULL, third)
+        assertEquals(1, subject.queryCount)
+    }
+
+    @Test
     fun inspectable_can_cache_object_references_by_projected_type_key() {
         WinRtProjectionRegistry.resetForTests()
 
