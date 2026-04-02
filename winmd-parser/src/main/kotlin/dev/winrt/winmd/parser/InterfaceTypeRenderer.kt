@@ -2138,35 +2138,18 @@ internal class InterfaceTypeRenderer(
     ): PlannedInterfaceMethod = PlannedInterfaceMethod(
         statement = "return %L",
         args = { method, namespace ->
-            val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-            val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
             val parameterCategories = methodParameterCategories(
                 method.parameters.map { parameter -> parameter.type },
                 ::supportsInterfaceObjectInput,
             ) ?: error("Unsupported two-argument return shape: ${signatureKey.shape}")
+            val argumentExpressions = twoArgumentArgumentExpressions(method.parameters.map { it.name }, parameterCategories)
             val abiCall = AbiCallCatalog.resultMethodWithTwoArguments(
                 method.vtableIndex!!,
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) "OBJECT" else resultKindName(method.returnType),
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) PoetSymbols.requireObjectMember else resultExtractor(method.returnType),
                 parameterCategories,
-                when (parameterCategories[0]) {
-                    MethodParameterCategory.OBJECT -> "$firstArgumentName.pointer"
-                    MethodParameterCategory.INT32,
-                    MethodParameterCategory.UINT32,
-                    MethodParameterCategory.BOOLEAN,
-                    MethodParameterCategory.INT64,
-                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$firstArgumentName.value"
-                    else -> firstArgumentName
-                },
-                when (parameterCategories[1]) {
-                    MethodParameterCategory.OBJECT -> "$secondArgumentName.pointer"
-                    MethodParameterCategory.INT32,
-                    MethodParameterCategory.UINT32,
-                    MethodParameterCategory.BOOLEAN,
-                    MethodParameterCategory.INT64,
-                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$secondArgumentName.value"
-                    else -> secondArgumentName
-                },
+                argumentExpressions[0],
+                argumentExpressions[1],
             )
             arrayOf(
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) {
@@ -2177,6 +2160,14 @@ internal class InterfaceTypeRenderer(
             )
         },
     )
+
+    private fun twoArgumentArgumentExpressions(
+        argumentNames: List<String>,
+        parameterCategories: List<MethodParameterCategory>,
+    ): List<String> =
+        argumentNames.zip(parameterCategories) { argumentName, category ->
+            unaryArgumentExpression(argumentName.replaceFirstChar(Char::lowercase), category)
+        }
 
     private data class PlannedInterfaceMethod(
         val statement: String,

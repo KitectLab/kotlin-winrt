@@ -897,29 +897,14 @@ internal class RuntimeMethodRenderer(
                 method.parameters.map { parameter -> parameter.type },
                 ::supportsRuntimeObjectType,
             ) ?: error("Unsupported two-argument return shape: ${signatureKey.shape}")
+            val argumentExpressions = twoArgumentArgumentExpressions(parameterBindings, parameterCategories)
             val abiCall = AbiCallCatalog.resultMethodWithTwoArguments(
                 method.vtableIndex!!,
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) "OBJECT" else resultKindName(method.returnType),
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) PoetSymbols.requireObjectMember else resultExtractor(method.returnType),
                 parameterCategories,
-                when (parameterCategories[0]) {
-                    MethodParameterCategory.OBJECT -> "${parameterBindings[0].name}.pointer"
-                    MethodParameterCategory.INT32,
-                    MethodParameterCategory.UINT32,
-                    MethodParameterCategory.BOOLEAN,
-                    MethodParameterCategory.INT64,
-                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "${parameterBindings[0].name}.value"
-                    else -> parameterBindings[0].name
-                },
-                when (parameterCategories[1]) {
-                    MethodParameterCategory.OBJECT -> "${parameterBindings[1].name}.pointer"
-                    MethodParameterCategory.INT32,
-                    MethodParameterCategory.UINT32,
-                    MethodParameterCategory.BOOLEAN,
-                    MethodParameterCategory.INT64,
-                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "${parameterBindings[1].name}.value"
-                    else -> parameterBindings[1].name
-                },
+                argumentExpressions[0],
+                argumentExpressions[1],
             )
             arrayOf(
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) {
@@ -930,6 +915,14 @@ internal class RuntimeMethodRenderer(
             )
         },
     )
+
+    private fun twoArgumentArgumentExpressions(
+        parameterBindings: List<RuntimeMethodParameterBinding>,
+        parameterCategories: List<MethodParameterCategory>,
+    ): List<String> =
+        parameterBindings.zip(parameterCategories) { binding, category ->
+            runtimeUnaryArgumentExpression(binding.name, category)
+        }
 
     fun renderRuntimeLambdaOverload(method: WinMdMethod, currentNamespace: String): FunSpec? {
         if (method.parameters.size != 1 || method.vtableIndex == null || method.returnType != "Unit") {
