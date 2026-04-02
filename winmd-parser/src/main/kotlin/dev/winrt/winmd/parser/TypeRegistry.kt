@@ -93,14 +93,16 @@ internal class TypeRegistry(
     fun isRuntimeClassHelperInterface(typeName: String, currentNamespace: String): Boolean {
         val interfaceType = findType(typeName, currentNamespace) ?: return false
         if (interfaceType.kind != WinMdTypeKind.Interface) return false
-        return allTypes.any { type ->
-            type.kind == WinMdTypeKind.RuntimeClass &&
-                type.namespace == interfaceType.namespace &&
-                (
-                    helperInterfaceOrder(interfaceType.name, "I${type.name}Statics") != null ||
-                        helperInterfaceOrder(interfaceType.name, "I${type.name}Factory") != null
-                    )
-        }
+        return allTypes
+            .asSequence()
+            .filter { type -> type.kind == WinMdTypeKind.RuntimeClass && type.namespace == interfaceType.namespace }
+            .flatMap { runtimeClass ->
+                sequenceOf(
+                    findRuntimeClassStaticsTypes(runtimeClass.name, runtimeClass.namespace).asSequence(),
+                    findRuntimeClassFactoryTypes(runtimeClass.name, runtimeClass.namespace).asSequence(),
+                ).flatten()
+            }
+            .any { helperType -> helperType.name == interfaceType.name }
     }
 
     fun isVersionedRuntimeClassInterface(typeName: String, currentNamespace: String): Boolean {
@@ -127,11 +129,11 @@ internal class TypeRegistry(
     fun isRuntimeClassOverridesInterface(typeName: String, currentNamespace: String): Boolean {
         val interfaceType = findType(typeName, currentNamespace) ?: return false
         if (interfaceType.kind != WinMdTypeKind.Interface) return false
-        return allTypes.any { type ->
-            type.kind == WinMdTypeKind.RuntimeClass &&
-                type.namespace == interfaceType.namespace &&
-                helperInterfaceOrder(interfaceType.name, "I${type.name}Overrides") != null
-        }
+        return allTypes
+            .asSequence()
+            .filter { type -> type.kind == WinMdTypeKind.RuntimeClass && type.namespace == interfaceType.namespace }
+            .flatMap { runtimeClass -> findRuntimeClassOverridesTypes(runtimeClass.name, runtimeClass.namespace).asSequence() }
+            .any { helperType -> helperType.name == interfaceType.name }
     }
 
     private fun canonicalQualifiedName(typeName: String): String {
