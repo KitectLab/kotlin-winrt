@@ -142,6 +142,34 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun interface_projection_uses_registered_projection_type_alias() {
+        WinRtProjectionRegistry.resetForTests()
+        WinRtProjectionRegistry.registerProjectionTypeMapping(
+            winrtTypeKey = "Microsoft.UI.Xaml.Interop.IBindableVector",
+            projectionTypeKey = "Test.CustomProjection",
+        )
+
+        val metadata = object : WinRtInterfaceMetadata {
+            override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
+            override val iid = Guid(0, 0, 0, byteArrayOf(7, 7, 7, 7, 7, 7, 7, 7))
+        }
+        val subject = object : Inspectable(ComPtr.NULL) {
+            val requestedKeys = mutableListOf<String>()
+
+            override fun queryInterface(iid: Guid): ComPtr = ComPtr.NULL
+
+            override fun getObjectReferenceForType(typeKey: String, iid: Guid): ComPtr {
+                requestedKeys += typeKey
+                return super.getObjectReferenceForType(typeKey, iid)
+            }
+        }
+
+        subject.projectInterface(metadata) { pointer -> WinRtInterfaceProjection(pointer) }
+
+        assertEquals(listOf("Test.CustomProjection"), subject.requestedKeys)
+    }
+
+    @Test
     fun inspectable_can_cache_object_references_by_projected_type_key() {
         WinRtProjectionRegistry.resetForTests()
 
