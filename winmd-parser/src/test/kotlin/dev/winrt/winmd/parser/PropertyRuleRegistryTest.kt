@@ -55,5 +55,9 @@ class PropertyRuleRegistryTest {
             InterfacePropertyRuleFamily.OBJECT,
             PropertyRuleRegistry.interfaceSetterRuleFamily("JsonObject", isObjectType = true),
         )
+        assertEquals(
+            null,
+            PropertyRuleRegistry.interfaceSetterRuleFamily("JsonObject", isObjectType = false),
+        )
     }
 }

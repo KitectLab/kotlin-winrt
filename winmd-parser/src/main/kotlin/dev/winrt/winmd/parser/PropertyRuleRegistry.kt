@@ -102,7 +102,7 @@ internal object PropertyRuleRegistry {
 
     fun interfaceSetterRuleFamily(type: String, isObjectType: Boolean): InterfacePropertyRuleFamily? {
         return when (type) {
-            in setOf(type).takeIf { isObjectType } ?: emptySet() -> InterfacePropertyRuleFamily.OBJECT
+            if (isObjectType) type else null -> InterfacePropertyRuleFamily.OBJECT
             "String" -> InterfacePropertyRuleFamily.STRING
             "Float32" -> InterfacePropertyRuleFamily.FLOAT32
             "Boolean" -> InterfacePropertyRuleFamily.BOOLEAN
