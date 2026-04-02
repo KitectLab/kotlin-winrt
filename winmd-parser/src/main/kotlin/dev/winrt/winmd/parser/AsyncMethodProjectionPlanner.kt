@@ -73,7 +73,7 @@ internal class AsyncMethodProjectionPlanner(
             else -> null
         } ?: return null
         val signature = winRtSignatureMapper.signatureFor(resultTypeName, currentNamespace)
-        if (resultTypeName in genericParameters || isScalarAsyncResultType(resultTypeName)) {
+        if (resultTypeName in genericParameters || resultTypeName in scalarAsyncResultTypeNames) {
             return CodeBlock.of("%T.signature(%S)", PoetSymbols.asyncResultTypesClass, signature)
         }
         return CodeBlock.of(
@@ -217,17 +217,19 @@ internal class AsyncMethodProjectionPlanner(
 }
 
 private fun isScalarAsyncResultType(typeName: String): Boolean {
-    return typeName in setOf(
-        "String",
-        "Boolean",
-        "Int32",
-        "UInt32",
-        "Int64",
-        "UInt64",
-        "Float32",
-        "Float64",
-    )
+    return typeName in scalarAsyncResultTypeNames
 }
+
+private val scalarAsyncResultTypeNames = setOf(
+    "String",
+    "Boolean",
+    "Int32",
+    "UInt32",
+    "Int64",
+    "UInt64",
+    "Float32",
+    "Float64",
+)
 
 internal data class AsyncProgressPlan(
     val progressSignature: String,
