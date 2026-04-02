@@ -41,6 +41,17 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun runtime_class_metadata_defaults_activation_kind_to_factory() {
+        val metadata = object : WinRtRuntimeClassMetadata {
+            override val qualifiedName: String = "Test.RuntimeClass"
+            override val classId = RuntimeClassId("Test", "RuntimeClass")
+            override val defaultInterfaceName: String? = null
+        }
+
+        assertEquals(WinRtActivationKind.Factory, metadata.activationKind)
+    }
+
+    @Test
     fun builtin_scalar_types_wrap_values() {
         assertEquals(42, Int32(42).value)
         assertEquals(42u, UInt32(42u).value)
