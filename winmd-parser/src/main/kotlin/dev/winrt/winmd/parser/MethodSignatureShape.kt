@@ -103,6 +103,20 @@ internal enum class MethodParameterAbiToken {
     INT64,
 }
 
+internal enum class MethodAbiToken {
+    HSTRING,
+    UNIT,
+    BOOLEAN,
+    STRING,
+    OBJECT,
+    INT32,
+    UINT32,
+    INT64,
+    FLOAT32,
+    FLOAT64,
+    GUID,
+}
+
 private val int32LikeCategories = setOf(
     MethodParameterCategory.INT32,
     MethodParameterCategory.UINT32,
