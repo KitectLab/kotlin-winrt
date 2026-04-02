@@ -3589,6 +3589,39 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_runtime_methods_with_string_return_values() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "StringReturnHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetTitle",
+                                    returnType = "String",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/StringReturnHost.kt" }.content
+
+        assertTrue(binding.contains("fun getTitle(): String"))
+        assertTrue(binding.contains("PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()"))
+        assertTrue(binding.contains("toKotlinString()"))
+    }
+
+    @Test
     fun generates_runtime_methods_with_parameters_for_int32_and_uint32_returns() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
