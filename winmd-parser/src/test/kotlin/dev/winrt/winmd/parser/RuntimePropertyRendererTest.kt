@@ -253,4 +253,39 @@ class RuntimePropertyRendererTest {
         assertTrue(binding.contains("valratio:Float?"))
         assertTrue(binding.contains("if(pointer.isNull)nullelseFloat32(PlatformComInterop.invokeFloat32Method(pointer,6).getOrThrow())"))
     }
+
+    @Test
+    fun renders_ireference_float64_properties_as_nullable_double_accessors() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "DoubleCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Ratio",
+                                    type = "IReference<Float64>",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/DoubleCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("valratio:Double?"))
+        assertTrue(binding.contains("if(pointer.isNull)nullelseFloat64(PlatformComInterop.invokeFloat64Method(pointer,6).getOrThrow())"))
+    }
 }
