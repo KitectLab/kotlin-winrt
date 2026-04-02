@@ -11,6 +11,21 @@ actual object PlatformRuntime {
     actual val ffiBackend: String = "jdk22-ffm"
 }
 
+private fun methodArgumentLayout(argument: Any): ValueLayout {
+    return when (argument) {
+        is ComPtr,
+        is String -> ValueLayout.ADDRESS
+        is Int,
+        is UInt,
+        is Boolean -> ValueLayout.JAVA_INT
+        is Long,
+        is ULong -> ValueLayout.JAVA_LONG
+        is Float -> ValueLayout.JAVA_FLOAT
+        is Double -> ValueLayout.JAVA_DOUBLE
+        else -> throw IllegalArgumentException("Unsupported COM argument type: ${argument::class.qualifiedName}")
+    }
+}
+
 private object JvmComMethodExecutor {
     private fun requireInstance(instance: ComPtr) {
         require(!instance.isNull) { "Method invocation requires a non-null COM pointer" }
@@ -1019,6 +1034,36 @@ private object JvmComMethodExecutor {
         vararg arguments: Any,
     ): Result<T> {
         return invokeWithOutSegmentArguments(instance, vtableIndex, operation, handle, allocator, reader, arguments)
+    }
+
+    private fun invokeWithOutResultKindArguments(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        arguments: Array<out Any>,
+    ): Result<ComMethodResult> {
+        return invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = operation,
+            handle = handle,
+            allocator = { arena -> allocateResultSegment(arena, resultKind) },
+            reader = { segment -> readResult(segment, resultKind) },
+            *arguments,
+        )
+    }
+
+    fun invokeWithOutResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        vararg arguments: Any,
+    ): Result<ComMethodResult> {
+        return invokeWithOutResultKindArguments(instance, vtableIndex, operation, handle, resultKind, arguments)
     }
 
     private fun <T> runDirectWithOut(
@@ -2073,6 +2118,22 @@ private object JvmPlatformComInterop : ComInterop {
             resultKind = resultKind,
             first,
             second,
+        )
+    }
+
+    override fun invokeMethodWithResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        vararg arguments: Any,
+    ): Result<ComMethodResult> {
+        return JvmComMethodExecutor.invokeWithOutResultKind(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeMethodWithResultKind",
+            handle = Jdk22Foreign.methodWithArgumentsHandle(arguments.map(::methodArgumentLayout)),
+            resultKind = resultKind,
+            *arguments,
         )
     }
 

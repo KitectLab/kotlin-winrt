@@ -109,7 +109,7 @@ internal class AsyncMethodRuleRegistry(
                 parameterNames[1],
                 vtableIndex,
             )
-            else -> null
+            else -> asyncGenericInvocation(parameterCategories, parameterNames, vtableIndex)
         }
     }
 
@@ -147,6 +147,15 @@ internal class AsyncMethodRuleRegistry(
         val firstArgument = asyncArgumentExpression(first, firstName)
         val secondArgument = asyncArgumentExpression(second, secondName)
         return "dev.winrt.kom.requireObject(%T.invokeMethodWith${firstToken}And${secondToken}Args(pointer, $vtableIndex, dev.winrt.kom.ComMethodResultKind.OBJECT, $firstArgument, $secondArgument).getOrThrow())"
+    }
+
+    private fun asyncGenericInvocation(
+        categories: List<MethodParameterCategory>,
+        parameterNames: List<String>,
+        vtableIndex: Int,
+    ): String {
+        val arguments = categories.zip(parameterNames) { category, name -> asyncArgumentExpression(category, name) }
+        return "dev.winrt.kom.requireObject(%T.invokeMethodWithResultKind(pointer, $vtableIndex, dev.winrt.kom.ComMethodResultKind.OBJECT, ${arguments.joinToString(", ")}).getOrThrow())"
     }
 
     private fun asyncArgumentExpression(category: MethodParameterCategory, parameterName: String): String {

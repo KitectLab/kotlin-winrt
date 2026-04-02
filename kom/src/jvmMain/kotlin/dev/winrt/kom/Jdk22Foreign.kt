@@ -85,6 +85,15 @@ internal object Jdk22Foreign {
         FunctionDescriptor.of(intLayout, addressLayout, firstLayout, secondLayout, addressLayout),
     )
 
+    fun methodWithArgumentsHandle(arguments: List<ValueLayout>): MethodHandle = downcallHandle(
+        FunctionDescriptor.of(
+            intLayout,
+            addressLayout,
+            *arguments.toTypedArray(),
+            addressLayout,
+        ),
+    )
+
     val queryInterfaceHandle: MethodHandle by lazy {
         downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout),

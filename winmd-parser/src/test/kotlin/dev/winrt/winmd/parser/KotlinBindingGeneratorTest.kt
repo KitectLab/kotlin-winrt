@@ -7731,6 +7731,16 @@ class KotlinBindingGeneratorTest {
                                     parameters = listOf(WinMdParameter("name", "String")),
                                     vtableIndex = 7,
                                 ),
+                                WinMdMethod(
+                                    name = "QueryAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                        WinMdParameter("count", "Int32"),
+                                        WinMdParameter("enabled", "Boolean"),
+                                    ),
+                                    vtableIndex = 8,
+                                ),
                             ),
                         ),
                         WinMdType(
@@ -7749,6 +7759,16 @@ class KotlinBindingGeneratorTest {
                                     returnType = "Windows.Foundation.IAsyncOperation<String>",
                                     parameters = listOf(WinMdParameter("name", "String")),
                                     vtableIndex = 7,
+                                ),
+                                WinMdMethod(
+                                    name = "QueryAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                        WinMdParameter("count", "Int32"),
+                                        WinMdParameter("enabled", "Boolean"),
+                                    ),
+                                    vtableIndex = 8,
                                 ),
                             ),
                         ),
@@ -7769,8 +7789,13 @@ class KotlinBindingGeneratorTest {
         assertTrue(interfaceBinding.contains("val readAsyncResultType: AsyncResultType<String>"))
         assertTrue(interfaceBinding.contains("AsyncResultTypes.signature(\"string\")"))
         assertTrue(interfaceBinding.contains("fun readAsync(name: String)"))
+        assertTrue(interfaceBinding.contains("fun queryAsync("))
+        assertTrue(interfaceBinding.contains("count: Int32"))
+        assertTrue(interfaceBinding.contains("enabled: WinRtBoolean"))
         assertTrue(interfaceBinding.contains("suspend fun readAsyncAwait(name: String): String"))
+        assertTrue(interfaceBinding.contains("suspend fun queryAsyncAwait("))
         assertTrue(interfaceBinding.contains("readAsync(name).await()"))
+        assertTrue(interfaceBinding.contains("queryAsync(name, count, enabled).await()"))
         assertTrue(interfaceBinding.contains("fun readAsyncTask(scope: CoroutineScope"))
         assertTrue(interfaceBinding.contains("scope.asyncOperation("))
         assertTrue(interfaceBinding.contains("resultType = readAsyncResultType"))
@@ -7780,8 +7805,67 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("suspend fun loadAsyncAwait()"))
         assertTrue(runtimeBinding.contains("loadAsync().await()"))
         assertTrue(runtimeBinding.contains("fun readAsync(name: String)"))
+        assertTrue(runtimeBinding.contains("fun queryAsync("))
+        assertTrue(runtimeBinding.contains("invokeMethodWithResultKind"))
         assertTrue(runtimeBinding.contains("suspend fun readAsyncAwait(name: String): String"))
+        assertTrue(runtimeBinding.contains("suspend fun queryAsyncAwait("))
         assertTrue(runtimeBinding.contains("readAsync(name).await()"))
+        assertTrue(runtimeBinding.contains("queryAsync(name, count, enabled).await()"))
+    }
+
+    @Test
+    fun plans_three_argument_async_invocations() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "fcdcf02c-e5d8-4478-915a-4d90b74b83a5",
+                            genericParameters = listOf("TResult"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Async",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IAsyncSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-2222-3333-4444-555555555555",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "QueryAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                        WinMdParameter("count", "Int32"),
+                                        WinMdParameter("enabled", "Boolean"),
+                                    ),
+                                    vtableIndex = 8,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val typeRegistry = TypeRegistry(model)
+        val planner = AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))
+        val registry = AsyncMethodRuleRegistry(TypeNameMapper(), planner)
+        val plan = registry.plan(
+            model.namespaces[1].types[0].methods.single(),
+            "Example.Async",
+        )
+
+        assertTrue(plan != null)
+        assertTrue(plan!!.invocation.contains("invokeMethodWithResultKind"))
     }
 
     @Test

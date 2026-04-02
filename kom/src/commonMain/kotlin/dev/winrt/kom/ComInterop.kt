@@ -99,6 +99,12 @@ interface ComInterop {
     fun invokeMethodWithObjectAndStringArgs(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: ComPtr, second: String): Result<ComMethodResult>
     fun invokeMethodWithStringAndObjectArgs(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: String, second: ComPtr): Result<ComMethodResult>
     fun invokeMethodWithTwoObjectArgs(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: ComPtr, second: ComPtr): Result<ComMethodResult>
+    fun invokeMethodWithResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        vararg arguments: Any,
+    ): Result<ComMethodResult>
     fun invokeObjectSetter(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Unit>
     fun invokeInt64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Long>
     fun invokeInt64Method(instance: ComPtr, vtableIndex: Int): Result<Long>

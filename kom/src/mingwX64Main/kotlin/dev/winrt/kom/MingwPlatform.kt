@@ -410,6 +410,17 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeMethodWithResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        vararg arguments: Any,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with generic arguments is not wired yet"),
+        )
+    }
+
     override fun invokeObjectSetter(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Unit> {
         return Result.failure(
             UnsupportedOperationException("Native object setter invocation is not wired yet"),
