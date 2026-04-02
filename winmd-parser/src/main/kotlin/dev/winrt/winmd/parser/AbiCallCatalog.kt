@@ -3,6 +3,9 @@ package dev.winrt.winmd.parser
 import com.squareup.kotlinpoet.CodeBlock
 
 internal object AbiCallCatalog {
+    internal fun booleanAsInt64Expression(argumentName: String): String = "if ($argumentName.value) 1L else 0L"
+    internal fun booleanAsInt32Expression(argumentName: String): String = "if ($argumentName.value) 1 else 0"
+
     private fun singleArgumentCall(
         methodName: String,
         vtableIndex: Int,

@@ -1702,7 +1702,7 @@ internal class InterfaceTypeRenderer(
                 statement = "return %T(%L)",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.int64Class, AbiCallCatalog.int64MethodWithBoolean(method.vtableIndex!!, "if (${argumentName}.value) 1L else 0L"))
+                    arrayOf(PoetSymbols.int64Class, AbiCallCatalog.int64MethodWithBoolean(method.vtableIndex!!, AbiCallCatalog.booleanAsInt64Expression(argumentName)))
                 },
             )
             MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
@@ -1737,7 +1737,7 @@ internal class InterfaceTypeRenderer(
                 statement = "return %T(%L)",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithBoolean(method.vtableIndex!!, "if (${argumentName}.value) 1L else 0L"))
+                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithBoolean(method.vtableIndex!!, AbiCallCatalog.booleanAsInt64Expression(argumentName)))
                 },
             )
             MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
@@ -1963,7 +1963,7 @@ internal class InterfaceTypeRenderer(
                 statement = "%L",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(AbiCallCatalog.unitMethodWithInt32Expression(method.vtableIndex!!, "if (${argumentName}.value) 1 else 0"))
+                    arrayOf(AbiCallCatalog.unitMethodWithInt32Expression(method.vtableIndex!!, AbiCallCatalog.booleanAsInt32Expression(argumentName)))
                 },
             )
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64) -> PlannedInterfaceMethod(

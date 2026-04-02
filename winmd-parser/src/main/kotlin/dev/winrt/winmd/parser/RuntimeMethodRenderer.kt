@@ -317,7 +317,7 @@ internal class RuntimeMethodRenderer(
                 returnStatement = "return %T(%L)",
                 statementArgs = { method, _, parameterBindings ->
                     val argumentName = parameterBindings.single().name
-                    arrayOf(PoetSymbols.int64Class, AbiCallCatalog.int64MethodWithBoolean(method.vtableIndex!!, "if (${argumentName}.value) 1L else 0L"))
+                    arrayOf(PoetSymbols.int64Class, AbiCallCatalog.int64MethodWithBoolean(method.vtableIndex!!, AbiCallCatalog.booleanAsInt64Expression(argumentName)))
                 },
             )
             MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
@@ -356,7 +356,7 @@ internal class RuntimeMethodRenderer(
                 returnStatement = "return %T(%L)",
                 statementArgs = { method, _, parameterBindings ->
                     val argumentName = parameterBindings.single().name
-                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithBoolean(method.vtableIndex!!, "if (${argumentName}.value) 1L else 0L"))
+                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithBoolean(method.vtableIndex!!, AbiCallCatalog.booleanAsInt64Expression(argumentName)))
                 },
             )
             MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
@@ -451,7 +451,7 @@ internal class RuntimeMethodRenderer(
                 returnStatement = "return %T(%L)",
                 statementArgs = { method, _, parameterBindings ->
                     val argumentName = parameterBindings.single().name
-                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithBoolean(method.vtableIndex!!, "if (${argumentName}.value) 1L else 0L"))
+                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithBoolean(method.vtableIndex!!, AbiCallCatalog.booleanAsInt64Expression(argumentName)))
                 },
             )
             MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
@@ -574,7 +574,7 @@ internal class RuntimeMethodRenderer(
                 returnStatement = "%L",
                 statementArgs = { method, _, parameterBindings ->
                     val argumentName = parameterBindings.single().name
-                    arrayOf(AbiCallCatalog.unitMethodWithInt32Expression(method.vtableIndex!!, "if (${argumentName}.value) 1 else 0"))
+                    arrayOf(AbiCallCatalog.unitMethodWithInt32Expression(method.vtableIndex!!, AbiCallCatalog.booleanAsInt32Expression(argumentName)))
                 },
             )
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64) -> RuntimeMethodPlan(
