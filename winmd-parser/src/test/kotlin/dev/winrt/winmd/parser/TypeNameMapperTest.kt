@@ -34,4 +34,22 @@ class TypeNameMapperTest {
             ).toString(),
         )
     }
+
+    @Test
+    fun maps_ireference_to_nullable_kotlin_type() {
+        assertEquals(
+            "kotlin.String?",
+            mapper.mapTypeName(
+                "Windows.Foundation.IReference`1<String>",
+                "Windows.Foundation",
+            ).toString(),
+        )
+        assertEquals(
+            "dev.winrt.core.Inspectable?",
+            mapper.mapTypeName(
+                "Windows.Foundation.IReference`1<Object>",
+                "Windows.Foundation",
+            ).toString(),
+        )
+    }
 }

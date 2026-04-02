@@ -191,15 +191,22 @@ internal class RuntimePropertyRenderer(
         val getterPlan = when {
             property.getterVtableIndex == null -> null
             iReferenceInnerType != null -> RuntimePropertyGetterPlan { getterVtableIndex ->
-                when (iReferenceInnerType) {
+                val valueGetter = when (iReferenceInnerType) {
                     "String" -> CodeBlock.of(
-                        "%T.invokeHStringMethod(pointer, %L).getOrThrow().use { value -> if (value.isNull) null else value.toKotlinString() }",
+                        "%T.invokeHStringMethod(pointer, %L).getOrThrow().use { value -> value.takeUnless { it.isNull }?.toKotlinString() }",
                         PoetSymbols.platformComInteropClass,
                         getterVtableIndex,
+                    )
+                    "Object" -> CodeBlock.of(
+                        "%T.invokeObjectMethod(pointer, %L).getOrThrow().let { if (it.isNull) null else %T(it) }",
+                        PoetSymbols.platformComInteropClass,
+                        getterVtableIndex,
+                        PoetSymbols.inspectableClass,
                     )
                     else -> scalarRuntimePropertyPlan(iReferenceInnerType)?.renderGetter(getterVtableIndex)
                         ?: error("Unsupported IReference projection type: $iReferenceInnerType")
                 }
+                CodeBlock.of("if (pointer.isNull) null else %L", valueGetter)
             }
             else -> when {
                 typeRegistry.isEnumType(property.type, currentNamespace) -> RuntimePropertyGetterPlan { getterVtableIndex ->
