@@ -255,6 +255,34 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun project_interface_reuses_wrapper_after_alias_registration() {
+        WinRtProjectionRegistry.resetForTests()
+        WinRtProjectionRegistry.registerProjectionTypeMapping(
+            winrtTypeKey = "Microsoft.UI.Xaml.Interop.IBindableVector",
+            projectionTypeKey = "Test.CustomProjection",
+        )
+
+        val metadata = object : WinRtInterfaceMetadata {
+            override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
+            override val iid = Guid(0, 0, 0, byteArrayOf(2, 2, 2, 2, 2, 2, 2, 2))
+        }
+        val subject = object : Inspectable(ComPtr.NULL) {
+            var queryCount = 0
+
+            override fun queryInterface(iid: Guid): ComPtr {
+                queryCount += 1
+                return ComPtr.NULL
+            }
+        }
+
+        val first = subject.projectInterface(metadata) { pointer -> WinRtInterfaceProjection(pointer) }
+        val second = subject.projectInterface(metadata) { pointer -> WinRtInterfaceProjection(pointer) }
+
+        assertSame(first, second)
+        assertEquals(1, subject.queryCount)
+    }
+
+    @Test
     fun inspectable_argument_pointer_is_stable_after_projection_alias_registration() {
         WinRtProjectionRegistry.resetForTests()
         WinRtProjectionRegistry.registerProjectionTypeMapping(
