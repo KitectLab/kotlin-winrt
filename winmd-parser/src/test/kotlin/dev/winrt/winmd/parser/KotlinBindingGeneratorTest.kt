@@ -3551,6 +3551,44 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_runtime_methods_with_object_return_values() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Payload",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "ObjectReturnHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetPayload",
+                                    returnType = "Example.Runtime.Payload",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/ObjectReturnHost.kt" }.content
+
+        assertTrue(binding.contains("fun getPayload(): Payload"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()"))
+        assertTrue(binding.contains("Payload("))
+    }
+
+    @Test
     fun generates_runtime_methods_with_parameters_for_int32_and_uint32_returns() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
