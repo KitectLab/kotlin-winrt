@@ -1,10 +1,14 @@
 package dev.winrt.winmd.parser
 
-import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.TypeName
 
 internal object AsyncTaskCallCatalog {
-    fun asyncAction(returnType: TypeName, invocationFormat: String, platformComInteropClass: Any): AsyncTaskCallPlan {
+    fun asyncAction(
+        returnType: TypeName,
+        invocationFormat: String,
+        platformComInteropClass: TypeName,
+    ): AsyncTaskCallPlan {
         return AsyncTaskCallPlan(
             statementFormat = "return %T($invocationFormat)",
             args = arrayOf(returnType, platformComInteropClass),
@@ -15,7 +19,7 @@ internal object AsyncTaskCallCatalog {
         returnType: TypeName,
         invocationFormat: String,
         resultType: CodeBlock,
-        platformComInteropClass: Any,
+        platformComInteropClass: TypeName,
     ): AsyncTaskCallPlan {
         return AsyncTaskCallPlan(
             statementFormat = "return %T($invocationFormat, %L)",
@@ -27,7 +31,7 @@ internal object AsyncTaskCallCatalog {
         returnType: TypeName,
         invocationFormat: String,
         progressPlan: AsyncProgressPlan,
-        platformComInteropClass: Any,
+        platformComInteropClass: TypeName,
     ): AsyncTaskCallPlan {
         return AsyncTaskCallPlan(
             statementFormat = "return %T($invocationFormat, %S, %T.%L, %L)",
@@ -47,7 +51,7 @@ internal object AsyncTaskCallCatalog {
         invocationFormat: String,
         resultType: CodeBlock,
         progressPlan: AsyncOperationWithProgressPlan,
-        platformComInteropClass: Any,
+        platformComInteropClass: TypeName,
     ): AsyncTaskCallPlan {
         return AsyncTaskCallPlan(
             statementFormat = "return %T($invocationFormat, %L, %S, %T.%L, %L)",
