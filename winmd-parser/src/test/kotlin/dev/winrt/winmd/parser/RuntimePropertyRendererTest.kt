@@ -359,4 +359,39 @@ class RuntimePropertyRendererTest {
         assertTrue(binding.contains("Uuid.parse(PlatformComInterop.invokeGuidGetter(pointer,6).getOrThrow().toString())"))
     }
 
+    @Test
+    fun renders_timespan_properties_as_duration_accessors() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "SpanCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Duration",
+                                    type = "TimeSpan",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/SpanCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("valduration:Duration"))
+        assertTrue(binding.contains("Duration(PlatformComInterop.invokeInt64Getter(pointer,6).getOrThrow())"))
+    }
+
 }
