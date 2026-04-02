@@ -288,4 +288,40 @@ class RuntimePropertyRendererTest {
         assertTrue(binding.contains("valratio:Double?"))
         assertTrue(binding.contains("if(pointer.isNull)nullelseFloat64(PlatformComInterop.invokeFloat64Method(pointer,6).getOrThrow())"))
     }
+
+    @Test
+    fun renders_event_registration_token_properties_as_token_accessors() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "TokenCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Cookie",
+                                    type = "EventRegistrationToken",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/TokenCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("valcookie:EventRegistrationToken"))
+        assertTrue(binding.contains("EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer,6).getOrThrow())"))
+    }
+
 }
