@@ -44,6 +44,21 @@ class WinRtDelegateBridgeTest {
     }
 
     @Test
+    fun delegate_handle_close_is_idempotent() {
+        val iid = guidOf("12121212-3434-5656-7878-909090909090")
+
+        WinRtDelegateBridge.createUnitDelegate(
+            iid = iid,
+            parameterKinds = emptyList(),
+        ) { _ -> }
+            .use { handle ->
+                handle.close()
+                handle.close()
+                assertFalse(handle.pointer.isNull)
+            }
+    }
+
+    @Test
     fun creates_object_arg_unit_delegate_handle() {
         val iid = guidOf("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
         var captured: ComPtr? = null

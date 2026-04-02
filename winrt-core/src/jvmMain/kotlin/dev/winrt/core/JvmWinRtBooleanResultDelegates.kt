@@ -16,6 +16,7 @@ import java.lang.invoke.MethodHandles
 import java.lang.invoke.MethodType
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal object JvmWinRtBooleanResultDelegates {
     fun createDelegate(
@@ -231,8 +232,12 @@ internal object JvmWinRtBooleanResultDelegates {
         instance.set(ValueLayout.ADDRESS, 0, vtable)
         return object : WinRtDelegateHandle {
             override val pointer: ComPtr = ComPtr(AbiIntPtr(instance.address()))
+            private val closed = AtomicBoolean(false)
 
             override fun close() {
+                if (!closed.compareAndSet(false, true)) {
+                    return
+                }
                 states.remove(instance.address())
                 arena.close()
             }
