@@ -104,7 +104,7 @@ internal class InterfaceTypeRenderer(
                         PropertySpec.builder("winRtHasCurrent", PoetSymbols.winRtBooleanClass)
                             .getter(
                                 FunSpec.getterBuilder()
-                                    .addStatement("return %M(%T.invokeBooleanGetter(pointer, 7).getOrThrow())", PoetSymbols.winRtBooleanMember, PoetSymbols.platformComInteropClass)
+                                    .addStatement("return %M(%L)", PoetSymbols.winRtBooleanMember, AbiCallCatalog.booleanGetter(7))
                                     .build(),
                             )
                             .build(),

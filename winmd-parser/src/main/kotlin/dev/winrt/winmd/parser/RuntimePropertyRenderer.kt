@@ -99,11 +99,7 @@ internal class RuntimePropertyRenderer(
                 )
             }
             RuntimePropertyGetterRuleFamily.BOOLEAN -> ScalarRuntimePropertyPlan { getterVtableIndex ->
-                CodeBlock.of(
-                    "%T(%L)",
-                    PoetSymbols.winRtBooleanClass,
-                    AbiCallCatalog.booleanMethod(getterVtableIndex),
-                )
+                CodeBlock.of("%T(%L)", PoetSymbols.winRtBooleanClass, AbiCallCatalog.booleanGetter(getterVtableIndex))
             }
             RuntimePropertyGetterRuleFamily.GUID -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 CodeBlock.of(
