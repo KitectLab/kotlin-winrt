@@ -95,26 +95,69 @@ internal class AsyncMethodRuleRegistry(
     }
 
     private fun asyncInvocation(method: WinMdMethod): String? {
+        val vtableIndex = method.vtableIndex ?: return null
         val parameterNames = method.parameters.map { it.name.replaceFirstChar(Char::lowercase) }
         val parameterTypes = method.parameters.map { it.type }
-        return when {
-            parameterTypes.isEmpty() ->
-                "%T.invokeObjectMethod(pointer, ${method.vtableIndex}).getOrThrow()"
-            parameterTypes == listOf("String") ->
-                "%T.invokeObjectMethodWithStringArg(pointer, ${method.vtableIndex}, ${parameterNames.single()}).getOrThrow()"
-            parameterTypes.size == 1 && supportsAsyncObjectInput(parameterTypes.single()) ->
-                "%T.invokeObjectMethodWithObjectArg(pointer, ${method.vtableIndex}, ${parameterNames.single()}.pointer).getOrThrow()"
-            parameterTypes.size == 2 &&
-                supportsAsyncObjectInput(parameterTypes[0]) &&
-                parameterTypes[1] == "String" ->
-                "dev.winrt.kom.requireObject(%T.invokeMethodWithObjectAndStringArgs(pointer, ${method.vtableIndex}, dev.winrt.kom.ComMethodResultKind.OBJECT, ${parameterNames[0]}.pointer, ${parameterNames[1]}).getOrThrow())"
-            parameterTypes.size == 2 &&
-                parameterTypes[0] == "String" &&
-                supportsAsyncObjectInput(parameterTypes[1]) ->
-                "dev.winrt.kom.requireObject(%T.invokeMethodWithStringAndObjectArgs(pointer, ${method.vtableIndex}, dev.winrt.kom.ComMethodResultKind.OBJECT, ${parameterNames[0]}, ${parameterNames[1]}.pointer).getOrThrow())"
-            parameterTypes.size == 2 && parameterTypes.all(::supportsAsyncObjectInput) ->
-                "dev.winrt.kom.requireObject(%T.invokeMethodWithTwoObjectArgs(pointer, ${method.vtableIndex}, dev.winrt.kom.ComMethodResultKind.OBJECT, ${parameterNames[0]}.pointer, ${parameterNames[1]}.pointer).getOrThrow())"
+        val parameterCategories = methodParameterCategories(parameterTypes, ::supportsAsyncObjectInput) ?: return null
+        return when (parameterCategories.size) {
+            0 -> "%T.invokeObjectMethod(pointer, $vtableIndex).getOrThrow()"
+            1 -> asyncUnaryInvocation(parameterCategories.single(), parameterNames.single(), vtableIndex)
+            2 -> asyncTwoArgumentInvocation(
+                parameterCategories[0],
+                parameterCategories[1],
+                parameterNames[0],
+                parameterNames[1],
+                vtableIndex,
+            )
             else -> null
+        }
+    }
+
+    private fun asyncUnaryInvocation(
+        category: MethodParameterCategory,
+        parameterName: String,
+        vtableIndex: Int,
+    ): String? {
+        return when (category) {
+            MethodParameterCategory.STRING ->
+                "%T.invokeObjectMethodWithStringArg(pointer, $vtableIndex, $parameterName).getOrThrow()"
+            MethodParameterCategory.OBJECT ->
+                "%T.invokeObjectMethodWithObjectArg(pointer, $vtableIndex, $parameterName.pointer).getOrThrow()"
+            MethodParameterCategory.INT32 ->
+                "%T.invokeObjectMethodWithInt32Arg(pointer, $vtableIndex, $parameterName.value).getOrThrow()"
+            MethodParameterCategory.UINT32 ->
+                "%T.invokeObjectMethodWithUInt32Arg(pointer, $vtableIndex, $parameterName.value).getOrThrow()"
+            MethodParameterCategory.BOOLEAN ->
+                "%T.invokeObjectMethodWithBooleanArg(pointer, $vtableIndex, $parameterName.value).getOrThrow()"
+            MethodParameterCategory.INT64,
+            MethodParameterCategory.EVENT_REGISTRATION_TOKEN ->
+                "%T.invokeObjectMethodWithInt64Arg(pointer, $vtableIndex, $parameterName.value).getOrThrow()"
+        }
+    }
+
+    private fun asyncTwoArgumentInvocation(
+        first: MethodParameterCategory,
+        second: MethodParameterCategory,
+        firstName: String,
+        secondName: String,
+        vtableIndex: Int,
+    ): String? {
+        val firstToken = first.toAbiToken().callNamePart()
+        val secondToken = second.toAbiToken().callNamePart()
+        val firstArgument = asyncArgumentExpression(first, firstName)
+        val secondArgument = asyncArgumentExpression(second, secondName)
+        return "dev.winrt.kom.requireObject(%T.invokeMethodWith${firstToken}And${secondToken}Args(pointer, $vtableIndex, dev.winrt.kom.ComMethodResultKind.OBJECT, $firstArgument, $secondArgument).getOrThrow())"
+    }
+
+    private fun asyncArgumentExpression(category: MethodParameterCategory, parameterName: String): String {
+        return when (category) {
+            MethodParameterCategory.STRING -> parameterName
+            MethodParameterCategory.INT32,
+            MethodParameterCategory.UINT32,
+            MethodParameterCategory.BOOLEAN,
+            MethodParameterCategory.INT64,
+            MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$parameterName.value"
+            MethodParameterCategory.OBJECT -> "$parameterName.pointer"
         }
     }
 

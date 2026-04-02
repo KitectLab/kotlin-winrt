@@ -7886,6 +7886,97 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_async_method_projections_for_scalar_parameters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncAction",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "5a648006-843a-4da9-865b-9d26e5dfad7b",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "fcdcf02c-e5d8-4478-915a-4d90b74b83a5",
+                            genericParameters = listOf("TResult"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Async",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IScalarAsyncSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-eeee-ffff-1111-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "StoreAsync",
+                                    returnType = "Windows.Foundation.IAsyncAction",
+                                    parameters = listOf(WinMdParameter("count", "Int32")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                        WinMdParameter("flags", "Int32"),
+                                    ),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "ScalarAsyncSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Async.IScalarAsyncSource",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "StoreAsync",
+                                    returnType = "Windows.Foundation.IAsyncAction",
+                                    parameters = listOf(WinMdParameter("count", "Int32")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                        WinMdParameter("flags", "Int32"),
+                                    ),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Async/IScalarAsyncSource.kt" }.content
+        val runtimeBinding = files.first { it.relativePath == "Example/Async/ScalarAsyncSource.kt" }.content
+        val normalizedRuntimeBinding = runtimeBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(interfaceBinding.contains("fun storeAsync(count: Int32): IAsyncAction"))
+        assertTrue(interfaceBinding.contains("suspend fun storeAsyncAwait(count: Int32)"))
+        assertTrue(interfaceBinding.contains("fun readAsync(name: String, flags: Int32): IAsyncOperation<String>"))
+        assertTrue(interfaceBinding.contains("suspend fun readAsyncAwait(name: String, flags: Int32): String"))
+
+        assertTrue(normalizedRuntimeBinding.contains("PlatformComInterop.invokeObjectMethodWithInt32Arg(pointer,6,count.value)"))
+        assertTrue(normalizedRuntimeBinding.contains("PlatformComInterop.invokeMethodWithStringAndInt32Args(pointer,7,dev.winrt.kom.ComMethodResultKind.OBJECT,name,flags.value)"))
+    }
+
+    @Test
     fun async_operation_object_results_use_projected_result_descriptors() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

@@ -103,6 +103,15 @@ internal enum class MethodParameterAbiToken {
     INT64,
 }
 
+internal fun MethodParameterAbiToken.callNamePart(): String =
+    when (this) {
+        MethodParameterAbiToken.BOOLEAN -> "Boolean"
+        MethodParameterAbiToken.STRING -> "String"
+        MethodParameterAbiToken.OBJECT -> "Object"
+        MethodParameterAbiToken.INT32 -> "Int32"
+        MethodParameterAbiToken.INT64 -> "Int64"
+    }
+
 internal enum class MethodAbiToken {
     HSTRING,
     UNIT,
