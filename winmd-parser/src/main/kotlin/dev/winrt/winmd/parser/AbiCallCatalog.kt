@@ -173,7 +173,7 @@ internal object AbiCallCatalog {
         unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.INT64, vtableIndex, "${argumentName}.value")
 
     fun unitMethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
-        unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.STRING, vtableIndex, argumentName)
+        singleArgumentCall("invokeStringSetter", vtableIndex, argumentName)
 
     fun unitMethodWithTwoStrings(vtableIndex: Int, firstArgumentName: String, secondArgumentName: String): CodeBlock =
         CodeBlock.of(

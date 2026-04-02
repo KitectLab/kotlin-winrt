@@ -257,18 +257,6 @@ internal class RuntimeTypeRenderer(
         }
     }
 
-    private fun helperAccessorName(typeName: String): String {
-        val rawName = typeName.removePrefix("I")
-        Regex(".*(Statics|Factory)(\\d*)$")
-            .matchEntire(rawName)
-            ?.let { match ->
-                val kind = match.groupValues[1].replaceFirstChar(Char::lowercase)
-                val version = match.groupValues[2]
-                return kind + version
-            }
-        return rawName.replaceFirstChar(Char::lowercase)
-    }
-
     private fun renderEventSlotMembers(methods: List<WinMdMethod>, currentNamespace: String): RuntimeEventMembers {
         val methodsByName = methods.associateBy { it.name }
         val plans = methods.mapNotNull { addMethod ->

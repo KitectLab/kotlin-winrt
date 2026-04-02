@@ -496,18 +496,6 @@ internal class RuntimeCompanionRenderer(
         return method.name.replaceFirstChar { it.lowercase() }
     }
 
-    private fun helperAccessorName(typeName: String): String {
-        val rawName = typeName.removePrefix("I")
-        Regex(".*(Statics|Factory)(\\d*)$")
-            .matchEntire(rawName)
-            ?.let { match ->
-                val kind = match.groupValues[1].replaceFirstChar(Char::lowercase)
-                val version = match.groupValues[2]
-                return kind + version
-            }
-        return rawName.replaceFirstChar(Char::lowercase)
-    }
-
     private fun exposedTypeName(typeName: String, currentNamespace: String): TypeName {
         val runtimeType = typeRegistry.findType(typeName, currentNamespace)
         if (runtimeType != null) {
