@@ -13,56 +13,43 @@ public class AsyncResultType<TResult> internal constructor(
 
 public object AsyncResultTypes {
   public fun <TResult> signature(signature: String): AsyncResultType<TResult> =
-      AsyncResultType(signature) { pointer, vtableIndex ->
-        decodeScalar(signature, pointer, vtableIndex)
-      }
+      create(signature) { pointer, vtableIndex -> decodeScalar(signature, pointer, vtableIndex) }
 
   public fun <TResult> projected(
     signature: String,
     decode: (ComPtr) -> TResult,
-  ): AsyncResultType<TResult> = AsyncResultType(signature) { pointer, vtableIndex ->
-    decode(PlatformComInterop.invokeObjectMethod(pointer, vtableIndex).getOrThrow())
-  }
+  ): AsyncResultType<TResult> =
+      create(signature) { pointer, vtableIndex ->
+        decode(PlatformComInterop.invokeObjectMethod(pointer, vtableIndex).getOrThrow())
+      }
 
   public val string: AsyncResultType<String> =
-      AsyncResultType(WinRtTypeSignature.string()) { pointer, vtableIndex ->
+      create(WinRtTypeSignature.string()) { pointer, vtableIndex ->
         PlatformComInterop.invokeHStringMethod(pointer, vtableIndex).getOrThrow().use { it.toKotlinString() }
       }
 
   public val boolean: AsyncResultType<Boolean> =
-      AsyncResultType("b1") { pointer, vtableIndex ->
-        PlatformComInterop.invokeBooleanGetter(pointer, vtableIndex).getOrThrow()
-      }
+      create("b1") { pointer, vtableIndex -> PlatformComInterop.invokeBooleanGetter(pointer, vtableIndex).getOrThrow() }
 
   public val int32: AsyncResultType<Int> =
-      AsyncResultType("i4") { pointer, vtableIndex ->
-        PlatformComInterop.invokeInt32Method(pointer, vtableIndex).getOrThrow()
-      }
+      create("i4") { pointer, vtableIndex -> PlatformComInterop.invokeInt32Method(pointer, vtableIndex).getOrThrow() }
 
   public val uint32: AsyncResultType<UInt32> =
-      AsyncResultType("u4") { pointer, vtableIndex ->
+      create("u4") { pointer, vtableIndex ->
         UInt32(PlatformComInterop.invokeUInt32Method(pointer, vtableIndex).getOrThrow())
       }
 
   public val int64: AsyncResultType<Long> =
-      AsyncResultType("i8") { pointer, vtableIndex ->
-        PlatformComInterop.invokeInt64Getter(pointer, vtableIndex).getOrThrow()
-      }
+      create("i8") { pointer, vtableIndex -> PlatformComInterop.invokeInt64Getter(pointer, vtableIndex).getOrThrow() }
 
   public val uint64: AsyncResultType<ULong> =
-      AsyncResultType("u8") { pointer, vtableIndex ->
-        PlatformComInterop.invokeUInt64Method(pointer, vtableIndex).getOrThrow()
-      }
+      create("u8") { pointer, vtableIndex -> PlatformComInterop.invokeUInt64Method(pointer, vtableIndex).getOrThrow() }
 
   public val float32: AsyncResultType<Float> =
-      AsyncResultType("f4") { pointer, vtableIndex ->
-        PlatformComInterop.invokeFloat32Method(pointer, vtableIndex).getOrThrow()
-      }
+      create("f4") { pointer, vtableIndex -> PlatformComInterop.invokeFloat32Method(pointer, vtableIndex).getOrThrow() }
 
   public val float64: AsyncResultType<Double> =
-      AsyncResultType("f8") { pointer, vtableIndex ->
-        PlatformComInterop.invokeFloat64Method(pointer, vtableIndex).getOrThrow()
-      }
+      create("f8") { pointer, vtableIndex -> PlatformComInterop.invokeFloat64Method(pointer, vtableIndex).getOrThrow() }
 
   public fun <TResult> interfaceType(
     metadata: WinRtInterfaceMetadata,
@@ -73,9 +60,14 @@ public object AsyncResultTypes {
   )
 
   public fun <TResult> interfaceType(metadata: WinRtInterfaceMetadata): AsyncResultType<TResult> =
-      AsyncResultType(WinRtTypeSignature.guid(metadata.iid.toString())) { _, _ ->
+      create(WinRtTypeSignature.guid(metadata.iid.toString())) { _, _ ->
         error("Async interface result projection requires an explicit decoder for ${metadata.qualifiedName}")
       }
+
+  private fun <TResult> create(
+    signature: String,
+    getResults: (ComPtr, Int) -> TResult,
+  ): AsyncResultType<TResult> = AsyncResultType(signature, getResults)
 
   @Suppress("UNCHECKED_CAST")
   private fun <TResult> decodeScalar(
