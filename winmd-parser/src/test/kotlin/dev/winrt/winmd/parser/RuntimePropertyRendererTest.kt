@@ -113,4 +113,39 @@ class RuntimePropertyRendererTest {
         assertTrue(binding.contains("valenabled:Boolean?"))
         assertTrue(binding.contains("if(pointer.isNull)nullelseWinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer,6).getOrThrow())"))
     }
+
+    @Test
+    fun renders_ireference_uint32_properties_as_nullable_uint_accessors() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "UIntCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Count",
+                                    type = "IReference<UInt32>",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/UIntCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("valcount:UInt?"))
+        assertTrue(binding.contains("if(pointer.isNull)nullelseUInt32(PlatformComInterop.invokeUInt32Method(pointer,6).getOrThrow())"))
+    }
 }
