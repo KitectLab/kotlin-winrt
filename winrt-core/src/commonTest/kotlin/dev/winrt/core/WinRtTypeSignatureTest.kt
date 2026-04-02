@@ -41,6 +41,20 @@ class WinRtTypeSignatureTest {
     }
 
     @Test
+    fun builds_parameterized_interface_signature_for_nested_generic_argument() {
+        assertEquals(
+            "pinterface({e3b0c442-98fc-1c14-9afb-f4c8996fb924};pinterface({61c17706-2d65-11e0-9ae8-d48564015472};string))",
+            WinRtTypeSignature.parameterizedInterface(
+                "e3b0c442-98fc-1c14-9afb-f4c8996fb924",
+                WinRtTypeSignature.parameterizedInterface(
+                    "61c17706-2d65-11e0-9ae8-d48564015472",
+                    WinRtTypeSignature.string(),
+                ),
+            ),
+        )
+    }
+
+    @Test
     fun builds_enum_signature_using_default_underlying_type() {
         assertEquals(
             "enum(Windows.Foundation.AsyncStatus;i4)",
