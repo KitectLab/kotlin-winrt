@@ -19,16 +19,14 @@ private val eFail = HResult(0x80004005.toInt())
 public fun CoroutineScope.asyncAction(
   block: suspend CoroutineScope.() -> Unit,
 ): IAsyncAction {
-  val job = launch(block = block)
-  return LocalAsyncAction(job)
+  return asyncActionInternal(block = block)
 }
 
 public fun CoroutineScope.asyncAction(
   context: CoroutineContext,
   block: suspend CoroutineScope.() -> Unit,
 ): IAsyncAction {
-  val job = launch(context = context, block = block)
-  return LocalAsyncAction(job)
+  return asyncActionInternal(context = context, block = block)
 }
 
 public fun CoroutineScope.asyncAction(
@@ -47,10 +45,9 @@ public fun <TResult> CoroutineScope.asyncOperation(
   resultSignature: String,
   block: suspend CoroutineScope.() -> TResult,
 ): IAsyncOperation<TResult> {
-  val deferred = async(block = block)
-  return LocalAsyncOperation(
-      deferred = deferred,
+  return asyncOperationInternal(
       resultSignature = resultSignature,
+      block = block,
   )
 }
 
@@ -73,10 +70,10 @@ public fun <TResult> CoroutineScope.asyncOperation(
   context: CoroutineContext,
   block: suspend CoroutineScope.() -> TResult,
 ): IAsyncOperation<TResult> {
-  val deferred = async(context = context, block = block)
-  return LocalAsyncOperation(
-      deferred = deferred,
+  return asyncOperationInternal(
       resultSignature = resultSignature,
+      context = context,
+      block = block,
   )
 }
 
@@ -102,8 +99,21 @@ public fun <TProgress> CoroutineScope.asyncActionWithProgress(
   progressArgumentKind: WinRtDelegateValueKind,
   block: suspend CoroutineScope.(reportProgress: (TProgress) -> Unit) -> Unit,
 ): IAsyncActionWithProgress<TProgress> {
+  return asyncActionWithProgressInternal(
+      progressSignature = progressSignature,
+      progressArgumentKind = progressArgumentKind,
+      block = block,
+  )
+}
+
+private fun <TProgress> CoroutineScope.asyncActionWithProgressInternal(
+  progressSignature: String,
+  progressArgumentKind: WinRtDelegateValueKind,
+  context: CoroutineContext? = null,
+  block: suspend CoroutineScope.(reportProgress: (TProgress) -> Unit) -> Unit,
+): IAsyncActionWithProgress<TProgress> {
   var progressEmitter: ((TProgress) -> Unit)? = null
-  val job = launch(start = CoroutineStart.LAZY) {
+  val job = launch(context = context ?: coroutineContext, start = CoroutineStart.LAZY) {
     block { progress ->
       progressEmitter?.invoke(progress)
     }
@@ -123,7 +133,7 @@ public fun <TProgress> CoroutineScope.asyncActionWithProgress(
   context: CoroutineContext,
   block: suspend CoroutineScope.(reportProgress: (TProgress) -> Unit) -> Unit,
 ): IAsyncActionWithProgress<TProgress> {
-  return asyncActionWithProgress(
+  return asyncActionWithProgressInternal(
       progressSignature = progressType.signature,
       progressArgumentKind = progressType.argumentKind,
       context = context,
@@ -144,20 +154,12 @@ public fun <TProgress> CoroutineScope.asyncActionWithProgress(
   context: CoroutineContext,
   block: suspend CoroutineScope.(reportProgress: (TProgress) -> Unit) -> Unit,
 ): IAsyncActionWithProgress<TProgress> {
-  var progressEmitter: ((TProgress) -> Unit)? = null
-  val job = launch(context = context, start = CoroutineStart.LAZY) {
-    block { progress ->
-      progressEmitter?.invoke(progress)
-    }
-  }
-  val action = LocalAsyncActionWithProgress<TProgress>(
-      job = job,
+  return asyncActionWithProgressInternal(
       progressSignature = progressSignature,
       progressArgumentKind = progressArgumentKind,
+      context = context,
+      block = block,
   )
-  progressEmitter = { progress -> action.emitProgress(progress) }
-  job.start()
-  return action
 }
 
 public fun <TProgress> CoroutineScope.asyncActionWithProgress(
@@ -187,8 +189,23 @@ public fun <TResult, TProgress> CoroutineScope.asyncOperationWithProgress(
   progressArgumentKind: WinRtDelegateValueKind,
   block: suspend CoroutineScope.(reportProgress: (TProgress) -> Unit) -> TResult,
 ): IAsyncOperationWithProgress<TResult, TProgress> {
+  return asyncOperationWithProgressInternal(
+      resultSignature = resultSignature,
+      progressSignature = progressSignature,
+      progressArgumentKind = progressArgumentKind,
+      block = block,
+  )
+}
+
+private fun <TResult, TProgress> CoroutineScope.asyncOperationWithProgressInternal(
+  resultSignature: String,
+  progressSignature: String,
+  progressArgumentKind: WinRtDelegateValueKind,
+  context: CoroutineContext? = null,
+  block: suspend CoroutineScope.(reportProgress: (TProgress) -> Unit) -> TResult,
+): IAsyncOperationWithProgress<TResult, TProgress> {
   var progressEmitter: ((TProgress) -> Unit)? = null
-  val deferred = async(start = CoroutineStart.LAZY) {
+  val deferred = async(context = context ?: coroutineContext, start = CoroutineStart.LAZY) {
     block { progress ->
       progressEmitter?.invoke(progress)
     }
@@ -210,7 +227,7 @@ public fun <TResult, TProgress> CoroutineScope.asyncOperationWithProgress(
   context: CoroutineContext,
   block: suspend CoroutineScope.(reportProgress: (TProgress) -> Unit) -> TResult,
 ): IAsyncOperationWithProgress<TResult, TProgress> {
-  return asyncOperationWithProgress(
+  return asyncOperationWithProgressInternal(
       resultSignature = resultType.signature,
       progressSignature = progressType.signature,
       progressArgumentKind = progressType.argumentKind,
@@ -234,21 +251,13 @@ public fun <TResult, TProgress> CoroutineScope.asyncOperationWithProgress(
   context: CoroutineContext,
   block: suspend CoroutineScope.(reportProgress: (TProgress) -> Unit) -> TResult,
 ): IAsyncOperationWithProgress<TResult, TProgress> {
-  var progressEmitter: ((TProgress) -> Unit)? = null
-  val deferred = async(context = context, start = CoroutineStart.LAZY) {
-    block { progress ->
-      progressEmitter?.invoke(progress)
-    }
-  }
-  val operation = LocalAsyncOperationWithProgress<TResult, TProgress>(
-      deferred = deferred,
+  return asyncOperationWithProgressInternal(
       resultSignature = resultSignature,
       progressSignature = progressSignature,
       progressArgumentKind = progressArgumentKind,
+      context = context,
+      block = block,
   )
-  progressEmitter = { progress -> operation.emitProgress(progress) }
-  deferred.start()
-  return operation
 }
 
 public fun <TResult, TProgress> CoroutineScope.asyncOperationWithProgress(
@@ -265,6 +274,26 @@ public fun <TResult, TProgress> CoroutineScope.asyncOperationWithProgress(
         context = queue.asCoroutineContext(),
         block = block,
     )
+
+private fun CoroutineScope.asyncActionInternal(
+  context: CoroutineContext = coroutineContext,
+  block: suspend CoroutineScope.() -> Unit,
+): IAsyncAction {
+  val job = launch(context = context, block = block)
+  return LocalAsyncAction(job)
+}
+
+private fun <TResult> CoroutineScope.asyncOperationInternal(
+  resultSignature: String,
+  context: CoroutineContext = coroutineContext,
+  block: suspend CoroutineScope.() -> TResult,
+): IAsyncOperation<TResult> {
+  val deferred = async(context = context, block = block)
+  return LocalAsyncOperation(
+      deferred = deferred,
+      resultSignature = resultSignature,
+  )
+}
 
 private class LocalAsyncAction(
   private val job: Job,
