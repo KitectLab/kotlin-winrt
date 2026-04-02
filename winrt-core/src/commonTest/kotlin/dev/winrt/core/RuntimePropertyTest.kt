@@ -112,6 +112,26 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun inspectable_cached_query_interface_runs_only_once_per_iid() {
+        val iid = Guid(0, 0, 0, byteArrayOf(9, 8, 7, 6, 5, 4, 3, 2))
+        val subject = object : Inspectable(ComPtr.NULL) {
+            var queryCount = 0
+
+            override fun queryInterface(iid: Guid): ComPtr {
+                queryCount += 1
+                return ComPtr.NULL
+            }
+        }
+
+        val first = subject.cachedQueryInterface(iid)
+        val second = subject.cachedQueryInterface(iid)
+
+        assertEquals(ComPtr.NULL, first)
+        assertEquals(ComPtr.NULL, second)
+        assertEquals(1, subject.queryCount)
+    }
+
+    @Test
     fun projection_registry_maps_projected_types_to_helper_keys() {
         WinRtProjectionRegistry.resetForTests()
 
