@@ -95,11 +95,34 @@ This is a pragmatic estimate, not a formal benchmark.
 - Verify generic interface identity and parameterized IID behavior against reference projection rules.
 - Harden delegate/event lifetime handling.
 
+Concrete tasks:
+
+- Review `winrt-core/src/commonMain/kotlin/dev/winrt/core/Inspectable.kt` and `winrt-core/src/commonMain/kotlin/dev/winrt/core/InterfaceProjection.kt` against the reference rules for object identity and repeated projection.
+- Review `winrt-core/src/commonMain/kotlin/dev/winrt/core/BindingMetadata.kt` for missing activation kinds or metadata needed by runtime classes.
+- Review `winrt-core/src/commonMain/kotlin/dev/winrt/core/WinRtProjectionRegistry.kt` and `winrt-core/src/commonMain/kotlin/dev/winrt/core/WinRtTypeSignature.kt` for generic identity and helper mapping gaps.
+- Review `winrt-core/src/commonMain/kotlin/dev/winrt/core/WinRtDelegateBridge.kt` and platform variants for delegate ownership and release behavior.
+- Add or extend tests in:
+  - `winrt-core/src/jvmTest/kotlin/dev/winrt/core/ParameterizedInterfaceIdTest.kt`
+  - `winrt-core/src/jvmTest/kotlin/dev/winrt/core/WinRtDelegateBridgeTest.kt`
+  - `winrt-core/src/commonTest/kotlin/dev/winrt/core/RuntimePropertyTest.kt`
+
 ### Phase 2: Broaden Coverage
 
 - Expand checked-in bindings to a larger WinMD surface.
 - Prioritize common SDK namespaces and high-value WinRT APIs.
 - Add parity tests for more generated types.
+
+Concrete tasks:
+
+- Expand the tracked file set in `winmd-parser/src/test/kotlin/dev/winrt/winmd/parser/CheckedInBindingsParityTest.kt`.
+- Add new generated projections under `generated-winrt-bindings/src/commonMain/kotlin` only when the runtime path is validated.
+- Prefer namespaces with broad ecosystem value:
+  - `Windows.Foundation.Collections`
+  - `Windows.Storage`
+  - `Windows.UI.Xaml` or `Microsoft.UI.Xaml`
+  - `Windows.Web.Http`
+  - `Windows.ApplicationModel`
+- Add smoke tests under `generated-winrt-bindings/src/jvmTest/kotlin` for every new high-value namespace.
 
 ### Phase 3: ABI Hardening
 
@@ -107,11 +130,30 @@ This is a pragmatic estimate, not a formal benchmark.
 - Validate HSTRING and HRESULT translation paths.
 - Exercise cross-platform behavior more systematically.
 
+Concrete tasks:
+
+- Review `kom/src/commonMain/kotlin/dev/winrt/kom/HResult.kt`, `kom/src/commonMain/kotlin/dev/winrt/kom/HString.kt`, and `kom/src/commonMain/kotlin/dev/winrt/kom/ComPtr.kt` for ownership and release boundaries.
+- Review `kom/src/jvmMain/kotlin/dev/winrt/kom/JvmPlatform.kt` and `kom/src/mingwX64Main/kotlin/dev/winrt/kom/MingwPlatform.kt` for parity in pointer and string handling.
+- Add tests for:
+  - HSTRING round-trip
+  - HRESULT translation
+  - pointer release behavior
+  - repeated `QueryInterface` stability
+- Validate the changes with the Windows Gradle wrapper path used in this repo.
+
 ### Phase 4: Projection Consistency
 
 - Reduce special-case logic in the generator where a generalized rule is possible.
 - Make runtime helpers the canonical implementation of WinRT-observable behavior.
 - Keep generated bindings as thin as possible while preserving projection rules.
+
+Concrete tasks:
+
+- Review `winmd-parser/src/main/kotlin/dev/winrt/winmd/parser/RuntimeTypeRenderer.kt`.
+- Review `winmd-parser/src/main/kotlin/dev/winrt/winmd/parser/InterfaceTypeRenderer.kt`.
+- Review `winmd-parser/src/main/kotlin/dev/winrt/winmd/parser/RuntimePropertyRenderer.kt` and `RuntimeMethodRenderer.kt` for duplicated special-case logic.
+- Move semantic rules into runtime helpers where the same behavior should apply across many generated bindings.
+- Preserve generated code only for shape-specific or metadata-specific differences.
 
 ## Execution Order
 
@@ -121,6 +163,28 @@ If the goal is to move toward `CsWinRT` parity efficiently, the practical order 
 2. Generator normalization in `winmd-parser`
 3. Coverage expansion in `generated-winrt-bindings`
 4. ABI hardening in `kom`
+
+## Priority List
+
+If working item by item, the highest-value order is:
+
+1. Default interface and projection stability
+2. Generic type identity and parameterized IID correctness
+3. Delegate and event lifetime correctness
+4. Activation and static member normalization
+5. ABI hardening
+6. Coverage expansion
+
+## Acceptance Criteria
+
+This effort is moving in the right direction when:
+
+- New projected types can be added without inventing new special cases in the generator.
+- Repeated projections of the same WinRT object remain stable.
+- Generic interfaces and delegates produce stable identity and helper mappings.
+- Delegate and event handlers are cleaned up deterministically.
+- Checked-in bindings can be regenerated and compared against the tracked surface without surprise diffs.
+- Runtime and generator tests pass on Windows using the repo's intended Gradle path.
 
 ## Notes
 
