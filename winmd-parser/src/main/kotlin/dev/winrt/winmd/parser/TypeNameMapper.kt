@@ -7,7 +7,10 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asTypeName
 
+internal const val WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET = 116444736000000000L
+
 internal class TypeNameMapper {
+
     fun mapTypeName(
         typeName: String,
         currentNamespace: String,
@@ -56,7 +59,7 @@ internal class TypeNameMapper {
             rendered.endsWith(".UInt64") -> CodeBlock.of("0uL")
             rendered.endsWith(".Float32") -> CodeBlock.of("0f")
             rendered.endsWith(".Float64") -> CodeBlock.of("0.0")
-            rendered.endsWith(".DateTime") -> CodeBlock.of("%T(0)", PoetSymbols.dateTimeClass)
+            rendered.endsWith(".DateTime") -> CodeBlock.of("%T.fromEpochSeconds(0)", PoetSymbols.dateTimeClass)
             rendered.endsWith(".TimeSpan") -> CodeBlock.of("%T.parse(" + "\"0s\"" + ")", PoetSymbols.timeSpanClass)
             rendered.endsWith(".EventRegistrationToken") -> CodeBlock.of("%T(0)", PoetSymbols.eventRegistrationTokenClass)
             rendered.endsWith(".Uuid") -> CodeBlock.of("%T.parse(%S)", PoetSymbols.guidValueClass, "00000000000000000000000000000000")

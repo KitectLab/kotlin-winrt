@@ -873,10 +873,12 @@ internal class InterfaceTypeRenderer(
                 )
             InterfacePropertyRuleFamily.DATE_TIME ->
                 getterBuilder.addStatement(
-                    "return %T(%T.invokeInt64Getter(pointer, %L).getOrThrow())",
-                    PoetSymbols.dateTimeClass,
+                    "val ticks = %T.invokeInt64Getter(pointer, %L).getOrThrow()\nreturn %T.fromEpochSeconds((ticks - %L) / 10000000L, ((ticks - %L) %% 10000000L * 100).toInt())",
                     PoetSymbols.platformComInteropClass,
                     getterVtableIndex,
+                    PoetSymbols.dateTimeClass,
+                    WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
+                    WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
                 )
             InterfacePropertyRuleFamily.TIME_SPAN ->
                 getterBuilder.addStatement(

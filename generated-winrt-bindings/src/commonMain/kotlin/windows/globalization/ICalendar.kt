@@ -2,7 +2,6 @@ package windows.globalization
 
 import dev.winrt.core.Inspectable
 import dev.winrt.core.Int32
-import dev.winrt.core.DateTime
 import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.WinRtInterfaceProjection
@@ -12,6 +11,8 @@ import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
+import kotlin.time.Duration
+import kotlin.time.Instant
 import windows.foundation.collections.StringVectorView
 
 public open class ICalendar(
@@ -20,7 +21,7 @@ public open class ICalendar(
   public val year: Int32
     get() = get_Year()
 
-  public val dateTime: DateTime
+  public val dateTime: Instant
     get() = get_DateTime()
 
   public var month: Int32
@@ -234,11 +235,11 @@ public open class ICalendar(
     PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 32, years.value).getOrThrow()
   }
 
-  public fun get_DateTime(): DateTime =
-      DateTime(PlatformComInterop.invokeInt64Getter(pointer, 16).getOrThrow())
+  public fun get_DateTime(): Instant =
+      Instant.fromEpochSeconds((PlatformComInterop.invokeInt64Getter(pointer, 16).getOrThrow() - 116444736000000000) / 10000000L, ((PlatformComInterop.invokeInt64Getter(pointer, 16).getOrThrow() - 116444736000000000) % 10000000L * 100).toInt())
 
-  public fun setDateTime(value: DateTime) {
-    PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 17, value.universalTime).getOrThrow()
+  public fun setDateTime(value: Instant) {
+    PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 17, (((value.epochSeconds * 10000000L) + (value.nanosecondsOfSecond / 100)) + 116444736000000000)).getOrThrow()
   }
 
   public fun setToNow() {

@@ -11,7 +11,7 @@ internal object PoetSymbols {
     val mapEntryClass = ClassName("kotlin.collections", "Map", "Entry")
     val mutableListClass = ClassName("kotlin.collections", "MutableList")
     val mutableMapClass = ClassName("kotlin.collections", "MutableMap")
-    val dateTimeClass = ClassName("dev.winrt.core", "DateTime")
+    val dateTimeClass = ClassName("kotlin.time", "Instant")
     val eventRegistrationTokenClass = ClassName("dev.winrt.core", "EventRegistrationToken")
     val float32Class = ClassName("dev.winrt.core", "Float32")
     val float64Class = ClassName("dev.winrt.core", "Float64")

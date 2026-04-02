@@ -1,6 +1,7 @@
 package microsoft.ui.xaml
 
-import dev.winrt.core.DateTime
+import kotlin.time.Duration
+import kotlin.time.Instant
 import dev.winrt.core.EventRegistrationToken
 import dev.winrt.core.RuntimeClassId
 import dev.winrt.core.RuntimeProperty
@@ -15,8 +16,8 @@ open class Window(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
     constructor() : this(Companion.activateInstance().pointer)
 
     private val backingIsVisible = RuntimeProperty(WinRtBoolean.FALSE)
-    private val backingCreatedAt = RuntimeProperty(DateTime(0))
-    private val backingLifetime = RuntimeProperty(TimeSpan(0))
+    private val backingCreatedAt = RuntimeProperty(Instant.fromEpochSeconds(0))
+    private val backingLifetime = RuntimeProperty(Duration.parse("0s"))
     private val backingLastToken = RuntimeProperty(EventRegistrationToken(0))
     private val backingOptionalTitle = RuntimeProperty<String?>(null)
 
@@ -26,16 +27,16 @@ open class Window(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
             return WinRtBoolean(dev.winrt.kom.PlatformComInterop.invokeBooleanGetter(pointer, 8).getOrThrow())
         }
 
-    val createdAt: DateTime
+    val createdAt: Instant
         get() {
             if (pointer.isNull) return backingCreatedAt.get()
-            return DateTime(dev.winrt.kom.PlatformComInterop.invokeInt64Getter(pointer, 10).getOrThrow())
+            return Instant.fromEpochSeconds((dev.winrt.kom.PlatformComInterop.invokeInt64Getter(pointer, 10).getOrThrow() - 116444736000000000) / 10000000L, ((dev.winrt.kom.PlatformComInterop.invokeInt64Getter(pointer, 10).getOrThrow() - 116444736000000000) % 10000000L * 100).toInt())
         }
 
-    val lifetime: TimeSpan
+    val lifetime: Duration
         get() {
             if (pointer.isNull) return backingLifetime.get()
-            return TimeSpan(dev.winrt.kom.PlatformComInterop.invokeInt64Getter(pointer, 11).getOrThrow())
+            return Duration.parse("0s")
         }
 
     val lastToken: EventRegistrationToken
