@@ -295,4 +295,35 @@ class RuntimePropertyTest {
         assertSame(first, second)
         assertEquals(1, subject.queryCount)
     }
+
+    @Test
+    fun interface_projection_separates_cache_entries_for_distinct_projection_type_keys() {
+        WinRtProjectionRegistry.resetForTests()
+
+        val metadataA = object : WinRtInterfaceMetadata {
+            override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
+            override val projectionTypeKey: String = "kotlin.collections.MutableList"
+            override val iid = Guid(0, 0, 0, byteArrayOf(1, 1, 1, 1, 1, 1, 1, 1))
+        }
+        val metadataB = object : WinRtInterfaceMetadata {
+            override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
+            override val projectionTypeKey: String = "Test.CustomProjection"
+            override val iid = Guid(0, 0, 0, byteArrayOf(1, 1, 1, 1, 1, 1, 1, 1))
+        }
+        val subject = object : Inspectable(ComPtr.NULL) {
+            var queryCount = 0
+
+            override fun queryInterface(iid: Guid): ComPtr {
+                queryCount += 1
+                return ComPtr.NULL
+            }
+        }
+
+        val first = subject.projectInterface(metadataA, ::WinRtInterfaceProjection)
+        val second = subject.projectInterface(metadataB, ::WinRtInterfaceProjection)
+
+        assertEquals(ComPtr.NULL, first.pointer)
+        assertEquals(ComPtr.NULL, second.pointer)
+        assertEquals(2, subject.queryCount)
+    }
 }
