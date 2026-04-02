@@ -363,7 +363,7 @@ internal class KotlinCollectionProjectionMapper {
                     "object : %T {\n" +
                         "  override fun iterator(): %T = object : %T {\n" +
                         "    private val iteratorProjection = %T.from(%T(%T.invokeObjectMethod(%T.from(%T(pointer), %S, %S).pointer, 6).getOrThrow()), %S, %S)\n" +
-                        "    override fun hasNext(): Boolean = %T(%T.invokeBooleanGetter(iteratorProjection.pointer, 7).getOrThrow()).value\n" +
+                        "    override fun hasNext(): Boolean = %T(%L).value\n" +
                         "    override fun next(): %T {\n" +
                         "      if (!hasNext()) throw %T()\n" +
                         "      val current = %L\n" +
@@ -385,7 +385,7 @@ internal class KotlinCollectionProjectionMapper {
                     elementSignature,
                     elementProjectionTypeKey,
                     PoetSymbols.winRtBooleanClass,
-                    PoetSymbols.platformComInteropClass,
+                    AbiCallCatalog.booleanGetter(7, "iteratorProjection.pointer"),
                     elementTypeName,
                     NoSuchElementException::class,
                     elementReadExpression(elementTypeName, "iteratorProjection.pointer", 6),
@@ -410,7 +410,7 @@ internal class KotlinCollectionProjectionMapper {
                 delegateFactory = CodeBlock.of(
                     "object : %T {\n" +
                         "  private val iteratorProjection = %T.from(%T(pointer), %S, %S)\n" +
-                        "  override fun hasNext(): Boolean = %T(%T.invokeBooleanGetter(iteratorProjection.pointer, 7).getOrThrow()).value\n" +
+                        "  override fun hasNext(): Boolean = %T(%L).value\n" +
                         "  override fun next(): %T {\n" +
                         "    if (!hasNext()) throw %T()\n" +
                         "    val current = %L\n" +
@@ -424,7 +424,7 @@ internal class KotlinCollectionProjectionMapper {
                     elementSignature,
                     elementProjectionTypeKey,
                     PoetSymbols.winRtBooleanClass,
-                    PoetSymbols.platformComInteropClass,
+                    AbiCallCatalog.booleanGetter(7, "iteratorProjection.pointer"),
                     elementTypeName,
                     NoSuchElementException::class,
                     elementReadExpression(elementTypeName, "iteratorProjection.pointer", 6),
@@ -476,13 +476,7 @@ internal class KotlinCollectionProjectionMapper {
         return if (elementTypeName == String::class.asTypeName()) {
             HStringSupport.toKotlinString(pointerExpression, slot)
         } else if (elementTypeName == Boolean::class.asTypeName()) {
-            CodeBlock.of(
-                "%T(%T.invokeBooleanGetter(%L, %L).getOrThrow()).value",
-                PoetSymbols.winRtBooleanClass,
-                PoetSymbols.platformComInteropClass,
-                pointerExpression,
-                slot,
-            )
+            CodeBlock.of("%T(%L).value", PoetSymbols.winRtBooleanClass, AbiCallCatalog.booleanGetter(slot, pointerExpression))
         } else if (elementTypeName == Int::class.asTypeName()) {
             CodeBlock.of(
                 "%T.invokeInt32Method(%L, %L).getOrThrow()",

@@ -3,6 +3,9 @@ package dev.winrt.winmd.parser
 import com.squareup.kotlinpoet.CodeBlock
 
 internal object AbiCallCatalog {
+    internal fun booleanGetter(vtableIndex: Int, pointerExpression: String = "pointer"): CodeBlock =
+        CodeBlock.of("%T.invokeBooleanGetter(%L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, pointerExpression, vtableIndex)
+
     internal fun booleanAsInt64Expression(argumentName: String): String = "if ($argumentName.value) 1L else 0L"
     internal fun booleanAsInt32Expression(argumentName: String): String = "if ($argumentName.value) 1 else 0"
 
