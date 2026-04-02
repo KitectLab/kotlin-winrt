@@ -3,6 +3,20 @@ package dev.winrt.winmd.parser
 import com.squareup.kotlinpoet.CodeBlock
 
 internal object AbiCallCatalog {
+    private fun singleArgumentCall(
+        methodName: String,
+        vtableIndex: Int,
+        argumentExpression: String,
+        pointerExpression: String = "pointer",
+        placeholder: String = "%L",
+    ): CodeBlock =
+        CodeBlock.of(
+            "%T.$methodName($pointerExpression, %L, $placeholder).getOrThrow()",
+            PoetSymbols.platformComInteropClass,
+            vtableIndex,
+            argumentExpression,
+        )
+
     private fun MethodParameterAbiToken.methodNamePart(): String = when (this) {
         MethodParameterAbiToken.STRING -> "String"
         MethodParameterAbiToken.OBJECT -> "Object"
@@ -93,40 +107,40 @@ internal object AbiCallCatalog {
         CodeBlock.of("%T.invokeHStringMethod($pointerExpression, $vtableIndex).getOrThrow()", PoetSymbols.platformComInteropClass)
 
     fun hstringMethodWithString(vtableIndex: Int, argumentName: String, pointerExpression: String = "pointer"): CodeBlock =
-        CodeBlock.of("%T.invokeHStringMethodWithStringArg($pointerExpression, $vtableIndex, %N).getOrThrow()", PoetSymbols.platformComInteropClass, argumentName)
+        singleArgumentCall("invokeHStringMethodWithStringArg", vtableIndex, argumentName, pointerExpression, "%N")
 
     fun hstringMethodWithInt32(vtableIndex: Int, argumentName: String, pointerExpression: String = "pointer"): CodeBlock =
-        CodeBlock.of("%T.invokeHStringMethodWithInt32Arg($pointerExpression, $vtableIndex, %L).getOrThrow()", PoetSymbols.platformComInteropClass, argumentName)
+        singleArgumentCall("invokeHStringMethodWithInt32Arg", vtableIndex, argumentName, pointerExpression)
 
     fun hstringMethodWithUInt32(vtableIndex: Int, argumentName: String, pointerExpression: String = "pointer"): CodeBlock =
-        CodeBlock.of("%T.invokeHStringMethodWithUInt32Arg($pointerExpression, $vtableIndex, %L).getOrThrow()", PoetSymbols.platformComInteropClass, argumentName)
+        singleArgumentCall("invokeHStringMethodWithUInt32Arg", vtableIndex, argumentName, pointerExpression)
 
     fun hstringMethodWithBoolean(vtableIndex: Int, argumentExpression: String, pointerExpression: String = "pointer"): CodeBlock =
-        CodeBlock.of("%T.invokeHStringMethodWithBooleanArg($pointerExpression, $vtableIndex, %L).getOrThrow()", PoetSymbols.platformComInteropClass, argumentExpression)
+        singleArgumentCall("invokeHStringMethodWithBooleanArg", vtableIndex, argumentExpression, pointerExpression)
 
     fun hstringMethodWithObject(vtableIndex: Int, argumentExpression: String, pointerExpression: String = "pointer"): CodeBlock =
-        CodeBlock.of("%T.invokeHStringMethodWithObjectArg($pointerExpression, $vtableIndex, %L).getOrThrow()", PoetSymbols.platformComInteropClass, argumentExpression)
+        singleArgumentCall("invokeHStringMethodWithObjectArg", vtableIndex, argumentExpression, pointerExpression)
 
     fun hstringMethodWithInt64(vtableIndex: Int, argumentExpression: String, pointerExpression: String = "pointer"): CodeBlock =
-        CodeBlock.of("%T.invokeHStringMethodWithInt64Arg($pointerExpression, $vtableIndex, %L).getOrThrow()", PoetSymbols.platformComInteropClass, argumentExpression)
+        singleArgumentCall("invokeHStringMethodWithInt64Arg", vtableIndex, argumentExpression, pointerExpression)
 
     fun unitMethod(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeUnitMethod(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
     fun unitMethodWithInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeUnitMethodWithInt32Arg(pointer, %L, %N.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeUnitMethodWithInt32Arg", vtableIndex, "${argumentName}.value")
 
     fun unitMethodWithInt32Expression(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeUnitMethodWithInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeUnitMethodWithInt32Arg", vtableIndex, argumentExpression)
 
     fun unitMethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeUnitMethodWithUInt32Arg(pointer, %L, %N.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeUnitMethodWithUInt32Arg", vtableIndex, "${argumentName}.value")
 
     fun unitMethodWithInt64(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeUnitMethodWithInt64Arg(pointer, %L, %N.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeUnitMethodWithInt64Arg", vtableIndex, "${argumentName}.value")
 
     fun unitMethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeUnitMethodWithStringArg(pointer, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeUnitMethodWithStringArg", vtableIndex, argumentName, placeholder = "%N")
 
     fun unitMethodWithTwoStrings(vtableIndex: Int, firstArgumentName: String, secondArgumentName: String): CodeBlock =
         CodeBlock.of(
@@ -277,26 +291,22 @@ internal object AbiCallCatalog {
         )
 
     fun int64MethodWithObject(vtableIndex: Int, argumentExpression: String, pointerExpression: String = "pointer"): CodeBlock =
-        CodeBlock.of(
-            "%T.invokeInt64MethodWithObjectArg($pointerExpression, $vtableIndex, %L).getOrThrow()",
-            PoetSymbols.platformComInteropClass,
-            argumentExpression,
-        )
+        singleArgumentCall("invokeInt64MethodWithObjectArg", vtableIndex, argumentExpression, pointerExpression)
 
     fun int64Method(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeInt64Method(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
     fun int64MethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeInt64MethodWithStringArg(pointer, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeInt64MethodWithStringArg", vtableIndex, argumentName, placeholder = "%N")
 
     fun int64MethodWithInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeInt64MethodWithInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeInt64MethodWithInt32Arg", vtableIndex, "${argumentName}.value")
 
     fun int64MethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeInt64MethodWithUInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeInt64MethodWithUInt32Arg", vtableIndex, "${argumentName}.value")
 
     fun int64MethodWithBoolean(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeInt64MethodWithBooleanArg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeInt64MethodWithBooleanArg", vtableIndex, "${argumentName}.value")
 
     fun uint64Method(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeUInt64Method(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
@@ -320,26 +330,22 @@ internal object AbiCallCatalog {
         CodeBlock.of("%T.invokeObjectMethod(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
     fun objectMethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeObjectMethodWithStringArg(pointer, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeObjectMethodWithStringArg", vtableIndex, argumentName, placeholder = "%N")
 
     fun objectMethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeObjectMethodWithUInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeObjectMethodWithUInt32Arg", vtableIndex, "${argumentName}.value")
 
     fun objectMethodWithInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeObjectMethodWithInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeObjectMethodWithInt32Arg", vtableIndex, argumentExpression)
 
     fun objectMethodWithBoolean(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeObjectMethodWithBooleanArg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeObjectMethodWithBooleanArg", vtableIndex, argumentExpression)
 
     fun objectMethodWithInt64(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeObjectMethodWithInt64Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeObjectMethodWithInt64Arg", vtableIndex, argumentExpression)
 
     fun objectMethodWithObject(vtableIndex: Int, argumentExpression: String, pointerExpression: String = "pointer"): CodeBlock =
-        CodeBlock.of(
-            "%T.invokeObjectMethodWithObjectArg($pointerExpression, $vtableIndex, %L).getOrThrow()",
-            PoetSymbols.platformComInteropClass,
-            argumentExpression,
-        )
+        singleArgumentCall("invokeObjectMethodWithObjectArg", vtableIndex, argumentExpression, pointerExpression)
 
     fun objectMethodWithObjectAndString(
         vtableIndex: Int,
@@ -647,22 +653,22 @@ internal object AbiCallCatalog {
         CodeBlock.of("%T.invokeBooleanGetter(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
     fun booleanMethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeBooleanMethodWithStringArg(pointer, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeBooleanMethodWithStringArg", vtableIndex, argumentName, placeholder = "%N")
 
     fun booleanMethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeBooleanMethodWithUInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeBooleanMethodWithUInt32Arg", vtableIndex, "${argumentName}.value")
 
     fun booleanMethodWithInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeBooleanMethodWithInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeBooleanMethodWithInt32Arg", vtableIndex, argumentExpression)
 
     fun booleanMethodWithBoolean(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeBooleanMethodWithBooleanArg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeBooleanMethodWithBooleanArg", vtableIndex, argumentExpression)
 
     fun booleanMethodWithInt64(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeBooleanMethodWithInt64Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeBooleanMethodWithInt64Arg", vtableIndex, argumentExpression)
 
     fun booleanMethodWithObject(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeBooleanMethodWithObjectArg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeBooleanMethodWithObjectArg", vtableIndex, argumentExpression)
 
     fun float64Method(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeFloat64Method(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
@@ -671,82 +677,82 @@ internal object AbiCallCatalog {
         CodeBlock.of("%T.invokeFloat32Method(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
     fun float32MethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeFloat32MethodWithStringArg(pointer, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeFloat32MethodWithStringArg", vtableIndex, argumentName, placeholder = "%N")
 
     fun float32MethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeFloat32MethodWithUInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeFloat32MethodWithUInt32Arg", vtableIndex, "${argumentName}.value")
 
     fun float32MethodWithInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeFloat32MethodWithInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeFloat32MethodWithInt32Arg", vtableIndex, argumentExpression)
 
     fun float32MethodWithBoolean(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeFloat32MethodWithBooleanArg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeFloat32MethodWithBooleanArg", vtableIndex, argumentExpression)
 
     fun float32MethodWithObject(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeFloat32MethodWithObjectArg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeFloat32MethodWithObjectArg", vtableIndex, argumentExpression)
 
     fun float32MethodWithInt64(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeFloat32MethodWithInt64Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeFloat32MethodWithInt64Arg", vtableIndex, argumentExpression)
 
     fun float64MethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeFloat64MethodWithStringArg(pointer, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeFloat64MethodWithStringArg", vtableIndex, argumentName, placeholder = "%N")
 
     fun float64MethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeFloat64MethodWithUInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeFloat64MethodWithUInt32Arg", vtableIndex, "${argumentName}.value")
 
     fun float64MethodWithInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeFloat64MethodWithInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeFloat64MethodWithInt32Arg", vtableIndex, argumentExpression)
 
     fun float64MethodWithBoolean(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeFloat64MethodWithBooleanArg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeFloat64MethodWithBooleanArg", vtableIndex, argumentExpression)
 
     fun float64MethodWithObject(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeFloat64MethodWithObjectArg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeFloat64MethodWithObjectArg", vtableIndex, argumentExpression)
 
     fun float64MethodWithInt64(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeFloat64MethodWithInt64Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeFloat64MethodWithInt64Arg", vtableIndex, argumentExpression)
 
     fun uint32Method(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeUInt32Method(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
     fun uint32MethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeUInt32MethodWithStringArg(pointer, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeUInt32MethodWithStringArg", vtableIndex, argumentName, placeholder = "%N")
 
     fun uint32MethodWithInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeUInt32MethodWithInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeUInt32MethodWithInt32Arg", vtableIndex, "${argumentName}.value")
 
     fun uint32MethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeUInt32MethodWithUInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeUInt32MethodWithUInt32Arg", vtableIndex, "${argumentName}.value")
 
     fun uint32MethodWithBoolean(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeUInt32MethodWithBooleanArg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeUInt32MethodWithBooleanArg", vtableIndex, argumentExpression)
 
     fun uint32MethodWithInt64(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeUInt32MethodWithInt64Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeUInt32MethodWithInt64Arg", vtableIndex, argumentExpression)
 
     fun uint32MethodWithObject(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeUInt32MethodWithObjectArg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeUInt32MethodWithObjectArg", vtableIndex, argumentExpression)
 
     fun int32Method(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeInt32Method(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
     fun int32MethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeInt32MethodWithStringArg(pointer, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeInt32MethodWithStringArg", vtableIndex, argumentName, placeholder = "%N")
 
     fun int32MethodWithInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeInt32MethodWithInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeInt32MethodWithInt32Arg", vtableIndex, argumentName)
 
     fun int32MethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeInt32MethodWithUInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeInt32MethodWithUInt32Arg", vtableIndex, argumentName)
 
     fun int32MethodWithBoolean(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeInt32MethodWithBooleanArg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeInt32MethodWithBooleanArg", vtableIndex, argumentExpression)
 
     fun int32MethodWithInt64(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeInt32MethodWithInt64Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeInt32MethodWithInt64Arg", vtableIndex, argumentExpression)
 
     fun int32MethodWithObject(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeInt32MethodWithObjectArg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeInt32MethodWithObjectArg", vtableIndex, argumentExpression)
 
     fun int64Getter(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeInt64Getter(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
@@ -755,22 +761,22 @@ internal object AbiCallCatalog {
         CodeBlock.of("%T.invokeGuidGetter(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
     fun guidMethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeGuidMethodWithStringArg(pointer, %L, %N).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+        singleArgumentCall("invokeGuidMethodWithStringArg", vtableIndex, argumentName, placeholder = "%N")
 
     fun guidMethodWithInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeGuidMethodWithInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeGuidMethodWithInt32Arg", vtableIndex, argumentExpression)
 
     fun guidMethodWithUInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeGuidMethodWithUInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeGuidMethodWithUInt32Arg", vtableIndex, argumentExpression)
 
     fun guidMethodWithBoolean(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeGuidMethodWithBooleanArg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeGuidMethodWithBooleanArg", vtableIndex, argumentExpression)
 
     fun guidMethodWithObject(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeGuidMethodWithObjectArg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeGuidMethodWithObjectArg", vtableIndex, argumentExpression)
 
     fun guidMethodWithInt64(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeGuidMethodWithInt64Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        singleArgumentCall("invokeGuidMethodWithInt64Arg", vtableIndex, argumentExpression)
 
     fun stringSetter(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeStringSetter(pointer, %L, value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
