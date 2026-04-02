@@ -2005,139 +2005,121 @@ internal class InterfaceTypeRenderer(
         if (parameterCategories.size > 1) return null
         val parameterCategory = parameterCategories.singleOrNull()
         return when (signatureKey.returnKind) {
-            MethodReturnKind.STRING -> plannedUnaryHStringInterfaceMethod(parameterCategory)
-            MethodReturnKind.FLOAT32 -> plannedUnaryWrappedInterfaceMethod(
+            MethodReturnKind.STRING,
+            MethodReturnKind.FLOAT32,
+            MethodReturnKind.FLOAT64,
+            MethodReturnKind.OBJECT,
+            MethodReturnKind.UNIT -> plannedUnaryInterfaceMethodForReturnKind(
+                returnKind = signatureKey.returnKind,
                 parameterCategory = parameterCategory,
-                wrapperType = PoetSymbols.float32Class,
-                emptyCall = AbiCallCatalog::float32Method,
-                unaryCall = ::float32UnaryCall,
+                genericParameters = genericParameters,
             )
-            MethodReturnKind.FLOAT64 -> plannedUnaryWrappedInterfaceMethod(
-                parameterCategory = parameterCategory,
-                wrapperType = PoetSymbols.float64Class,
-                emptyCall = AbiCallCatalog::float64Method,
-                unaryCall = ::float64UnaryCall,
-            )
-            MethodReturnKind.OBJECT -> plannedUnaryObjectInterfaceMethod(parameterCategory, genericParameters)
-            MethodReturnKind.UNIT -> plannedUnaryUnitInterfaceMethod(parameterCategory)
             else -> null
         }
     }
 
-    private fun plannedUnaryHStringInterfaceMethod(parameterCategory: MethodParameterCategory?): PlannedInterfaceMethod? {
-        if (parameterCategory == null) {
-            return PlannedInterfaceMethod(
-                statement = "return %L",
-                args = { method, _ -> arrayOf(HStringSupport.fromCall(AbiCallCatalog.hstringMethod(method.vtableIndex!!))) },
-            )
-        }
-        return PlannedInterfaceMethod(
-            statement = "return %L",
-            args = { method, _ ->
-                val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                arrayOf(HStringSupport.fromCall(hstringUnaryCall(method.vtableIndex!!, parameterCategory, argumentName)))
-            },
-        )
-    }
-
-    private fun plannedUnaryWrappedInterfaceMethod(
-        parameterCategory: MethodParameterCategory?,
-        wrapperType: Any,
-        emptyCall: (Int) -> CodeBlock,
-        unaryCall: (Int, MethodParameterCategory, String) -> CodeBlock,
-    ): PlannedInterfaceMethod? =
-        PlannedInterfaceMethod(
-            statement = "return %T(%L)",
-            args = { method, _ ->
-                val abiCall = if (parameterCategory == null) {
-                    emptyCall(method.vtableIndex!!)
-                } else {
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    unaryCall(method.vtableIndex!!, parameterCategory, argumentName)
-                }
-                arrayOf(wrapperType, abiCall)
-            },
-        )
-
-    private fun plannedUnaryObjectInterfaceMethod(
+    private fun plannedUnaryInterfaceMethodForReturnKind(
+        returnKind: MethodReturnKind,
         parameterCategory: MethodParameterCategory?,
         genericParameters: Set<String>,
-    ): PlannedInterfaceMethod? =
-        PlannedInterfaceMethod(
-            statement = "return %L",
-            args = { method, namespace ->
-                val abiCall = if (parameterCategory == null) {
-                    AbiCallCatalog.objectMethod(method.vtableIndex!!)
-                } else {
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    objectUnaryCall(method.vtableIndex!!, parameterCategory, argumentName)
-                }
-                arrayOf(objectReturnCode(method, namespace, abiCall, genericParameters))
-            },
-        )
+    ): PlannedInterfaceMethod = PlannedInterfaceMethod(
+        statement = unaryInterfaceStatement(returnKind),
+        args = { method, namespace ->
+            val argumentName = method.parameters.singleOrNull()?.name?.replaceFirstChar(Char::lowercase)
+            val abiCall = unaryInterfaceAbiCall(method.vtableIndex!!, returnKind, parameterCategory, argumentName)
+            unaryInterfaceArgs(method, namespace, returnKind, abiCall, genericParameters)
+        },
+    )
 
-    private fun plannedUnaryUnitInterfaceMethod(parameterCategory: MethodParameterCategory?): PlannedInterfaceMethod? =
-        PlannedInterfaceMethod(
-            statement = "%L",
-            args = { method, _ ->
-                val abiCall = if (parameterCategory == null) {
-                    AbiCallCatalog.unitMethod(method.vtableIndex!!)
-                } else {
-                    val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    unitUnaryCall(method.vtableIndex!!, parameterCategory, argumentName)
-                }
-                arrayOf(abiCall)
-            },
-        )
-
-    private fun hstringUnaryCall(vtableIndex: Int, category: MethodParameterCategory, argumentName: String): CodeBlock = when (category) {
-        MethodParameterCategory.STRING -> AbiCallCatalog.hstringMethodWithString(vtableIndex, argumentName)
-        MethodParameterCategory.INT32 -> AbiCallCatalog.hstringMethodWithInt32(vtableIndex, unaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.UINT32 -> AbiCallCatalog.hstringMethodWithUInt32(vtableIndex, unaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.BOOLEAN -> AbiCallCatalog.hstringMethodWithBoolean(vtableIndex, unaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.INT64,
-        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.hstringMethodWithInt64(vtableIndex, unaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.OBJECT -> AbiCallCatalog.hstringMethodWithObject(vtableIndex, unaryArgumentExpression(argumentName, category))
+    private fun unaryInterfaceStatement(returnKind: MethodReturnKind): String = when (returnKind) {
+        MethodReturnKind.STRING -> "return %L"
+        MethodReturnKind.FLOAT32,
+        MethodReturnKind.FLOAT64 -> "return %T(%L)"
+        MethodReturnKind.OBJECT -> "return %L"
+        MethodReturnKind.UNIT -> "%L"
+        else -> error("Unsupported unary interface return kind: $returnKind")
     }
 
-    private fun float32UnaryCall(vtableIndex: Int, category: MethodParameterCategory, argumentName: String): CodeBlock = when (category) {
-        MethodParameterCategory.STRING -> AbiCallCatalog.float32MethodWithString(vtableIndex, argumentName)
-        MethodParameterCategory.INT32 -> AbiCallCatalog.float32MethodWithInt32(vtableIndex, unaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.UINT32 -> AbiCallCatalog.float32MethodWithUInt32(vtableIndex, unaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.BOOLEAN -> AbiCallCatalog.float32MethodWithBoolean(vtableIndex, unaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.INT64,
-        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.float32MethodWithInt64(vtableIndex, unaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.OBJECT -> AbiCallCatalog.float32MethodWithObject(vtableIndex, unaryArgumentExpression(argumentName, category))
+    private fun unaryInterfaceArgs(
+        method: WinMdMethod,
+        namespace: String,
+        returnKind: MethodReturnKind,
+        abiCall: CodeBlock,
+        genericParameters: Set<String>,
+    ): Array<Any> = when (returnKind) {
+        MethodReturnKind.STRING -> arrayOf(HStringSupport.fromCall(abiCall))
+        MethodReturnKind.FLOAT32 -> arrayOf(PoetSymbols.float32Class, abiCall)
+        MethodReturnKind.FLOAT64 -> arrayOf(PoetSymbols.float64Class, abiCall)
+        MethodReturnKind.OBJECT -> arrayOf(objectReturnCode(method, namespace, abiCall, genericParameters))
+        MethodReturnKind.UNIT -> arrayOf(abiCall)
+        else -> error("Unsupported unary interface return kind: $returnKind")
     }
 
-    private fun float64UnaryCall(vtableIndex: Int, category: MethodParameterCategory, argumentName: String): CodeBlock = when (category) {
-        MethodParameterCategory.STRING -> AbiCallCatalog.float64MethodWithString(vtableIndex, argumentName)
-        MethodParameterCategory.INT32 -> AbiCallCatalog.float64MethodWithInt32(vtableIndex, unaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.UINT32 -> AbiCallCatalog.float64MethodWithUInt32(vtableIndex, unaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.BOOLEAN -> AbiCallCatalog.float64MethodWithBoolean(vtableIndex, unaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.INT64,
-        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.float64MethodWithInt64(vtableIndex, unaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.OBJECT -> AbiCallCatalog.float64MethodWithObject(vtableIndex, unaryArgumentExpression(argumentName, category))
-    }
-
-    private fun objectUnaryCall(vtableIndex: Int, category: MethodParameterCategory, argumentName: String): CodeBlock = when (category) {
-        MethodParameterCategory.STRING -> AbiCallCatalog.objectMethodWithString(vtableIndex, argumentName)
-        MethodParameterCategory.INT32 -> AbiCallCatalog.objectMethodWithInt32(vtableIndex, unaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.UINT32 -> AbiCallCatalog.objectMethodWithUInt32(vtableIndex, unaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.BOOLEAN -> AbiCallCatalog.objectMethodWithBoolean(vtableIndex, unaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.INT64,
-        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.objectMethodWithInt64(vtableIndex, unaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.OBJECT -> AbiCallCatalog.objectMethodWithObject(vtableIndex, unaryArgumentExpression(argumentName, category))
-    }
-
-    private fun unitUnaryCall(vtableIndex: Int, category: MethodParameterCategory, argumentName: String): CodeBlock = when (category) {
-        MethodParameterCategory.INT32 -> AbiCallCatalog.unitMethodWithInt32(vtableIndex, argumentName)
-        MethodParameterCategory.UINT32 -> AbiCallCatalog.unitMethodWithUInt32(vtableIndex, argumentName)
-        MethodParameterCategory.BOOLEAN -> AbiCallCatalog.unitMethodWithInt32Expression(vtableIndex, "if (${unaryArgumentExpression(argumentName, category)}) 1 else 0")
-        MethodParameterCategory.INT64,
-        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.unitMethodWithInt64(vtableIndex, argumentName)
-        MethodParameterCategory.STRING -> AbiCallCatalog.unitMethodWithString(vtableIndex, argumentName)
-        MethodParameterCategory.OBJECT -> AbiCallCatalog.objectSetter(vtableIndex, argumentName)
+    private fun unaryInterfaceAbiCall(
+        vtableIndex: Int,
+        returnKind: MethodReturnKind,
+        parameterCategory: MethodParameterCategory?,
+        argumentName: String?,
+    ): CodeBlock {
+        if (parameterCategory == null) {
+            return when (returnKind) {
+                MethodReturnKind.STRING -> AbiCallCatalog.hstringMethod(vtableIndex)
+                MethodReturnKind.FLOAT32 -> AbiCallCatalog.float32Method(vtableIndex)
+                MethodReturnKind.FLOAT64 -> AbiCallCatalog.float64Method(vtableIndex)
+                MethodReturnKind.OBJECT -> AbiCallCatalog.objectMethod(vtableIndex)
+                MethodReturnKind.UNIT -> AbiCallCatalog.unitMethod(vtableIndex)
+                else -> error("Unsupported unary interface return kind: $returnKind")
+            }
+        }
+        val loweredArgument = unaryArgumentExpression(requireNotNull(argumentName), parameterCategory)
+        return when (returnKind) {
+            MethodReturnKind.STRING -> when (parameterCategory) {
+                MethodParameterCategory.STRING -> AbiCallCatalog.hstringMethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.INT32 -> AbiCallCatalog.hstringMethodWithInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.hstringMethodWithUInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.hstringMethodWithBoolean(vtableIndex, loweredArgument)
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.hstringMethodWithInt64(vtableIndex, loweredArgument)
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.hstringMethodWithObject(vtableIndex, loweredArgument)
+            }
+            MethodReturnKind.FLOAT32 -> when (parameterCategory) {
+                MethodParameterCategory.STRING -> AbiCallCatalog.float32MethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.INT32 -> AbiCallCatalog.float32MethodWithInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.float32MethodWithUInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.float32MethodWithBoolean(vtableIndex, loweredArgument)
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.float32MethodWithInt64(vtableIndex, loweredArgument)
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.float32MethodWithObject(vtableIndex, loweredArgument)
+            }
+            MethodReturnKind.FLOAT64 -> when (parameterCategory) {
+                MethodParameterCategory.STRING -> AbiCallCatalog.float64MethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.INT32 -> AbiCallCatalog.float64MethodWithInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.float64MethodWithUInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.float64MethodWithBoolean(vtableIndex, loweredArgument)
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.float64MethodWithInt64(vtableIndex, loweredArgument)
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.float64MethodWithObject(vtableIndex, loweredArgument)
+            }
+            MethodReturnKind.OBJECT -> when (parameterCategory) {
+                MethodParameterCategory.STRING -> AbiCallCatalog.objectMethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.INT32 -> AbiCallCatalog.objectMethodWithInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.objectMethodWithUInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.objectMethodWithBoolean(vtableIndex, loweredArgument)
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.objectMethodWithInt64(vtableIndex, loweredArgument)
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.objectMethodWithObject(vtableIndex, loweredArgument)
+            }
+            MethodReturnKind.UNIT -> when (parameterCategory) {
+                MethodParameterCategory.INT32 -> AbiCallCatalog.unitMethodWithInt32(vtableIndex, argumentName)
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.unitMethodWithUInt32(vtableIndex, argumentName)
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.unitMethodWithInt32Expression(vtableIndex, "if ($loweredArgument) 1 else 0")
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.unitMethodWithInt64(vtableIndex, argumentName)
+                MethodParameterCategory.STRING -> AbiCallCatalog.unitMethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.objectSetter(vtableIndex, argumentName)
+            }
+            else -> error("Unsupported unary interface return kind: $returnKind")
+        }
     }
 
     private fun unaryArgumentExpression(argumentName: String, category: MethodParameterCategory): String = when (category) {

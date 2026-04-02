@@ -751,137 +751,126 @@ internal class RuntimeMethodRenderer(
         if (parameterCategories.size > 1) return null
         val parameterCategory = parameterCategories.singleOrNull()
         return when (signatureKey.returnKind) {
-            MethodReturnKind.STRING -> plannedUnaryHStringRuntimeMethod(parameterCategory)
-            MethodReturnKind.FLOAT32 -> plannedUnaryWrappedRuntimeMethod(
-                parameterCategory = parameterCategory,
-                nullPointerReturn = PlannedStatement("return %T(0f)", arrayOf(PoetSymbols.float32Class)),
-                wrapperType = PoetSymbols.float32Class,
-                emptyCall = AbiCallCatalog::float32Method,
-                unaryCall = ::float32UnaryRuntimeCall,
-            )
-            MethodReturnKind.FLOAT64 -> plannedUnaryWrappedRuntimeMethod(
-                parameterCategory = parameterCategory,
-                nullPointerReturn = PlannedStatement("return %T(0.0)", arrayOf(PoetSymbols.float64Class)),
-                wrapperType = PoetSymbols.float64Class,
-                emptyCall = AbiCallCatalog::float64Method,
-                unaryCall = ::float64UnaryRuntimeCall,
-            )
-            MethodReturnKind.OBJECT -> plannedUnaryObjectRuntimeMethod(parameterCategory)
-            MethodReturnKind.UNIT -> plannedUnaryUnitRuntimeMethod(parameterCategory)
+            MethodReturnKind.STRING,
+            MethodReturnKind.FLOAT32,
+            MethodReturnKind.FLOAT64,
+            MethodReturnKind.OBJECT,
+            MethodReturnKind.UNIT -> plannedUnaryRuntimeMethodForReturnKind(signatureKey.returnKind, parameterCategory)
             else -> null
         }
     }
 
-    private fun plannedUnaryHStringRuntimeMethod(parameterCategory: MethodParameterCategory?): RuntimeMethodPlan =
-        RuntimeMethodPlan(
-            nullPointerReturn = { PlannedStatement("return %S", arrayOf("")) },
-            returnStatement = "return %L",
-            statementArgs = { method, _, parameterBindings ->
-                val abiCall = if (parameterCategory == null) {
-                    AbiCallCatalog.hstringMethod(method.vtableIndex!!)
-                } else {
-                    hstringUnaryRuntimeCall(method.vtableIndex!!, parameterCategory, parameterBindings.single().name)
-                }
-                arrayOf(HStringSupport.fromCall(abiCall))
-            },
-        )
-
-    private fun plannedUnaryWrappedRuntimeMethod(
+    private fun plannedUnaryRuntimeMethodForReturnKind(
+        returnKind: MethodReturnKind,
         parameterCategory: MethodParameterCategory?,
-        nullPointerReturn: PlannedStatement,
-        wrapperType: Any,
-        emptyCall: (Int) -> CodeBlock,
-        unaryCall: (Int, MethodParameterCategory, String) -> CodeBlock,
     ): RuntimeMethodPlan =
         RuntimeMethodPlan(
-            nullPointerReturn = { nullPointerReturn },
-            returnStatement = "return %T(%L)",
-            statementArgs = { method, _, parameterBindings ->
-                val abiCall = if (parameterCategory == null) {
-                    emptyCall(method.vtableIndex!!)
-                } else {
-                    unaryCall(method.vtableIndex!!, parameterCategory, parameterBindings.single().name)
-                }
-                arrayOf(wrapperType, abiCall)
-            },
-        )
-
-    private fun plannedUnaryObjectRuntimeMethod(parameterCategory: MethodParameterCategory?): RuntimeMethodPlan =
-        RuntimeMethodPlan(
-            nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
-            returnStatement = "return %L",
+            nullPointerReturn = { method -> unaryRuntimeNullReturn(returnKind, method.name) },
+            returnStatement = unaryRuntimeStatement(returnKind),
             statementArgs = { method, currentNamespace, parameterBindings ->
-                val abiCall = if (parameterCategory == null) {
-                    AbiCallCatalog.objectMethod(method.vtableIndex!!)
-                } else {
-                    objectUnaryRuntimeCall(method.vtableIndex!!, parameterCategory, parameterBindings.single().name)
-                }
-                arrayOf(runtimeObjectReturnCode(method, currentNamespace, abiCall))
+                val argumentName = parameterBindings.singleOrNull()?.name
+                val abiCall = unaryRuntimeAbiCall(method.vtableIndex!!, returnKind, parameterCategory, argumentName)
+                unaryRuntimeArgs(method, currentNamespace, returnKind, abiCall)
             },
         )
 
-    private fun plannedUnaryUnitRuntimeMethod(parameterCategory: MethodParameterCategory?): RuntimeMethodPlan =
-        RuntimeMethodPlan(
-            nullPointerReturn = { PlannedStatement("return") },
-            returnStatement = "%L",
-            statementArgs = { method, _, parameterBindings ->
-                val abiCall = if (parameterCategory == null) {
-                    AbiCallCatalog.unitMethod(method.vtableIndex!!)
-                } else {
-                    unitUnaryRuntimeCall(method.vtableIndex!!, parameterCategory, parameterBindings.single().name)
-                }
-                arrayOf(abiCall)
-            },
-        )
-
-    private fun hstringUnaryRuntimeCall(vtableIndex: Int, category: MethodParameterCategory, argumentName: String): CodeBlock = when (category) {
-        MethodParameterCategory.STRING -> AbiCallCatalog.hstringMethodWithString(vtableIndex, argumentName)
-        MethodParameterCategory.INT32 -> AbiCallCatalog.hstringMethodWithInt32(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.UINT32 -> AbiCallCatalog.hstringMethodWithUInt32(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.BOOLEAN -> AbiCallCatalog.hstringMethodWithUInt32(vtableIndex, "if (${runtimeUnaryArgumentExpression(argumentName, category)}) 1u else 0u")
-        MethodParameterCategory.INT64,
-        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.hstringMethodWithInt64(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.OBJECT -> AbiCallCatalog.hstringMethodWithObject(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
+    private fun unaryRuntimeNullReturn(returnKind: MethodReturnKind, methodName: String): PlannedStatement = when (returnKind) {
+        MethodReturnKind.STRING -> PlannedStatement("return %S", arrayOf(""))
+        MethodReturnKind.FLOAT32 -> PlannedStatement("return %T(0f)", arrayOf(PoetSymbols.float32Class))
+        MethodReturnKind.FLOAT64 -> PlannedStatement("return %T(0.0)", arrayOf(PoetSymbols.float64Class))
+        MethodReturnKind.OBJECT -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: $methodName"))
+        MethodReturnKind.UNIT -> PlannedStatement("return")
+        else -> error("Unsupported unary runtime return kind: $returnKind")
     }
 
-    private fun float32UnaryRuntimeCall(vtableIndex: Int, category: MethodParameterCategory, argumentName: String): CodeBlock = when (category) {
-        MethodParameterCategory.STRING -> AbiCallCatalog.float32MethodWithString(vtableIndex, argumentName)
-        MethodParameterCategory.INT32 -> AbiCallCatalog.float32MethodWithInt32(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.UINT32 -> AbiCallCatalog.float32MethodWithUInt32(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.BOOLEAN -> AbiCallCatalog.float32MethodWithBoolean(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.INT64,
-        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.float32MethodWithInt64(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.OBJECT -> AbiCallCatalog.float32MethodWithObject(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
+    private fun unaryRuntimeStatement(returnKind: MethodReturnKind): String = when (returnKind) {
+        MethodReturnKind.STRING,
+        MethodReturnKind.OBJECT,
+        MethodReturnKind.UNIT -> "return %L".removePrefix("return ").let { if (returnKind == MethodReturnKind.UNIT) "%L" else "return %L" }
+        MethodReturnKind.FLOAT32,
+        MethodReturnKind.FLOAT64 -> "return %T(%L)"
+        else -> error("Unsupported unary runtime return kind: $returnKind")
     }
 
-    private fun float64UnaryRuntimeCall(vtableIndex: Int, category: MethodParameterCategory, argumentName: String): CodeBlock = when (category) {
-        MethodParameterCategory.STRING -> AbiCallCatalog.float64MethodWithString(vtableIndex, argumentName)
-        MethodParameterCategory.INT32 -> AbiCallCatalog.float64MethodWithInt32(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.UINT32 -> AbiCallCatalog.float64MethodWithUInt32(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.BOOLEAN -> AbiCallCatalog.float64MethodWithBoolean(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.INT64,
-        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.float64MethodWithInt64(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.OBJECT -> AbiCallCatalog.float64MethodWithObject(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
+    private fun unaryRuntimeArgs(
+        method: WinMdMethod,
+        currentNamespace: String,
+        returnKind: MethodReturnKind,
+        abiCall: CodeBlock,
+    ): Array<Any> = when (returnKind) {
+        MethodReturnKind.STRING -> arrayOf(HStringSupport.fromCall(abiCall))
+        MethodReturnKind.FLOAT32 -> arrayOf(PoetSymbols.float32Class, abiCall)
+        MethodReturnKind.FLOAT64 -> arrayOf(PoetSymbols.float64Class, abiCall)
+        MethodReturnKind.OBJECT -> arrayOf(runtimeObjectReturnCode(method, currentNamespace, abiCall))
+        MethodReturnKind.UNIT -> arrayOf(abiCall)
+        else -> error("Unsupported unary runtime return kind: $returnKind")
     }
 
-    private fun objectUnaryRuntimeCall(vtableIndex: Int, category: MethodParameterCategory, argumentName: String): CodeBlock = when (category) {
-        MethodParameterCategory.STRING -> AbiCallCatalog.objectMethodWithString(vtableIndex, argumentName)
-        MethodParameterCategory.INT32 -> AbiCallCatalog.objectMethodWithInt32(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.UINT32 -> AbiCallCatalog.objectMethodWithUInt32(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.BOOLEAN -> AbiCallCatalog.objectMethodWithBoolean(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.INT64,
-        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.objectMethodWithInt64(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
-        MethodParameterCategory.OBJECT -> AbiCallCatalog.objectMethodWithObject(vtableIndex, runtimeUnaryArgumentExpression(argumentName, category))
-    }
-
-    private fun unitUnaryRuntimeCall(vtableIndex: Int, category: MethodParameterCategory, argumentName: String): CodeBlock = when (category) {
-        MethodParameterCategory.INT32 -> AbiCallCatalog.unitMethodWithInt32(vtableIndex, argumentName)
-        MethodParameterCategory.UINT32 -> AbiCallCatalog.unitMethodWithUInt32(vtableIndex, argumentName)
-        MethodParameterCategory.BOOLEAN -> AbiCallCatalog.unitMethodWithInt32Expression(vtableIndex, "if (${runtimeUnaryArgumentExpression(argumentName, category)}) 1 else 0")
-        MethodParameterCategory.INT64,
-        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.unitMethodWithInt64(vtableIndex, argumentName)
-        MethodParameterCategory.STRING -> AbiCallCatalog.unitMethodWithString(vtableIndex, argumentName)
-        MethodParameterCategory.OBJECT -> AbiCallCatalog.objectSetter(vtableIndex, argumentName)
+    private fun unaryRuntimeAbiCall(
+        vtableIndex: Int,
+        returnKind: MethodReturnKind,
+        parameterCategory: MethodParameterCategory?,
+        argumentName: String?,
+    ): CodeBlock {
+        if (parameterCategory == null) {
+            return when (returnKind) {
+                MethodReturnKind.STRING -> AbiCallCatalog.hstringMethod(vtableIndex)
+                MethodReturnKind.FLOAT32 -> AbiCallCatalog.float32Method(vtableIndex)
+                MethodReturnKind.FLOAT64 -> AbiCallCatalog.float64Method(vtableIndex)
+                MethodReturnKind.OBJECT -> AbiCallCatalog.objectMethod(vtableIndex)
+                MethodReturnKind.UNIT -> AbiCallCatalog.unitMethod(vtableIndex)
+                else -> error("Unsupported unary runtime return kind: $returnKind")
+            }
+        }
+        val loweredArgument = runtimeUnaryArgumentExpression(requireNotNull(argumentName), parameterCategory)
+        return when (returnKind) {
+            MethodReturnKind.STRING -> when (parameterCategory) {
+                MethodParameterCategory.STRING -> AbiCallCatalog.hstringMethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.INT32 -> AbiCallCatalog.hstringMethodWithInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.hstringMethodWithUInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.hstringMethodWithUInt32(vtableIndex, "if ($loweredArgument) 1u else 0u")
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.hstringMethodWithInt64(vtableIndex, loweredArgument)
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.hstringMethodWithObject(vtableIndex, loweredArgument)
+            }
+            MethodReturnKind.FLOAT32 -> when (parameterCategory) {
+                MethodParameterCategory.STRING -> AbiCallCatalog.float32MethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.INT32 -> AbiCallCatalog.float32MethodWithInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.float32MethodWithUInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.float32MethodWithBoolean(vtableIndex, loweredArgument)
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.float32MethodWithInt64(vtableIndex, loweredArgument)
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.float32MethodWithObject(vtableIndex, loweredArgument)
+            }
+            MethodReturnKind.FLOAT64 -> when (parameterCategory) {
+                MethodParameterCategory.STRING -> AbiCallCatalog.float64MethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.INT32 -> AbiCallCatalog.float64MethodWithInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.float64MethodWithUInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.float64MethodWithBoolean(vtableIndex, loweredArgument)
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.float64MethodWithInt64(vtableIndex, loweredArgument)
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.float64MethodWithObject(vtableIndex, loweredArgument)
+            }
+            MethodReturnKind.OBJECT -> when (parameterCategory) {
+                MethodParameterCategory.STRING -> AbiCallCatalog.objectMethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.INT32 -> AbiCallCatalog.objectMethodWithInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.objectMethodWithUInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.objectMethodWithBoolean(vtableIndex, loweredArgument)
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.objectMethodWithInt64(vtableIndex, loweredArgument)
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.objectMethodWithObject(vtableIndex, loweredArgument)
+            }
+            MethodReturnKind.UNIT -> when (parameterCategory) {
+                MethodParameterCategory.INT32 -> AbiCallCatalog.unitMethodWithInt32(vtableIndex, argumentName)
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.unitMethodWithUInt32(vtableIndex, argumentName)
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.unitMethodWithInt32Expression(vtableIndex, "if ($loweredArgument) 1 else 0")
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.unitMethodWithInt64(vtableIndex, argumentName)
+                MethodParameterCategory.STRING -> AbiCallCatalog.unitMethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.objectSetter(vtableIndex, argumentName)
+            }
+            else -> error("Unsupported unary runtime return kind: $returnKind")
+        }
     }
 
     private fun runtimeUnaryArgumentExpression(argumentName: String, category: MethodParameterCategory): String = when (category) {
