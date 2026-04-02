@@ -57,7 +57,7 @@ internal class TypeNameMapper {
             rendered.endsWith(".Float32") -> CodeBlock.of("0f")
             rendered.endsWith(".Float64") -> CodeBlock.of("0.0")
             rendered.endsWith(".DateTime") -> CodeBlock.of("%T(0)", PoetSymbols.dateTimeClass)
-            rendered.endsWith(".TimeSpan") -> CodeBlock.of("%T(0)", PoetSymbols.timeSpanClass)
+            rendered.endsWith(".TimeSpan") -> CodeBlock.of("%T.parse(" + "\"0s\"" + ")", PoetSymbols.timeSpanClass)
             rendered.endsWith(".EventRegistrationToken") -> CodeBlock.of("%T(0)", PoetSymbols.eventRegistrationTokenClass)
             rendered.endsWith(".Uuid") -> CodeBlock.of("%T.parse(%S)", PoetSymbols.guidValueClass, "00000000000000000000000000000000")
             rendered.startsWith("kotlin.Array<") -> CodeBlock.of("emptyArray()")

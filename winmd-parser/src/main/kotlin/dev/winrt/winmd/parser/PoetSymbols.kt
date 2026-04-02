@@ -23,7 +23,7 @@ internal object PoetSymbols {
     val iReferenceClass = ClassName("dev.winrt.core", "IReference")
     val runtimeClassIdClass = ClassName("dev.winrt.core", "RuntimeClassId")
     val runtimePropertyClass = ClassName("dev.winrt.core", "RuntimeProperty")
-    val timeSpanClass = ClassName("dev.winrt.core", "TimeSpan")
+    val timeSpanClass = ClassName("kotlin.time", "Duration")
     val uint64Class = ClassName("dev.winrt.core", "UInt64")
     val uint32Class = ClassName("dev.winrt.core", "UInt32")
     val winRtDelegateValueKindClass = ClassName("dev.winrt.core", "WinRtDelegateValueKind")
