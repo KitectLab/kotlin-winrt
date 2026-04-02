@@ -131,6 +131,17 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun projection_registry_uses_registered_projection_type_alias() {
+        WinRtProjectionRegistry.resetForTests()
+        WinRtProjectionRegistry.registerProjectionTypeMapping(
+            winrtTypeKey = "Microsoft.UI.Xaml.Interop.IBindableVector",
+            projectionTypeKey = "Test.CustomProjection",
+        )
+
+        assertEquals("Test.CustomProjection", WinRtProjectionRegistry.projectionTypeKeyFor("Microsoft.UI.Xaml.Interop.IBindableVector"))
+    }
+
+    @Test
     fun inspectable_can_cache_object_references_by_projected_type_key() {
         WinRtProjectionRegistry.resetForTests()
 
