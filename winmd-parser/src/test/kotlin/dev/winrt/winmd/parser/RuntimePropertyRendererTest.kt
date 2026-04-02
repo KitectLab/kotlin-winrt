@@ -324,4 +324,39 @@ class RuntimePropertyRendererTest {
         assertTrue(binding.contains("EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer,6).getOrThrow())"))
     }
 
+    @Test
+    fun renders_guid_properties_as_uuid_accessors() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "GuidCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Identifier",
+                                    type = "Guid",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/GuidCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("validentifier:Uuid"))
+        assertTrue(binding.contains("Uuid.parse(PlatformComInterop.invokeGuidGetter(pointer,6).getOrThrow().toString())"))
+    }
+
 }
