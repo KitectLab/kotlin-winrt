@@ -776,8 +776,8 @@ internal class RuntimeMethodRenderer(
 
     private fun unaryRuntimeNullReturn(returnKind: MethodReturnKind, methodName: String): PlannedStatement = when (returnKind) {
         MethodReturnKind.STRING -> PlannedStatement("return %S", arrayOf(""))
-        MethodReturnKind.FLOAT32 -> PlannedStatement("return %T(0f)", arrayOf(PoetSymbols.float32Class))
-        MethodReturnKind.FLOAT64 -> PlannedStatement("return %T(0.0)", arrayOf(PoetSymbols.float64Class))
+        MethodReturnKind.FLOAT32 -> PlannedStatement("return 0f")
+        MethodReturnKind.FLOAT64 -> PlannedStatement("return 0.0")
         MethodReturnKind.OBJECT -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: $methodName"))
         MethodReturnKind.UNIT -> PlannedStatement("return")
         else -> error("Unsupported unary runtime return kind: $returnKind")
@@ -786,9 +786,9 @@ internal class RuntimeMethodRenderer(
     private fun unaryRuntimeStatement(returnKind: MethodReturnKind): String = when (returnKind) {
         MethodReturnKind.STRING,
         MethodReturnKind.OBJECT,
-        MethodReturnKind.UNIT -> "return %L".removePrefix("return ").let { if (returnKind == MethodReturnKind.UNIT) "%L" else "return %L" }
         MethodReturnKind.FLOAT32,
-        MethodReturnKind.FLOAT64 -> "return %T(%L)"
+        MethodReturnKind.FLOAT64,
+        MethodReturnKind.UNIT -> if (returnKind == MethodReturnKind.UNIT) "%L" else "return %L"
         else -> error("Unsupported unary runtime return kind: $returnKind")
     }
 
@@ -799,8 +799,8 @@ internal class RuntimeMethodRenderer(
         abiCall: CodeBlock,
     ): Array<Any> = when (returnKind) {
         MethodReturnKind.STRING -> arrayOf(HStringSupport.fromCall(abiCall))
-        MethodReturnKind.FLOAT32 -> arrayOf(PoetSymbols.float32Class, abiCall)
-        MethodReturnKind.FLOAT64 -> arrayOf(PoetSymbols.float64Class, abiCall)
+        MethodReturnKind.FLOAT32 -> arrayOf(abiCall)
+        MethodReturnKind.FLOAT64 -> arrayOf(abiCall)
         MethodReturnKind.OBJECT -> arrayOf(runtimeObjectReturnCode(method, currentNamespace, abiCall))
         MethodReturnKind.UNIT -> arrayOf(abiCall)
         else -> error("Unsupported unary runtime return kind: $returnKind")
@@ -879,7 +879,7 @@ internal class RuntimeMethodRenderer(
         MethodParameterCategory.UINT32,
         MethodParameterCategory.BOOLEAN,
         MethodParameterCategory.INT64,
-        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$argumentName.value"
+        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> argumentName
         MethodParameterCategory.STRING -> argumentName
     }
 
@@ -1016,13 +1016,13 @@ internal class RuntimeMethodRenderer(
     private fun twoArgumentReturnCode(returnType: String, abiCall: CodeBlock): CodeBlock {
         return when (returnType) {
             "String" -> HStringSupport.fromCall(abiCall)
-            "Float32" -> CodeBlock.of("%T(%L)", PoetSymbols.float32Class, abiCall)
-            "Float64" -> CodeBlock.of("%T(%L)", PoetSymbols.float64Class, abiCall)
-            "Boolean" -> CodeBlock.of("%T(%L)", PoetSymbols.winRtBooleanClass, abiCall)
-            "Int32" -> CodeBlock.of("%T(%L)", PoetSymbols.int32Class, abiCall)
-            "UInt32" -> CodeBlock.of("%T(%L)", PoetSymbols.uint32Class, abiCall)
-            "Int64" -> CodeBlock.of("%T(%L)", PoetSymbols.int64Class, abiCall)
-            "UInt64" -> CodeBlock.of("%T(%L)", PoetSymbols.uint64Class, abiCall)
+            "Float32" -> CodeBlock.of("%L", abiCall)
+            "Float64" -> CodeBlock.of("%L", abiCall)
+            "Boolean" -> CodeBlock.of("%L", abiCall)
+            "Int32" -> CodeBlock.of("%L", abiCall)
+            "UInt32" -> CodeBlock.of("%L", abiCall)
+            "Int64" -> CodeBlock.of("%L", abiCall)
+            "UInt64" -> CodeBlock.of("%L", abiCall)
             "Guid" -> CodeBlock.of("%T(%L.toString())", PoetSymbols.guidValueClass, abiCall)
             else -> error("Unsupported two-argument return type: $returnType")
         }
@@ -1031,13 +1031,13 @@ internal class RuntimeMethodRenderer(
     private fun twoArgumentNullReturn(returnType: String, methodName: String): PlannedStatement {
         return when (returnType) {
             "String" -> PlannedStatement("return %S", arrayOf(""))
-            "Float32" -> PlannedStatement("return %T(0f)", arrayOf(PoetSymbols.float32Class))
-            "Float64" -> PlannedStatement("return %T(0.0)", arrayOf(PoetSymbols.float64Class))
-            "Boolean" -> PlannedStatement("return %T(false)", arrayOf(PoetSymbols.winRtBooleanClass))
-            "Int32" -> PlannedStatement("return %T(0)", arrayOf(PoetSymbols.int32Class))
-            "UInt32" -> PlannedStatement("return %T(0u)", arrayOf(PoetSymbols.uint32Class))
-            "Int64" -> PlannedStatement("return %T(0L)", arrayOf(PoetSymbols.int64Class))
-            "UInt64" -> PlannedStatement("return %T(0uL)", arrayOf(PoetSymbols.uint64Class))
+            "Float32" -> PlannedStatement("return 0f")
+            "Float64" -> PlannedStatement("return 0.0")
+            "Boolean" -> PlannedStatement("return false")
+            "Int32" -> PlannedStatement("return 0")
+            "UInt32" -> PlannedStatement("return 0u")
+            "Int64" -> PlannedStatement("return 0L")
+            "UInt64" -> PlannedStatement("return 0uL")
             "Guid" -> PlannedStatement("return %T(%S)", arrayOf(PoetSymbols.guidValueClass, ""))
             else -> error("Unsupported two-argument null return type for $methodName: $returnType")
         }

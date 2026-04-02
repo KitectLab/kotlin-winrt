@@ -2128,7 +2128,7 @@ internal class InterfaceTypeRenderer(
         MethodParameterCategory.UINT32,
         MethodParameterCategory.BOOLEAN,
         MethodParameterCategory.INT64,
-        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$argumentName.value"
+        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> argumentName
         MethodParameterCategory.STRING -> argumentName
     }
 

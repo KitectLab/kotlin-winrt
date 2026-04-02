@@ -124,14 +124,14 @@ internal class AsyncMethodRuleRegistry(
             MethodParameterCategory.OBJECT ->
                 "%T.invokeObjectMethodWithObjectArg(pointer, $vtableIndex, $parameterName.pointer).getOrThrow()"
             MethodParameterCategory.INT32 ->
-                "%T.invokeObjectMethodWithInt32Arg(pointer, $vtableIndex, $parameterName.value).getOrThrow()"
+                "%T.invokeObjectMethodWithInt32Arg(pointer, $vtableIndex, $parameterName).getOrThrow()"
             MethodParameterCategory.UINT32 ->
-                "%T.invokeObjectMethodWithUInt32Arg(pointer, $vtableIndex, $parameterName.value).getOrThrow()"
+                "%T.invokeObjectMethodWithUInt32Arg(pointer, $vtableIndex, $parameterName).getOrThrow()"
             MethodParameterCategory.BOOLEAN ->
-                "%T.invokeObjectMethodWithBooleanArg(pointer, $vtableIndex, $parameterName.value).getOrThrow()"
+                "%T.invokeObjectMethodWithBooleanArg(pointer, $vtableIndex, $parameterName).getOrThrow()"
             MethodParameterCategory.INT64,
             MethodParameterCategory.EVENT_REGISTRATION_TOKEN ->
-                "%T.invokeObjectMethodWithInt64Arg(pointer, $vtableIndex, $parameterName.value).getOrThrow()"
+                "%T.invokeObjectMethodWithInt64Arg(pointer, $vtableIndex, $parameterName).getOrThrow()"
         }
     }
 
@@ -165,7 +165,7 @@ internal class AsyncMethodRuleRegistry(
             MethodParameterCategory.UINT32,
             MethodParameterCategory.BOOLEAN,
             MethodParameterCategory.INT64,
-            MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$parameterName.value"
+            MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> parameterName
             MethodParameterCategory.OBJECT -> "$parameterName.pointer"
         }
     }
