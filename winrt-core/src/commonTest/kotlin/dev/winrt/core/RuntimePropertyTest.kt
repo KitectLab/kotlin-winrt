@@ -30,6 +30,17 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun interface_metadata_projection_cache_key_tracks_projection_and_qualified_name() {
+        val metadata = object : WinRtInterfaceMetadata {
+            override val qualifiedName: String = "Test.IProjection"
+            override val projectionTypeKey: String = "Test.Alias"
+            override val iid = Guid(0, 0, 0, byteArrayOf(0, 0, 0, 0, 0, 0, 0, 0))
+        }
+
+        assertEquals("projection:Test.Alias:Test.IProjection", metadata.projectionCacheKey)
+    }
+
+    @Test
     fun builtin_scalar_types_wrap_values() {
         assertEquals(42, Int32(42).value)
         assertEquals(42u, UInt32(42u).value)
