@@ -96,6 +96,7 @@ internal data class MethodParameterPair(
 )
 
 internal enum class MethodParameterAbiToken {
+    BOOLEAN,
     STRING,
     OBJECT,
     INT32,
