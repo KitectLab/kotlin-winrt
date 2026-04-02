@@ -142,6 +142,21 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun projection_registry_reset_restores_default_projection_aliases() {
+        WinRtProjectionRegistry.resetForTests()
+        WinRtProjectionRegistry.registerProjectionTypeMapping(
+            winrtTypeKey = "Microsoft.UI.Xaml.Interop.IBindableVector",
+            projectionTypeKey = "Test.CustomProjection",
+        )
+
+        assertEquals("Test.CustomProjection", WinRtProjectionRegistry.projectionTypeKeyFor("Microsoft.UI.Xaml.Interop.IBindableVector"))
+
+        WinRtProjectionRegistry.resetForTests()
+
+        assertEquals("kotlin.collections.MutableList", WinRtProjectionRegistry.projectionTypeKeyFor("Microsoft.UI.Xaml.Interop.IBindableVector"))
+    }
+
+    @Test
     fun interface_projection_uses_registered_projection_type_alias() {
         WinRtProjectionRegistry.resetForTests()
         WinRtProjectionRegistry.registerProjectionTypeMapping(
