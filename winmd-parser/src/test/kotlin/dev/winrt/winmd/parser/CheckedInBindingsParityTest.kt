@@ -457,6 +457,16 @@ class CheckedInBindingsParityTest {
     }
 
     @Test
+    fun checked_in_window_optional_title_is_nullable_string() {
+        val checkedIn = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/microsoft/ui/xaml/Window.kt").readText()
+
+        assertTrue(checkedIn.contains("private val backingOptionalTitle = RuntimeProperty<String?>(null)"))
+        assertTrue(checkedIn.contains("val optionalTitle: String?"))
+        assertTrue(checkedIn.contains("if (pointer.isNull) return backingOptionalTitle.get()"))
+        assertTrue(checkedIn.contains("if (value.isNull) null else value.toKotlinString()"))
+    }
+
+    @Test
     fun checked_in_identifiers_keeps_verified_runtime_surface() {
         val calendarRuntimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/CalendarIdentifiers.kt").readText()
         val calendarStatics = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/ICalendarIdentifiersStatics.kt").readText()
