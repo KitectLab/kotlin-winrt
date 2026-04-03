@@ -71,6 +71,9 @@ object WinMdParserInputResolver {
                 arg.startsWith("--references-root=") -> {
                     extension.referencesRoot = arg.substringAfter('=')
                 }
+                arg.startsWith("--nuget-source=") -> {
+                    extension.nugetSources = extension.nugetSources + arg.substringAfter('=')
+                }
                 arg.startsWith("--nuget-root=") -> {
                     extension.nugetRoot = arg.substringAfter('=')
                 }

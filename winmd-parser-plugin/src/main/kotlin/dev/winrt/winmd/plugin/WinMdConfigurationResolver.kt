@@ -5,8 +5,9 @@ import java.nio.file.Path
 object WinMdConfigurationResolver {
     fun resolve(extension: WinMdExtension): ResolvedWinMdConfiguration {
         val explicitWinMdFiles = extension.winmdFiles.map(Path::of)
+        val nugetSources = extension.nugetSources.map(Path::of)
 
-        val requestedNuGetPackages = buildList {
+        val requestedNuGetPackages = mutableListOf<NuGetComponentReference>().apply {
             addAll(extension.nugetComponents)
             extension.nugetPackageId?.let { packageId ->
                 add(
@@ -15,18 +16,24 @@ object WinMdConfigurationResolver {
                         packageVersion = extension.nugetPackageVersion
                             ?: error("NuGet package version is required when nugetPackageId is set."),
                         nugetRoot = extension.nugetRoot,
+                        nugetSource = extension.nugetSources.firstOrNull(),
                     ),
                 )
             }
         }
 
         val nugetPackages = requestedNuGetPackages.map { component ->
-            NuGetPackageReferences.resolvePackage(
+            val componentRoots = buildList {
+                component.nugetRoot?.let { add(Path.of(it)) }
+                component.nugetSource?.let { add(Path.of(it)) }
+                addAll(nugetSources)
+                extension.nugetRoot?.let { add(Path.of(it)) }
+                add(NuGetPackageReferences.discoverPackagesRoot())
+            }.distinct()
+            NuGetPackageReferences.resolvePackageFromRoots(
                 packageId = component.packageId,
                 packageVersion = component.packageVersion,
-                nugetRoot = component.nugetRoot?.let(Path::of)
-                    ?: extension.nugetRoot?.let(Path::of)
-                    ?: NuGetPackageReferences.discoverPackagesRoot(),
+                nugetRoots = componentRoots,
             )
         }
 

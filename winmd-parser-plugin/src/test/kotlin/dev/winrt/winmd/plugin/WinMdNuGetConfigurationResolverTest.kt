@@ -73,4 +73,26 @@ class WinMdNuGetConfigurationResolverTest {
         assertTrue(resolved.sourceFiles.any { it.fileName.toString() == "Microsoft.UI.Xaml.winmd" })
         assertTrue(resolved.sourceFiles.any { it.fileName.toString() == "Windows.Foundation.winmd" })
     }
+
+    @Test
+    fun resolves_winmd_files_from_configured_nuget_source_roots() {
+        val sourceRoot = Files.createTempDirectory("nuget-source")
+        val packageRoot = sourceRoot.resolve("microsoft.windowsappsdk").resolve("1.6.0")
+        Files.createDirectories(packageRoot.resolve("lib").resolve("uap10.0"))
+        Files.write(
+            packageRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd"),
+            byteArrayOf('M'.code.toByte(), 'Z'.code.toByte()),
+        )
+
+        val resolved = WinMdConfigurationResolver.resolve(
+            WinMdExtension().apply {
+                nugetSources = listOf(sourceRoot.toString())
+                nugetComponent("Microsoft.WindowsAppSDK", "1.6.0")
+            },
+        )
+
+        assertEquals(1, resolved.nugetPackages.size)
+        assertEquals(sourceRoot.resolve("microsoft.windowsappsdk").resolve("1.6.0"), resolved.nugetPackages.single().packageRoot)
+        assertTrue(resolved.sourceFiles.single().toString().endsWith("Microsoft.UI.Xaml.winmd"))
+    }
 }

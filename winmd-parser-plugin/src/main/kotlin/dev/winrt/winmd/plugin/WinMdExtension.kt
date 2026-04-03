@@ -7,6 +7,7 @@ open class WinMdExtension {
     var contracts: List<String> = emptyList()
     var winmdFiles: List<String> = emptyList()
     var nugetRoot: String? = null
+    var nugetSources: List<String> = emptyList()
     var nugetPackageId: String? = null
     var nugetPackageVersion: String? = null
     private val _nugetComponents = mutableListOf<NuGetComponentReference>()
@@ -31,4 +32,5 @@ data class NuGetComponentReference(
     val packageId: String,
     val packageVersion: String,
     val nugetRoot: String? = null,
+    val nugetSource: String? = null,
 )

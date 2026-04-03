@@ -154,4 +154,26 @@ class WinMdParserInputResolverTest {
         assertTrue(inputs.sources.any { it.fileName.toString() == "Microsoft.UI.Xaml.winmd" })
         assertTrue(inputs.sources.any { it.fileName.toString() == "Windows.Foundation.winmd" })
     }
+
+    @Test
+    fun resolves_sources_from_configured_nuget_source_roots() {
+        val sourceRoot = Files.createTempDirectory("nuget-source")
+        val packageRoot = sourceRoot.resolve("microsoft.windowsappsdk").resolve("1.6.0")
+        Files.createDirectories(packageRoot.resolve("lib").resolve("uap10.0"))
+        Files.write(
+            packageRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd"),
+            byteArrayOf('M'.code.toByte(), 'Z'.code.toByte()),
+        )
+
+        val inputs = WinMdParserInputResolver.resolve(
+            arrayOf(
+                "build/generated",
+                "--nuget-source=${sourceRoot}",
+                "--nuget-component=Microsoft.WindowsAppSDK@1.6.0",
+                "--namespace=Microsoft.UI.Xaml",
+            ),
+        )
+
+        assertTrue(inputs.sources.any { it.fileName.toString() == "Microsoft.UI.Xaml.winmd" })
+    }
 }
