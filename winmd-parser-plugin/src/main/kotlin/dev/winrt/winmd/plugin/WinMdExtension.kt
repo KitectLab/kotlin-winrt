@@ -1,6 +1,10 @@
 package dev.winrt.winmd.plugin
 
 open class WinMdExtension {
+    companion object {
+        const val OFFICIAL_NUGET_SOURCE = "https://api.nuget.org/v3/index.json"
+    }
+
     var sdkVersion: String? = null
     var windowsKitsRoot: String? = null
     var referencesRoot: String? = null
@@ -25,6 +29,10 @@ open class WinMdExtension {
             packageVersion = packageVersion,
             nugetRoot = nugetRoot,
         )
+    }
+
+    fun official() {
+        nugetSources = (nugetSources + OFFICIAL_NUGET_SOURCE).distinct()
     }
 }
 

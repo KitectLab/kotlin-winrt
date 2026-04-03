@@ -8,6 +8,18 @@ import java.nio.file.Path
 
 class WinMdConfigurationResolverTest {
     @Test
+    fun official_adds_nuget_org_source() {
+        val extension = WinMdExtension().apply {
+            official()
+        }
+
+        val resolved = WinMdConfigurationResolver.resolve(extension)
+
+        assertTrue(extension.nugetSources.contains(WinMdExtension.OFFICIAL_NUGET_SOURCE))
+        assertTrue(resolved.sourceFiles.isNotEmpty())
+    }
+
+    @Test
     fun prefers_explicit_references_root_and_sdk_version() {
         val extension = WinMdExtension().apply {
             referencesRoot = "D:/Windows Kits/10/References"
