@@ -1556,6 +1556,70 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun folds_versioned_runtime_class_factory_interfaces_into_companion_helpers() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Runtime.IWidget",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "IWidgetFactory",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateWidget",
+                                    returnType = "Example.Runtime.Widget",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "IWidgetFactory2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateWidget",
+                                    returnType = "Example.Runtime.Widget",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/Widget.kt" }.content
+        val normalizedBinding = binding.replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("private val factory: IWidgetFactory by lazy"))
+        assertTrue(binding.contains("private val factory2: IWidgetFactory2 by lazy"))
+        assertTrue(binding.contains("private fun factoryCreateWidget(name: String): Widget"))
+        assertTrue(binding.contains("private fun factory2CreateWidget(name: String): Widget"))
+        assertTrue(normalizedBinding.contains("constructor(name:String):this(Companion.factoryCreateWidget(name).pointer)"))
+    }
+
+    @Test
     fun generates_bindings_for_known_namespaces() {
         val tempFile = Files.createTempFile("sample", ".winmd")
         Files.write(tempFile, byteArrayOf('M'.code.toByte(), 'Z'.code.toByte()))
