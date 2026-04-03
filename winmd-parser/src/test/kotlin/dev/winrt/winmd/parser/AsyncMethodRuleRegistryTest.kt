@@ -90,4 +90,30 @@ class AsyncMethodRuleRegistryTest {
             ),
         )
     }
+
+    @Test
+    fun rejects_async_methods_with_nested_generic_result_or_progress_parameters() {
+        assertNull(
+            registry.plan(
+                WinMdMethod(
+                    name = "GetValueAsync",
+                    returnType = "Windows.Foundation.IAsyncOperation<Windows.Foundation.Collections.IMapView<String, T>>",
+                    vtableIndex = 6,
+                ),
+                "Windows.Foundation",
+                genericParameters = setOf("T"),
+            ),
+        )
+        assertNull(
+            registry.plan(
+                WinMdMethod(
+                    name = "GetProgressAsync",
+                    returnType = "Windows.Foundation.IAsyncOperationWithProgress<String, Windows.Foundation.Collections.IMapView<String, TProgress>>",
+                    vtableIndex = 7,
+                ),
+                "Windows.Foundation",
+                genericParameters = setOf("TProgress"),
+            ),
+        )
+    }
 }

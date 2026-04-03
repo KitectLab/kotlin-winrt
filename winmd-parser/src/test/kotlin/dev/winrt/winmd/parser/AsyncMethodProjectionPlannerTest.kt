@@ -68,4 +68,22 @@ class AsyncMethodProjectionPlannerTest {
             ),
         )
     }
+
+    @Test
+    fun rejects_nested_generic_parameters_for_async_descriptors() {
+        assertNull(
+            planner.asyncResultDescriptorExpression(
+                "Windows.Foundation.IAsyncOperation<Windows.Foundation.Collections.IMapView<String, T>>",
+                "Windows.Foundation",
+                setOf("T"),
+            ),
+        )
+        assertNull(
+            planner.asyncProgressDescriptorExpression(
+                "Windows.Foundation.IAsyncOperationWithProgress<String, Windows.Foundation.Collections.IMapView<String, TProgress>>",
+                "Windows.Foundation",
+                setOf("TProgress"),
+            ),
+        )
+    }
 }

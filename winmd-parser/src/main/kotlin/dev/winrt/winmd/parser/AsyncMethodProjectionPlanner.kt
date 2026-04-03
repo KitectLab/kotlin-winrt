@@ -72,7 +72,7 @@ internal class AsyncMethodProjectionPlanner(
                 splitGenericArguments(returnType.substringAfter('<').substringBeforeLast('>')).firstOrNull()
             else -> null
         } ?: return null
-        if (resultTypeName in genericParameters && resultTypeName !in scalarAsyncResultTypeNames) {
+        if (containsGenericParameter(resultTypeName, genericParameters) && resultTypeName !in scalarAsyncResultTypeNames) {
             return null
         }
         val signature = winRtSignatureMapper.signatureFor(resultTypeName, currentNamespace)
@@ -126,7 +126,7 @@ internal class AsyncMethodProjectionPlanner(
                 splitGenericArguments(returnType.substringAfter('<').substringBeforeLast('>')).getOrNull(1)
             else -> null
         } ?: return null
-        if (progressType in genericParameters && progressType !in scalarAsyncProgressPlan.keys) {
+        if (containsGenericParameter(progressType, genericParameters) && progressType !in scalarAsyncProgressPlan.keys) {
             return null
         }
         val progressPlan = when {
@@ -219,6 +219,18 @@ internal class AsyncMethodProjectionPlanner(
         }
         arguments += source.substring(start).trim()
         return arguments
+    }
+
+    private fun containsGenericParameter(typeName: String, genericParameters: Set<String>): Boolean {
+        if (typeName in genericParameters) {
+            return true
+        }
+        val genericStart = typeName.indexOf('<')
+        if (genericStart < 0 || !typeName.endsWith('>')) {
+            return false
+        }
+        return splitGenericArguments(typeName.substring(genericStart + 1, typeName.length - 1))
+            .any { containsGenericParameter(it, genericParameters) }
     }
 }
 

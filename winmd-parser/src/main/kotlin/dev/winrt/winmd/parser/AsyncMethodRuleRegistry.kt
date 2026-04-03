@@ -131,7 +131,7 @@ internal class AsyncMethodRuleRegistry(
                 returnType.substringAfter('<').substringBeforeLast('>').substringBefore(',')
             else -> null
         } ?: return false
-        return resultTypeName in genericParameters && resultTypeName !in scalarAsyncResultTypeNames
+        return containsGenericParameter(resultTypeName, genericParameters) && resultTypeName !in scalarAsyncResultTypeNames
     }
 
     private fun requiresProjectedAsyncProgress(returnType: String, genericParameters: Set<String>): Boolean {
@@ -142,7 +142,7 @@ internal class AsyncMethodRuleRegistry(
                 returnType.substringAfter('<').substringBeforeLast('>').substringAfter(',')
             else -> null
         } ?: return false
-        return progressTypeName in genericParameters && progressTypeName !in scalarAsyncProgressTypeNames
+        return containsGenericParameter(progressTypeName, genericParameters) && progressTypeName !in scalarAsyncProgressTypeNames
     }
 
     private fun asyncUnaryInvocation(
@@ -232,6 +232,39 @@ private val scalarAsyncProgressTypeNames = setOf(
     "Float32",
     "Float64",
 )
+
+private fun containsGenericParameter(typeName: String, genericParameters: Set<String>): Boolean {
+    if (typeName in genericParameters) {
+        return true
+    }
+    val genericStart = typeName.indexOf('<')
+    if (genericStart < 0 || !typeName.endsWith('>')) {
+        return false
+    }
+    return splitGenericArguments(typeName.substring(genericStart + 1, typeName.length - 1))
+        .any { containsGenericParameter(it, genericParameters) }
+}
+
+private fun splitGenericArguments(source: String): List<String> {
+    if (source.isBlank()) {
+        return emptyList()
+    }
+    val arguments = mutableListOf<String>()
+    var depth = 0
+    var start = 0
+    source.forEachIndexed { index, char ->
+        when (char) {
+            '<' -> depth++
+            '>' -> depth--
+            ',' -> if (depth == 0) {
+                arguments += source.substring(start, index).trim()
+                start = index + 1
+            }
+        }
+    }
+    arguments += source.substring(start).trim()
+    return arguments
+}
 
 internal data class AsyncMethodRulePlan(
     val rawReturnType: TypeName,
