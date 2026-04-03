@@ -727,6 +727,46 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun project_activation_factory_reuses_wrapper_for_shared_projection_type_key() {
+        WinRtRuntime.resetForTests()
+
+        val runtimeClass = object : WinRtRuntimeClassMetadata {
+            override val qualifiedName: String = "Test.RuntimeClass"
+            override val classId = RuntimeClassId("Test", "RuntimeClass")
+            override val defaultInterfaceName: String? = null
+        }
+        val metadataA = object : WinRtInterfaceMetadata {
+            override val qualifiedName: String = "Test.IFactory"
+            override val projectionTypeKey: String = "kotlin.collections.MutableList"
+            override val iid = Guid(0, 0, 0, byteArrayOf(1, 2, 3, 4, 5, 6, 7, 9))
+        }
+        val metadataB = object : WinRtInterfaceMetadata {
+            override val qualifiedName: String = "Test.IAltFactory"
+            override val projectionTypeKey: String = "kotlin.collections.MutableList"
+            override val iid = Guid(0, 0, 0, byteArrayOf(1, 2, 3, 4, 5, 6, 7, 9))
+        }
+        val provider = object : ActivationFactoryProvider {
+            var factoryCount = 0
+
+            override fun <T : WinRtObject> activate(metadata: WinRtRuntimeClassMetadata, constructor: (ComPtr) -> T): Result<T> {
+                error("not used")
+            }
+
+            override fun getActivationFactory(metadata: WinRtRuntimeClassMetadata, iid: Guid): Result<ComPtr> {
+                factoryCount += 1
+                return Result.success(ComPtr.NULL)
+            }
+        }
+        WinRtRuntime.activationFactoryProvider = provider
+
+        val first = WinRtRuntime.projectActivationFactory(runtimeClass, metadataA) { pointer -> WinRtInterfaceProjection(pointer) }
+        val second = WinRtRuntime.projectActivationFactory(runtimeClass, metadataB) { pointer -> WinRtInterfaceProjection(pointer) }
+
+        assertSame(first, second)
+        assertEquals(1, provider.factoryCount)
+    }
+
+    @Test
     fun projected_type_reference_reuses_cached_projection_type_entry_when_present() {
         WinRtProjectionRegistry.resetForTests()
         WinRtProjectionRegistry.registerProjectionTypeMapping(
