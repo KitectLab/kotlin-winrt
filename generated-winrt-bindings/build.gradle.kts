@@ -24,6 +24,20 @@ fun compareVersions(left: String, right: String): Int {
     return 0
 }
 
+fun normalizeNuGetVersion(value: String): String {
+    val trimmed = value.trim()
+    return if (
+        trimmed.length > 2 &&
+        ',' !in trimmed &&
+        ((trimmed.startsWith("[") && trimmed.endsWith("]")) ||
+            (trimmed.startsWith("(") && trimmed.endsWith(")")))
+    ) {
+        trimmed.substring(1, trimmed.length - 1)
+    } else {
+        trimmed
+    }
+}
+
 fun Project.stringListProperty(name: String): List<String> =
     providers.gradleProperty(name)
         .orNull
@@ -307,7 +321,7 @@ fun resolveNuGetPackageDependencies(packageRoot: File): List<Pair<String, String
             val element = node as? org.w3c.dom.Element ?: continue
             val id = element.getAttribute("id").takeIf { it.isNotBlank() } ?: continue
             val version = element.getAttribute("version").takeIf { it.isNotBlank() } ?: continue
-            add(id to version)
+            add(id to normalizeNuGetVersion(version))
         }
     }
 }
