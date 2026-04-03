@@ -99,6 +99,20 @@ class KotlinCollectionProjectionMapperTest {
                             defaultInterface = "Windows.Foundation.Collections.IMapView<String, Windows.Globalization.Calendar>",
                             baseInterfaces = listOf("Windows.Foundation.Collections.IMapView<String, Windows.Globalization.Calendar>"),
                         ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "DateTimeIterableRuntimeClass",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IIterable<DateTime>",
+                            baseInterfaces = listOf("Windows.Foundation.Collections.IIterable<DateTime>"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "TimeSpanVectorViewRuntimeClass",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IVectorView<TimeSpan>",
+                            baseInterfaces = listOf("Windows.Foundation.Collections.IVectorView<TimeSpan>"),
+                        ),
                     ),
                 ),
             ),
@@ -204,6 +218,28 @@ class KotlinCollectionProjectionMapperTest {
             true,
             mapProjection.delegateFactory.toString().contains("WinRtMapProjection"),
         )
+    }
+
+    @Test
+    fun projects_datetime_and_timespan_collection_elements() {
+        val dateTimeProjection = mapper.runtimeClassIterableProjection(
+            typeRegistry.findType("DateTimeIterableRuntimeClass", "Windows.Foundation.Collections")!!,
+            TypeNameMapper(),
+            WinRtSignatureMapper(typeRegistry),
+            WinRtProjectionTypeMapper(),
+        )
+        requireNotNull(dateTimeProjection)
+        assertEquals("kotlin.collections.Iterable<kotlin.time.Instant>", dateTimeProjection.superinterface.toString())
+        assertTrue(dateTimeProjection.delegateFactory.toString().contains("fromEpochSeconds"))
+
+        val timeSpanProjection = mapper.runtimeClassInterfaceProjection(
+            typeRegistry.findType("TimeSpanVectorViewRuntimeClass", "Windows.Foundation.Collections")!!,
+            TypeNameMapper(),
+            WinRtSignatureMapper(typeRegistry),
+            WinRtProjectionTypeMapper(),
+        )
+        requireNotNull(timeSpanProjection)
+        assertEquals("kotlin.collections.List<kotlin.time.Duration>", timeSpanProjection.superinterface.toString())
     }
 
     @Test

@@ -513,7 +513,7 @@ internal class KotlinCollectionProjectionMapper {
     }
 
     private fun supportsClosedGenericIterableElement(typeName: String): Boolean {
-        return typeName == "String" || typeName == "Boolean" || typeName == "Int32" || typeName == "UInt32" || typeName == "Int64" || typeName == "UInt64" || typeName == "Float64" || (
+        return typeName == "String" || typeName == "Boolean" || typeName == "Int32" || typeName == "UInt32" || typeName == "Int64" || typeName == "UInt64" || typeName == "Float64" || typeName == "DateTime" || typeName == "TimeSpan" || (
             (typeName == "Object" || typeName.contains('.')) &&
                 !typeName.endsWith("[]") &&
                 (typeName.indexOf('<') < 0 || isKeyValuePairElement(typeName))
@@ -590,6 +590,27 @@ internal class KotlinCollectionProjectionMapper {
                 pointerExpression,
                 slot,
             )
+        } else if (elementTypeName == PoetSymbols.dateTimeClass) {
+            CodeBlock.of(
+                "%T.fromEpochSeconds((%T.invokeInt64Getter(%L, %L).getOrThrow() - %L) / 10000000L, ((%T.invokeInt64Getter(%L, %L).getOrThrow() - %L) %% 10000000L * 100).toInt())",
+                PoetSymbols.dateTimeClass,
+                PoetSymbols.platformComInteropClass,
+                pointerExpression,
+                slot,
+                WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
+                PoetSymbols.platformComInteropClass,
+                pointerExpression,
+                slot,
+                WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
+            )
+        } else if (elementTypeName == PoetSymbols.timeSpanClass) {
+            CodeBlock.of(
+                "%T(%T.invokeInt64Getter(%L, %L).getOrThrow())",
+                PoetSymbols.timeSpanClass,
+                PoetSymbols.platformComInteropClass,
+                pointerExpression,
+                slot,
+            )
         } else {
             CodeBlock.of(
                 "%T(%T.invokeObjectMethod(%L, %L).getOrThrow())",
@@ -634,6 +655,8 @@ internal class KotlinCollectionProjectionMapper {
             "Int64" -> Long::class.asTypeName()
             "UInt64" -> ULong::class.asTypeName()
             "Float64" -> Double::class.asTypeName()
+            "DateTime" -> PoetSymbols.dateTimeClass
+            "TimeSpan" -> PoetSymbols.timeSpanClass
             else -> typeNameMapper.mapTypeName(typeName, "Windows.Foundation.Collections")
         }
     }
