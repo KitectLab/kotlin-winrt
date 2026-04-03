@@ -15,4 +15,7 @@ data class ResolvedWinMdConfiguration(
             addAll(contracts.map { it.winmdPath })
             addAll(nugetPackages.flatMap { it.winmdFiles })
         }.distinct()
+
+    val runtimeDllFiles: List<Path>
+        get() = nugetPackages.flatMap { it.runtimeDllFiles }.distinct()
 }

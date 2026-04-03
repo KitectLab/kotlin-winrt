@@ -148,6 +148,30 @@ val restoreNuGetWinMdPackages by tasks.registering(Exec::class) {
     }
 }
 
+val collectNuGetRuntimeAssets by tasks.registering(Sync::class) {
+    group = "code generation"
+    description = "Collects runtime DLLs from restored NuGet WinRT components."
+    dependsOn(restoreNuGetWinMdPackages)
+
+    val componentSpecs = nuGetComponentSpecs()
+    onlyIf { componentSpecs.isNotEmpty() }
+
+    into(layout.buildDirectory.dir("nuget/runtime-assets"))
+
+    doFirst {
+        val resolvedPackagesDir = nugetPackagesDir.get()
+        val roots = componentSpecs.map { spec ->
+            val packageId = spec.substringBefore('@')
+            val packageVersion = spec.substringAfter('@')
+            resolvedPackagesDir.resolve(packageId.lowercase()).resolve(packageVersion)
+        }
+        from(roots) {
+            include("**/*.dll")
+        }
+        exclude("**/*.winmd")
+    }
+}
+
 fun JavaExec.configureWinMdParserClasspath() {
     classpath(
         winmdParserMainOutput,

@@ -11,6 +11,7 @@ data class NuGetWinMdPackageReference(
     val packageVersion: String,
     val packageRoot: Path,
     val winmdFiles: List<Path>,
+    val runtimeDllFiles: List<Path>,
 )
 
 object NuGetPackageReferences {
@@ -29,6 +30,12 @@ object NuGetPackageReferences {
                 .sorted()
                 .toList()
         }
+        val runtimeDllFiles = Files.walk(packageRoot).use { paths ->
+            paths
+                .filter { Files.isRegularFile(it) && it.name.endsWith(".dll", ignoreCase = true) }
+                .sorted()
+                .toList()
+        }
         require(winmdFiles.isNotEmpty()) {
             "No WinMD files found under NuGet package: $packageRoot"
         }
@@ -38,6 +45,7 @@ object NuGetPackageReferences {
             packageVersion = packageVersion,
             packageRoot = packageRoot,
             winmdFiles = winmdFiles,
+            runtimeDllFiles = runtimeDllFiles,
         )
     }
 
@@ -63,6 +71,12 @@ object NuGetPackageReferences {
                 .sorted()
                 .toList()
         }
+        val runtimeDllFiles = Files.walk(packageRoot).use { paths ->
+            paths
+                .filter { Files.isRegularFile(it) && it.name.endsWith(".dll", ignoreCase = true) }
+                .sorted()
+                .toList()
+        }
         require(winmdFiles.isNotEmpty()) {
             "No WinMD files found under NuGet package: $packageRoot"
         }
@@ -72,6 +86,7 @@ object NuGetPackageReferences {
             packageVersion = packageVersion,
             packageRoot = packageRoot,
             winmdFiles = winmdFiles,
+            runtimeDllFiles = runtimeDllFiles,
         )
     }
 
