@@ -82,21 +82,30 @@ object WinUiApplicationStart {
         ) {
             val arg = it.single() as dev.winrt.kom.ComPtr
             runCatching {
+                println("winui: application callback invoked")
                 application = Application.current
+                println("winui: application.current ready")
                 window = Window()
+                println("winui: window created")
                 val iWindow = IWindow.from(window!!)
                 iWindow.title = windowTitle
-                iWindow.setContent(WinUiSampleLayout.build(windowTitle, messageText))
+                println("winui: window title set")
+                val layout = WinUiSampleLayout.build(windowTitle, messageText)
+                iWindow.setContent(layout.root)
+                println("winui: window content set")
                 iWindow.activate()
+                println("winui: window activated")
                 val uiThreadId = WindowsMessageLoop.currentThreadId()
                 val autoQuitVisible = System.getProperty("dev.winrt.autoQuitVisible", "false").equals("true", ignoreCase = true)
                 Thread.ofPlatform().daemon(true).start {
                     val visible = WindowsWindowProbe.waitForWindowByTitle(windowTitle, timeoutMillis = 5_000L)
                     windowVisible = visible
+                    println("winui: window visible=$visible")
                     if (!visible || autoQuitVisible) {
                         if (visible) {
                             Thread.sleep(500L)
                             WindowsWindowProbe.closeWindowByTitle(windowTitle)
+                            println("winui: window close requested")
                             WindowsMessageLoop.postThreadQuit(uiThreadId)
                         } else {
                             WindowsMessageLoop.postThreadQuit(uiThreadId)
@@ -105,10 +114,12 @@ object WinUiApplicationStart {
                 }
             }.getOrElse { error ->
                 launchFailure = error
+                println("winui: launch failed: ${error::class.simpleName}: ${error.message}")
             }
         }
         activeCallback = callback
         Application.start(ApplicationInitializationCallback(callback.pointer))
+        println("winui: Application.start returned")
         launchFailure?.let { throw it }
         return if (windowVisible) {
             "xaml=application-start-visible"

@@ -17,7 +17,7 @@ open class Panel(
         get() = get_Children()
 
     fun get_Children(): UIElementCollection =
-        UIElementCollection(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
+        UIElementCollection(PlatformComInterop.invokeObjectMethod(pointer, 4).getOrThrow())
 
     companion object : WinRtRuntimeClassMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Controls.Panel"

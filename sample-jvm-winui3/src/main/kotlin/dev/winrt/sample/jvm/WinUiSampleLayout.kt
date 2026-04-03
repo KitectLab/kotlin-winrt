@@ -1,10 +1,13 @@
 package dev.winrt.sample.jvm
 
 import microsoft.ui.xaml.controls.StackPanel
-import microsoft.ui.xaml.controls.TextBlock
 
 data class WinUiSampleLayoutDescriptor(
     val sections: List<String>,
+)
+
+data class WinUiSampleLayoutResult(
+    val root: StackPanel,
 )
 
 object WinUiSampleLayout {
@@ -20,20 +23,11 @@ object WinUiSampleLayout {
         )
     }
 
-    fun build(windowTitle: String, messageText: String): StackPanel {
+    fun build(windowTitle: String, messageText: String): WinUiSampleLayoutResult {
         val root = StackPanel()
-        root.children.add(makeTextBlock("kotlin-winrt sample"))
-        root.children.add(makeTextBlock(windowTitle))
-        root.children.add(makeTextBlock("Bootstrap: ready"))
-        root.children.add(makeTextBlock(messageText))
-        root.children.add(makeTextBlock("Runtime bridge: active"))
-        root.children.add(makeTextBlock("winrt-core + generated-winrt-bindings + kom"))
-        return root
-    }
-
-    private fun makeTextBlock(text: String): TextBlock {
-        return TextBlock().also { block ->
-            block.text = text
-        }
+        println("winui: root stackpanel pointer null=${root.pointer.isNull}")
+        val children = root.children
+        println("winui: children collection pointer null=${children.pointer.isNull}")
+        return WinUiSampleLayoutResult(root = root)
     }
 }
