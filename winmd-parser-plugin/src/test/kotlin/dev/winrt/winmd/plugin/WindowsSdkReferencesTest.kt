@@ -2,8 +2,10 @@ package dev.winrt.winmd.plugin
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.exists
 
@@ -36,6 +38,42 @@ class WindowsSdkReferencesTest {
         assertEquals("4.0.0.0", reference.contractVersion)
         assertTrue(reference.winmdPath.exists())
         assertTrue(reference.winmdPath.toString().contains("Windows.Foundation.FoundationContract"))
+    }
+
+    @Test
+    fun uses_latest_installed_sdk_version_and_reports_missing_versions() {
+        val tempRoot = Files.createTempDirectory("windows-kits")
+        Files.createDirectories(tempRoot.resolve("10.0.19041.0"))
+        Files.createDirectories(tempRoot.resolve("10.0.22621.0"))
+        Files.createDirectories(
+            tempRoot.resolve("10.0.22621.0")
+                .resolve("Windows.Foundation.UniversalApiContract")
+                .resolve("15.0.0.0"),
+        )
+        Files.write(
+            tempRoot.resolve("10.0.22621.0")
+                .resolve("Windows.Foundation.UniversalApiContract")
+                .resolve("15.0.0.0")
+                .resolve("Windows.Foundation.UniversalApiContract.winmd"),
+            byteArrayOf('M'.code.toByte(), 'Z'.code.toByte()),
+        )
+
+        val latest = WindowsSdkReferences.findContract(
+            referencesRoot = tempRoot,
+            contractName = "Windows.Foundation.UniversalApiContract",
+        )
+
+        assertEquals("10.0.22621.0", latest.sdkVersion)
+
+        val exception = assertThrows(IllegalArgumentException::class.java) {
+            WindowsSdkReferences.findContract(
+                referencesRoot = tempRoot,
+                contractName = "Windows.Foundation.UniversalApiContract",
+                sdkVersion = "10.0.20348.0",
+            )
+        }
+
+        assertTrue(exception.message?.contains("Installed versions: 10.0.19041.0, 10.0.22621.0") == true)
     }
 
     @Test

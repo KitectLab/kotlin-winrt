@@ -29,7 +29,14 @@ object WindowsSdkReferences {
             "Windows SDK references root does not exist or is not a directory: $referencesRoot"
         }
 
-        val resolvedSdkVersion = sdkVersion ?: latestSdkVersion(referencesRoot)
+        val installedSdkVersions = discoverInstalledSdkVersions(referencesRoot)
+        val resolvedSdkVersion = sdkVersion
+            ?: installedSdkVersions.maxWithOrNull(compareByVersion { it })
+            ?: error("No Windows SDK versions found under $referencesRoot")
+        require(installedSdkVersions.contains(resolvedSdkVersion)) {
+            "Windows SDK version $resolvedSdkVersion does not exist under $referencesRoot. " +
+                "Installed versions: ${installedSdkVersions.sortedWith(compareByVersion { it }).joinToString(", ")}"
+        }
         val sdkRoot = referencesRoot.resolve(resolvedSdkVersion)
         require(sdkRoot.exists() && sdkRoot.isDirectory()) {
             "Windows SDK version directory does not exist: $sdkRoot"
@@ -74,11 +81,16 @@ object WindowsSdkReferences {
     }
 
     fun latestSdkVersion(referencesRoot: Path): String {
+        return discoverInstalledSdkVersions(referencesRoot)
+            .maxWithOrNull(compareByVersion { it })
+            ?: error("No Windows SDK versions found under $referencesRoot")
+    }
+
+    fun discoverInstalledSdkVersions(referencesRoot: Path): List<String> {
         return referencesRoot.listDirectoryEntries()
             .filter { it.isDirectory() }
             .map { it.name }
-            .maxWithOrNull(compareByVersion { it })
-            ?: error("No Windows SDK versions found under $referencesRoot")
+            .sortedWith(compareByVersion { it })
     }
 
     fun discoverReferencesRoot(): Path {
