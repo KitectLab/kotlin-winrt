@@ -111,7 +111,28 @@ fun Project.runNuGetInstall(
     }
 }
 
-val nugetPackagesDir = layout.buildDirectory.dir("nuget").map { it.dir("packages").asFile }
+fun Project.discoverNuGetGlobalPackagesRoot(nugetCommand: String): String {
+    val process = ProcessBuilder(
+        listOf(nugetCommand, "locals", "global-packages", "-list"),
+    )
+        .directory(project.projectDir)
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().use { it.readText() }
+    val exitCode = process.waitFor()
+    require(exitCode == 0) {
+        "Failed to discover NuGet global-packages path with exit code $exitCode."
+    }
+    val resolvedPath = output.lineSequence()
+        .map(String::trim)
+        .firstOrNull { it.startsWith("global-packages:") }
+        ?.substringAfter(':')
+        ?.trim()
+        ?.trim('"')
+    return resolvedPath
+        ?: System.getenv("NUGET_PACKAGES")
+        ?: File(System.getProperty("user.home"), ".nuget/packages").absolutePath
+}
 
 val restoreNuGetWinMdPackages by tasks.registering {
     group = "code generation"
@@ -122,9 +143,9 @@ val restoreNuGetWinMdPackages by tasks.registering {
 
     doLast {
         val restoreCommand = providers.gradleProperty("winmd.nugetCommand").orNull ?: "nuget"
-        val outputDirectory = providers.gradleProperty("winmd.nugetRoot").orNull ?: nugetPackagesDir.get().absolutePath
+        val outputDirectory = providers.gradleProperty("winmd.nugetRoot").orNull
+            ?: discoverNuGetGlobalPackagesRoot(restoreCommand)
         val sources = nuGetSourceEntries().map { it.second }
-        nugetPackagesDir.get().mkdirs()
         componentSpecs.forEach { spec ->
             val packageId = spec.substringBefore('@')
             val packageVersion = spec.substringAfter('@')
@@ -150,7 +171,10 @@ val collectNuGetRuntimeAssets by tasks.registering(Sync::class) {
     into(layout.buildDirectory.dir("nuget/runtime-assets"))
 
     doFirst {
-        val resolvedPackagesDir = nugetPackagesDir.get()
+        val restoreCommand = providers.gradleProperty("winmd.nugetCommand").orNull ?: "nuget"
+        val resolvedPackagesDir = providers.gradleProperty("winmd.nugetRoot").orNull
+            ?.let(::File)
+            ?: File(discoverNuGetGlobalPackagesRoot(restoreCommand))
         val roots = componentSpecs.map { spec ->
             val packageId = spec.substringBefore('@')
             val packageVersion = spec.substringAfter('@')
