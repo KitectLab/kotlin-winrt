@@ -44,19 +44,7 @@ open class Inspectable(pointer: ComPtr) : WinRtObject(pointer) {
     fun getObjectReferenceForProjectedType(typeKey: String, iid: Guid): ComPtr {
         val projectionTypeKey = WinRtProjectionRegistry.projectionTypeKeyFor(typeKey)
         val abiHelperTypeKey = WinRtProjectionRegistry.abiHelperTypeKeyFor(projectionTypeKey)
-        val reference = getObjectReferenceForType(
-            typeKey = abiHelperTypeKey,
-            iid = iid,
-        )
-        if (!queryInterfaceCache.containsKey(projectionTypeKey)) {
-            queryInterfaceCache[projectionTypeKey] = reference
-        }
-        if (typeKey != projectionTypeKey) {
-            if (!queryInterfaceCache.containsKey(typeKey)) {
-                queryInterfaceCache[typeKey] = reference
-            }
-        }
-        return reference
+        return getOrPutProjectedTypeReference(typeKey, projectionTypeKey, abiHelperTypeKey, iid)
     }
 
     fun getInspectableArgumentPointer(): ComPtr {
@@ -66,6 +54,20 @@ open class Inspectable(pointer: ComPtr) : WinRtObject(pointer) {
     @Suppress("UNCHECKED_CAST")
     fun <T : Any> getOrPutHelperWrapper(typeKey: String, factory: () -> T): T {
         return additionalTypeData.getOrPut("helper-wrapper:$typeKey", factory) as T
+    }
+
+    private fun getOrPutProjectedTypeReference(
+        winrtTypeKey: String,
+        projectionTypeKey: String,
+        abiHelperTypeKey: String,
+        iid: Guid,
+    ): ComPtr {
+        val reference = getObjectReferenceForType(abiHelperTypeKey, iid)
+        queryInterfaceCache[projectionTypeKey] = reference
+        if (winrtTypeKey != projectionTypeKey) {
+            queryInterfaceCache[winrtTypeKey] = reference
+        }
+        return reference
     }
 }
 
