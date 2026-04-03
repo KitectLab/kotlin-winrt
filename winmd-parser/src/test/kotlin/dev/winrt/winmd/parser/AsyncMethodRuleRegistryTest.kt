@@ -1,0 +1,67 @@
+package dev.winrt.winmd.parser
+
+import dev.winrt.winmd.plugin.WinMdMethod
+import dev.winrt.winmd.plugin.WinMdModel
+import dev.winrt.winmd.plugin.WinMdNamespace
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Test
+
+class AsyncMethodRuleRegistryTest {
+    private val typeNameMapper = TypeNameMapper()
+    private val typeRegistry = TypeRegistry(
+        WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(WinMdNamespace(name = "Windows.Foundation", types = emptyList())),
+        ),
+    )
+    private val planner = AsyncMethodProjectionPlanner(typeNameMapper, WinRtSignatureMapper(typeRegistry))
+    private val registry = AsyncMethodRuleRegistry(typeNameMapper, planner)
+
+    @Test
+    fun plans_async_operations_with_scalar_results() {
+        val plan = registry.plan(
+            WinMdMethod(
+                name = "GetStringAsync",
+                returnType = "Windows.Foundation.IAsyncOperation<String>",
+                vtableIndex = 6,
+            ),
+            "Windows.Foundation",
+        )
+
+        assertNotNull(plan)
+        assertEquals("windows.foundation.IAsyncOperation<kotlin.String>", plan!!.rawReturnType.toString())
+        assertEquals("kotlin.String", plan.awaitReturnType.toString())
+    }
+
+    @Test
+    fun plans_async_operations_with_progress() {
+        val plan = registry.plan(
+            WinMdMethod(
+                name = "GetProgressAsync",
+                returnType = "Windows.Foundation.IAsyncOperationWithProgress<String, Float64>",
+                vtableIndex = 7,
+            ),
+            "Windows.Foundation",
+        )
+
+        assertNotNull(plan)
+        assertEquals("windows.foundation.IAsyncOperationWithProgress<kotlin.String, kotlin.Double>", plan!!.rawReturnType.toString())
+        assertEquals("kotlin.String", plan.awaitReturnType.toString())
+    }
+
+    @Test
+    fun rejects_non_async_method_returns() {
+        assertNull(
+            registry.plan(
+                WinMdMethod(
+                    name = "NotAsync",
+                    returnType = "String",
+                    vtableIndex = 6,
+                ),
+                "Windows.Foundation",
+            ),
+        )
+    }
+}
