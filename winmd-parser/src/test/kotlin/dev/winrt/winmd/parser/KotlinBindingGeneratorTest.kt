@@ -8946,6 +8946,86 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_versioned_event_slot_helpers_for_runtime_companion_statics() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Events",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetOpenedEventArgs",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "55555555-5555-5555-5555-555555555555",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "33333333-3333-3333-3333-333333333333",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_Closed",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(WinMdParameter("handler", "Windows.Foundation.EventHandler<Example.Events.IWidgetOpenedEventArgs>")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_Closed",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("token", "EventRegistrationToken")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetStatics2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "66666666-6666-6666-6666-666666666666",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_Opened",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(WinMdParameter("handler", "Windows.Foundation.EventHandler<Example.Events.IWidgetOpenedEventArgs>")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_Opened",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("token", "EventRegistrationToken")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Example/Events/Widget.kt" }.content
+        val normalizedRuntimeBinding = runtimeBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("private val statics: IWidgetStatics by lazy"))
+        assertTrue(runtimeBinding.contains("private val statics2: IWidgetStatics2 by lazy"))
+        assertTrue(runtimeBinding.contains("val closedEvent: ClosedStaticEvent"))
+        assertTrue(runtimeBinding.contains("val openedEvent: OpenedStaticEvent"))
+        assertTrue(runtimeBinding.contains("private val openedEventSlot: OpenedStaticEvent = OpenedStaticEvent { statics2 }"))
+        assertTrue(runtimeBinding.contains("fun subscribe(handler: EventHandler<IWidgetOpenedEventArgs>): EventRegistrationToken"))
+        assertTrue(normalizedRuntimeBinding.contains("funsubscribe(handler:(ComPtr,IWidgetOpenedEventArgs)->Unit):EventRegistrationToken"))
+        assertTrue(runtimeBinding.contains("fun unsubscribe(token: EventRegistrationToken)"))
+        assertTrue(runtimeBinding.contains("delegateHandles.remove(token)"))
+        assertTrue(runtimeBinding.contains("delegateHandle?.close()"))
+    }
+
+    @Test
     fun generates_typed_event_handler_slot_helpers() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
