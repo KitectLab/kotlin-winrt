@@ -116,12 +116,35 @@ fun Project.runNuGetInstall(
 fun Project.nuGetExecutableCacheDir(): File =
     File(System.getProperty("user.home"), ".gradle/caches/kotlin-winrt/nuget")
 
+fun Project.nuGetExecutableVersionFile(): File =
+    nuGetExecutableCacheDir().resolve("nuget.version")
+
+fun Project.nuGetToolRefreshRequested(): Boolean =
+    providers.gradleProperty("winmd.nugetToolRefresh").orNull?.equals("true", ignoreCase = true) == true
+
+fun Project.detectNuGetExecutableVersion(nugetExecutable: String): String? {
+    val process = ProcessBuilder(nugetExecutable, "help")
+        .directory(project.projectDir)
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().use { it.readText() }
+    process.waitFor()
+    return output.lineSequence()
+        .map(String::trim)
+        .firstOrNull { it.startsWith("NuGet Version:") }
+        ?.substringAfter(':')
+        ?.trim()
+}
+
 fun Project.downloadNuGetExecutable(): String {
     val cacheDir = nuGetExecutableCacheDir()
     cacheDir.mkdirs()
     val exeFile = cacheDir.resolve("nuget.exe")
-    if (exeFile.exists()) {
+    if (exeFile.exists() && !nuGetToolRefreshRequested()) {
         return exeFile.absolutePath
+    }
+    if (exeFile.exists()) {
+        exeFile.delete()
     }
     val tempFile = cacheDir.resolve("nuget.exe.download")
     URI("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe").toURL().openStream().use { input ->
@@ -132,6 +155,9 @@ fun Project.downloadNuGetExecutable(): String {
     check(tempFile.renameTo(exeFile)) {
         "Failed to move downloaded NuGet executable into $exeFile."
     }
+    detectNuGetExecutableVersion(exeFile.absolutePath)?.let { version ->
+        nuGetExecutableVersionFile().writeText(version)
+    }
     return exeFile.absolutePath
 }
 
@@ -139,6 +165,18 @@ fun Project.resolveNuGetCommand(): String {
     val configuredCommand = providers.gradleProperty("winmd.nugetCommand").orNull
     if (configuredCommand != null) {
         return configuredCommand
+    }
+    val cachedExe = nuGetExecutableCacheDir().resolve("nuget.exe")
+    if (cachedExe.exists() && !nuGetToolRefreshRequested()) {
+        val cachedVersion = nuGetExecutableVersionFile().takeIf { it.exists() }?.readText()?.trim().orEmpty()
+        val detectedVersion = detectNuGetExecutableVersion(cachedExe.absolutePath)?.trim().orEmpty()
+        if (cachedVersion.isNotEmpty() && detectedVersion.isNotEmpty() && cachedVersion == detectedVersion) {
+            return cachedExe.absolutePath
+        }
+        if (detectedVersion.isNotEmpty()) {
+            nuGetExecutableVersionFile().writeText(detectedVersion)
+            return cachedExe.absolutePath
+        }
     }
     return try {
         val command = "nuget"
