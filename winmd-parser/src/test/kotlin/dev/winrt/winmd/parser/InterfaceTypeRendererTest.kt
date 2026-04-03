@@ -112,4 +112,69 @@ class InterfaceTypeRendererTest {
         assertTrue(binding.contains("visible"))
         assertTrue(binding.contains("invokeBooleanGetter(pointer, 6).getOrThrow()"))
     }
+
+    @Test
+    fun unsubscribes_event_slots_with_finally_to_close_delegate_handles() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            methods = listOf(
+                                dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "add_Opened",
+                                    returnType = "EventRegistrationToken",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        dev.winrt.winmd.plugin.WinMdParameter(
+                                            name = "handler",
+                                            type = "Windows.Foundation.EventHandler<Example.Xaml.IWidgetOpenedEventArgs>",
+                                        ),
+                                    ),
+                                ),
+                                dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "remove_Opened",
+                                    returnType = "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(
+                                        dev.winrt.winmd.plugin.WinMdParameter(
+                                            name = "token",
+                                            type = "EventRegistrationToken",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidgetOpenedEventArgs",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "55555555-5555-5555-5555-555555555555",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val typeRegistry = TypeRegistry(model)
+        val renderer = InterfaceTypeRenderer(
+            typeNameMapper = TypeNameMapper(),
+            delegateLambdaPlanResolver = DelegateLambdaPlanResolver(TypeNameMapper()),
+            eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+            typeRegistry = typeRegistry,
+            asyncMethodProjectionPlanner = AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry)),
+            asyncMethodRuleRegistry = AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+            winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
+        )
+
+        val binding = renderer.render(typeRegistry.findType("IWidget", "Example.Xaml")!!).single().toString()
+
+        assertTrue(binding.contains("finally"))
+        assertTrue(binding.contains("delegateHandles.remove(token)?.close()"))
+    }
 }

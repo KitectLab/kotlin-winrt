@@ -486,10 +486,11 @@ internal class InterfaceTypeRenderer(
                     .addFunction(
                         FunSpec.builder("unsubscribe")
                             .addParameter("token", PoetSymbols.eventRegistrationTokenClass)
-                            .addStatement("val delegateHandle = delegateHandles[token]")
+                            .beginControlFlow("try")
                             .addStatement("%T.invokeUnitMethodWithInt64Arg(pointer, %L, token.value).getOrThrow()", PoetSymbols.platformComInteropClass, plan.removeVtableIndex)
-                            .addStatement("delegateHandles.remove(token)")
-                            .addStatement("delegateHandle?.close()")
+                            .nextControlFlow("finally")
+                            .addStatement("delegateHandles.remove(token)?.close()")
+                            .endControlFlow()
                             .build(),
                     )
                     .addFunction(
