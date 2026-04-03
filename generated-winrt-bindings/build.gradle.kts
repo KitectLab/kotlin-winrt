@@ -10,6 +10,49 @@ fun Project.stringListProperty(name: String): List<String> =
         ?.filter(String::isNotEmpty)
         ?: emptyList()
 
+fun Project.nuGetSourceEntries(): List<Pair<String, String>> =
+    stringListProperty("winmd.nugetSources")
+        .map { entry ->
+            val separatorIndex = entry.indexOf('=')
+            if (separatorIndex > 0) {
+                entry.substring(0, separatorIndex).trim() to entry.substring(separatorIndex + 1).trim()
+            } else {
+                val sanitizedName = entry
+                    .substringAfterLast('/')
+                    .substringAfterLast('\\')
+                    .substringAfter("://")
+                    .substringBefore('?')
+                    .replace(Regex("[^A-Za-z0-9._-]+"), "-")
+                    .trim('-')
+                    .ifBlank { "source" }
+                sanitizedName to entry
+            }
+        }
+
+fun Project.nuGetComponentSpecs(): List<String> =
+    stringListProperty("winmd.nugetComponents").ifEmpty {
+        providers.gradleProperty("winmd.nugetPackage")
+            .orNull
+            ?.let { packageId ->
+                val packageVersion = providers.gradleProperty("winmd.nugetVersion").orNull
+                    ?: error("Set -Pwinmd.nugetVersion=<version> when using -Pwinmd.nugetPackage.")
+                listOf("$packageId@$packageVersion")
+            }
+            ?: emptyList()
+    }
+
+fun Project.renderNuGetConfigXml(contentSources: List<Pair<String, String>>): String = buildString {
+    appendLine("""<?xml version="1.0" encoding="utf-8"?>""")
+    appendLine("""<configuration>""")
+    appendLine("""  <packageSources>""")
+    appendLine("""    <clear />""")
+    contentSources.forEach { (name, value) ->
+        appendLine("""    <add key="$name" value="$value" />""")
+    }
+    appendLine("""  </packageSources>""")
+    appendLine("""</configuration>""")
+}
+
 fun Project.winMdSourceArgs(
     contracts: List<String>,
     namespaces: List<String>,
@@ -18,8 +61,8 @@ fun Project.winMdSourceArgs(
     referencesRoot: String?,
 ): List<String> {
     val explicitWinMdFiles = stringListProperty("winmd.files")
-    val nugetComponents = stringListProperty("winmd.nugetComponents")
-    val nugetSources = stringListProperty("winmd.nugetSources")
+    val nugetComponents = nuGetComponentSpecs()
+    val nugetSources = nuGetSourceEntries()
     val legacyNugetPackage = providers.gradleProperty("winmd.nugetPackage").orNull
     return buildList {
         addAll(explicitWinMdFiles)
@@ -28,13 +71,13 @@ fun Project.winMdSourceArgs(
             nugetComponents.forEach { component ->
                 add("--nuget-component=$component")
             }
-            nugetSources.forEach { source -> add("--nuget-source=$source") }
+            nugetSources.forEach { (_, source) -> add("--nuget-source=$source") }
             nugetRoot?.let { add("--nuget-root=$it") }
         } else if (legacyNugetPackage != null) {
             val nugetVersion = providers.gradleProperty("winmd.nugetVersion").orNull
                 ?: error("Set -Pwinmd.nugetVersion=<version> when using -Pwinmd.nugetPackage.")
             add("--nuget-component=$legacyNugetPackage@$nugetVersion")
-            nugetSources.forEach { source -> add("--nuget-source=$source") }
+            nugetSources.forEach { (_, source) -> add("--nuget-source=$source") }
             providers.gradleProperty("winmd.nugetRoot").orNull?.let { add("--nuget-root=$it") }
         }
         contracts.forEach { add("--contract=$it") }
@@ -44,6 +87,63 @@ fun Project.winMdSourceArgs(
         referencesRoot?.let { add("--references-root=$it") }
         require(isNotEmpty()) {
             "Set -Pwinmd.files=<a.winmd,b.winmd>, -Pwinmd.nugetSources=<repo1,repo2> with -Pwinmd.nugetComponents=<id@version,id2@version2>, -Pwinmd.nugetPackage=<id> with -Pwinmd.nugetVersion=<version>, or -Pwinmd.contracts=ContractA,ContractB to choose WinMD inputs."
+        }
+    }
+}
+
+val nugetConfigDir = layout.buildDirectory.dir("nuget")
+val nugetConfigFile = nugetConfigDir.map { it.file("nuget.config").asFile }
+val nugetPackagesDir = nugetConfigDir.map { it.dir("packages").asFile }
+
+val writeNuGetConfig by tasks.registering {
+    group = "code generation"
+    description = "Writes a NuGet.config for configured package sources."
+
+    outputs.file(nugetConfigFile)
+
+    doLast {
+        val sources = nuGetSourceEntries()
+        if (sources.isEmpty()) {
+            logger.lifecycle("No winmd.nugetSources configured; nuget.config will not be written.")
+            return@doLast
+        }
+        nugetConfigFile.get().parentFile.mkdirs()
+        nugetConfigFile.get().writeText(renderNuGetConfigXml(sources))
+    }
+}
+
+val restoreNuGetWinMdPackages by tasks.registering(Exec::class) {
+    group = "code generation"
+    description = "Restores configured NuGet WinRT components into a local package cache."
+    dependsOn(writeNuGetConfig)
+
+    val componentSpecs = nuGetComponentSpecs()
+    onlyIf { componentSpecs.isNotEmpty() }
+
+    doFirst {
+        val restoreCommand = providers.gradleProperty("winmd.nugetCommand").orNull ?: "nuget"
+        val packageSourceConfig = nugetConfigFile.get()
+        val outputDirectory = providers.gradleProperty("winmd.nugetRoot").orNull ?: nugetPackagesDir.get().absolutePath
+        nugetPackagesDir.get().mkdirs()
+        executable = restoreCommand
+        args = buildList {
+            componentSpecs.forEach { spec ->
+                val packageId = spec.substringBefore('@')
+                val packageVersion = spec.substringAfter('@')
+                addAll(
+                    listOf(
+                        "install",
+                        packageId,
+                        "-Version",
+                        packageVersion,
+                        "-OutputDirectory",
+                        outputDirectory,
+                        "-ConfigFile",
+                        packageSourceConfig.absolutePath,
+                        "-NonInteractive",
+                    ),
+                )
+            }
         }
     }
 }
