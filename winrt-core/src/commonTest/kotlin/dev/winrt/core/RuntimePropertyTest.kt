@@ -643,9 +643,10 @@ class RuntimePropertyTest {
         }
         WinRtRuntime.activationFactoryProvider = provider
 
-        WinRtRuntime.projectActivationFactory(runtimeClass, interfaceMetadata) { pointer -> WinRtInterfaceProjection(pointer) }
-        WinRtRuntime.projectActivationFactory(runtimeClass, interfaceMetadata) { pointer -> WinRtInterfaceProjection(pointer) }
+        val first = WinRtRuntime.projectActivationFactory(runtimeClass, interfaceMetadata) { pointer -> WinRtInterfaceProjection(pointer) }
+        val second = WinRtRuntime.projectActivationFactory(runtimeClass, interfaceMetadata) { pointer -> WinRtInterfaceProjection(pointer) }
 
+        assertSame(first, second)
         assertEquals(1, provider.factoryCount)
     }
 

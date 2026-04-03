@@ -99,6 +99,7 @@ object NullActivationFactoryProvider : ActivationFactoryProvider {
 object WinRtRuntime {
     var activationFactoryProvider: ActivationFactoryProvider = NullActivationFactoryProvider
     private val activationFactoryCache: MutableMap<String, ComPtr> = linkedMapOf()
+    private val activationFactoryProjectionCache: MutableMap<String, Any> = linkedMapOf()
 
     fun <T : WinRtObject> activate(metadata: WinRtRuntimeClassMetadata, constructor: (ComPtr) -> T): T {
         return activationFactoryProvider.activate(metadata, constructor).getOrElse { throw it }
@@ -109,13 +110,17 @@ object WinRtRuntime {
         interfaceMetadata: WinRtInterfaceMetadata,
         constructor: (ComPtr) -> T,
     ): T {
-        val factory = activationFactoryCache.getOrPut(
-            "${runtimeClass.classId.qualifiedName}:${interfaceMetadata.iid}",
-        ) {
-            activationFactoryProvider.getActivationFactory(runtimeClass, interfaceMetadata.iid)
-                .getOrElse { throw it }
-        }
-        return interfaceMetadata.project(factory, constructor)
+        val cacheKey = "${runtimeClass.classId.qualifiedName}:${interfaceMetadata.projectionCacheKey}:${interfaceMetadata.iid}"
+        @Suppress("UNCHECKED_CAST")
+        return activationFactoryProjectionCache.getOrPut(cacheKey) {
+            val factory = activationFactoryCache.getOrPut(
+                "${runtimeClass.classId.qualifiedName}:${interfaceMetadata.iid}",
+            ) {
+                activationFactoryProvider.getActivationFactory(runtimeClass, interfaceMetadata.iid)
+                    .getOrElse { throw it }
+            }
+            interfaceMetadata.project(factory, constructor)
+        } as T
     }
 
     fun check(result: HResult, operation: String) {
@@ -124,5 +129,6 @@ object WinRtRuntime {
 
     internal fun resetForTests() {
         activationFactoryCache.clear()
+        activationFactoryProjectionCache.clear()
     }
 }
