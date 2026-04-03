@@ -43,6 +43,18 @@ fun Project.nuGetComponentSpecs(): List<String> =
             ?: emptyList()
     }
 
+fun Project.winMdNuGetSourceArgs(packageId: String? = null): List<String> {
+    val configuredSources = stringListProperty("winmd.nugetSources")
+    if (configuredSources.isNotEmpty()) {
+        return configuredSources.map { "--nuget-source=$it" }
+    }
+    return if (packageId == "Microsoft.WindowsAppSDK") {
+        listOf("--nuget-source=https://api.nuget.org/v3/index.json")
+    } else {
+        emptyList()
+    }
+}
+
 fun Project.winMdSourceArgs(
     contracts: List<String>,
     namespaces: List<String>,
@@ -267,6 +279,16 @@ val collectNuGetRuntimeAssets by tasks.registering(Sync::class) {
     }
 }
 
+val refreshNuGetTool by tasks.registering {
+    group = "code generation"
+    description = "Refreshes the cached NuGet executable from the official distribution."
+
+    doLast {
+        val tool = downloadNuGetExecutable()
+        logger.lifecycle("NuGet executable cached at $tool")
+    }
+}
+
 fun JavaExec.configureWinMdParserClasspath() {
     classpath(
         winmdParserMainOutput,
@@ -332,10 +354,10 @@ fun registerPresetNuGetGenerationTask(
         val packageVersion = providers.gradleProperty(versionProperty).orNull
             ?: error("Set -P$versionProperty=<version> to choose the NuGet package version.")
         val nugetRoot = providers.gradleProperty(rootProperty).orNull
-        val nugetSources = stringListProperty("winmd.nugetSources")
+        val nugetSources = winMdNuGetSourceArgs(packageId)
         val resolvedArgs = mutableListOf(layout.buildDirectory.dir(outputDir).get().asFile.absolutePath)
         resolvedArgs += "--nuget-component=$packageId@$packageVersion"
-        nugetSources.forEach { resolvedArgs += "--nuget-source=$it" }
+        resolvedArgs += nugetSources
         nugetRoot?.let { resolvedArgs += "--nuget-root=$it" }
         contracts.forEach { resolvedArgs += "--contract=$it" }
         namespaces.forEach { resolvedArgs += "--namespace=$it" }
@@ -363,10 +385,10 @@ fun registerPresetNuGetRegenerationTask(
         val packageVersion = providers.gradleProperty(versionProperty).orNull
             ?: error("Set -P$versionProperty=<version> to choose the NuGet package version.")
         val nugetRoot = providers.gradleProperty(rootProperty).orNull
-        val nugetSources = stringListProperty("winmd.nugetSources")
+        val nugetSources = winMdNuGetSourceArgs(packageId)
         val resolvedArgs = mutableListOf(layout.projectDirectory.dir("src/commonMain/kotlin").asFile.absolutePath)
         resolvedArgs += "--nuget-component=$packageId@$packageVersion"
-        nugetSources.forEach { resolvedArgs += "--nuget-source=$it" }
+        resolvedArgs += nugetSources
         nugetRoot?.let { resolvedArgs += "--nuget-root=$it" }
         contracts.forEach { resolvedArgs += "--contract=$it" }
         namespaces.forEach { resolvedArgs += "--namespace=$it" }
