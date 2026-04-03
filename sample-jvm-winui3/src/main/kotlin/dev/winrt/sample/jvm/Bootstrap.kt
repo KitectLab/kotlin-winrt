@@ -1,6 +1,7 @@
 package dev.winrt.sample.jvm
 
 import dev.winrt.core.ActivationFactoryProvider
+import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.RuntimeClassId
 import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.core.WinRtObject
@@ -16,6 +17,7 @@ import dev.winrt.kom.PlatformRuntime
 
 object SampleBootstrap {
     private val iidIActivationFactory: Guid = guidOf("00000035-0000-0000-c000-000000000046")
+    private val defaultInterfaceIidCache = mutableMapOf<String, Guid>()
     private var bootstrapLibrary: WindowsAppSdkBootstrap.BootstrapLibrary? = null
     private var bootstrapDiagnostics: String? = null
     private var comInitialized = false
@@ -55,7 +57,17 @@ object SampleBootstrap {
                     .mapCatching { factory ->
                         try {
                             val instance = JvmWinRtRuntime.activateInstance(factory).getOrThrow()
-                            constructor(instance)
+                            val projectedInstance = metadata.defaultInterfaceName
+                                ?.let(::defaultInterfaceIidOrNull)
+                                ?.let { iid -> PlatformComInterop.queryInterface(instance, iid).getOrThrow() }
+                                ?: instance
+                            try {
+                                constructor(projectedInstance)
+                            } finally {
+                                if (projectedInstance != instance) {
+                                    PlatformComInterop.release(instance)
+                                }
+                            }
                         } finally {
                             PlatformComInterop.release(factory)
                         }
@@ -102,4 +114,19 @@ object SampleBootstrap {
     fun diagnostics(): String? = bootstrapDiagnostics
 
     fun isWindowsAppSdkReady(): Boolean = bootstrapLibrary != null
+
+    private fun defaultInterfaceIidOrNull(qualifiedName: String): Guid? =
+        runCatching {
+            defaultInterfaceIidCache.getOrPut(qualifiedName) {
+                val jvmClassName = buildString {
+                    append(qualifiedName.substringBeforeLast('.').lowercase())
+                    append('.')
+                    append(qualifiedName.substringAfterLast('.'))
+                }
+                val companion = Class.forName(jvmClassName).getDeclaredField("Companion").get(null)
+                val metadata = companion as? WinRtInterfaceMetadata
+                    ?: error("Companion for $qualifiedName does not implement WinRtInterfaceMetadata")
+                metadata.iid
+            }
+        }.getOrNull()
 }

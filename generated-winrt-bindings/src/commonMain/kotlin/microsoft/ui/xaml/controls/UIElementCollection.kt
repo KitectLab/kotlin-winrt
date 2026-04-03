@@ -6,8 +6,8 @@ import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.kom.ComPtr
+import dev.winrt.kom.PlatformComInterop
 import microsoft.ui.xaml.UIElement
-import microsoft.ui.xaml.interop.IBindableVector
 import kotlin.collections.MutableList
 
 open class UIElementCollection(
@@ -16,19 +16,15 @@ open class UIElementCollection(
     MutableList<UIElement> {
     constructor() : this(Companion.activate().pointer)
 
-    // WinUI exposes collection mutators through IBindableVector on this runtime class.
-    private val bindableVector: IBindableVector
-        get() = IBindableVector.from(this)
-
     fun getAt(index: UInt32): UIElement =
-        UIElement(bindableVector.getAt(index).pointer)
+        UIElement(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 6, index.value).getOrThrow())
 
     fun append(value: UIElement) {
-        bindableVector.append(value)
+        PlatformComInterop.invokeObjectSetter(pointer, 13, value.pointer).getOrThrow()
     }
 
     override val size: Int
-        get() = bindableVector.size
+        get() = UInt32(PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow()).value.toInt()
 
     override fun get(index: Int): UIElement {
         require(index >= 0) { "index must be non-negative" }
@@ -75,7 +71,7 @@ open class UIElementCollection(
     }
 
     override fun clear() {
-        bindableVector.clear()
+        PlatformComInterop.invokeUnitMethod(pointer, 16).getOrThrow()
     }
 
     override fun contains(element: UIElement): Boolean = indexOf(element) >= 0

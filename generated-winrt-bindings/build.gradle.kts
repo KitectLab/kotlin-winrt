@@ -314,14 +314,34 @@ fun resolveNuGetPackageDependencies(packageRoot: File): List<Pair<String, String
     val document = DocumentBuilderFactory.newInstance()
         .newDocumentBuilder()
         .parse(nuspec)
-    val dependencyNodes = document.getElementsByTagName("dependency")
+    val dependenciesNodes = document.getElementsByTagName("dependencies")
+    if (dependenciesNodes.length == 0) {
+        return emptyList()
+    }
+    val dependenciesElement = dependenciesNodes.item(0) as? org.w3c.dom.Element ?: return emptyList()
     return buildList {
-        for (index in 0 until dependencyNodes.length) {
-            val node = dependencyNodes.item(index)
-            val element = node as? org.w3c.dom.Element ?: continue
-            val id = element.getAttribute("id").takeIf { it.isNotBlank() } ?: continue
-            val version = element.getAttribute("version").takeIf { it.isNotBlank() } ?: continue
-            add(id to normalizeNuGetVersion(version))
+        for (index in 0 until dependenciesElement.childNodes.length) {
+            val node = dependenciesElement.childNodes.item(index) as? org.w3c.dom.Element ?: continue
+            when (node.tagName) {
+                "dependency" -> {
+                    val id = node.getAttribute("id").takeIf { it.isNotBlank() } ?: continue
+                    val version = node.getAttribute("version").takeIf { it.isNotBlank() } ?: continue
+                    add(id to normalizeNuGetVersion(version))
+                }
+                "group" -> {
+                    val targetFramework = node.getAttribute("targetFramework").trim()
+                    if (targetFramework.isNotEmpty() && !targetFramework.startsWith("native", ignoreCase = true)) {
+                        continue
+                    }
+                    for (dependencyIndex in 0 until node.childNodes.length) {
+                        val dependency = node.childNodes.item(dependencyIndex) as? org.w3c.dom.Element ?: continue
+                        if (dependency.tagName != "dependency") continue
+                        val id = dependency.getAttribute("id").takeIf { it.isNotBlank() } ?: continue
+                        val version = dependency.getAttribute("version").takeIf { it.isNotBlank() } ?: continue
+                        add(id to normalizeNuGetVersion(version))
+                    }
+                }
+            }
         }
     }
 }

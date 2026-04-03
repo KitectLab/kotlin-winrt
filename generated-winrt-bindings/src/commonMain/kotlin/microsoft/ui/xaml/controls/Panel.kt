@@ -5,7 +5,6 @@ import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.kom.ComPtr
-import dev.winrt.kom.PlatformComInterop
 import microsoft.ui.xaml.FrameworkElement
 
 open class Panel(
@@ -17,7 +16,7 @@ open class Panel(
         get() = get_Children()
 
     fun get_Children(): UIElementCollection =
-        UIElementCollection(PlatformComInterop.invokeObjectMethod(pointer, 4).getOrThrow())
+        IPanel.from(this).get_Children()
 
     companion object : WinRtRuntimeClassMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Controls.Panel"
