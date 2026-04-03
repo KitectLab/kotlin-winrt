@@ -2,7 +2,10 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
 }
 
+import java.io.File
 import java.net.URI
+import java.nio.file.Files
+import javax.xml.parsers.DocumentBuilderFactory
 
 fun versionKey(value: String): List<Int> =
     value.split('.').map { token -> token.toIntOrNull() ?: 0 }
@@ -107,6 +110,18 @@ fun Project.winMdSourceArgs(
         require(isNotEmpty()) {
             "Set -Pwinmd.files=<a.winmd,b.winmd>, -Pwinmd.nugetSources=<repo1,repo2> with -Pwinmd.nugetComponents=<id@version,id2@version2>, -Pwinmd.nugetPackage=<id> with -Pwinmd.nugetVersion=<version>, or -Pwinmd.contracts=ContractA,ContractB to choose WinMD inputs."
         }
+    }
+}
+
+fun Project.nuGetRestoreSources(packageId: String): List<String> {
+    val configuredSources = nuGetSourceEntries().map { it.second }
+    if (configuredSources.isNotEmpty()) {
+        return configuredSources
+    }
+    return if (packageId == "Microsoft.WindowsAppSDK") {
+        listOf("https://api.nuget.org/v3/index.json")
+    } else {
+        emptyList()
     }
 }
 
@@ -221,6 +236,9 @@ fun Project.resolveNuGetCommand(): String {
 }
 
 fun Project.latestNuGetPackageVersion(packageId: String, nugetCommand: String): String? {
+    if (packageId == "Microsoft.WindowsAppSDK") {
+        return "1.8.260317003"
+    }
     val packageRoot = File(discoverNuGetGlobalPackagesRoot(nugetCommand)).resolve(packageId.lowercase())
     if (!packageRoot.exists() || !packageRoot.isDirectory) {
         return null
@@ -254,6 +272,102 @@ fun Project.discoverNuGetGlobalPackagesRoot(nugetCommand: String): String {
         ?: File(System.getProperty("user.home"), ".nuget/packages").absolutePath
 }
 
+data class NuGetRuntimePackage(
+    val packageId: String,
+    val packageVersion: String,
+    val packageRoot: File,
+)
+
+fun resolveNuGetPackageRoot(
+    packageId: String,
+    packageVersion: String,
+    root: File,
+): File {
+    val packageRoot = root.resolve(packageId.lowercase())
+    require(packageRoot.exists() && packageRoot.isDirectory) {
+        "NuGet package directory does not exist for $packageId in $root."
+    }
+    return packageRoot.listFiles()
+        ?.filter { it.isDirectory && it.name == packageVersion }
+        ?.maxWithOrNull { left, right -> compareVersions(left.name, right.name) }
+        ?: error("NuGet package directory does not exist for $packageId@$packageVersion in $root.")
+}
+
+fun resolveNuGetPackageDependencies(packageRoot: File): List<Pair<String, String>> {
+    val nuspec = packageRoot.listFiles()
+        ?.firstOrNull { it.isFile && it.name.endsWith(".nuspec", ignoreCase = true) }
+        ?: return emptyList()
+    val document = DocumentBuilderFactory.newInstance()
+        .newDocumentBuilder()
+        .parse(nuspec)
+    val dependencyNodes = document.getElementsByTagName("dependency")
+    return buildList {
+        for (index in 0 until dependencyNodes.length) {
+            val node = dependencyNodes.item(index)
+            val element = node as? org.w3c.dom.Element ?: continue
+            val id = element.getAttribute("id").takeIf { it.isNotBlank() } ?: continue
+            val version = element.getAttribute("version").takeIf { it.isNotBlank() } ?: continue
+            add(id to version)
+        }
+    }
+}
+
+fun collectNuGetRuntimePackageClosure(
+    packageId: String,
+    packageVersion: String,
+    root: File,
+): List<NuGetRuntimePackage> {
+    val queue = ArrayDeque(listOf(packageId to packageVersion))
+    val visited = linkedSetOf<String>()
+    val result = mutableListOf<NuGetRuntimePackage>()
+
+    while (queue.isNotEmpty()) {
+        val (currentId, currentVersion) = queue.removeFirst()
+        val currentRoot = resolveNuGetPackageRoot(currentId, currentVersion, root)
+        if (!visited.add(currentRoot.absolutePath)) {
+            continue
+        }
+
+        result += NuGetRuntimePackage(
+            packageId = currentId,
+            packageVersion = currentVersion,
+            packageRoot = currentRoot,
+        )
+
+        resolveNuGetPackageDependencies(currentRoot).forEach { dependency ->
+            queue += dependency
+        }
+    }
+
+    return result
+}
+
+fun currentWindowsRuntimeRid(): String {
+    val arch = System.getProperty("os.arch").lowercase()
+    return when {
+        "aarch64" in arch || "arm64" in arch -> "win-arm64"
+        "x86" in arch && "64" !in arch -> "win-x86"
+        else -> "win-x64"
+    }
+}
+
+fun collectNuGetRuntimeDlls(packageRoot: File, runtimeRid: String): List<File> {
+    val topLevelDlls = packageRoot.listFiles()
+        ?.filter { it.isFile && it.extension.equals("dll", ignoreCase = true) }
+        .orEmpty()
+    val runtimeNativeDir = packageRoot.resolve("runtimes").resolve(runtimeRid).resolve("native")
+    val runtimeNativeDlls = if (runtimeNativeDir.exists() && runtimeNativeDir.isDirectory) {
+        Files.walk(runtimeNativeDir.toPath()).use { paths ->
+            paths.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".dll", ignoreCase = true) }
+                .map { it.toFile() }
+                .toList()
+        }
+    } else {
+        emptyList()
+    }
+    return (topLevelDlls + runtimeNativeDlls).distinctBy { it.absolutePath }
+}
+
 val restoreNuGetWinMdPackages by tasks.registering {
     group = "code generation"
     description = "Restores configured NuGet WinRT components into a local package cache."
@@ -266,7 +380,6 @@ val restoreNuGetWinMdPackages by tasks.registering {
         val restoreCommand = resolveNuGetCommand()
         val outputDirectory = providers.gradleProperty("winmd.nugetRoot").orNull
             ?: discoverNuGetGlobalPackagesRoot(restoreCommand)
-        val sources = nuGetSourceEntries().map { it.second }
         componentSpecs.forEach { spec ->
             val packageId = spec.substringBefore('@')
             val packageVersion = spec.substringAfter('@')
@@ -275,7 +388,7 @@ val restoreNuGetWinMdPackages by tasks.registering {
                 packageId = packageId,
                 packageVersion = packageVersion,
                 outputDirectory = outputDirectory,
-                sources = sources,
+                sources = nuGetRestoreSources(packageId),
             )
         }
     }
@@ -297,10 +410,14 @@ val collectNuGetRuntimeAssets by tasks.registering(Sync::class) {
         val resolvedPackagesDir = providers.gradleProperty("winmd.nugetRoot").orNull
             ?.let(::File)
             ?: File(discoverNuGetGlobalPackagesRoot(restoreCommand))
-        val roots = componentSpecs.map { spec ->
+        val runtimePackages = componentSpecs.flatMap { spec ->
             val packageId = spec.substringBefore('@')
             val packageVersion = spec.substringAfter('@')
-            resolvedPackagesDir.resolve(packageId.lowercase()).resolve(packageVersion)
+            collectNuGetRuntimePackageClosure(packageId, packageVersion, resolvedPackagesDir)
+        }
+        val runtimeRid = currentWindowsRuntimeRid()
+        val roots = runtimePackages.flatMap { runtimePackage ->
+            collectNuGetRuntimeDlls(runtimePackage.packageRoot, runtimeRid)
         }
         from(roots) {
             include("**/*.dll")
@@ -381,9 +498,8 @@ fun registerPresetNuGetGenerationTask(
     dependsOn(project(":winmd-parser").tasks.named("classes"))
 
     doFirst {
-        val nugetCommand = resolveNuGetCommand()
         val packageVersion = providers.gradleProperty(versionProperty).orNull
-            ?: latestNuGetPackageVersion(packageId, nugetCommand)
+            ?: latestNuGetPackageVersion(packageId, resolveNuGetCommand())
             ?: error("Set -P$versionProperty=<version> to choose the NuGet package version.")
         val nugetRoot = providers.gradleProperty(rootProperty).orNull
         val nugetSources = winMdNuGetSourceArgs(packageId)
@@ -414,9 +530,8 @@ fun registerPresetNuGetRegenerationTask(
     dependsOn(project(":winmd-parser").tasks.named("classes"))
 
     doFirst {
-        val nugetCommand = resolveNuGetCommand()
         val packageVersion = providers.gradleProperty(versionProperty).orNull
-            ?: latestNuGetPackageVersion(packageId, nugetCommand)
+            ?: latestNuGetPackageVersion(packageId, resolveNuGetCommand())
             ?: error("Set -P$versionProperty=<version> to choose the NuGet package version.")
         val nugetRoot = providers.gradleProperty(rootProperty).orNull
         val nugetSources = winMdNuGetSourceArgs(packageId)

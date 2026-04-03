@@ -3,6 +3,10 @@ plugins {
     application
 }
 
+import java.io.File
+import java.nio.file.Files
+import javax.xml.parsers.DocumentBuilderFactory
+
 fun versionKey(value: String): List<Int> =
     value.split('.').map { token -> token.toIntOrNull() ?: 0 }
 
@@ -20,6 +24,14 @@ fun compareVersions(left: String, right: String): Int {
     return 0
 }
 
+val windowsAppSdkVersion = "1.8.260317003"
+
+data class NuGetRuntimePackage(
+    val packageId: String,
+    val packageVersion: String,
+    val packageRoot: File,
+)
+
 fun discoverNuGetGlobalPackagesRoot(): File {
     return System.getenv("NUGET_PACKAGES")
         ?.takeIf { it.isNotBlank() }
@@ -34,7 +46,88 @@ fun latestWindowsAppSdkPackageRoot(): File? {
     }
     return packageRoot.listFiles()
         ?.filter { it.isDirectory }
+        ?.filter { it.name == windowsAppSdkVersion }
         ?.maxWithOrNull { left, right -> compareVersions(left.name, right.name) }
+}
+
+fun resolveNuGetPackageRoot(
+    packageId: String,
+    packageVersion: String,
+    root: File = discoverNuGetGlobalPackagesRoot(),
+): File {
+    val packageRoot = root.resolve(packageId.lowercase())
+    require(packageRoot.exists() && packageRoot.isDirectory) {
+        "NuGet package directory does not exist for $packageId in $root."
+    }
+    return packageRoot.listFiles()
+        ?.filter { it.isDirectory && it.name == packageVersion }
+        ?.maxWithOrNull { left, right -> compareVersions(left.name, right.name) }
+        ?: error("NuGet package directory does not exist for $packageId@$packageVersion in $root.")
+}
+
+fun resolveNuGetPackageDependencies(packageRoot: File): List<Pair<String, String>> {
+    val nuspec = packageRoot.listFiles()
+        ?.firstOrNull { it.isFile && it.name.endsWith(".nuspec", ignoreCase = true) }
+        ?: return emptyList()
+    val document = DocumentBuilderFactory.newInstance()
+        .newDocumentBuilder()
+        .parse(nuspec)
+    val dependencyNodes = document.getElementsByTagName("dependency")
+    return buildList {
+        for (index in 0 until dependencyNodes.length) {
+            val node = dependencyNodes.item(index)
+            val element = node as? org.w3c.dom.Element ?: continue
+            val id = element.getAttribute("id").takeIf { it.isNotBlank() } ?: continue
+            val version = element.getAttribute("version").takeIf { it.isNotBlank() } ?: continue
+            add(id to version)
+        }
+    }
+}
+
+fun collectNuGetRuntimePackageClosure(
+    packageId: String,
+    packageVersion: String,
+): List<NuGetRuntimePackage> {
+    val queue = ArrayDeque(listOf(packageId to packageVersion))
+    val visited = linkedSetOf<String>()
+    val result = mutableListOf<NuGetRuntimePackage>()
+
+    while (queue.isNotEmpty()) {
+        val (currentId, currentVersion) = queue.removeFirst()
+        val currentRoot = resolveNuGetPackageRoot(currentId, currentVersion)
+        if (!visited.add(currentRoot.absolutePath)) {
+            continue
+        }
+
+        result += NuGetRuntimePackage(
+            packageId = currentId,
+            packageVersion = currentVersion,
+            packageRoot = currentRoot,
+        )
+
+        resolveNuGetPackageDependencies(currentRoot).forEach { dependency ->
+            queue += dependency
+        }
+    }
+
+    return result
+}
+
+fun collectNuGetRuntimeDlls(packageRoot: File, runtimeRid: String): List<File> {
+    val topLevelDlls = packageRoot.listFiles()
+        ?.filter { it.isFile && it.extension.equals("dll", ignoreCase = true) }
+        .orEmpty()
+    val runtimeNativeDir = packageRoot.resolve("runtimes").resolve(runtimeRid).resolve("native")
+    val runtimeNativeDlls = if (runtimeNativeDir.exists() && runtimeNativeDir.isDirectory) {
+        Files.walk(runtimeNativeDir.toPath()).use { paths ->
+            paths.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".dll", ignoreCase = true) }
+                .map { it.toFile() }
+                .toList()
+        }
+    } else {
+        emptyList()
+    }
+    return (topLevelDlls + runtimeNativeDlls).distinctBy { it.absolutePath }
 }
 
 fun currentWindowsRuntimeRid(): String {
@@ -93,20 +186,17 @@ val collectWinUiRuntimeAssets by tasks.registering(Sync::class) {
     into(winUiRuntimeAssetsDir)
 
     val runtimeRid = currentWindowsRuntimeRid()
-    from(latestWindowsAppSdkPackageRootProvider.map { resolvedPackageRoot ->
-        resolvedPackageRoot ?: error("Microsoft.WindowsAppSDK is not restored in the NuGet global packages cache.")
-    }) {
-        include("*.dll")
-    }
-    from(latestWindowsAppSdkPackageRootProvider.map { resolvedPackageRoot ->
-        val packageRoot = resolvedPackageRoot
+    val runtimePackagesProvider = providers.provider {
+        latestWindowsAppSdkPackageRoot()
             ?: error("Microsoft.WindowsAppSDK is not restored in the NuGet global packages cache.")
-        val runtimeNativeDir = packageRoot.resolve("runtimes").resolve(runtimeRid).resolve("native")
-        if (!runtimeNativeDir.exists()) {
-            error("Microsoft.WindowsAppSDK does not contain a $runtimeRid runtime directory.")
-        }
-        runtimeNativeDir
+        collectNuGetRuntimePackageClosure("Microsoft.WindowsAppSDK", windowsAppSdkVersion)
+    }
+    from(runtimePackagesProvider.map { runtimePackages ->
+        runtimePackages.flatMap { runtimePackage ->
+            collectNuGetRuntimeDlls(runtimePackage.packageRoot, runtimeRid)
+        }.distinctBy { it.absolutePath }
     }) {
+        eachFile { path = name }
         include("**/*.dll")
     }
 }
