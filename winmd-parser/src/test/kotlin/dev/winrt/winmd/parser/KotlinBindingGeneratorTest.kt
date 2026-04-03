@@ -3655,6 +3655,38 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_runtime_methods_with_int32_return_values() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "IntReturnHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Count",
+                                    type = "Int32",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/IntReturnHost.kt" }.content
+        assertTrue(binding.contains("public val count: Int"))
+        assertTrue(binding.contains("return Int32(PlatformComInterop.invokeInt32Method(pointer, 6).getOrThrow())"))
+    }
+
+    @Test
     fun generates_runtime_methods_with_parameters_for_int32_and_uint32_returns() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
