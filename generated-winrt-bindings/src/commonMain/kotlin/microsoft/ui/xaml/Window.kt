@@ -11,6 +11,7 @@ import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.kom.ComPtr
+import microsoft.ui.xaml.media.SystemBackdrop
 
 open class Window(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
     constructor() : this(Companion.activateInstance().pointer)
@@ -20,6 +21,7 @@ open class Window(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
     private val backingLifetime = RuntimeProperty(Duration.parse("0s"))
     private val backingLastToken = RuntimeProperty(EventRegistrationToken(0))
     private val backingOptionalTitle = RuntimeProperty<String?>(null)
+    private val backingSystemBackdrop = RuntimeProperty(SystemBackdrop(ComPtr.NULL))
 
     val isVisible: WinRtBoolean
         get() {
@@ -55,6 +57,19 @@ open class Window(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
 
     val stableId: dev.winrt.core.GuidValue
         get() = dev.winrt.core.GuidValue(dev.winrt.kom.PlatformComInterop.invokeGuidGetter(pointer, 9).getOrThrow().toString())
+
+    var systemBackdrop: SystemBackdrop
+        get() {
+            if (pointer.isNull) return backingSystemBackdrop.get()
+            return IWindow2.from(this).systemBackdrop
+        }
+        set(value) {
+            if (pointer.isNull) {
+                backingSystemBackdrop.set(value)
+                return
+            }
+            IWindow2.from(this).systemBackdrop = value
+        }
 
     companion object : WinRtRuntimeClassMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Window"
