@@ -7,6 +7,17 @@ import dev.winrt.kom.HResult
 import kotlinx.coroutines.CancellationException
 
 public object AsyncInfo {
+  public fun completedAction(): IAsyncAction = CompletedAsyncAction
+
+  public fun completedActionWithProgress(progressType: AsyncProgressType<*>): IAsyncActionWithProgress<Any?> =
+      CompletedAsyncActionWithProgress(progressType.signature, progressType.argumentKind)
+
+  public fun completedActionWithProgress(
+    progressSignature: String,
+    progressArgumentKind: WinRtDelegateValueKind,
+  ): IAsyncActionWithProgress<Any?> =
+      CompletedAsyncActionWithProgress(progressSignature, progressArgumentKind)
+
   public fun <TResult> fromResult(resultType: AsyncResultType<TResult>, value: TResult): IAsyncOperation<TResult> {
     return CompletedAsyncOperation(resultType.signature, value)
   }
@@ -84,6 +95,88 @@ public object AsyncInfo {
   ): IAsyncOperationWithProgress<TResult, TProgress> {
     return FailedAsyncOperationWithProgress(resultSignature, progressSignature, progressArgumentKind, error)
   }
+
+  public fun fromException(error: Throwable): IAsyncAction = FailedAsyncAction(error)
+
+  public fun fromExceptionWithProgress(
+    progressType: AsyncProgressType<*>,
+    error: Throwable,
+  ): IAsyncActionWithProgress<Any?> =
+      FailedAsyncActionWithProgress(progressType.signature, progressType.argumentKind, error)
+
+  public fun fromExceptionWithProgress(
+    progressSignature: String,
+    progressArgumentKind: WinRtDelegateValueKind,
+    error: Throwable,
+  ): IAsyncActionWithProgress<Any?> =
+      FailedAsyncActionWithProgress(progressSignature, progressArgumentKind, error)
+
+  public fun canceledAction(): IAsyncAction = CanceledAsyncAction
+
+  public fun canceledActionWithProgress(progressType: AsyncProgressType<*>): IAsyncActionWithProgress<Any?> =
+      CanceledAsyncActionWithProgress(progressType.signature, progressType.argumentKind)
+
+  public fun canceledActionWithProgress(
+    progressSignature: String,
+    progressArgumentKind: WinRtDelegateValueKind,
+  ): IAsyncActionWithProgress<Any?> =
+      CanceledAsyncActionWithProgress(progressSignature, progressArgumentKind)
+}
+
+private object CompletedAsyncAction : IAsyncAction(ComPtr.NULL) {
+  override val id: UInt32
+    get() = UInt32(0u)
+
+  override val status: AsyncStatus
+    get() = AsyncStatus.Completed
+
+  override val errorCode: HResult
+    get() = HResult(0)
+
+  override fun put_Completed(handler: AsyncActionCompletedHandler) {
+    handler.invoke(this, AsyncStatus.Completed)
+  }
+
+  override fun get_Completed(): AsyncActionCompletedHandler = AsyncActionCompletedHandler(ComPtr.NULL)
+
+  override fun getResults() = Unit
+
+  override fun cancel() = Unit
+}
+
+private class CompletedAsyncActionWithProgress(
+  progressSignature: String,
+  progressArgumentKind: WinRtDelegateValueKind,
+) : IAsyncActionWithProgress<Any?>(
+  ComPtr.NULL,
+  progressSignature,
+  progressArgumentKind,
+  { it },
+) {
+  override val id: UInt32
+    get() = UInt32(0u)
+
+  override val status: AsyncStatus
+    get() = AsyncStatus.Completed
+
+  override val errorCode: HResult
+    get() = HResult(0)
+
+  override fun put_Completed(handler: AsyncActionWithProgressCompletedHandler<Any?>) {
+    handler.invoke(pointer, AsyncStatus.Completed)
+  }
+
+  override fun get_Completed(): AsyncActionWithProgressCompletedHandler<Any?> =
+      AsyncActionWithProgressCompletedHandler(ComPtr.NULL)
+
+  override fun getResults() = Unit
+
+  override fun put_Progress(handler: AsyncActionProgressHandler<Any?>) = Unit
+
+  override fun get_Progress(): AsyncActionProgressHandler<Any?> =
+      AsyncActionProgressHandler(ComPtr.NULL)
+
+  override fun cancel() = Unit
 }
 
 private class CompletedAsyncOperation<TResult>(
@@ -280,6 +373,129 @@ private class FailedAsyncOperationWithProgress<TResult, TProgress>(
 
   override fun get_Progress(): AsyncOperationProgressHandler<TResult, TProgress> =
       AsyncOperationProgressHandler(ComPtr.NULL)
+
+  override fun cancel() = Unit
+}
+
+private class FailedAsyncAction(
+  private val error: Throwable,
+) : IAsyncAction(ComPtr.NULL) {
+  override val id: UInt32
+    get() = UInt32(0u)
+
+  override val status: AsyncStatus
+    get() = AsyncStatus.Error
+
+  override val errorCode: HResult
+    get() = HResult(0x80004005.toInt())
+
+  override fun put_Completed(handler: AsyncActionCompletedHandler) {
+    handler.invoke(this, AsyncStatus.Error)
+  }
+
+  override fun get_Completed(): AsyncActionCompletedHandler = AsyncActionCompletedHandler(ComPtr.NULL)
+
+  override fun getResults() {
+    throw error
+  }
+
+  override fun cancel() = Unit
+}
+
+private class FailedAsyncActionWithProgress(
+  progressSignature: String,
+  progressArgumentKind: WinRtDelegateValueKind,
+  private val error: Throwable,
+) : IAsyncActionWithProgress<Any?>(
+  ComPtr.NULL,
+  progressSignature,
+  progressArgumentKind,
+  { it },
+) {
+  override val id: UInt32
+    get() = UInt32(0u)
+
+  override val status: AsyncStatus
+    get() = AsyncStatus.Error
+
+  override val errorCode: HResult
+    get() = HResult(0x80004005.toInt())
+
+  override fun put_Completed(handler: AsyncActionWithProgressCompletedHandler<Any?>) {
+    handler.invoke(pointer, AsyncStatus.Error)
+  }
+
+  override fun get_Completed(): AsyncActionWithProgressCompletedHandler<Any?> =
+      AsyncActionWithProgressCompletedHandler(ComPtr.NULL)
+
+  override fun getResults() {
+    throw error
+  }
+
+  override fun put_Progress(handler: AsyncActionProgressHandler<Any?>) = Unit
+
+  override fun get_Progress(): AsyncActionProgressHandler<Any?> =
+      AsyncActionProgressHandler(ComPtr.NULL)
+
+  override fun cancel() = Unit
+}
+
+private object CanceledAsyncAction : IAsyncAction(ComPtr.NULL) {
+  override val id: UInt32
+    get() = UInt32(0u)
+
+  override val status: AsyncStatus
+    get() = AsyncStatus.Canceled
+
+  override val errorCode: HResult
+    get() = HResult(0x80004004.toInt())
+
+  override fun put_Completed(handler: AsyncActionCompletedHandler) {
+    handler.invoke(this, AsyncStatus.Canceled)
+  }
+
+  override fun get_Completed(): AsyncActionCompletedHandler = AsyncActionCompletedHandler(ComPtr.NULL)
+
+  override fun getResults() {
+    throw CancellationException("WinRT async action was canceled")
+  }
+
+  override fun cancel() = Unit
+}
+
+private class CanceledAsyncActionWithProgress(
+  progressSignature: String,
+  progressArgumentKind: WinRtDelegateValueKind,
+) : IAsyncActionWithProgress<Any?>(
+  ComPtr.NULL,
+  progressSignature,
+  progressArgumentKind,
+  { it },
+) {
+  override val id: UInt32
+    get() = UInt32(0u)
+
+  override val status: AsyncStatus
+    get() = AsyncStatus.Canceled
+
+  override val errorCode: HResult
+    get() = HResult(0x80004004.toInt())
+
+  override fun put_Completed(handler: AsyncActionWithProgressCompletedHandler<Any?>) {
+    handler.invoke(pointer, AsyncStatus.Canceled)
+  }
+
+  override fun get_Completed(): AsyncActionWithProgressCompletedHandler<Any?> =
+      AsyncActionWithProgressCompletedHandler(ComPtr.NULL)
+
+  override fun getResults() {
+    throw CancellationException("WinRT async action with progress was canceled")
+  }
+
+  override fun put_Progress(handler: AsyncActionProgressHandler<Any?>) = Unit
+
+  override fun get_Progress(): AsyncActionProgressHandler<Any?> =
+      AsyncActionProgressHandler(ComPtr.NULL)
 
   override fun cancel() = Unit
 }
