@@ -7837,6 +7837,90 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun derived_runtime_class_keeps_override_hooks_for_versioned_and_base_interfaces() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "LaunchArgs",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "BaseWidget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            implementedInterfaces = listOf("Example.Xaml.IBaseWidgetOverrides"),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "DerivedWidget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            baseClass = "Example.Xaml.BaseWidget",
+                            implementedInterfaces = listOf(
+                                "Example.Xaml.IDerivedWidgetOverrides",
+                                "Example.Xaml.IDerivedWidgetOverrides2",
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IBaseWidgetOverrides",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "44444444-4444-4444-4444-444444444444",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "OnLaunch",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter("args", "Example.Xaml.LaunchArgs")),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IDerivedWidgetOverrides",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "55555555-5555-5555-5555-555555555555",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "OnLaunch",
+                                    returnType = "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter("args", "Example.Xaml.LaunchArgs")),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IDerivedWidgetOverrides2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "66666666-6666-6666-6666-666666666666",
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Title",
+                                    type = "String",
+                                    mutable = true,
+                                    getterVtableIndex = 8,
+                                    setterVtableIndex = 9,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val derivedBinding = files.first { it.relativePath == "Example/Xaml/DerivedWidget.kt" }.content
+
+        assertTrue(derivedBinding.contains("protected override fun onLaunch(args: LaunchArgs)"))
+        assertTrue(derivedBinding.contains("invokeObjectSetter(pointer, 7, (args as Inspectable).pointer).getOrThrow()"))
+    }
+
+    @Test
     fun generates_delegate_types_as_projection_metadata() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
