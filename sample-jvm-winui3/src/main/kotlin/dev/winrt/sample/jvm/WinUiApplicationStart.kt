@@ -7,8 +7,6 @@ import microsoft.ui.xaml.ApplicationInitializationCallback
 import microsoft.ui.xaml.IApplicationInitializationCallbackParams
 import microsoft.ui.xaml.IWindow
 import microsoft.ui.xaml.Window
-import microsoft.ui.xaml.controls.StackPanel
-import microsoft.ui.xaml.controls.TextBlock
 
 object WinUiApplicationStart {
     private var application: Application? = null
@@ -87,9 +85,8 @@ object WinUiApplicationStart {
                 application = Application.current
                 window = Window()
                 val iWindow = IWindow.from(window!!)
-                val stackPanel = StackPanel()
                 iWindow.title = windowTitle
-                iWindow.setContent(stackPanel)
+                iWindow.setContent(WinUiSampleLayout.build(windowTitle, messageText))
                 iWindow.activate()
                 val uiThreadId = WindowsMessageLoop.currentThreadId()
                 val autoQuitVisible = System.getProperty("dev.winrt.autoQuitVisible", "false").equals("true", ignoreCase = true)
