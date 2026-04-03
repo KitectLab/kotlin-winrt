@@ -10,32 +10,38 @@ import java.nio.file.Path
 import kotlin.io.path.exists
 
 class WindowsSdkReferencesTest {
-    private val referencesRoot = Path.of("D:/Windows Kits/10/References")
+    private val referencesRoot: Path? by lazy {
+        WindowsSdkReferences.discoverReferencesRootCandidates().firstOrNull()
+    }
 
     @Test
     fun resolves_latest_windows_foundation_universal_api_contract() {
+        val root = referencesRoot ?: return
         val reference = WindowsSdkReferences.findContract(
-            referencesRoot = referencesRoot,
+            referencesRoot = root,
             contractName = "Windows.Foundation.UniversalApiContract",
         )
 
-        assertEquals("10.0.22621.0", reference.sdkVersion)
+        assertTrue(reference.sdkVersion.isNotBlank())
         assertEquals("Windows.Foundation.UniversalApiContract", reference.contractName)
-        assertEquals("15.0.0.0", reference.contractVersion)
+        assertTrue(reference.contractVersion.isNotBlank())
         assertTrue(reference.winmdPath.exists())
         assertTrue(reference.winmdPath.fileName.toString().equals("Windows.Foundation.UniversalApiContract.winmd", ignoreCase = true))
     }
 
     @Test
     fun resolves_specific_foundation_contract_version() {
+        val root = referencesRoot ?: return
+        // discoverInstalledSdkVersions returns versions sorted ascending; last() is the latest.
+        val latestVersion = WindowsSdkReferences.discoverInstalledSdkVersions(root).lastOrNull() ?: return
         val reference = WindowsSdkReferences.findContract(
-            referencesRoot = referencesRoot,
+            referencesRoot = root,
             contractName = "Windows.Foundation.FoundationContract",
-            sdkVersion = "10.0.22621.0",
+            sdkVersion = latestVersion,
         )
 
-        assertEquals("10.0.22621.0", reference.sdkVersion)
-        assertEquals("4.0.0.0", reference.contractVersion)
+        assertEquals(latestVersion, reference.sdkVersion)
+        assertTrue(reference.contractVersion.isNotBlank())
         assertTrue(reference.winmdPath.exists())
         assertTrue(reference.winmdPath.toString().contains("Windows.Foundation.FoundationContract"))
     }

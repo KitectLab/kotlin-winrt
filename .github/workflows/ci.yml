@@ -26,25 +26,50 @@ jobs:
 
       - name: Install Windows SDK 10.0.22621.0
         # The GitHub-hosted windows-2022 runner ships with SDK 10.0.19041.0 pre-installed.
-        # The project targets SDK 10.0.22621.0 (Windows 11 22H2), so we install it explicitly.
+        # The project discovers the SDK dynamically via registry; installing 10.0.22621.0 ensures
+        # the latest available version is the one the SDK-version-sensitive tests expect.
         shell: pwsh
         run: |
-          winget install --id Microsoft.WindowsSDK.10.0.22621 `
-            --silent `
-            --accept-source-agreements `
-            --accept-package-agreements
+          $sdkPath = "C:\Program Files (x86)\Windows Kits\10\References\10.0.22621.0"
+          if (Test-Path $sdkPath) {
+            Write-Host "Windows SDK 10.0.22621.0 already installed at $sdkPath"
+          } else {
+            winget install --id Microsoft.WindowsSDK.10.0.22621 `
+              --silent `
+              --accept-source-agreements `
+              --accept-package-agreements
+            # winget exits with a non-zero code when the package is already present;
+            # reset the exit code so the step does not fail for that reason.
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "winget exited with code $LASTEXITCODE (may indicate already installed)"
+            }
+          }
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          # Cache the NuGet global packages folder so Microsoft.WindowsAppSDK is not
+          # re-downloaded on every run, and the nuget.exe binary cached by the build script.
+          path: |
+            ~\.nuget\packages
+            ~\.gradle\caches\kotlin-winrt\nuget
+          key: nuget-${{ runner.os }}-Microsoft.WindowsAppSDK-1.8.260317003
+          restore-keys: nuget-${{ runner.os }}-
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build
+        shell: bash
         run: ./gradlew build -x test
 
       - name: Test
-        # Some tests that reference hard-coded local paths (e.g. "D:/Windows Kits/10") are
-        # expected to fail in this environment.  The WINDOWS_KITS_10_DIR env-var lets the
-        # registry-based / fallback discovery logic find the SDK for tests that use it
-        # properly.
+        # Pass winmd.nugetComponents so that:
+        #   - :generated-winrt-bindings:restoreNuGetWinMdPackages restores Microsoft.WindowsAppSDK
+        #   - :sample-jvm-winui3:collectWinUiRuntimeAssets stages the runtime DLLs for tests
+        # WINDOWS_KITS_10_DIR lets WindowsSdkReferences.discoverReferencesRoot() find the SDK
+        # installed by the step above through the env-var fallback path.
+        shell: bash
         env:
           WINDOWS_KITS_10_DIR: C:\Program Files (x86)\Windows Kits\10
-        run: ./gradlew test
+        run: ./gradlew test -Pwinmd.nugetComponents=Microsoft.WindowsAppSDK@1.8.260317003

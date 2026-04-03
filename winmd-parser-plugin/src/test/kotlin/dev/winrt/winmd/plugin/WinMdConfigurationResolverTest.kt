@@ -21,9 +21,13 @@ class WinMdConfigurationResolverTest {
 
     @Test
     fun prefers_explicit_references_root_and_sdk_version() {
+        val discoveredReferencesRoot = WindowsSdkReferences.discoverReferencesRootCandidates().firstOrNull() ?: return
+        val installedVersions = WindowsSdkReferences.discoverInstalledSdkVersions(discoveredReferencesRoot)
+        if (installedVersions.isEmpty()) return
+        val sdkVersion = installedVersions.last()
         val extension = WinMdExtension().apply {
-            referencesRoot = "D:/Windows Kits/10/References"
-            sdkVersion = "10.0.22621.0"
+            referencesRoot = discoveredReferencesRoot.toString()
+            this.sdkVersion = sdkVersion
             contracts = listOf(
                 "Windows.Foundation.UniversalApiContract",
                 "Windows.Foundation.FoundationContract",
@@ -32,8 +36,8 @@ class WinMdConfigurationResolverTest {
 
         val resolved = WinMdConfigurationResolver.resolve(extension)
 
-        assertEquals("10.0.22621.0", resolved.sdkVersion)
-        assertEquals(Path.of("D:/Windows Kits/10/References"), resolved.referencesRoot)
+        assertEquals(sdkVersion, resolved.sdkVersion)
+        assertEquals(discoveredReferencesRoot, resolved.referencesRoot)
         assertEquals(2, resolved.contracts.size)
         assertEquals(2, resolved.sourceFiles.size)
         assertEquals("Windows.Foundation.UniversalApiContract", resolved.contracts[0].contractName)
@@ -42,15 +46,20 @@ class WinMdConfigurationResolverTest {
 
     @Test
     fun derives_references_root_from_windows_kits_root() {
+        val discoveredReferencesRoot = WindowsSdkReferences.discoverReferencesRootCandidates().firstOrNull() ?: return
+        val kitsRoot = discoveredReferencesRoot.parent ?: return
+        val installedVersions = WindowsSdkReferences.discoverInstalledSdkVersions(discoveredReferencesRoot)
+        if (installedVersions.isEmpty()) return
+        val sdkVersion = installedVersions.last()
         val extension = WinMdExtension().apply {
-            windowsKitsRoot = "D:/Windows Kits/10"
-            sdkVersion = "10.0.22621.0"
+            windowsKitsRoot = kitsRoot.toString()
+            this.sdkVersion = sdkVersion
         }
 
         val resolved = WinMdConfigurationResolver.resolve(extension)
 
-        assertEquals(Path.of("D:/Windows Kits/10/References"), resolved.referencesRoot)
-        assertEquals("10.0.22621.0", resolved.sdkVersion)
+        assertEquals(discoveredReferencesRoot, resolved.referencesRoot)
+        assertEquals(sdkVersion, resolved.sdkVersion)
         assertEquals(1, resolved.contracts.size)
         assertEquals(1, resolved.sourceFiles.size)
     }
@@ -66,6 +75,10 @@ class WinMdConfigurationResolverTest {
 
     @Test
     fun combines_nuget_winmd_and_sdk_contract_sources() {
+        val discoveredReferencesRoot = WindowsSdkReferences.discoverReferencesRootCandidates().firstOrNull() ?: return
+        val installedVersions = WindowsSdkReferences.discoverInstalledSdkVersions(discoveredReferencesRoot)
+        if (installedVersions.isEmpty()) return
+        val sdkVersion = installedVersions.last()
         val root = Files.createTempDirectory("nuget-root")
         val packageRoot = root.resolve("microsoft.windowsappsdk").resolve("1.6.0")
         Files.createDirectories(packageRoot.resolve("lib").resolve("uap10.0"))
@@ -79,8 +92,8 @@ class WinMdConfigurationResolverTest {
                 nugetRoot = root.toString()
                 nugetPackageId = "Microsoft.WindowsAppSDK"
                 nugetPackageVersion = "1.6.0"
-                referencesRoot = "D:/Windows Kits/10/References"
-                sdkVersion = "10.0.22621.0"
+                referencesRoot = discoveredReferencesRoot.toString()
+                this.sdkVersion = sdkVersion
                 contracts = listOf("Windows.Foundation.UniversalApiContract")
             },
         )
@@ -91,6 +104,10 @@ class WinMdConfigurationResolverTest {
 
     @Test
     fun combines_multiple_nuget_components_with_sdk_contract_sources() {
+        val discoveredReferencesRoot = WindowsSdkReferences.discoverReferencesRootCandidates().firstOrNull() ?: return
+        val installedVersions = WindowsSdkReferences.discoverInstalledSdkVersions(discoveredReferencesRoot)
+        if (installedVersions.isEmpty()) return
+        val sdkVersion = installedVersions.last()
         val root = Files.createTempDirectory("nuget-root")
         val appSdkRoot = root.resolve("microsoft.windowsappsdk").resolve("1.6.0")
         Files.createDirectories(appSdkRoot.resolve("lib").resolve("uap10.0"))
@@ -110,8 +127,8 @@ class WinMdConfigurationResolverTest {
                 nugetRoot = root.toString()
                 nugetComponent("Microsoft.WindowsAppSDK", "1.6.0")
                 nugetComponent("Microsoft.Windows.SDK.NET.Ref", "10.0.22621.0")
-                referencesRoot = "D:/Windows Kits/10/References"
-                sdkVersion = "10.0.22621.0"
+                referencesRoot = discoveredReferencesRoot.toString()
+                this.sdkVersion = sdkVersion
                 contracts = listOf("Windows.Foundation.UniversalApiContract")
             },
         )

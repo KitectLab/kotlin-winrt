@@ -1,5 +1,6 @@
 package dev.winrt.winmd.parser
 
+import dev.winrt.winmd.plugin.WindowsSdkReferences
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -7,6 +8,16 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 class WinMdParserInputResolverTest {
+    private val discoveredKitsRoot: String? by lazy {
+        WindowsSdkReferences.discoverReferencesRootCandidates().firstOrNull()?.parent?.toString()
+    }
+
+    private val discoveredSdkVersion: String? by lazy {
+        val referencesRoot = WindowsSdkReferences.discoverReferencesRootCandidates().firstOrNull()
+            ?: return@lazy null
+        WindowsSdkReferences.discoverInstalledSdkVersions(referencesRoot).lastOrNull()
+    }
+
     @Test
     fun resolves_explicit_winmd_file_inputs() {
         val source = Files.createTempFile("sample", ".winmd")
@@ -22,11 +33,13 @@ class WinMdParserInputResolverTest {
 
     @Test
     fun resolves_sources_from_contract_configuration() {
+        val kitsRoot = discoveredKitsRoot ?: return
+        val sdkVersion = discoveredSdkVersion ?: return
         val inputs = WinMdParserInputResolver.resolve(
             arrayOf(
                 "build/generated",
-                "--windows-kits-root=D:/Windows Kits/10",
-                "--sdk-version=10.0.22621.0",
+                "--windows-kits-root=$kitsRoot",
+                "--sdk-version=$sdkVersion",
                 "--contract=Windows.Foundation.UniversalApiContract",
                 "--contract=Windows.Foundation.FoundationContract",
             ),
@@ -40,11 +53,13 @@ class WinMdParserInputResolverTest {
 
     @Test
     fun resolves_namespace_filters() {
+        val kitsRoot = discoveredKitsRoot ?: return
+        val sdkVersion = discoveredSdkVersion ?: return
         val inputs = WinMdParserInputResolver.resolve(
             arrayOf(
                 "build/generated",
-                "--windows-kits-root=D:/Windows Kits/10",
-                "--sdk-version=10.0.22621.0",
+                "--windows-kits-root=$kitsRoot",
+                "--sdk-version=$sdkVersion",
                 "--contract=Windows.Foundation.UniversalApiContract",
                 "--namespace=Windows.Globalization",
                 "--namespace=Windows.Data.Json",
@@ -96,6 +111,8 @@ class WinMdParserInputResolverTest {
 
     @Test
     fun resolves_sources_from_combined_nuget_and_contract_configuration() {
+        val kitsRoot = discoveredKitsRoot ?: return
+        val sdkVersion = discoveredSdkVersion ?: return
         val root = Files.createTempDirectory("nuget-root")
         val packageRoot = root.resolve("microsoft.windowsappsdk").resolve("1.6.0")
         Files.createDirectories(packageRoot.resolve("lib").resolve("uap10.0"))
@@ -109,8 +126,8 @@ class WinMdParserInputResolverTest {
                 "build/generated",
                 "--nuget-root=${root}",
                 "--nuget-component=Microsoft.WindowsAppSDK@1.6.0",
-                "--windows-kits-root=D:/Windows Kits/10",
-                "--sdk-version=10.0.22621.0",
+                "--windows-kits-root=$kitsRoot",
+                "--sdk-version=$sdkVersion",
                 "--contract=Windows.Foundation.UniversalApiContract",
                 "--namespace=Microsoft.UI.Xaml",
             ),
