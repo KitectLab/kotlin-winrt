@@ -73,6 +73,20 @@ class KotlinCollectionProjectionMapperTest {
                         ),
                         WinMdType(
                             namespace = "Windows.Foundation.Collections",
+                            name = "IObservableMap`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "75f99e2a-137e-537e-a5b1-0b5a6245fc02",
+                            genericParameters = listOf("K", "V"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IObservableVector`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "d24c289f-2341-5128-aaa1-292dd0dc1950",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
                             name = "MapRuntimeClass",
                             kind = WinMdTypeKind.RuntimeClass,
                             defaultInterface = "Windows.Foundation.Collections.IMap<String, Windows.Globalization.Calendar>",
@@ -137,6 +151,29 @@ class KotlinCollectionProjectionMapperTest {
         assertEquals(
             true,
             mapProjection.delegateFactory.toString().contains("WinRtMapProjection"),
+        )
+    }
+
+    @Test
+    fun projects_observable_collection_interfaces_to_kotlin_surfaces() {
+        val observableMapProjection = mapper.interfaceProjection(
+            typeRegistry.findType("IObservableMap`2", "Windows.Foundation.Collections")!!,
+        )
+        requireNotNull(observableMapProjection)
+        assertEquals("kotlin.collections.MutableMap<K, V>", observableMapProjection.superinterface.toString())
+        assertEquals(
+            true,
+            observableMapProjection.delegateFactory.toString().contains("WinRtMutableMapProjection"),
+        )
+
+        val observableVectorProjection = mapper.interfaceProjection(
+            typeRegistry.findType("IObservableVector`1", "Windows.Foundation.Collections")!!,
+        )
+        requireNotNull(observableVectorProjection)
+        assertEquals("kotlin.collections.MutableList<T>", observableVectorProjection.superinterface.toString())
+        assertEquals(
+            true,
+            observableVectorProjection.delegateFactory.toString().contains("WinRtMutableListProjection"),
         )
     }
 

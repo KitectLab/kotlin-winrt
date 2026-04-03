@@ -59,6 +59,8 @@ internal class WinRtProjectionTypeMapper {
         "Windows.Foundation.Collections.IMap`2" -> "kotlin.collections.MutableMap"
         "Windows.Foundation.Collections.IMapView`2" -> "kotlin.collections.Map"
         "Windows.Foundation.Collections.IKeyValuePair`2" -> "kotlin.collections.Map.Entry"
+        "Windows.Foundation.Collections.IObservableVector`1" -> "kotlin.collections.MutableList"
+        "Windows.Foundation.Collections.IObservableMap`2" -> "kotlin.collections.MutableMap"
         else -> null
     }
 

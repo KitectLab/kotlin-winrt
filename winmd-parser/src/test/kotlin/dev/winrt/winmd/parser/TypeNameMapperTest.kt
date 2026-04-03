@@ -36,6 +36,24 @@ class TypeNameMapperTest {
     }
 
     @Test
+    fun maps_observable_collection_interfaces_to_kotlin_collection_types() {
+        assertEquals(
+            "kotlin.collections.MutableList<microsoft.ui.xaml.UIElement>",
+            mapper.mapTypeName(
+                "Windows.Foundation.Collections.IObservableVector`1<Microsoft.UI.Xaml.UIElement>",
+                "Windows.Foundation.Collections",
+            ).toString(),
+        )
+        assertEquals(
+            "kotlin.collections.MutableMap<kotlin.String, microsoft.ui.xaml.UIElement>",
+            mapper.mapTypeName(
+                "Windows.Foundation.Collections.IObservableMap`2<String, Microsoft.UI.Xaml.UIElement>",
+                "Windows.Foundation.Collections",
+            ).toString(),
+        )
+    }
+
+    @Test
     fun maps_nested_dictionary_interfaces_to_kotlin_map_types() {
         assertEquals(
             "kotlin.collections.Map<kotlin.String, windows.foundation.collections.IVectorView<microsoft.ui.xaml.UIElement>>",

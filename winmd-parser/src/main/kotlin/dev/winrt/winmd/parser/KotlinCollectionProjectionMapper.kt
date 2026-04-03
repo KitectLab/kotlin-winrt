@@ -153,6 +153,18 @@ internal class KotlinCollectionProjectionMapper {
                 winRtSizeSlot = 7,
             )
         }
+        if (type.namespace == "Windows.Foundation.Collections" && type.name == "IObservableMap`2") {
+            val keyTypeName = type.genericParameters.firstOrNull()?.let { TypeVariableName(it) } ?: return null
+            val valueTypeName = type.genericParameters.getOrNull(1)?.let { TypeVariableName(it) } ?: return null
+            return InterfaceCollectionProjection(
+                superinterface = PoetSymbols.mutableMapClass.parameterizedBy(keyTypeName, valueTypeName),
+                delegateFactory = CodeBlock.of(
+                    "%T(sizeProvider = { winRtSize.value.toInt() }, lookupFn = { key -> lookup(key) }, containsKeyFn = { key -> hasKey(key) }, putValueFn = { key, value -> insert(key, value) }, removeKeyFn = { key -> remove(key) }, clearerFn = { clear() }, entriesProvider = { first().asSequence().toList() })",
+                    PoetSymbols.winRtMutableMapProjectionClass.parameterizedBy(keyTypeName, valueTypeName),
+                ),
+                winRtSizeSlot = 7,
+            )
+        }
         if (type.namespace == "Windows.Foundation.Collections" && type.name == "IMapView`2") {
             val keyTypeName = type.genericParameters.firstOrNull()?.let { TypeVariableName(it) } ?: return null
             val valueTypeName = type.genericParameters.getOrNull(1)?.let { TypeVariableName(it) } ?: return null
@@ -161,6 +173,17 @@ internal class KotlinCollectionProjectionMapper {
                 delegateFactory = CodeBlock.of(
                     "%T(sizeProvider = { winRtSize.value.toInt() }, lookupFn = { key -> lookup(key) }, containsKeyFn = { key -> hasKey(key) }, entriesProvider = { first().asSequence().toList() })",
                     PoetSymbols.winRtMapProjectionClass.parameterizedBy(keyTypeName, valueTypeName),
+                ),
+                winRtSizeSlot = 7,
+            )
+        }
+        if (type.namespace == "Windows.Foundation.Collections" && type.name == "IObservableVector`1") {
+            val elementTypeName = type.genericParameters.firstOrNull()?.let { TypeVariableName(it) } ?: return null
+            return InterfaceCollectionProjection(
+                superinterface = PoetSymbols.mutableListClass.parameterizedBy(elementTypeName),
+                delegateFactory = CodeBlock.of(
+                    "%T(sizeProvider = { winRtSize.value.toInt() }, getter = { index -> getAt(index) }, append = { value -> append(value) }, clearer = { clear() })",
+                    PoetSymbols.winRtMutableListProjectionClass.parameterizedBy(elementTypeName),
                 ),
                 winRtSizeSlot = 7,
             )

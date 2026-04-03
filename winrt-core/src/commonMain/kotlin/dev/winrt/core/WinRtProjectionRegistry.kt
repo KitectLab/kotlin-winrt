@@ -13,6 +13,8 @@ object WinRtProjectionRegistry {
         "Windows.Foundation.Collections.IMap`2" to "kotlin.collections.MutableMap",
         "Windows.Foundation.Collections.IMapView`2" to "kotlin.collections.Map",
         "Windows.Foundation.Collections.IKeyValuePair`2" to "kotlin.collections.Map.Entry",
+        "Windows.Foundation.Collections.IObservableVector`1" to "kotlin.collections.MutableList",
+        "Windows.Foundation.Collections.IObservableMap`2" to "kotlin.collections.MutableMap",
     )
     private val defaultAbiHelperTypeMappings: Map<String, String> = linkedMapOf(
         "System.Collections.IEnumerable" to "ABI.System.Collections.IEnumerable",

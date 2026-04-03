@@ -501,6 +501,8 @@ internal class RuntimeTypeRenderer(
             "IMap",
             "IMapView",
             "IKeyValuePair",
+            "IObservableMap",
+            "IObservableVector",
             "IBindableIterable",
             "IBindableIterator",
             "IBindableVector",

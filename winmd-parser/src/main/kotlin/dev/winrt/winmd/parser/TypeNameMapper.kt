@@ -95,6 +95,8 @@ internal class TypeNameMapper {
             "IMap" -> PoetSymbols.mutableMapClass
             "IMapView" -> PoetSymbols.mapClass
             "IKeyValuePair" -> PoetSymbols.mapEntryClass
+            "IObservableVector" -> PoetSymbols.mutableListClass
+            "IObservableMap" -> PoetSymbols.mutableMapClass
             else -> normalizeQualifiedType(rawType) as ClassName
         }
         return rawTypeName.parameterizedBy(arguments)
