@@ -704,6 +704,31 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun projected_type_alias_reuses_cached_wrapper_after_raw_type_lookup() {
+        WinRtProjectionRegistry.resetForTests()
+
+        val metadata = object : WinRtInterfaceMetadata {
+            override val qualifiedName: String = "Windows.Foundation.Collections.IMapView<String, Microsoft.UI.Xaml.UIElement>"
+            override val projectionTypeKey: String = "kotlin.collections.Map<String, Microsoft.UI.Xaml.UIElement>"
+            override val iid = Guid(0, 0, 0, byteArrayOf(9, 1, 9, 1, 9, 1, 9, 1))
+        }
+        val subject = object : Inspectable(ComPtr.NULL) {
+            var queryCount = 0
+
+            override fun queryInterface(iid: Guid): ComPtr {
+                queryCount += 1
+                return ComPtr.NULL
+            }
+        }
+
+        val first = subject.getObjectReferenceForType(metadata.qualifiedName, metadata.iid)
+        val second = subject.getObjectReferenceForProjectedType(metadata.qualifiedName, metadata.iid)
+
+        assertEquals(first, second)
+        assertEquals(1, subject.queryCount)
+    }
+
+    @Test
     fun project_activation_factory_reuses_cached_factory_for_same_runtime_class_and_interface_iid() {
         WinRtRuntime.resetForTests()
 
