@@ -56,9 +56,9 @@ internal class WinRtSignatureMapper(
         val genericStart = typeName.indexOf('<')
         val rawTypeName = normalizeTypeName(typeName.substring(0, genericStart), currentNamespace)
         val argumentSource = typeName.substring(genericStart + 1, typeName.length - 1)
-        val type = typeRegistry.findType(rawTypeName)
+        val interfaceGuid = wellKnownGenericInterfaceGuids[rawTypeName]
+            ?: typeRegistry.findType(rawTypeName)?.guid
             ?: error("Unknown generic WinRT type: $rawTypeName")
-        val interfaceGuid = type.guid ?: error("Missing GUID for generic interface $rawTypeName")
         val argumentSignatures = splitGenericArguments(argumentSource)
             .map { signatureFor(it, currentNamespace) }
             .toTypedArray()
@@ -108,5 +108,17 @@ internal class WinRtSignatureMapper(
         }
         arguments += source.substring(start).trim()
         return arguments
+    }
+
+    private companion object {
+        val wellKnownGenericInterfaceGuids = mapOf(
+            "Windows.Foundation.Collections.IIterable" to "faa585ea-6214-4217-afda-7f46de5869b3",
+            "Windows.Foundation.Collections.IIterator" to "6a79e863-4300-459a-9966-cbb660963ee1",
+            "Windows.Foundation.Collections.IVector" to "913337e9-11a1-4345-a3a2-4e7f956e222d",
+            "Windows.Foundation.Collections.IVectorView" to "bbe1fa4c-b0e3-4583-baef-1f1b2e483e56",
+            "Windows.Foundation.Collections.IMap" to "3c2925fe-8519-45c1-aa79-197b6718c1c1",
+            "Windows.Foundation.Collections.IMapView" to "e480ce40-a338-4ada-adcf-272272e48cb9",
+            "Windows.Foundation.Collections.IKeyValuePair" to "02b51929-c1c4-4a7e-8940-0312b5c18500",
+        )
     }
 }

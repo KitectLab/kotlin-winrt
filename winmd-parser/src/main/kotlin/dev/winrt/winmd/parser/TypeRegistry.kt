@@ -7,6 +7,7 @@ import dev.winrt.winmd.plugin.WinMdType
 import dev.winrt.winmd.plugin.WinMdTypeKind
 
 internal data class RuntimeClassFactoryMethod(
+    val runtimeClass: WinMdType,
     val factoryType: WinMdType,
     val method: WinMdMethod,
 )
@@ -62,14 +63,27 @@ internal class TypeRegistry(
             .flatMap { factoryType ->
                 factoryType.methods
                     .filter { method -> method.returnType == "${runtimeClass.namespace}.${runtimeClass.name}" }
-                    .map { method -> RuntimeClassFactoryMethod(factoryType, method) }
+                    .map { method -> RuntimeClassFactoryMethod(runtimeClass, factoryType, method) }
             }
     }
 
     fun findComposableFactoryMethods(typeName: String, currentNamespace: String): List<RuntimeClassFactoryMethod> {
         val runtimeClass = findType(typeName, currentNamespace) ?: return emptyList()
         return findRuntimeClassFactoryMethods(typeName, currentNamespace)
-            .filter { candidate -> isComposableFactoryMethod(runtimeClass, candidate.method) }
+            .filter { candidate -> isComposableFactoryMethod(candidate.runtimeClass, candidate.method) }
+    }
+
+    fun findInheritedComposableFactoryMethods(typeName: String, currentNamespace: String): List<RuntimeClassFactoryMethod> {
+        val runtimeClass = findType(typeName, currentNamespace) ?: return emptyList()
+        return nearestComposableBaseFactoryMethods(runtimeClass)
+    }
+
+    fun findRuntimeClassConstructorFactoryMethods(typeName: String, currentNamespace: String): List<RuntimeClassFactoryMethod> {
+        val ownFactoryMethods = findRuntimeClassFactoryMethods(typeName, currentNamespace)
+        if (ownFactoryMethods.isNotEmpty()) {
+            return ownFactoryMethods
+        }
+        return findInheritedComposableFactoryMethods(typeName, currentNamespace)
     }
 
     fun runtimeClassActivationKind(type: WinMdType): WinMdActivationKind {
@@ -77,6 +91,8 @@ internal class TypeRegistry(
             return WinMdActivationKind.Composable
         }
         return if (findComposableFactoryMethods(type.name, type.namespace).isNotEmpty()) {
+            WinMdActivationKind.Composable
+        } else if (findInheritedComposableFactoryMethods(type.name, type.namespace).isNotEmpty()) {
             WinMdActivationKind.Composable
         } else {
             type.activationKind
@@ -192,6 +208,15 @@ internal class TypeRegistry(
             .removeSuffix("[]")
     }
 
+    private fun nearestComposableBaseFactoryMethods(type: WinMdType): List<RuntimeClassFactoryMethod> {
+        val baseType = baseRuntimeClass(type) ?: return emptyList()
+        val directFactoryMethods = findComposableFactoryMethods(baseType.name, baseType.namespace)
+        if (directFactoryMethods.isNotEmpty()) {
+            return directFactoryMethods
+        }
+        return nearestComposableBaseFactoryMethods(baseType)
+    }
+
     private fun resolveQualifiedName(typeName: String, currentNamespace: String?): String {
         return canonicalQualifiedName(
             when {
@@ -210,6 +235,13 @@ internal class TypeRegistry(
             suffix.all(Char::isDigit) -> suffix.toInt()
             else -> null
         }
+    }
+
+    private fun baseRuntimeClass(type: WinMdType): WinMdType? {
+        return type.baseClass
+            ?.takeUnless { it == "System.Object" }
+            ?.let { findType(it, type.namespace) }
+            ?.takeIf { it.kind == WinMdTypeKind.RuntimeClass }
     }
 
     private fun supportsComposableFactoryObjectType(typeName: String): Boolean {

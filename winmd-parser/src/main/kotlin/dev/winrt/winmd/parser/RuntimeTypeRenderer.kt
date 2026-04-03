@@ -92,12 +92,13 @@ internal class RuntimeTypeRenderer(
             projection.extraFunctions.forEach(builder::addFunction)
             builder.addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
         }
-        kotlinCollectionProjectionMapper.runtimeClassInterfaceProjection(
+        val interfaceProjection = kotlinCollectionProjectionMapper.runtimeClassInterfaceProjection(
             type = type,
             typeNameMapper = typeNameMapper,
             winRtSignatureMapper = winRtSignatureMapper,
             winRtProjectionTypeMapper = winRtProjectionTypeMapper,
-        )?.let { projection ->
+        )
+        interfaceProjection?.let { projection ->
             projection.delegateFactory?.let { delegateFactory ->
                 builder.addSuperinterface(projection.superinterface, delegateFactory)
             } ?: builder.addSuperinterface(projection.superinterface)
@@ -105,13 +106,18 @@ internal class RuntimeTypeRenderer(
             projection.extraFunctions.forEach(builder::addFunction)
             builder.addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
         }
-        kotlinCollectionProjectionMapper.runtimeClassIterableProjection(
-            type = type,
-            typeNameMapper = typeNameMapper,
-            winRtSignatureMapper = winRtSignatureMapper,
-            winRtProjectionTypeMapper = winRtProjectionTypeMapper,
-        )?.let { projection ->
-            builder.addSuperinterface(projection.superinterface, projection.delegateFactory)
+        if (
+            kotlinCollectionProjectionMapper.runtimeClassProjection(type) == null &&
+            interfaceProjection == null
+        ) {
+            kotlinCollectionProjectionMapper.runtimeClassIterableProjection(
+                type = type,
+                typeNameMapper = typeNameMapper,
+                winRtSignatureMapper = winRtSignatureMapper,
+                winRtProjectionTypeMapper = winRtProjectionTypeMapper,
+            )?.let { projection ->
+                builder.addSuperinterface(projection.superinterface, projection.delegateFactory)
+            }
         }
         if (activationKind == WinMdActivationKind.Factory) {
             builder.addFunction(
@@ -182,10 +188,10 @@ internal class RuntimeTypeRenderer(
     }
 
     private fun renderFactoryConstructors(type: WinMdType): List<FunSpec> {
-        return typeRegistry.findRuntimeClassFactoryMethods(type.name, type.namespace)
+        return typeRegistry.findRuntimeClassConstructorFactoryMethods(type.name, type.namespace)
             .map { candidate ->
                 val factoryPropertyName = helperAccessorName(candidate.factoryType.name)
-                val constructorParameters = if (typeRegistry.isComposableFactoryMethod(type, candidate.method)) {
+                val constructorParameters = if (typeRegistry.isComposableFactoryMethod(candidate.runtimeClass, candidate.method)) {
                     candidate.method.parameters.dropLast(2)
                 } else {
                     candidate.method.parameters

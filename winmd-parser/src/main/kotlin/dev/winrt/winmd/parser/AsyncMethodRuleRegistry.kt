@@ -150,20 +150,21 @@ internal class AsyncMethodRuleRegistry(
         parameterName: String,
         vtableIndex: Int,
     ): String? {
+        val loweredArgument = asyncArgumentExpression(category, parameterName)
         return when (category) {
             MethodParameterCategory.STRING ->
-                "%T.invokeObjectMethodWithStringArg(pointer, $vtableIndex, $parameterName).getOrThrow()"
+                "%T.invokeObjectMethodWithStringArg(pointer, $vtableIndex, $loweredArgument).getOrThrow()"
             MethodParameterCategory.OBJECT ->
-                "%T.invokeObjectMethodWithObjectArg(pointer, $vtableIndex, $parameterName.pointer).getOrThrow()"
+                "%T.invokeObjectMethodWithObjectArg(pointer, $vtableIndex, $loweredArgument).getOrThrow()"
             MethodParameterCategory.INT32 ->
-                "%T.invokeObjectMethodWithInt32Arg(pointer, $vtableIndex, $parameterName).getOrThrow()"
+                "%T.invokeObjectMethodWithInt32Arg(pointer, $vtableIndex, $loweredArgument).getOrThrow()"
             MethodParameterCategory.UINT32 ->
-                "%T.invokeObjectMethodWithUInt32Arg(pointer, $vtableIndex, $parameterName).getOrThrow()"
+                "%T.invokeObjectMethodWithUInt32Arg(pointer, $vtableIndex, $loweredArgument).getOrThrow()"
             MethodParameterCategory.BOOLEAN ->
-                "%T.invokeObjectMethodWithBooleanArg(pointer, $vtableIndex, $parameterName).getOrThrow()"
+                "%T.invokeObjectMethodWithBooleanArg(pointer, $vtableIndex, $loweredArgument).getOrThrow()"
             MethodParameterCategory.INT64,
             MethodParameterCategory.EVENT_REGISTRATION_TOKEN ->
-                "%T.invokeObjectMethodWithInt64Arg(pointer, $vtableIndex, $parameterName).getOrThrow()"
+                "%T.invokeObjectMethodWithInt64Arg(pointer, $vtableIndex, $loweredArgument).getOrThrow()"
         }
     }
 
@@ -176,9 +177,14 @@ internal class AsyncMethodRuleRegistry(
     ): String? {
         val firstToken = first.toAbiToken().callNamePart()
         val secondToken = second.toAbiToken().callNamePart()
+        val helperNamePart = if (firstToken == secondToken) {
+            "Two${firstToken}Args"
+        } else {
+            "${firstToken}And${secondToken}Args"
+        }
         val firstArgument = asyncArgumentExpression(first, firstName)
         val secondArgument = asyncArgumentExpression(second, secondName)
-        return "dev.winrt.kom.requireObject(%T.invokeMethodWith${firstToken}And${secondToken}Args(pointer, $vtableIndex, dev.winrt.kom.ComMethodResultKind.OBJECT, $firstArgument, $secondArgument).getOrThrow())"
+        return "dev.winrt.kom.requireObject(%T.invokeMethodWith${helperNamePart}(pointer, $vtableIndex, dev.winrt.kom.ComMethodResultKind.OBJECT, $firstArgument, $secondArgument).getOrThrow())"
     }
 
     private fun asyncGenericInvocation(
@@ -197,7 +203,7 @@ internal class AsyncMethodRuleRegistry(
             MethodParameterCategory.UINT32,
             MethodParameterCategory.BOOLEAN,
             MethodParameterCategory.INT64,
-            MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> parameterName
+            MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$parameterName.value"
             MethodParameterCategory.OBJECT -> "$parameterName.pointer"
         }
     }

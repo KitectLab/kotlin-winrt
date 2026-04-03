@@ -17,7 +17,7 @@ internal object AbiCallCatalog {
         placeholder: String = "%L",
     ): CodeBlock =
         CodeBlock.of(
-            "%T.$methodName($pointerExpression, %L, $placeholder).getOrThrow()",
+            "%T.${methodName.prependInvokePrefix()}($pointerExpression, %L, $placeholder).getOrThrow()",
             PoetSymbols.platformComInteropClass,
             vtableIndex,
             argumentExpression,
@@ -45,6 +45,7 @@ internal object AbiCallCatalog {
         MethodParameterAbiToken.STRING -> "String"
         MethodParameterAbiToken.OBJECT -> "Object"
         MethodParameterAbiToken.INT32 -> "Int32"
+        MethodParameterAbiToken.UINT32 -> "UInt32"
         MethodParameterAbiToken.INT64 -> "Int64"
     }
 
@@ -53,6 +54,7 @@ internal object AbiCallCatalog {
         MethodParameterAbiToken.STRING -> "%N"
         MethodParameterAbiToken.OBJECT,
         MethodParameterAbiToken.INT32,
+        MethodParameterAbiToken.UINT32,
         MethodParameterAbiToken.INT64 -> "%L"
     }
 
@@ -151,8 +153,8 @@ internal object AbiCallCatalog {
     fun hstringMethodWithInt32(vtableIndex: Int, argumentName: String, pointerExpression: String = "pointer"): CodeBlock =
         unaryCall(MethodAbiToken.HSTRING, MethodParameterAbiToken.INT32, vtableIndex, argumentName, pointerExpression)
 
-    fun hstringMethodWithUInt32(vtableIndex: Int, argumentName: String, pointerExpression: String = "pointer"): CodeBlock =
-        unaryCall(MethodAbiToken.HSTRING, MethodParameterAbiToken.INT32, vtableIndex, "${argumentName}.value", pointerExpression)
+    fun hstringMethodWithUInt32(vtableIndex: Int, argumentExpression: String, pointerExpression: String = "pointer"): CodeBlock =
+        unaryCall(MethodAbiToken.HSTRING, MethodParameterAbiToken.UINT32, vtableIndex, argumentExpression, pointerExpression)
 
     fun hstringMethodWithBoolean(vtableIndex: Int, argumentExpression: String, pointerExpression: String = "pointer"): CodeBlock =
         unaryCall(MethodAbiToken.HSTRING, MethodParameterAbiToken.BOOLEAN, vtableIndex, argumentExpression, pointerExpression)
@@ -172,14 +174,14 @@ internal object AbiCallCatalog {
     fun unitMethodWithInt32Expression(vtableIndex: Int, argumentExpression: String): CodeBlock =
         unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.INT32, vtableIndex, argumentExpression)
 
-    fun unitMethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.INT32, vtableIndex, "${argumentName}.value")
+    fun unitMethodWithUInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
+        unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.UINT32, vtableIndex, argumentExpression)
 
     fun unitMethodWithInt64(vtableIndex: Int, argumentName: String): CodeBlock =
         unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.INT64, vtableIndex, "${argumentName}.value")
 
     fun unitMethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
-        singleArgumentCall("invokeStringSetter", vtableIndex, argumentName)
+        unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.STRING, vtableIndex, argumentName)
 
     fun unitMethodWithTwoStrings(vtableIndex: Int, firstArgumentName: String, secondArgumentName: String): CodeBlock =
         CodeBlock.of(
@@ -341,11 +343,11 @@ internal object AbiCallCatalog {
     fun int64MethodWithInt32(vtableIndex: Int, argumentName: String): CodeBlock =
         unaryCall(MethodAbiToken.INT64, MethodParameterAbiToken.INT32, vtableIndex, "${argumentName}.value")
 
-    fun int64MethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        unaryCall(MethodAbiToken.INT64, MethodParameterAbiToken.INT32, vtableIndex, "${argumentName}.value")
+    fun int64MethodWithUInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
+        unaryCall(MethodAbiToken.INT64, MethodParameterAbiToken.UINT32, vtableIndex, argumentExpression)
 
-    fun int64MethodWithBoolean(vtableIndex: Int, argumentName: String): CodeBlock =
-        unaryCall(MethodAbiToken.INT64, MethodParameterAbiToken.INT32, vtableIndex, "${argumentName}.value")
+    fun int64MethodWithBoolean(vtableIndex: Int, argumentExpression: String): CodeBlock =
+        unaryCall(MethodAbiToken.INT64, MethodParameterAbiToken.BOOLEAN, vtableIndex, argumentExpression)
 
     fun int64MethodWithInt64(vtableIndex: Int, argumentExpression: String): CodeBlock =
         unaryCall(MethodAbiToken.INT64, MethodParameterAbiToken.INT64, vtableIndex, argumentExpression)
@@ -365,8 +367,13 @@ internal object AbiCallCatalog {
     fun uint64MethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
         CodeBlock.of("%T.invokeUInt64MethodWithUInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
 
-    fun uint64MethodWithBoolean(vtableIndex: Int, argumentName: String): CodeBlock =
-        CodeBlock.of("%T.invokeUInt64MethodWithBooleanArg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentName)
+    fun uint64MethodWithBoolean(vtableIndex: Int, argumentExpression: String): CodeBlock =
+        CodeBlock.of(
+            "%T.invokeUInt64MethodWithBooleanArg(pointer, %L, %L).getOrThrow()",
+            PoetSymbols.platformComInteropClass,
+            vtableIndex,
+            argumentExpression,
+        )
 
     fun objectMethod(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeObjectMethod(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
@@ -374,8 +381,8 @@ internal object AbiCallCatalog {
     fun objectMethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
         unaryCall(MethodAbiToken.OBJECT, MethodParameterAbiToken.STRING, vtableIndex, argumentName)
 
-    fun objectMethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        unaryCall(MethodAbiToken.OBJECT, MethodParameterAbiToken.INT32, vtableIndex, "${argumentName}.value")
+    fun objectMethodWithUInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
+        unaryCall(MethodAbiToken.OBJECT, MethodParameterAbiToken.UINT32, vtableIndex, argumentExpression)
 
     fun objectMethodWithInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
         unaryCall(MethodAbiToken.OBJECT, MethodParameterAbiToken.INT32, vtableIndex, argumentExpression)
@@ -697,8 +704,8 @@ internal object AbiCallCatalog {
     fun booleanMethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
         unaryCall(MethodAbiToken.BOOLEAN, MethodParameterAbiToken.STRING, vtableIndex, argumentName)
 
-    fun booleanMethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        unaryCall(MethodAbiToken.BOOLEAN, MethodParameterAbiToken.INT32, vtableIndex, "${argumentName}.value")
+    fun booleanMethodWithUInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
+        unaryCall(MethodAbiToken.BOOLEAN, MethodParameterAbiToken.UINT32, vtableIndex, argumentExpression)
 
     fun booleanMethodWithInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
         unaryCall(MethodAbiToken.BOOLEAN, MethodParameterAbiToken.INT32, vtableIndex, argumentExpression)
@@ -721,8 +728,8 @@ internal object AbiCallCatalog {
     fun float32MethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
         unaryCall(MethodAbiToken.FLOAT32, MethodParameterAbiToken.STRING, vtableIndex, argumentName)
 
-    fun float32MethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        unaryCall(MethodAbiToken.FLOAT32, MethodParameterAbiToken.INT32, vtableIndex, "${argumentName}.value")
+    fun float32MethodWithUInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
+        unaryCall(MethodAbiToken.FLOAT32, MethodParameterAbiToken.UINT32, vtableIndex, argumentExpression)
 
     fun float32MethodWithInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
         unaryCall(MethodAbiToken.FLOAT32, MethodParameterAbiToken.INT32, vtableIndex, argumentExpression)
@@ -739,8 +746,8 @@ internal object AbiCallCatalog {
     fun float64MethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
         unaryCall(MethodAbiToken.FLOAT64, MethodParameterAbiToken.STRING, vtableIndex, argumentName)
 
-    fun float64MethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        unaryCall(MethodAbiToken.FLOAT64, MethodParameterAbiToken.INT32, vtableIndex, "${argumentName}.value")
+    fun float64MethodWithUInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
+        unaryCall(MethodAbiToken.FLOAT64, MethodParameterAbiToken.UINT32, vtableIndex, argumentExpression)
 
     fun float64MethodWithInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
         unaryCall(MethodAbiToken.FLOAT64, MethodParameterAbiToken.INT32, vtableIndex, argumentExpression)
@@ -763,8 +770,8 @@ internal object AbiCallCatalog {
     fun uint32MethodWithInt32(vtableIndex: Int, argumentName: String): CodeBlock =
         unaryCall(MethodAbiToken.UINT32, MethodParameterAbiToken.INT32, vtableIndex, "${argumentName}.value")
 
-    fun uint32MethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        unaryCall(MethodAbiToken.UINT32, MethodParameterAbiToken.INT32, vtableIndex, "${argumentName}.value")
+    fun uint32MethodWithUInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
+        unaryCall(MethodAbiToken.UINT32, MethodParameterAbiToken.UINT32, vtableIndex, argumentExpression)
 
     fun uint32MethodWithBoolean(vtableIndex: Int, argumentExpression: String): CodeBlock =
         unaryCall(MethodAbiToken.UINT32, MethodParameterAbiToken.BOOLEAN, vtableIndex, argumentExpression)
@@ -784,8 +791,8 @@ internal object AbiCallCatalog {
     fun int32MethodWithInt32(vtableIndex: Int, argumentName: String): CodeBlock =
         unaryCall(MethodAbiToken.INT32, MethodParameterAbiToken.INT32, vtableIndex, argumentName)
 
-    fun int32MethodWithUInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        unaryCall(MethodAbiToken.INT32, MethodParameterAbiToken.INT32, vtableIndex, argumentName)
+    fun int32MethodWithUInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
+        unaryCall(MethodAbiToken.INT32, MethodParameterAbiToken.UINT32, vtableIndex, argumentExpression)
 
     fun int32MethodWithBoolean(vtableIndex: Int, argumentExpression: String): CodeBlock =
         unaryCall(MethodAbiToken.INT32, MethodParameterAbiToken.BOOLEAN, vtableIndex, argumentExpression)
@@ -809,7 +816,7 @@ internal object AbiCallCatalog {
         unaryCall(MethodAbiToken.GUID, MethodParameterAbiToken.INT32, vtableIndex, argumentExpression)
 
     fun guidMethodWithUInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        unaryCall(MethodAbiToken.GUID, MethodParameterAbiToken.INT32, vtableIndex, argumentExpression)
+        unaryCall(MethodAbiToken.GUID, MethodParameterAbiToken.UINT32, vtableIndex, argumentExpression)
 
     fun guidMethodWithBoolean(vtableIndex: Int, argumentExpression: String): CodeBlock =
         unaryCall(MethodAbiToken.GUID, MethodParameterAbiToken.BOOLEAN, vtableIndex, argumentExpression)
@@ -819,6 +826,10 @@ internal object AbiCallCatalog {
 
     fun guidMethodWithInt64(vtableIndex: Int, argumentExpression: String): CodeBlock =
         unaryCall(MethodAbiToken.GUID, MethodParameterAbiToken.INT64, vtableIndex, argumentExpression)
+
+    private fun String.prependInvokePrefix(): String {
+        return if (startsWith("invoke")) this else "invoke${replaceFirstChar(Char::uppercaseChar)}"
+    }
 
     fun stringSetter(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeStringSetter(pointer, %L, value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)

@@ -47,7 +47,7 @@ class AsyncMethodRuleRegistryTest {
         )
 
         assertNotNull(plan)
-        assertEquals("windows.foundation.IAsyncOperationWithProgress<kotlin.String, kotlin.Double>", plan!!.rawReturnType.toString())
+        assertEquals("windows.foundation.IAsyncOperationWithProgress<kotlin.String, dev.winrt.core.Float64>", plan!!.rawReturnType.toString())
         assertEquals("kotlin.String", plan.awaitReturnType.toString())
     }
 

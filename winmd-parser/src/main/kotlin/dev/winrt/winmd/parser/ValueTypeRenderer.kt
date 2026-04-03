@@ -5,6 +5,7 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.asTypeName
 import dev.winrt.winmd.plugin.WinMdType
 import dev.winrt.winmd.plugin.WinMdTypeKind
 
@@ -25,20 +26,38 @@ internal class ValueTypeRenderer(
             .primaryConstructor(
                 FunSpec.constructorBuilder().apply {
                     type.fields.forEach { field ->
-                        addParameter(field.name.replaceFirstChar(Char::lowercase), typeNameMapper.mapTypeName(field.type, type.namespace))
+                        addParameter(field.name.replaceFirstChar(Char::lowercase), structFieldTypeName(field.type, type.namespace))
                     }
                 }.build(),
             )
             .apply {
                 type.fields.forEach { field ->
                     addProperty(
-                        PropertySpec.builder(field.name.replaceFirstChar(Char::lowercase), typeNameMapper.mapTypeName(field.type, type.namespace))
+                        PropertySpec.builder(field.name.replaceFirstChar(Char::lowercase), structFieldTypeName(field.type, type.namespace))
                             .initializer(field.name.replaceFirstChar(Char::lowercase))
                             .build(),
                     )
                 }
             }
             .build()
+    }
+
+    private fun structFieldTypeName(typeName: String, currentNamespace: String) = when (typeName) {
+        "Boolean",
+        "Windows.Foundation.WinRtBoolean" -> Boolean::class.asTypeName()
+        "Int32",
+        "Windows.Foundation.Int32" -> Int::class.asTypeName()
+        "UInt32",
+        "Windows.Foundation.UInt32" -> UInt::class.asTypeName()
+        "Int64",
+        "Windows.Foundation.Int64" -> Long::class.asTypeName()
+        "UInt64",
+        "Windows.Foundation.UInt64" -> ULong::class.asTypeName()
+        "Float32",
+        "Windows.Foundation.Float32" -> Float::class.asTypeName()
+        "Float64",
+        "Windows.Foundation.Float64" -> Double::class.asTypeName()
+        else -> typeNameMapper.mapTypeName(typeName, currentNamespace)
     }
 
     private fun renderEnum(type: WinMdType): TypeSpec {

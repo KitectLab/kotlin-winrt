@@ -244,4 +244,98 @@ class RuntimeTypeRendererTest {
         assertTrue(binding.contains("::Widget"))
         assertTrue(binding.contains("ComPtr.NULL"))
     }
+
+    @Test
+    fun renders_derived_runtime_classes_with_inherited_composable_constructor() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "BaseWidget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Xaml.IBaseWidget",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "DerivedWidget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            baseClass = "Example.Xaml.BaseWidget",
+                            defaultInterface = "Example.Xaml.IDerivedWidget",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IBaseWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IDerivedWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IBaseWidgetFactory",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "33333333-3333-3333-3333-333333333333",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateInstance",
+                                    returnType = "Example.Xaml.BaseWidget",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter(name = "baseInterface", type = "Object"),
+                                        WinMdParameter(name = "innerInterface", type = "Object", byRef = true, isOut = true),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val typeRegistry = TypeRegistry(model)
+        val renderer = RuntimeTypeRenderer(
+            typeNameMapper = TypeNameMapper(),
+            typeRegistry = typeRegistry,
+            delegateLambdaPlanResolver = DelegateLambdaPlanResolver(TypeNameMapper()),
+            eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+            runtimePropertyRenderer = RuntimePropertyRenderer(TypeNameMapper(), typeRegistry),
+            runtimeMethodRenderer = RuntimeMethodRenderer(
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                typeRegistry,
+                AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+            ),
+            runtimeCompanionRenderer = RuntimeCompanionRenderer(
+                typeRegistry,
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+                WinRtSignatureMapper(typeRegistry),
+                AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+                WinRtProjectionTypeMapper(),
+                KotlinCollectionProjectionMapper(),
+            ),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
+            winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
+        )
+
+        val binding = renderer.render(typeRegistry.findType("DerivedWidget", "Example.Xaml")!!).toString()
+
+        assertFalse(binding.contains("Companion.activate().pointer"))
+        assertTrue(binding.contains("constructor() : this(Companion.factoryCreateInstance().pointer)"))
+        assertTrue(binding.contains("WinRtActivationKind.Composable"))
+        assertFalse(binding.contains("fun activate(): DerivedWidget"))
+        assertTrue(binding.contains("WinRtRuntime.compose("))
+        assertTrue(binding.contains("guidOf(\"33333333-3333-3333-3333-333333333333\")"))
+        assertTrue(binding.contains("guidOf(\"22222222-2222-2222-2222-222222222222\")"))
+        assertTrue(binding.contains("::DerivedWidget"))
+        assertTrue(binding.contains("ComPtr.NULL"))
+    }
 }

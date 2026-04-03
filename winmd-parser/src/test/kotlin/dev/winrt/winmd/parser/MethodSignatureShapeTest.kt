@@ -61,7 +61,7 @@ class MethodSignatureShapeTest {
             MethodParameterCategory.STRING.toAbiToken(),
         )
         assertEquals(
-            MethodParameterAbiToken.INT32,
+            MethodParameterAbiToken.BOOLEAN,
             MethodParameterCategory.BOOLEAN.toAbiToken(),
         )
         assertEquals(

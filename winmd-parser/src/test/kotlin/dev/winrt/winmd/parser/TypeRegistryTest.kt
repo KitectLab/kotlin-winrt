@@ -246,6 +246,71 @@ class TypeRegistryTest {
     }
 
     @Test
+    fun derives_composable_activation_from_base_runtime_class_factory() {
+        val runtimeRegistry = TypeRegistry(
+            WinMdModel(
+                files = emptyList(),
+                namespaces = listOf(
+                    WinMdNamespace(
+                        name = "Example.Xaml",
+                        types = listOf(
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "BaseWidget",
+                                kind = WinMdTypeKind.RuntimeClass,
+                                defaultInterface = "Example.Xaml.IBaseWidget",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "DerivedWidget",
+                                kind = WinMdTypeKind.RuntimeClass,
+                                baseClass = "Example.Xaml.BaseWidget",
+                                defaultInterface = "Example.Xaml.IDerivedWidget",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "IBaseWidget",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "11111111-1111-1111-1111-111111111111",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "IDerivedWidget",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "22222222-2222-2222-2222-222222222222",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "IBaseWidgetFactory",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "33333333-3333-3333-3333-333333333333",
+                                methods = listOf(
+                                    WinMdMethod(
+                                        name = "CreateInstance",
+                                        returnType = "Example.Xaml.BaseWidget",
+                                        parameters = listOf(
+                                            WinMdParameter(name = "baseInterface", type = "Object"),
+                                            WinMdParameter(name = "innerInterface", type = "Object", byRef = true, isOut = true),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val derivedWidget = runtimeRegistry.findType("DerivedWidget", "Example.Xaml")!!
+        val inheritedComposableMethods = runtimeRegistry.findInheritedComposableFactoryMethods("DerivedWidget", "Example.Xaml")
+
+        assertEquals(1, inheritedComposableMethods.size)
+        assertEquals("BaseWidget", inheritedComposableMethods.single().runtimeClass.name)
+        assertEquals("CreateInstance", inheritedComposableMethods.single().method.name)
+        assertEquals(WinMdActivationKind.Composable, runtimeRegistry.runtimeClassActivationKind(derivedWidget))
+    }
+
+    @Test
     fun ignores_non_versioned_helper_suffixes() {
         val runtimeRegistry = TypeRegistry(
             WinMdModel(

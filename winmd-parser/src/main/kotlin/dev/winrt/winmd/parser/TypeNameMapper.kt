@@ -21,18 +21,18 @@ internal class TypeNameMapper {
             typeName == "String" -> String::class.asTypeName()
             typeName == "Unit" -> Unit::class.asTypeName()
             typeName == "Object" -> PoetSymbols.inspectableClass
-            typeName == "Boolean" -> Boolean::class.asTypeName()
+            typeName == "Boolean" || typeName == "Windows.Foundation.WinRtBoolean" -> PoetSymbols.winRtBooleanClass
             typeName == "Int" -> Int::class.asTypeName()
-            typeName == "Int32" -> Int::class.asTypeName()
-            typeName == "UInt32" -> UInt::class.asTypeName()
-            typeName == "Int64" -> Long::class.asTypeName()
-            typeName == "UInt64" -> ULong::class.asTypeName()
-            typeName == "Float32" -> Float::class.asTypeName()
-            typeName == "Float64" -> Double::class.asTypeName()
-            typeName == "Guid" -> PoetSymbols.guidValueClass
-            typeName == "DateTime" -> PoetSymbols.dateTimeClass
-            typeName == "TimeSpan" -> PoetSymbols.timeSpanClass
-            typeName == "EventRegistrationToken" -> PoetSymbols.eventRegistrationTokenClass
+            typeName == "Int32" || typeName == "Windows.Foundation.Int32" -> PoetSymbols.int32Class
+            typeName == "UInt32" || typeName == "Windows.Foundation.UInt32" -> PoetSymbols.uint32Class
+            typeName == "Int64" || typeName == "Windows.Foundation.Int64" -> PoetSymbols.int64Class
+            typeName == "UInt64" || typeName == "Windows.Foundation.UInt64" -> PoetSymbols.uint64Class
+            typeName == "Float32" || typeName == "Windows.Foundation.Float32" -> PoetSymbols.float32Class
+            typeName == "Float64" || typeName == "Windows.Foundation.Float64" -> PoetSymbols.float64Class
+            typeName == "Guid" || typeName == "Windows.Foundation.Guid" -> PoetSymbols.guidValueClass
+            typeName == "DateTime" || typeName == "Windows.Foundation.DateTime" -> PoetSymbols.dateTimeClass
+            typeName == "TimeSpan" || typeName == "Windows.Foundation.TimeSpan" -> PoetSymbols.timeSpanClass
+            typeName == "EventRegistrationToken" || typeName == "Windows.Foundation.EventRegistrationToken" -> PoetSymbols.eventRegistrationTokenClass
             typeName.endsWith("[]") -> arrayClass.parameterizedBy(
                 mapTypeName(typeName.removeSuffix("[]"), currentNamespace, genericParameters),
             )
@@ -51,18 +51,18 @@ internal class TypeNameMapper {
             rendered == "kotlin.String" -> CodeBlock.of("%S", "")
             rendered == "kotlin.Int" -> CodeBlock.of("0")
             rendered == "kotlin.Unit" -> CodeBlock.of("Unit")
-            rendered == "dev.winrt.core.Inspectable" -> CodeBlock.of("%T(%T.NULL)", PoetSymbols.inspectableClass, PoetSymbols.comPtrClass)
-            rendered.endsWith(".Boolean") -> CodeBlock.of("false")
-            rendered.endsWith(".Int32") -> CodeBlock.of("0")
-            rendered.endsWith(".UInt32") -> CodeBlock.of("0u")
-            rendered.endsWith(".Int64") -> CodeBlock.of("0L")
-            rendered.endsWith(".UInt64") -> CodeBlock.of("0uL")
-            rendered.endsWith(".Float32") -> CodeBlock.of("0f")
-            rendered.endsWith(".Float64") -> CodeBlock.of("0.0")
-            rendered.endsWith(".DateTime") -> CodeBlock.of("%T.fromEpochSeconds(0)", PoetSymbols.dateTimeClass)
-            rendered.endsWith(".TimeSpan") -> CodeBlock.of("%T.parse(" + "\"0s\"" + ")", PoetSymbols.timeSpanClass)
-            rendered.endsWith(".EventRegistrationToken") -> CodeBlock.of("%T(0)", PoetSymbols.eventRegistrationTokenClass)
-            rendered.endsWith(".Uuid") -> CodeBlock.of("%T.parse(%S)", PoetSymbols.guidValueClass, "00000000000000000000000000000000")
+            rendered == PoetSymbols.inspectableClass.canonicalName -> CodeBlock.of("%T(%T.NULL)", PoetSymbols.inspectableClass, PoetSymbols.comPtrClass)
+            rendered == PoetSymbols.winRtBooleanClass.canonicalName -> CodeBlock.of("%T.FALSE", PoetSymbols.winRtBooleanClass)
+            rendered == PoetSymbols.int32Class.canonicalName -> CodeBlock.of("%T(0)", PoetSymbols.int32Class)
+            rendered == PoetSymbols.uint32Class.canonicalName -> CodeBlock.of("%T(0u)", PoetSymbols.uint32Class)
+            rendered == PoetSymbols.int64Class.canonicalName -> CodeBlock.of("%T(0L)", PoetSymbols.int64Class)
+            rendered == PoetSymbols.uint64Class.canonicalName -> CodeBlock.of("%T(0uL)", PoetSymbols.uint64Class)
+            rendered == PoetSymbols.float32Class.canonicalName -> CodeBlock.of("%T(0f)", PoetSymbols.float32Class)
+            rendered == PoetSymbols.float64Class.canonicalName -> CodeBlock.of("%T(0.0)", PoetSymbols.float64Class)
+            rendered == PoetSymbols.dateTimeClass.canonicalName -> CodeBlock.of("%T.fromEpochSeconds(0)", PoetSymbols.dateTimeClass)
+            rendered == PoetSymbols.timeSpanClass.canonicalName -> CodeBlock.of("%T.parse(" + "\"0s\"" + ")", PoetSymbols.timeSpanClass)
+            rendered == PoetSymbols.eventRegistrationTokenClass.canonicalName -> CodeBlock.of("%T(0)", PoetSymbols.eventRegistrationTokenClass)
+            rendered == PoetSymbols.guidValueClass.canonicalName -> CodeBlock.of("%T.parse(%S)", PoetSymbols.guidValueClass, "00000000000000000000000000000000")
             rendered.startsWith("kotlin.Array<") -> CodeBlock.of("emptyArray()")
             rendered.startsWith("dev.winrt.core.IReference<") -> {
                 CodeBlock.of(

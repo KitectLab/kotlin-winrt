@@ -1113,7 +1113,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("fun launchUriAsync(uri: Uri, options: LauncherOptions): IAsyncOperation<String>"))
         assertTrue(runtimeBinding.contains("statics.launchUriAsync(uri, options)"))
         assertTrue(staticsBinding.contains("fun launchUriAsync(uri: Uri, options: LauncherOptions): IAsyncOperation<String>"))
-        assertTrue(normalizedStaticsBinding.contains("IAsyncOperation<String>(dev.winrt.kom.requireObject(PlatformComInterop.invokeMethodWithTwoObjectArgs(pointer,6,dev.winrt.kom.ComMethodResultKind.OBJECT,uri.pointer,options.pointer).getOrThrow())"))
+        assertTrue(normalizedStaticsBinding.contains("dev.winrt.kom.requireObject(PlatformComInterop.invokeMethodWithTwoObjectArgs(pointer,6,dev.winrt.kom.ComMethodResultKind.OBJECT,uri.pointer,options.pointer).getOrThrow())"))
     }
 
     @Test
@@ -1372,8 +1372,8 @@ class KotlinBindingGeneratorTest {
         val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics17.kt" }.content
         val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
 
-        assertTrue(staticsBinding.contains("fun resolveUserId(user: User): Guid"))
-        assertTrue(normalizedStaticsBinding.contains("Guid(PlatformComInterop.invokeGuidMethodWithObjectArg(pointer,6,user.pointer).getOrThrow().toString())"))
+        assertTrue(staticsBinding.contains("fun resolveUserId(user: User): Uuid"))
+        assertTrue(normalizedStaticsBinding.contains("Uuid.parse(PlatformComInterop.invokeGuidMethodWithObjectArg(pointer,6,user.pointer).getOrThrow().toString())"))
     }
 
     @Test
@@ -1944,15 +1944,28 @@ class KotlinBindingGeneratorTest {
         val jsonValueBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonValue.kt" }.content
         val jsonArrayBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonArray.kt" }.content
         val jsonEnumBinding = files.first { it.relativePath == "Windows/Data/Json/JsonValueType.kt" }.content
+        val normalizedJsonInterfaceBinding = jsonInterfaceBinding.replace(Regex("\\s+"), " ")
 
         assertTrue(jsonInterfaceBinding.contains("fun getNamedValue(name: String): IJsonValue"))
-        assertTrue(jsonInterfaceBinding.contains("PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 6, name).getOrThrow()"))
+        assertTrue(
+            normalizedJsonInterfaceBinding.contains(
+                "PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 6, name).getOrThrow()",
+            ),
+        )
         assertTrue(jsonInterfaceBinding.contains("fun getNamedString(name: String): String"))
         assertTrue(jsonInterfaceBinding.contains("PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 10, name).getOrThrow()"))
         assertTrue(jsonInterfaceBinding.contains("fun getNamedObject(name: String): JsonObject"))
-        assertTrue(jsonInterfaceBinding.contains("PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 8, name).getOrThrow()"))
+        assertTrue(
+            normalizedJsonInterfaceBinding.contains(
+                "PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 8, name).getOrThrow()",
+            ),
+        )
         assertTrue(jsonInterfaceBinding.contains("fun getNamedArray(name: String): JsonArray"))
-        assertTrue(jsonInterfaceBinding.contains("PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 9, name).getOrThrow()"))
+        assertTrue(
+            normalizedJsonInterfaceBinding.contains(
+                "PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 9, name).getOrThrow()",
+            ),
+        )
         assertTrue(jsonInterfaceBinding.contains("fun getNamedNumber(name: String): Float64"))
         assertTrue(jsonInterfaceBinding.contains("invokeFloat64MethodWithStringArg(pointer, 11, name).getOrThrow()"))
         assertTrue(jsonInterfaceBinding.contains("fun getNamedBoolean(name: String): WinRtBoolean"))
@@ -3919,13 +3932,13 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Example/Runtime/ScalarReturnHost.kt" }.content
 
-        assertTrue(binding.contains("fun getFlag(): Boolean"))
+        assertTrue(binding.contains("fun getFlag(): WinRtBoolean"))
         assertTrue(binding.contains("return WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 6).getOrThrow())"))
-        assertTrue(binding.contains("fun getRatio(): Double"))
-        assertTrue(binding.contains("return PlatformComInterop.invokeFloat64Method(pointer, 7).getOrThrow()"))
-        assertTrue(binding.contains("fun getSignedValue(): Long"))
+        assertTrue(binding.contains("fun getRatio(): Float64"))
+        assertTrue(binding.contains("return Float64(PlatformComInterop.invokeFloat64Method(pointer, 7).getOrThrow())"))
+        assertTrue(binding.contains("fun getSignedValue(): Int64"))
         assertTrue(binding.contains("return Int64(PlatformComInterop.invokeInt64Getter(pointer, 8).getOrThrow())"))
-        assertTrue(binding.contains("fun getUnsignedValue(): ULong"))
+        assertTrue(binding.contains("fun getUnsignedValue(): UInt64"))
         assertTrue(binding.contains("return UInt64(PlatformComInterop.invokeInt64Getter(pointer, 9).getOrThrow().toULong())"))
     }
 
@@ -4338,9 +4351,13 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("val stableId: Uuid"))
         assertTrue(binding.contains("return Uuid.parse(PlatformComInterop.invokeGuidGetter(pointer, 7).getOrThrow().toString())"))
         assertTrue(binding.contains("val createdAt: Instant"))
-        assertTrue(binding.contains("return Instant.fromEpochSeconds((PlatformComInterop.invokeInt64Getter(pointer, 8).getOrThrow() - 116444736000000000) / 10000000L, ((PlatformComInterop.invokeInt64Getter(pointer, 8).getOrThrow() - 116444736000000000) % 10000000L * 100).toInt())"))
+        assertTrue(
+            normalizedBinding.contains(
+                "return Instant.fromEpochSeconds((PlatformComInterop.invokeInt64Getter(pointer, 8).getOrThrow() - 116444736000000000) / 10000000L, ((PlatformComInterop.invokeInt64Getter(pointer, 8).getOrThrow() - 116444736000000000) % 10000000L * 100).toInt())",
+            ),
+        )
         assertTrue(binding.contains("val lifetime: Duration"))
-        assertTrue(binding.contains("return Duration.parse(\"0s\")"))
+        assertTrue(binding.contains("return Duration(PlatformComInterop.invokeInt64Getter(pointer, 9).getOrThrow())"))
         assertTrue(binding.contains("val lastToken: EventRegistrationToken"))
         assertTrue(binding.contains("return EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer, 10).getOrThrow())"))
         assertTrue(binding.contains("var title: String"))
@@ -7506,13 +7523,16 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Example/Contracts/ITimestamped.kt" }.content
+        val normalizedBinding = binding.replace(Regex("\\s+"), " ")
 
         assertTrue(binding.contains("val stableId: Uuid"))
         assertTrue(binding.contains("Uuid.parse(PlatformComInterop.invokeGuidGetter(pointer, 6).getOrThrow().toString())"))
         assertTrue(binding.contains("val createdAt: Instant"))
-        assertTrue(binding.contains("Instant.fromEpochSeconds((PlatformComInterop.invokeInt64Getter(pointer, 7).getOrThrow() - 116444736000000000) / 10000000L, ((PlatformComInterop.invokeInt64Getter(pointer, 7).getOrThrow() - 116444736000000000) % 10000000L * 100).toInt())"))
+        assertTrue(normalizedBinding.contains("val ticks = PlatformComInterop.invokeInt64Getter(pointer, 7).getOrThrow()"))
+        assertTrue(normalizedBinding.contains("return Instant.fromEpochSeconds((ticks - 116_444_736_000_000_000) / 10000000L,"))
+        assertTrue(normalizedBinding.contains("((ticks - 116_444_736_000_000_000) % 10000000L * 100).toInt())"))
         assertTrue(binding.contains("val lifetime: Duration"))
-        assertTrue(binding.contains("Duration.parse(\"0s\")"))
+        assertTrue(binding.contains("Duration(PlatformComInterop.invokeInt64Getter(pointer, 8).getOrThrow())"))
         assertTrue(binding.contains("val token: EventRegistrationToken"))
         assertTrue(binding.contains("EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer, 9).getOrThrow())"))
     }
@@ -8092,7 +8112,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(iWindowBinding.contains("fun activate()"))
         assertTrue(iWindowBinding.contains("PlatformComInterop.invokeUnitMethod(pointer, 26).getOrThrow()"))
         assertTrue(iWindowBinding.contains("fun put_Title("))
-        assertTrue(iWindowBinding.contains("PlatformComInterop.invokeStringSetter(pointer, 15,"))
+        assertTrue(iWindowBinding.contains("PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 15,"))
         assertTrue(iWindowBinding.contains("fun put_Content("))
         assertTrue(iWindowBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 9,"))
         assertFalse(files.any { it.relativePath == "Microsoft/UI/Xaml/IApplicationOverrides.kt" })
@@ -8614,8 +8634,8 @@ class KotlinBindingGeneratorTest {
         assertTrue(interfaceBinding.contains("AsyncResultTypes.signature(\"string\")"))
         assertTrue(interfaceBinding.contains("fun readAsync(name: String)"))
         assertTrue(interfaceBinding.contains("fun queryAsync("))
-        assertTrue(interfaceBinding.contains("count: Int"))
-        assertTrue(interfaceBinding.contains("enabled: Boolean"))
+        assertTrue(interfaceBinding.contains("count: Int32"))
+        assertTrue(interfaceBinding.contains("enabled: WinRtBoolean"))
         assertTrue(interfaceBinding.contains("suspend fun readAsyncAwait(name: String): String"))
         assertTrue(interfaceBinding.contains("suspend fun queryAsyncAwait("))
         assertTrue(interfaceBinding.contains("readAsync(name).await()"))
@@ -9579,7 +9599,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(normalizedRuntimeBinding.contains("funsubscribe(handler:(ComPtr,IWidgetOpenedEventArgs)->Unit):EventRegistrationToken"))
         assertTrue(runtimeBinding.contains("fun unsubscribe(token: EventRegistrationToken)"))
         assertTrue(runtimeBinding.contains("delegateHandles.remove(token)"))
-        assertTrue(runtimeBinding.contains("delegateHandle?.close()"))
+        assertTrue(runtimeBinding.contains("delegateHandles.remove(token)?.close()"))
     }
 
     @Test

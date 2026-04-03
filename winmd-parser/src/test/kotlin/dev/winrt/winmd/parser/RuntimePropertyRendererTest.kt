@@ -185,7 +185,7 @@ class RuntimePropertyRendererTest {
             .content
             .replace(Regex("\\s+"), "")
 
-        assertTrue(binding.contains("valcount:Int?"))
+        assertTrue(binding.contains("valcount:Int32?"))
         assertTrue(binding.contains("if(pointer.isNull)nullelseInt32(PlatformComInterop.invokeInt32Method(pointer,6).getOrThrow())"))
     }
 
@@ -220,7 +220,7 @@ class RuntimePropertyRendererTest {
             .content
             .replace(Regex("\\s+"), "")
 
-        assertTrue(binding.contains("valenabled:Boolean?"))
+        assertTrue(binding.contains("valenabled:WinRtBoolean?"))
         assertTrue(binding.contains("if(pointer.isNull)nullelseWinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer,6).getOrThrow())"))
     }
 
@@ -255,7 +255,7 @@ class RuntimePropertyRendererTest {
             .content
             .replace(Regex("\\s+"), "")
 
-        assertTrue(binding.contains("valcount:UInt?"))
+        assertTrue(binding.contains("valcount:UInt32?"))
         assertTrue(binding.contains("if(pointer.isNull)nullelseUInt32(PlatformComInterop.invokeUInt32Method(pointer,6).getOrThrow())"))
     }
 
@@ -290,7 +290,7 @@ class RuntimePropertyRendererTest {
             .content
             .replace(Regex("\\s+"), "")
 
-        assertTrue(binding.contains("valcount:Long?"))
+        assertTrue(binding.contains("valcount:Int64?"))
         assertTrue(binding.contains("if(pointer.isNull)nullelseInt64(PlatformComInterop.invokeInt64Getter(pointer,6).getOrThrow())"))
     }
 
@@ -325,7 +325,7 @@ class RuntimePropertyRendererTest {
             .content
             .replace(Regex("\\s+"), "")
 
-        assertTrue(binding.contains("valcount:ULong?"))
+        assertTrue(binding.contains("valcount:UInt64?"))
         assertTrue(binding.contains("if(pointer.isNull)nullelseUInt64(PlatformComInterop.invokeInt64Getter(pointer,6).getOrThrow().toULong())"))
     }
 
@@ -360,7 +360,7 @@ class RuntimePropertyRendererTest {
             .content
             .replace(Regex("\\s+"), "")
 
-        assertTrue(binding.contains("valratio:Float?"))
+        assertTrue(binding.contains("valratio:Float32?"))
         assertTrue(binding.contains("if(pointer.isNull)nullelseFloat32(PlatformComInterop.invokeFloat32Method(pointer,6).getOrThrow())"))
     }
 
@@ -395,7 +395,7 @@ class RuntimePropertyRendererTest {
             .content
             .replace(Regex("\\s+"), "")
 
-        assertTrue(binding.contains("valratio:Double?"))
+        assertTrue(binding.contains("valratio:Float64?"))
         assertTrue(binding.contains("if(pointer.isNull)nullelseFloat64(PlatformComInterop.invokeFloat64Method(pointer,6).getOrThrow())"))
     }
 

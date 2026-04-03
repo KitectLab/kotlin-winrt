@@ -292,6 +292,7 @@ internal class RuntimeCompanionRenderer(
 
     private fun renderFactories(type: WinMdType): List<Any> {
         val members = mutableListOf<Any>()
+        val ownFactoryMethods = typeRegistry.findRuntimeClassFactoryMethods(type.name, type.namespace)
         typeRegistry.findRuntimeClassFactoryTypes(type.name, type.namespace).forEach { factoryType ->
             val factoryClass = ClassName(factoryType.namespace.lowercase(), factoryType.name)
             val factoryPropertyName = helperAccessorName(factoryType.name)
@@ -333,6 +334,17 @@ internal class RuntimeCompanionRenderer(
                 .filter { method -> typeRegistry.isComposableFactoryMethod(type, method) }
                 .forEach { method ->
                     members += renderComposableFactoryHelper(type, factoryType, factoryPropertyName, method)
+                }
+        }
+        if (ownFactoryMethods.isEmpty()) {
+            typeRegistry.findInheritedComposableFactoryMethods(type.name, type.namespace)
+                .forEach { candidate ->
+                    members += renderComposableFactoryHelper(
+                        type,
+                        candidate.factoryType,
+                        helperAccessorName(candidate.factoryType.name),
+                        candidate.method,
+                    )
                 }
         }
         return members

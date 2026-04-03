@@ -317,7 +317,7 @@ internal class RuntimeMethodRenderer(
                 returnStatement = "return %T(%L)",
                 statementArgs = { method, _, parameterBindings ->
                     val argumentName = parameterBindings.single().name
-                    arrayOf(PoetSymbols.int64Class, AbiCallCatalog.int64MethodWithBoolean(method.vtableIndex!!, AbiCallCatalog.booleanAsInt64Expression(argumentName)))
+                    arrayOf(PoetSymbols.int64Class, AbiCallCatalog.int64MethodWithBoolean(method.vtableIndex!!, "${argumentName}.value"))
                 },
             )
             MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
@@ -356,7 +356,7 @@ internal class RuntimeMethodRenderer(
                 returnStatement = "return %T(%L)",
                 statementArgs = { method, _, parameterBindings ->
                     val argumentName = parameterBindings.single().name
-                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithBoolean(method.vtableIndex!!, AbiCallCatalog.booleanAsInt64Expression(argumentName)))
+                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithBoolean(method.vtableIndex!!, "${argumentName}.value"))
                 },
             )
             MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
@@ -451,7 +451,7 @@ internal class RuntimeMethodRenderer(
                 returnStatement = "return %T(%L)",
                 statementArgs = { method, _, parameterBindings ->
                     val argumentName = parameterBindings.single().name
-                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithBoolean(method.vtableIndex!!, AbiCallCatalog.booleanAsInt64Expression(argumentName)))
+                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithBoolean(method.vtableIndex!!, "${argumentName}.value"))
                 },
             )
             MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
@@ -501,49 +501,49 @@ internal class RuntimeMethodRenderer(
             )
             MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
-                returnStatement = "return %T(%T.invokeGuidGetter(pointer, %L).getOrThrow().toString())",
+                returnStatement = "return %T.parse(%T.invokeGuidGetter(pointer, %L).getOrThrow().toString())",
                 statementArgs = { method, _, _ ->
                     arrayOf(PoetSymbols.guidValueClass, PoetSymbols.platformComInteropClass, method.vtableIndex!!)
                 },
             )
             MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
-                returnStatement = "return %T(%L.toString())",
+                returnStatement = "return %T.parse(%L.toString())",
                 statementArgs = { method, _, parameterBindings ->
                     arrayOf(PoetSymbols.guidValueClass, AbiCallCatalog.guidMethodWithString(method.vtableIndex!!, parameterBindings.single().name))
                 },
             )
             MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.INT32) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
-                returnStatement = "return %T(%L.toString())",
+                returnStatement = "return %T.parse(%L.toString())",
                 statementArgs = { method, _, parameterBindings ->
                     arrayOf(PoetSymbols.guidValueClass, AbiCallCatalog.guidMethodWithInt32(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
                 },
             )
             MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.UINT32) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
-                returnStatement = "return %T(%L.toString())",
+                returnStatement = "return %T.parse(%L.toString())",
                 statementArgs = { method, _, parameterBindings ->
                     arrayOf(PoetSymbols.guidValueClass, AbiCallCatalog.guidMethodWithUInt32(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
                 },
             )
             MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.BOOLEAN) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
-                returnStatement = "return %T(%L.toString())",
+                returnStatement = "return %T.parse(%L.toString())",
                 statementArgs = { method, _, parameterBindings ->
                     arrayOf(PoetSymbols.guidValueClass, AbiCallCatalog.guidMethodWithBoolean(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
                 },
             )
             MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.INT64) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
-                returnStatement = "return %T(%L.toString())",
+                returnStatement = "return %T.parse(%L.toString())",
                 statementArgs = { method, _, parameterBindings ->
                     arrayOf(PoetSymbols.guidValueClass, AbiCallCatalog.guidMethodWithInt64(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
                 },
             )
             MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
-                returnStatement = "return %T(%L.toString())",
+                returnStatement = "return %T.parse(%L.toString())",
                 statementArgs = { method, _, parameterBindings ->
                     arrayOf(PoetSymbols.guidValueClass, AbiCallCatalog.guidMethodWithObject(method.vtableIndex!!, "${parameterBindings.single().name}.pointer"))
                 },
@@ -566,7 +566,7 @@ internal class RuntimeMethodRenderer(
                 nullPointerReturn = { PlannedStatement("return") },
                 returnStatement = "%L",
                 statementArgs = { method, _, parameterBindings ->
-                    arrayOf(AbiCallCatalog.unitMethodWithUInt32(method.vtableIndex!!, parameterBindings.single().name))
+                    arrayOf(AbiCallCatalog.unitMethodWithUInt32(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
                 },
             )
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN) -> RuntimeMethodPlan(
@@ -778,8 +778,8 @@ internal class RuntimeMethodRenderer(
 
     private fun unaryRuntimeNullReturn(returnKind: MethodReturnKind, methodName: String): PlannedStatement = when (returnKind) {
         MethodReturnKind.STRING -> PlannedStatement("return %S", arrayOf(""))
-        MethodReturnKind.FLOAT32 -> PlannedStatement("return 0f")
-        MethodReturnKind.FLOAT64 -> PlannedStatement("return 0.0")
+        MethodReturnKind.FLOAT32 -> PlannedStatement("return %T(0f)", arrayOf(PoetSymbols.float32Class))
+        MethodReturnKind.FLOAT64 -> PlannedStatement("return %T(0.0)", arrayOf(PoetSymbols.float64Class))
         MethodReturnKind.DATE_TIME -> PlannedStatement("return %T.fromEpochSeconds(0)", arrayOf(PoetSymbols.dateTimeClass))
         MethodReturnKind.TIME_SPAN -> PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.timeSpanClass, "0s"))
         MethodReturnKind.OBJECT -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: $methodName"))
@@ -790,11 +790,11 @@ internal class RuntimeMethodRenderer(
     private fun unaryRuntimeStatement(returnKind: MethodReturnKind): String = when (returnKind) {
         MethodReturnKind.STRING,
         MethodReturnKind.OBJECT,
-        MethodReturnKind.FLOAT32,
-        MethodReturnKind.FLOAT64,
         MethodReturnKind.DATE_TIME,
         MethodReturnKind.TIME_SPAN,
         MethodReturnKind.UNIT -> if (returnKind == MethodReturnKind.UNIT) "%L" else "return %L"
+        MethodReturnKind.FLOAT32,
+        MethodReturnKind.FLOAT64 -> "return %T(%L)"
         else -> error("Unsupported unary runtime return kind: $returnKind")
     }
 
@@ -805,8 +805,8 @@ internal class RuntimeMethodRenderer(
         abiCall: CodeBlock,
     ): Array<Any> = when (returnKind) {
         MethodReturnKind.STRING -> arrayOf(HStringSupport.fromCall(abiCall))
-        MethodReturnKind.FLOAT32 -> arrayOf(abiCall)
-        MethodReturnKind.FLOAT64 -> arrayOf(abiCall)
+        MethodReturnKind.FLOAT32 -> arrayOf(PoetSymbols.float32Class, abiCall)
+        MethodReturnKind.FLOAT64 -> arrayOf(PoetSymbols.float64Class, abiCall)
         MethodReturnKind.DATE_TIME -> arrayOf(CodeBlock.of("%T.fromEpochSeconds((%L - %L) / 10000000L, ((%L - %L) %% 10000000L * 100).toInt())", PoetSymbols.dateTimeClass, abiCall, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET, abiCall, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET))
         MethodReturnKind.TIME_SPAN -> arrayOf(CodeBlock.of("%T(%L)", PoetSymbols.timeSpanClass, abiCall))
         MethodReturnKind.OBJECT -> arrayOf(runtimeObjectReturnCode(method, currentNamespace, abiCall))
@@ -866,7 +866,7 @@ internal class RuntimeMethodRenderer(
                 MethodParameterCategory.STRING -> AbiCallCatalog.int64MethodWithString(vtableIndex, argumentName)
                 MethodParameterCategory.INT32 -> AbiCallCatalog.int64MethodWithInt32(vtableIndex, loweredArgument)
                 MethodParameterCategory.UINT32 -> AbiCallCatalog.int64MethodWithUInt32(vtableIndex, loweredArgument)
-                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.int64MethodWithBoolean(vtableIndex, AbiCallCatalog.booleanAsInt64Expression(argumentName))
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.int64MethodWithBoolean(vtableIndex, loweredArgument)
                 MethodParameterCategory.INT64,
                 MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.int64MethodWithInt64(vtableIndex, loweredArgument)
                 MethodParameterCategory.OBJECT -> AbiCallCatalog.int64MethodWithObject(vtableIndex, loweredArgument)
@@ -882,7 +882,7 @@ internal class RuntimeMethodRenderer(
             }
             MethodReturnKind.UNIT -> when (parameterCategory) {
                 MethodParameterCategory.INT32 -> AbiCallCatalog.unitMethodWithInt32(vtableIndex, argumentName)
-                MethodParameterCategory.UINT32 -> AbiCallCatalog.unitMethodWithUInt32(vtableIndex, argumentName)
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.unitMethodWithUInt32(vtableIndex, "$argumentName.value")
                 MethodParameterCategory.BOOLEAN -> AbiCallCatalog.unitMethodWithInt32Expression(vtableIndex, "if ($loweredArgument) 1 else 0")
                 MethodParameterCategory.INT64,
                 MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.unitMethodWithInt64(vtableIndex, argumentName)
@@ -899,7 +899,7 @@ internal class RuntimeMethodRenderer(
         MethodParameterCategory.UINT32,
         MethodParameterCategory.BOOLEAN,
         MethodParameterCategory.INT64,
-        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> argumentName
+        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$argumentName.value"
         MethodParameterCategory.STRING -> argumentName
     }
 
@@ -1026,7 +1026,7 @@ internal class RuntimeMethodRenderer(
 
     private fun runtimeObjectReturnCode(method: WinMdMethod, currentNamespace: String, abiCall: CodeBlock): CodeBlock {
         val mappedType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
-        return if (typeRegistry.isRuntimeProjectedInterface(method.returnType, currentNamespace)) {
+        return if (typeRegistry.findType(method.returnType, currentNamespace)?.kind == dev.winrt.winmd.plugin.WinMdTypeKind.Interface) {
             CodeBlock.of("%T.from(%T(%L))", mappedType, PoetSymbols.inspectableClass, abiCall)
         } else {
             CodeBlock.of("%T(%L)", mappedType, abiCall)
@@ -1036,15 +1036,15 @@ internal class RuntimeMethodRenderer(
     private fun twoArgumentReturnCode(returnType: String, abiCall: CodeBlock): CodeBlock {
         return when (returnType) {
             "String" -> HStringSupport.fromCall(abiCall)
-            "Float32" -> CodeBlock.of("%L", abiCall)
-            "Float64" -> CodeBlock.of("%L", abiCall)
+            "Float32" -> CodeBlock.of("%T(%L)", PoetSymbols.float32Class, abiCall)
+            "Float64" -> CodeBlock.of("%T(%L)", PoetSymbols.float64Class, abiCall)
             "DateTime" -> CodeBlock.of("%T.fromEpochSeconds((%L - %L) / 10000000L, ((%L - %L) %% 10000000L * 100).toInt())", PoetSymbols.dateTimeClass, abiCall, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET, abiCall, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET)
             "TimeSpan" -> CodeBlock.of("%T(%L)", PoetSymbols.timeSpanClass, abiCall)
-            "Boolean" -> CodeBlock.of("%L", abiCall)
-            "Int32" -> CodeBlock.of("%L", abiCall)
-            "UInt32" -> CodeBlock.of("%L", abiCall)
-            "Int64" -> CodeBlock.of("%L", abiCall)
-            "UInt64" -> CodeBlock.of("%L", abiCall)
+            "Boolean" -> CodeBlock.of("%T(%L)", PoetSymbols.winRtBooleanClass, abiCall)
+            "Int32" -> CodeBlock.of("%T(%L)", PoetSymbols.int32Class, abiCall)
+            "UInt32" -> CodeBlock.of("%T(%L)", PoetSymbols.uint32Class, abiCall)
+            "Int64" -> CodeBlock.of("%T(%L)", PoetSymbols.int64Class, abiCall)
+            "UInt64" -> CodeBlock.of("%T(%L)", PoetSymbols.uint64Class, abiCall)
             "Guid" -> CodeBlock.of("%T.parse(%L.toString())", PoetSymbols.guidValueClass, abiCall)
             else -> error("Unsupported two-argument return type: $returnType")
         }
@@ -1053,15 +1053,15 @@ internal class RuntimeMethodRenderer(
     private fun twoArgumentNullReturn(returnType: String, methodName: String): PlannedStatement {
         return when (returnType) {
             "String" -> PlannedStatement("return %S", arrayOf(""))
-            "Float32" -> PlannedStatement("return 0f")
-            "Float64" -> PlannedStatement("return 0.0")
+            "Float32" -> PlannedStatement("return %T(0f)", arrayOf(PoetSymbols.float32Class))
+            "Float64" -> PlannedStatement("return %T(0.0)", arrayOf(PoetSymbols.float64Class))
             "DateTime" -> PlannedStatement("return %T.fromEpochSeconds(0)", arrayOf(PoetSymbols.dateTimeClass))
             "TimeSpan" -> PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.timeSpanClass, "0s"))
-            "Boolean" -> PlannedStatement("return false")
-            "Int32" -> PlannedStatement("return 0")
-            "UInt32" -> PlannedStatement("return 0u")
-            "Int64" -> PlannedStatement("return 0L")
-            "UInt64" -> PlannedStatement("return 0uL")
+            "Boolean" -> PlannedStatement("return %T.FALSE", arrayOf(PoetSymbols.winRtBooleanClass))
+            "Int32" -> PlannedStatement("return %T(0)", arrayOf(PoetSymbols.int32Class))
+            "UInt32" -> PlannedStatement("return %T(0u)", arrayOf(PoetSymbols.uint32Class))
+            "Int64" -> PlannedStatement("return %T(0L)", arrayOf(PoetSymbols.int64Class))
+            "UInt64" -> PlannedStatement("return %T(0uL)", arrayOf(PoetSymbols.uint64Class))
             "Guid" -> PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000"))
             else -> error("Unsupported two-argument null return type for $methodName: $returnType")
         }

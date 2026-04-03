@@ -102,6 +102,7 @@ internal enum class MethodParameterAbiToken {
     STRING,
     OBJECT,
     INT32,
+    UINT32,
     INT64,
 }
 
@@ -111,6 +112,7 @@ internal fun MethodParameterAbiToken.callNamePart(): String =
         MethodParameterAbiToken.STRING -> "String"
         MethodParameterAbiToken.OBJECT -> "Object"
         MethodParameterAbiToken.INT32 -> "Int32"
+        MethodParameterAbiToken.UINT32 -> "UInt32"
         MethodParameterAbiToken.INT64 -> "Int64"
     }
 
@@ -236,9 +238,9 @@ internal fun MethodParameterCategory.toAbiToken(): MethodParameterAbiToken =
     when (this) {
         MethodParameterCategory.STRING -> MethodParameterAbiToken.STRING
         MethodParameterCategory.OBJECT -> MethodParameterAbiToken.OBJECT
-        MethodParameterCategory.INT32,
-        MethodParameterCategory.UINT32,
-        MethodParameterCategory.BOOLEAN -> MethodParameterAbiToken.INT32
+        MethodParameterCategory.INT32 -> MethodParameterAbiToken.INT32
+        MethodParameterCategory.UINT32 -> MethodParameterAbiToken.UINT32
+        MethodParameterCategory.BOOLEAN -> MethodParameterAbiToken.BOOLEAN
         MethodParameterCategory.INT64,
         MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> MethodParameterAbiToken.INT64
     }

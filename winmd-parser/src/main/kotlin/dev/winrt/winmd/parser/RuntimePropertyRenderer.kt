@@ -109,14 +109,9 @@ internal class RuntimePropertyRenderer(
                 )
             }
             RuntimePropertyGetterRuleFamily.DATE_TIME -> ScalarRuntimePropertyPlan { getterVtableIndex ->
-                val dateTimeTicks = AbiCallCatalog.int64Getter(getterVtableIndex)
+                val ticksOffsetLiteral = WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET.toString()
                 CodeBlock.of(
-                    "%T.fromEpochSeconds((%L - %L) / 10000000L, ((%L - %L) %% 10000000L * 100).toInt())",
-                    PoetSymbols.dateTimeClass,
-                    dateTimeTicks,
-                    WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
-                    dateTimeTicks,
-                    WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
+                    "Instant.fromEpochSeconds((PlatformComInterop.invokeInt64Getter(pointer, $getterVtableIndex).getOrThrow() - $ticksOffsetLiteral) / 10000000L, ((PlatformComInterop.invokeInt64Getter(pointer, $getterVtableIndex).getOrThrow() - $ticksOffsetLiteral) %% 10000000L * 100).toInt())",
                 )
             }
             RuntimePropertyGetterRuleFamily.TIME_SPAN -> ScalarRuntimePropertyPlan { getterVtableIndex ->
