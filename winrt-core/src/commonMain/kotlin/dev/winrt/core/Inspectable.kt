@@ -62,6 +62,24 @@ open class Inspectable(pointer: ComPtr) : WinRtObject(pointer) {
         abiHelperTypeKey: String,
         iid: Guid,
     ): ComPtr {
+        queryInterfaceCache[projectionTypeKey]?.let { cached ->
+            if (queryInterfaceCache[abiHelperTypeKey] == null) {
+                queryInterfaceCache[abiHelperTypeKey] = cached
+            }
+            if (winrtTypeKey != projectionTypeKey && queryInterfaceCache[winrtTypeKey] == null) {
+                queryInterfaceCache[winrtTypeKey] = cached
+            }
+            return cached
+        }
+        queryInterfaceCache[winrtTypeKey]?.let { cached ->
+            if (queryInterfaceCache[projectionTypeKey] == null) {
+                queryInterfaceCache[projectionTypeKey] = cached
+            }
+            if (queryInterfaceCache[abiHelperTypeKey] == null) {
+                queryInterfaceCache[abiHelperTypeKey] = cached
+            }
+            return cached
+        }
         val reference = getObjectReferenceForType(abiHelperTypeKey, iid)
         queryInterfaceCache[projectionTypeKey] = reference
         if (winrtTypeKey != projectionTypeKey) {

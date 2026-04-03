@@ -687,4 +687,29 @@ class RuntimePropertyTest {
 
         assertEquals(2, provider.factoryCount)
     }
+
+    @Test
+    fun projected_type_reference_reuses_cached_projection_type_entry_when_present() {
+        WinRtProjectionRegistry.resetForTests()
+        WinRtProjectionRegistry.registerProjectionTypeMapping(
+            winrtTypeKey = "Microsoft.UI.Xaml.Interop.IBindableVector",
+            projectionTypeKey = "Test.CustomProjection",
+        )
+
+        val iid = Guid(0, 0, 0, byteArrayOf(4, 2, 4, 2, 4, 2, 4, 2))
+        val subject = object : Inspectable(ComPtr.NULL) {
+            var queryCount = 0
+
+            override fun queryInterface(iid: Guid): ComPtr {
+                queryCount += 1
+                return ComPtr.NULL
+            }
+        }
+
+        val cached = subject.getObjectReferenceForType("Test.CustomProjection", iid)
+        val projected = subject.getObjectReferenceForProjectedType("Microsoft.UI.Xaml.Interop.IBindableVector", iid)
+
+        assertEquals(cached, projected)
+        assertEquals(1, subject.queryCount)
+    }
 }
