@@ -1,6 +1,7 @@
 package dev.winrt.sample.jvm
 
 import microsoft.ui.xaml.controls.StackPanel
+import microsoft.ui.xaml.controls.TextBlock
 
 data class WinUiSampleLayoutDescriptor(
     val sections: List<String>,
@@ -25,9 +26,14 @@ object WinUiSampleLayout {
 
     fun build(windowTitle: String, messageText: String): WinUiSampleLayoutResult {
         val root = StackPanel()
-        println("winui: root stackpanel pointer null=${root.pointer.isNull}")
-        val children = root.children
-        println("winui: children collection pointer null=${children.pointer.isNull}")
+        val header = TextBlock()
+        header.text = windowTitle
+        root.children.append(header)
+
+        val summary = TextBlock()
+        summary.text = messageText
+        root.children.append(summary)
+
         return WinUiSampleLayoutResult(root = root)
     }
 }
