@@ -265,6 +265,18 @@ class CheckedInBindingsParityTest {
     }
 
     @Test
+    fun checked_in_json_object_runtime_class_keeps_verified_activation_surface() {
+        val runtimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/data/json/JsonObject.kt").readText()
+
+        assertTrue(runtimeClass.contains("Windows.Data.Json.JsonObject"))
+        assertTrue(runtimeClass.contains("override val defaultInterfaceName: String? = \"Windows.Data.Json.IJsonObject\""))
+        assertTrue(runtimeClass.contains("override val activationKind: WinRtActivationKind = WinRtActivationKind.Factory"))
+        assertTrue(runtimeClass.contains("private val statics: IJsonObjectStatics by lazy"))
+        assertTrue(runtimeClass.contains("WinRtRuntime.projectActivationFactory(this,"))
+        assertTrue(runtimeClass.contains("public fun parse(input: String): JsonObject = statics.parse(input)"))
+    }
+
+    @Test
     fun checked_in_json_value_keeps_verified_runtime_surface() {
         val checkedIn = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/data/json/IJsonValue.kt").readText()
 
