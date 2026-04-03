@@ -18,14 +18,20 @@ fun Project.winMdSourceArgs(
     referencesRoot: String?,
 ): List<String> {
     val explicitWinMdFiles = stringListProperty("winmd.files")
-    val nugetPackage = providers.gradleProperty("winmd.nugetPackage").orNull
+    val nugetComponents = stringListProperty("winmd.nugetComponents")
+    val legacyNugetPackage = providers.gradleProperty("winmd.nugetPackage").orNull
     return buildList {
         addAll(explicitWinMdFiles)
-        if (nugetPackage != null) {
+        if (nugetComponents.isNotEmpty()) {
+            val nugetRoot = providers.gradleProperty("winmd.nugetRoot").orNull
+            nugetComponents.forEach { component ->
+                add("--nuget-component=$component")
+            }
+            nugetRoot?.let { add("--nuget-root=$it") }
+        } else if (legacyNugetPackage != null) {
             val nugetVersion = providers.gradleProperty("winmd.nugetVersion").orNull
                 ?: error("Set -Pwinmd.nugetVersion=<version> when using -Pwinmd.nugetPackage.")
-            add("--nuget-package=$nugetPackage")
-            add("--nuget-version=$nugetVersion")
+            add("--nuget-component=$legacyNugetPackage@$nugetVersion")
             providers.gradleProperty("winmd.nugetRoot").orNull?.let { add("--nuget-root=$it") }
         }
         contracts.forEach { add("--contract=$it") }
@@ -34,7 +40,7 @@ fun Project.winMdSourceArgs(
         windowsKitsRoot?.let { add("--windows-kits-root=$it") }
         referencesRoot?.let { add("--references-root=$it") }
         require(isNotEmpty()) {
-            "Set -Pwinmd.files=<a.winmd,b.winmd>, -Pwinmd.nugetPackage=<id> with -Pwinmd.nugetVersion=<version>, or -Pwinmd.contracts=ContractA,ContractB to choose WinMD inputs."
+            "Set -Pwinmd.files=<a.winmd,b.winmd>, -Pwinmd.nugetComponents=<id@version,id2@version2>, -Pwinmd.nugetPackage=<id> with -Pwinmd.nugetVersion=<version>, or -Pwinmd.contracts=ContractA,ContractB to choose WinMD inputs."
         }
     }
 }
@@ -105,8 +111,7 @@ fun registerPresetNuGetGenerationTask(
             ?: error("Set -P$versionProperty=<version> to choose the NuGet package version.")
         val nugetRoot = providers.gradleProperty(rootProperty).orNull
         val resolvedArgs = mutableListOf(layout.buildDirectory.dir(outputDir).get().asFile.absolutePath)
-        resolvedArgs += "--nuget-package=$packageId"
-        resolvedArgs += "--nuget-version=$packageVersion"
+        resolvedArgs += "--nuget-component=$packageId@$packageVersion"
         nugetRoot?.let { resolvedArgs += "--nuget-root=$it" }
         contracts.forEach { resolvedArgs += "--contract=$it" }
         namespaces.forEach { resolvedArgs += "--namespace=$it" }
@@ -135,8 +140,7 @@ fun registerPresetNuGetRegenerationTask(
             ?: error("Set -P$versionProperty=<version> to choose the NuGet package version.")
         val nugetRoot = providers.gradleProperty(rootProperty).orNull
         val resolvedArgs = mutableListOf(layout.projectDirectory.dir("src/commonMain/kotlin").asFile.absolutePath)
-        resolvedArgs += "--nuget-package=$packageId"
-        resolvedArgs += "--nuget-version=$packageVersion"
+        resolvedArgs += "--nuget-component=$packageId@$packageVersion"
         nugetRoot?.let { resolvedArgs += "--nuget-root=$it" }
         contracts.forEach { resolvedArgs += "--contract=$it" }
         namespaces.forEach { resolvedArgs += "--namespace=$it" }

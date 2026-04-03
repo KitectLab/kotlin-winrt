@@ -16,6 +16,7 @@ object WinMdParserInputResolver {
             "Usage: winmd-parser <outputDir> <winmdFile> [<winmdFile> ...] | " +
                 "winmd-parser <outputDir> --contract=<name> [--contract=<name> ...] " +
                 "[--sdk-version=<version>] [--windows-kits-root=<path>] [--references-root=<path>] " +
+                "[--nuget-component=<packageId>@<version> ...] " +
                 "[--namespace=<prefix> ...]"
         }
 
@@ -73,8 +74,27 @@ object WinMdParserInputResolver {
                 arg.startsWith("--nuget-root=") -> {
                     extension.nugetRoot = arg.substringAfter('=')
                 }
+                arg.startsWith("--nuget-component=") -> {
+                    val spec = arg.substringAfter('=')
+                    val packageId = spec.substringBefore('@')
+                    val packageVersion = spec.substringAfter('@', missingDelimiterValue = "")
+                    require(packageId.isNotBlank() && packageVersion.isNotBlank() && spec.contains('@')) {
+                        "NuGet component must use --nuget-component=<packageId>@<version>."
+                    }
+                    extension.nugetComponent(packageId, packageVersion)
+                }
                 arg.startsWith("--nuget-package=") -> {
-                    extension.nugetPackageId = arg.substringAfter('=')
+                    val spec = arg.substringAfter('=')
+                    if (spec.contains('@')) {
+                        val packageId = spec.substringBefore('@')
+                        val packageVersion = spec.substringAfter('@', missingDelimiterValue = "")
+                        require(packageId.isNotBlank() && packageVersion.isNotBlank()) {
+                            "NuGet package must use --nuget-package=<packageId>@<version> when the version is embedded."
+                        }
+                        extension.nugetComponent(packageId, packageVersion)
+                    } else {
+                        extension.nugetPackageId = spec
+                    }
                 }
                 arg.startsWith("--nuget-version=") -> {
                     extension.nugetPackageVersion = arg.substringAfter('=')

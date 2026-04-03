@@ -76,4 +76,37 @@ class WinMdConfigurationResolverTest {
         assertTrue(resolved.sourceFiles.any { it.fileName.toString() == "Microsoft.UI.Xaml.winmd" })
         assertTrue(resolved.sourceFiles.any { it.fileName.toString() == "Windows.Foundation.UniversalApiContract.winmd" })
     }
+
+    @Test
+    fun combines_multiple_nuget_components_with_sdk_contract_sources() {
+        val root = Files.createTempDirectory("nuget-root")
+        val appSdkRoot = root.resolve("microsoft.windowsappsdk").resolve("1.6.0")
+        Files.createDirectories(appSdkRoot.resolve("lib").resolve("uap10.0"))
+        Files.write(
+            appSdkRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd"),
+            byteArrayOf('M'.code.toByte(), 'Z'.code.toByte()),
+        )
+        val windowsSdkRoot = root.resolve("microsoft.windows.sdk.net.ref").resolve("10.0.22621.0")
+        Files.createDirectories(windowsSdkRoot.resolve("lib").resolve("uap10.0"))
+        Files.write(
+            windowsSdkRoot.resolve("lib").resolve("uap10.0").resolve("Windows.Foundation.winmd"),
+            byteArrayOf('M'.code.toByte(), 'Z'.code.toByte()),
+        )
+
+        val resolved = WinMdConfigurationResolver.resolve(
+            WinMdExtension().apply {
+                nugetRoot = root.toString()
+                nugetComponent("Microsoft.WindowsAppSDK", "1.6.0")
+                nugetComponent("Microsoft.Windows.SDK.NET.Ref", "10.0.22621.0")
+                referencesRoot = "D:/Windows Kits/10/References"
+                sdkVersion = "10.0.22621.0"
+                contracts = listOf("Windows.Foundation.UniversalApiContract")
+            },
+        )
+
+        assertEquals(2, resolved.nugetPackages.size)
+        assertTrue(resolved.sourceFiles.any { it.fileName.toString() == "Microsoft.UI.Xaml.winmd" })
+        assertTrue(resolved.sourceFiles.any { it.fileName.toString() == "Windows.Foundation.winmd" })
+        assertTrue(resolved.sourceFiles.any { it.fileName.toString() == "Windows.Foundation.UniversalApiContract.winmd" })
+    }
 }
