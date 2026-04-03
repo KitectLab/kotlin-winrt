@@ -285,6 +285,7 @@ val collectNuGetRuntimeAssets by tasks.registering(Sync::class) {
     group = "code generation"
     description = "Collects runtime DLLs from restored NuGet WinRT components."
     dependsOn(restoreNuGetWinMdPackages)
+    notCompatibleWithConfigurationCache("NuGet runtime asset collection depends on restored package cache contents.")
 
     val componentSpecs = nuGetComponentSpecs()
     onlyIf { componentSpecs.isNotEmpty() }
