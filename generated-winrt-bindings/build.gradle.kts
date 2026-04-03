@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
 }
 
+import java.net.URI
+
 fun Project.stringListProperty(name: String): List<String> =
     providers.gradleProperty(name)
         .orNull
@@ -111,6 +113,46 @@ fun Project.runNuGetInstall(
     }
 }
 
+fun Project.nuGetExecutableCacheDir(): File =
+    File(System.getProperty("user.home"), ".gradle/caches/kotlin-winrt/nuget")
+
+fun Project.downloadNuGetExecutable(): String {
+    val cacheDir = nuGetExecutableCacheDir()
+    cacheDir.mkdirs()
+    val exeFile = cacheDir.resolve("nuget.exe")
+    if (exeFile.exists()) {
+        return exeFile.absolutePath
+    }
+    val tempFile = cacheDir.resolve("nuget.exe.download")
+    URI("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe").toURL().openStream().use { input ->
+        tempFile.outputStream().use { output ->
+            input.copyTo(output)
+        }
+    }
+    check(tempFile.renameTo(exeFile)) {
+        "Failed to move downloaded NuGet executable into $exeFile."
+    }
+    return exeFile.absolutePath
+}
+
+fun Project.resolveNuGetCommand(): String {
+    val configuredCommand = providers.gradleProperty("winmd.nugetCommand").orNull
+    if (configuredCommand != null) {
+        return configuredCommand
+    }
+    return try {
+        val command = "nuget"
+        val process = ProcessBuilder(command, "locals", "global-packages", "-list")
+            .directory(project.projectDir)
+            .redirectErrorStream(true)
+            .start()
+        process.waitFor()
+        command
+    } catch (_: Exception) {
+        downloadNuGetExecutable()
+    }
+}
+
 fun Project.discoverNuGetGlobalPackagesRoot(nugetCommand: String): String {
     val process = ProcessBuilder(
         listOf(nugetCommand, "locals", "global-packages", "-list"),
@@ -142,7 +184,7 @@ val restoreNuGetWinMdPackages by tasks.registering {
     onlyIf { componentSpecs.isNotEmpty() }
 
     doLast {
-        val restoreCommand = providers.gradleProperty("winmd.nugetCommand").orNull ?: "nuget"
+        val restoreCommand = resolveNuGetCommand()
         val outputDirectory = providers.gradleProperty("winmd.nugetRoot").orNull
             ?: discoverNuGetGlobalPackagesRoot(restoreCommand)
         val sources = nuGetSourceEntries().map { it.second }
@@ -171,7 +213,7 @@ val collectNuGetRuntimeAssets by tasks.registering(Sync::class) {
     into(layout.buildDirectory.dir("nuget/runtime-assets"))
 
     doFirst {
-        val restoreCommand = providers.gradleProperty("winmd.nugetCommand").orNull ?: "nuget"
+        val restoreCommand = resolveNuGetCommand()
         val resolvedPackagesDir = providers.gradleProperty("winmd.nugetRoot").orNull
             ?.let(::File)
             ?: File(discoverNuGetGlobalPackagesRoot(restoreCommand))
