@@ -2,6 +2,7 @@ package dev.winrt.winmd.parser
 
 import dev.winrt.winmd.plugin.WinMdModel
 import dev.winrt.winmd.plugin.WinMdNamespace
+import dev.winrt.winmd.plugin.WinMdProperty
 import dev.winrt.winmd.plugin.WinMdType
 import dev.winrt.winmd.plugin.WinMdTypeKind
 import org.junit.Assert.assertEquals
@@ -72,5 +73,43 @@ class InterfaceTypeRendererTest {
         assertTrue(widgetStatics.single().toString().contains("internal open class IWidgetStatics"))
         assertTrue(widgetStatics2.single().toString().contains("internal open class IWidgetStatics2"))
         assertTrue(widgetOverrides.isEmpty())
+    }
+
+    @Test
+    fun renders_boolean_interface_properties_as_winrt_boolean_accessors() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Core",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Core",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            properties = listOf(
+                                WinMdProperty("Visible", "Boolean", mutable = false, getterVtableIndex = 6),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val typeRegistry = TypeRegistry(model)
+        val renderer = InterfaceTypeRenderer(
+            typeNameMapper = TypeNameMapper(),
+            delegateLambdaPlanResolver = DelegateLambdaPlanResolver(TypeNameMapper()),
+            eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+            typeRegistry = typeRegistry,
+            asyncMethodProjectionPlanner = AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry)),
+            asyncMethodRuleRegistry = AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+            winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
+        )
+
+        val binding = renderer.render(typeRegistry.findType("IWidget", "Example.Core")!!).single().toString()
+
+        assertTrue(binding.contains("visible"))
+        assertTrue(binding.contains("invokeBooleanGetter(pointer, 6).getOrThrow()"))
     }
 }
