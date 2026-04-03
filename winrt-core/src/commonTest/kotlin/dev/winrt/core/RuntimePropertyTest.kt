@@ -880,6 +880,45 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun project_activation_factory_reuses_wrapper_after_raw_lookup_for_shared_projection_type_key() {
+        WinRtRuntime.resetForTests()
+
+        val runtimeClass = object : WinRtRuntimeClassMetadata {
+            override val qualifiedName: String = "Test.RuntimeClass"
+            override val classId = RuntimeClassId("Test", "RuntimeClass")
+            override val defaultInterfaceName: String? = null
+        }
+        val rawMetadata = object : WinRtInterfaceMetadata {
+            override val qualifiedName: String = "Test.IFactory"
+            override val iid = Guid(0, 0, 0, byteArrayOf(6, 7, 8, 9, 1, 2, 3, 4))
+        }
+        val aliasMetadata = object : WinRtInterfaceMetadata {
+            override val qualifiedName: String = "Test.IAltFactory"
+            override val projectionTypeKey: String = "kotlin.collections.MutableList"
+            override val iid = Guid(0, 0, 0, byteArrayOf(6, 7, 8, 9, 1, 2, 3, 4))
+        }
+        val provider = object : ActivationFactoryProvider {
+            var factoryCount = 0
+
+            override fun <T : WinRtObject> activate(metadata: WinRtRuntimeClassMetadata, constructor: (ComPtr) -> T): Result<T> {
+                error("not used")
+            }
+
+            override fun getActivationFactory(metadata: WinRtRuntimeClassMetadata, iid: Guid): Result<ComPtr> {
+                factoryCount += 1
+                return Result.success(ComPtr.NULL)
+            }
+        }
+        WinRtRuntime.activationFactoryProvider = provider
+
+        val first = WinRtRuntime.projectActivationFactory(runtimeClass, rawMetadata) { pointer -> WinRtInterfaceProjection(pointer) }
+        val second = WinRtRuntime.projectActivationFactory(runtimeClass, aliasMetadata) { pointer -> WinRtInterfaceProjection(pointer) }
+
+        assertSame(first, second)
+        assertEquals(1, provider.factoryCount)
+    }
+
+    @Test
     fun projected_type_reference_reuses_cached_projection_type_entry_when_present() {
         WinRtProjectionRegistry.resetForTests()
         WinRtProjectionRegistry.registerProjectionTypeMapping(

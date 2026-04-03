@@ -141,6 +141,8 @@ private object CompletedAsyncAction : IAsyncAction(ComPtr.NULL) {
 
   override fun getResults() = Unit
 
+  override fun close() = Unit
+
   override fun cancel() = Unit
 }
 
@@ -176,6 +178,8 @@ private class CompletedAsyncActionWithProgress(
   override fun get_Progress(): AsyncActionProgressHandler<Any?> =
       AsyncActionProgressHandler(ComPtr.NULL)
 
+  override fun close() = Unit
+
   override fun cancel() = Unit
 }
 
@@ -203,6 +207,8 @@ private class CompletedAsyncOperation<TResult>(
       AsyncOperationCompletedHandler(ComPtr.NULL)
 
   override fun getResults(): TResult = value
+
+  override fun close() = Unit
 
   override fun cancel() = Unit
 }
@@ -242,6 +248,8 @@ private class CompletedAsyncOperationWithProgress<TResult, TProgress>(
   override fun get_Progress(): AsyncOperationProgressHandler<TResult, TProgress> =
       AsyncOperationProgressHandler(ComPtr.NULL)
 
+  override fun close() = Unit
+
   override fun cancel() = Unit
 }
 
@@ -267,6 +275,8 @@ private class CanceledAsyncOperation<TResult>(
   override fun getResults(): TResult {
     throw CancellationException("WinRT async operation was canceled")
   }
+
+  override fun close() = Unit
 
   override fun cancel() = Unit
 }
@@ -307,6 +317,8 @@ private class CanceledAsyncOperationWithProgress<TResult, TProgress>(
   override fun get_Progress(): AsyncOperationProgressHandler<TResult, TProgress> =
       AsyncOperationProgressHandler(ComPtr.NULL)
 
+  override fun close() = Unit
+
   override fun cancel() = Unit
 }
 
@@ -333,6 +345,8 @@ private class FailedAsyncOperation<TResult>(
   override fun getResults(): TResult {
     throw error
   }
+
+  override fun close() = Unit
 
   override fun cancel() = Unit
 }
@@ -399,6 +413,8 @@ private class FailedAsyncAction(
     throw error
   }
 
+  override fun close() = Unit
+
   override fun cancel() = Unit
 }
 
@@ -437,6 +453,8 @@ private class FailedAsyncActionWithProgress(
   override fun get_Progress(): AsyncActionProgressHandler<Any?> =
       AsyncActionProgressHandler(ComPtr.NULL)
 
+  override fun close() = Unit
+
   override fun cancel() = Unit
 }
 
@@ -459,6 +477,8 @@ private object CanceledAsyncAction : IAsyncAction(ComPtr.NULL) {
   override fun getResults() {
     throw CancellationException("WinRT async action was canceled")
   }
+
+  override fun close() = Unit
 
   override fun cancel() = Unit
 }
@@ -496,6 +516,8 @@ private class CanceledAsyncActionWithProgress(
 
   override fun get_Progress(): AsyncActionProgressHandler<Any?> =
       AsyncActionProgressHandler(ComPtr.NULL)
+
+  override fun close() = Unit
 
   override fun cancel() = Unit
 }

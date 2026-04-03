@@ -12,6 +12,7 @@ class AsyncInfoTest {
 
         assertEquals(AsyncStatus.Completed, action.status)
         action.getResults()
+        action.close()
     }
 
     @Test
@@ -22,6 +23,7 @@ class AsyncInfoTest {
         assertFailsWith<kotlinx.coroutines.CancellationException> {
             action.getResults()
         }
+        action.close()
     }
 
     @Test
@@ -33,6 +35,7 @@ class AsyncInfoTest {
         assertFailsWith<IllegalStateException> {
             action.getResults()
         }
+        action.close()
     }
 
     @Test
@@ -41,6 +44,7 @@ class AsyncInfoTest {
 
         assertEquals(AsyncStatus.Completed, action.status)
         action.getResults()
+        action.close()
     }
 
     @Test
@@ -51,6 +55,7 @@ class AsyncInfoTest {
         assertFailsWith<kotlinx.coroutines.CancellationException> {
             action.getResults()
         }
+        action.close()
     }
 
     @Test
@@ -62,6 +67,7 @@ class AsyncInfoTest {
         assertFailsWith<IllegalStateException> {
             action.getResults()
         }
+        action.close()
     }
 
     @Test

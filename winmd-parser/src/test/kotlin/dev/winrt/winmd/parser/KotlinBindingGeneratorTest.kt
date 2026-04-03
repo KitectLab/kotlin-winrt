@@ -9184,9 +9184,9 @@ class KotlinBindingGeneratorTest {
         assertTrue(interfaceBinding.contains("delegateHandles[token] = delegateHandle"))
         assertTrue(interfaceBinding.contains("catch (t: Throwable)"))
         assertTrue(interfaceBinding.contains("delegateHandle.close()"))
-        assertTrue(interfaceBinding.contains("val delegateHandle = delegateHandles[token]"))
-        assertTrue(interfaceBinding.contains("delegateHandles.remove(token)"))
-        assertTrue(interfaceBinding.contains("delegateHandle?.close()"))
+        assertTrue(interfaceBinding.contains("try"))
+        assertTrue(interfaceBinding.contains("finally"))
+        assertTrue(interfaceBinding.contains("delegateHandles.remove(token)?.close()"))
         assertTrue(interfaceBinding.contains("unsubscribe(token)"))
 
         assertTrue(runtimeBinding.contains("val closedEvent: ClosedEvent"))
@@ -9201,9 +9201,9 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("delegateHandles[token] = delegateHandle"))
         assertTrue(runtimeBinding.contains("catch (t: Throwable)"))
         assertTrue(runtimeBinding.contains("delegateHandle.close()"))
-        assertTrue(runtimeBinding.contains("val delegateHandle = delegateHandles[token]"))
-        assertTrue(runtimeBinding.contains("delegateHandles.remove(token)"))
-        assertTrue(runtimeBinding.contains("delegateHandle?.close()"))
+        assertTrue(runtimeBinding.contains("try"))
+        assertTrue(runtimeBinding.contains("finally"))
+        assertTrue(runtimeBinding.contains("delegateHandles.remove(token)?.close()"))
         assertTrue(runtimeBinding.contains("unsubscribe(token)"))
     }
 
