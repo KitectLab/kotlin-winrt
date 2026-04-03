@@ -44,6 +44,7 @@ data class WinMdType(
 @Serializable
 enum class WinMdActivationKind {
     Factory,
+    Composable,
 }
 
 @Serializable
@@ -67,7 +68,19 @@ data class WinMdMethod(
         get() = buildString {
             append(name)
             append('(')
-            append(parameters.joinToString(",") { it.type })
+            append(
+                parameters.joinToString(",") { parameter ->
+                    buildString {
+                        append(parameter.type)
+                        if (parameter.byRef) {
+                            append('&')
+                        }
+                        if (parameter.isOut) {
+                            append(":out")
+                        }
+                    }
+                },
+            )
             append("):")
             append(returnType)
         }
@@ -77,6 +90,8 @@ data class WinMdMethod(
 data class WinMdParameter(
     val name: String,
     val type: String,
+    val byRef: Boolean = false,
+    val isOut: Boolean = false,
 )
 
 @Serializable

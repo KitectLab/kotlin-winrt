@@ -94,6 +94,16 @@ internal object Jdk22Foreign {
         ),
     )
 
+    fun composableMethodWithArgumentsHandle(arguments: List<ValueLayout>): MethodHandle = downcallHandle(
+        FunctionDescriptor.of(
+            intLayout,
+            addressLayout,
+            *arguments.toTypedArray(),
+            addressLayout,
+            addressLayout,
+        ),
+    )
+
     val queryInterfaceHandle: MethodHandle by lazy {
         downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout),

@@ -26,6 +26,39 @@ private fun methodArgumentLayout(argument: Any): ValueLayout {
     }
 }
 
+private data class PreparedAbiArguments(
+    val values: List<Any>,
+    val close: () -> Unit,
+)
+
+private fun prepareAbiArguments(arguments: Array<out Any>): PreparedAbiArguments {
+    val releasers = mutableListOf<() -> Unit>()
+    val values = arguments.map { argument ->
+        when (argument) {
+            is ComPtr -> if (argument.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(argument)
+            is String -> {
+                val hString = JvmWinRtRuntime.createHString(argument)
+                releasers += { JvmWinRtRuntime.releaseHString(hString) }
+                MemorySegment.ofAddress(hString.raw)
+            }
+            is UInt -> argument.toInt()
+            is Boolean -> if (argument) 1 else 0
+            is ULong -> argument.toLong()
+            is Int,
+            is Long,
+            is Float,
+            is Double -> argument
+            else -> throw IllegalArgumentException("Unsupported COM argument type: ${argument::class.qualifiedName}")
+        }
+    }
+    return PreparedAbiArguments(
+        values = values,
+        close = {
+            releasers.asReversed().forEach { release -> release() }
+        },
+    )
+}
+
 private object JvmComMethodExecutor {
     private fun requireInstance(instance: ComPtr) {
         require(!instance.isNull) { "Method invocation requires a non-null COM pointer" }
@@ -977,13 +1010,18 @@ private object JvmComMethodExecutor {
         return runCatching {
             requireInstance(instance)
             val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                    *arguments,
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+            val preparedArguments = prepareAbiArguments(arguments)
+            try {
+                val hresult = HResult(
+                    handle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        *preparedArguments.values.toTypedArray(),
+                    ) as Int,
+                )
+                hresult.requireSuccess("$operation($vtableIndex)")
+            } finally {
+                preparedArguments.close()
+            }
         }
     }
 
@@ -1011,15 +1049,20 @@ private object JvmComMethodExecutor {
             val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
             Arena.ofConfined().use { arena ->
                 val resultSegment = allocator(arena)
-                val hresult = HResult(
-                    handle.bindTo(function).invokeWithArguments(
-                        Jdk22Foreign.pointerOf(instance),
-                        *arguments,
-                        resultSegment,
-                    ) as Int,
-                )
-                hresult.requireSuccess("$operation($vtableIndex)")
-                reader(resultSegment)
+                val preparedArguments = prepareAbiArguments(arguments)
+                try {
+                    val hresult = HResult(
+                        handle.bindTo(function).invokeWithArguments(
+                            Jdk22Foreign.pointerOf(instance),
+                            *preparedArguments.values.toTypedArray(),
+                            resultSegment,
+                        ) as Int,
+                    )
+                    hresult.requireSuccess("$operation($vtableIndex)")
+                    reader(resultSegment)
+                } finally {
+                    preparedArguments.close()
+                }
             }
         }
     }
@@ -2135,6 +2178,41 @@ private object JvmPlatformComInterop : ComInterop {
             resultKind = resultKind,
             *arguments,
         )
+    }
+
+    override fun invokeComposableMethod(
+        instance: ComPtr,
+        vtableIndex: Int,
+        vararg arguments: Any,
+    ): Result<ComposableMethodResult> {
+        return runCatching {
+            require(!instance.isNull) { "Method invocation requires a non-null COM pointer" }
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            Arena.ofConfined().use { arena ->
+                val innerSegment = arena.allocate(ValueLayout.ADDRESS)
+                val instanceSegment = arena.allocate(ValueLayout.ADDRESS)
+                val preparedArguments = prepareAbiArguments(arguments)
+                try {
+                    val hresult = HResult(
+                        Jdk22Foreign.composableMethodWithArgumentsHandle(arguments.map(::methodArgumentLayout))
+                            .bindTo(function)
+                            .invokeWithArguments(
+                                Jdk22Foreign.pointerOf(instance),
+                                *preparedArguments.values.toTypedArray(),
+                                innerSegment,
+                                instanceSegment,
+                            ) as Int,
+                    )
+                    hresult.requireSuccess("invokeComposableMethod($vtableIndex)")
+                    ComposableMethodResult(
+                        instance = Jdk22Foreign.addressResult(instanceSegment.get(ValueLayout.ADDRESS, 0L)),
+                        inner = Jdk22Foreign.addressResult(innerSegment.get(ValueLayout.ADDRESS, 0L)),
+                    )
+                } finally {
+                    preparedArguments.close()
+                }
+            }
+        }
     }
 
     override fun invokeHStringMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<HString> {

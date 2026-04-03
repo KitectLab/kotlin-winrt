@@ -421,6 +421,16 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeComposableMethod(
+        instance: ComPtr,
+        vtableIndex: Int,
+        vararg arguments: Any,
+    ): Result<ComposableMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native composable invocation is not wired yet"),
+        )
+    }
+
     override fun invokeObjectSetter(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Unit> {
         return Result.failure(
             UnsupportedOperationException("Native object setter invocation is not wired yet"),

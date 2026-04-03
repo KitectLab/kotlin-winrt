@@ -170,6 +170,29 @@ object WinRtRuntime {
         } as T
     }
 
+    fun <T : WinRtObject> compose(
+        runtimeClass: WinRtRuntimeClassMetadata,
+        factoryIid: Guid,
+        defaultInterfaceIid: Guid?,
+        constructor: (ComPtr) -> T,
+        vtableIndex: Int,
+        vararg arguments: Any,
+    ): T {
+        val factory = activationFactoryPointer(runtimeClass, factoryIid)
+        val composed = PlatformComInterop.invokeComposableMethod(factory, vtableIndex, *arguments)
+            .getOrElse { throw it }
+        val projectedPointer = defaultInterfaceIid
+            ?.let { iid -> PlatformComInterop.queryInterface(composed.inner, iid).getOrElse { throw it } }
+            ?: composed.inner
+        return try {
+            constructor(projectedPointer)
+        } finally {
+            val releasedPointers = linkedSetOf<ComPtr>()
+            releaseComposablePointer(composed.instance, projectedPointer, releasedPointers)
+            releaseComposablePointer(composed.inner, projectedPointer, releasedPointers)
+        }
+    }
+
     fun check(result: HResult, operation: String) {
         result.requireSuccess(operation)
     }
@@ -177,5 +200,18 @@ object WinRtRuntime {
     internal fun resetForTests() {
         activationFactoryCache.clear()
         activationFactoryProjectionCache.clear()
+    }
+
+    private fun activationFactoryPointer(runtimeClass: WinRtRuntimeClassMetadata, iid: Guid): ComPtr {
+        return activationFactoryCache.getOrPut("${runtimeClass.classId.qualifiedName}:$iid") {
+            activationFactoryProvider.getActivationFactory(runtimeClass, iid)
+                .getOrElse { throw it }
+        }
+    }
+
+    private fun releaseComposablePointer(pointer: ComPtr, retainedPointer: ComPtr, releasedPointers: MutableSet<ComPtr>) {
+        if (!pointer.isNull && pointer != retainedPointer && releasedPointers.add(pointer)) {
+            PlatformComInterop.release(pointer)
+        }
     }
 }

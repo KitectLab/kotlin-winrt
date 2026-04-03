@@ -89,6 +89,29 @@ class WinMdMetadataReaderTest {
     }
 
     @Test
+    fun preserves_byref_out_parameters_for_real_winui_composable_factories_when_available() {
+        val winuiWinmd = localWinUiXamlWinmdCandidates().firstOrNull { Files.isRegularFile(it) } ?: return
+        val model = try {
+            WinMdMetadataReader.readModel(listOf(winuiWinmd))
+        } catch (error: IllegalArgumentException) {
+            if (winuiWinmd.toString().contains("microsoft.windowsappsdk", ignoreCase = true) &&
+                error.message?.startsWith("Metadata index exceeds Int range:") == true
+            ) {
+                return
+            }
+            throw error
+        }
+
+        val mediaNamespace = model.namespaces.firstOrNull { it.name == "Microsoft.UI.Xaml.Media" } ?: return
+        val systemBackdropFactory = mediaNamespace.types.firstOrNull { it.name == "ISystemBackdropFactory" } ?: return
+        val createInstance = systemBackdropFactory.methods.firstOrNull { it.name == "CreateInstance" } ?: return
+        val innerInterface = createInstance.parameters.lastOrNull() ?: return
+
+        assertTrue(createInstance.parameters.toString(), innerInterface.byRef)
+        assertTrue(createInstance.parameters.toString(), innerInterface.isOut)
+    }
+
+    @Test
     fun prefers_windows_app_sdk_winmd_candidate_when_available() {
         val configuredRoot = System.getProperty("dev.winrt.windowsAppSdkRoot")?.takeIf { it.isNotBlank() } ?: return
         val winuiWinmd = localWinUiXamlWinmdCandidates().firstOrNull { Files.isRegularFile(it) } ?: return

@@ -33,6 +33,7 @@ internal class RuntimeTypeRenderer(
     }
 
     private fun renderRuntimeClass(type: WinMdType): TypeSpec {
+        val activationKind = typeRegistry.runtimeClassActivationKind(type)
         val runtimeInterfaceTypes = runtimeInterfaceTypes(type)
         val overrideInterfaceTypes = typeRegistry.findRuntimeClassOverridesTypes(type.name, type.namespace)
         val exposedRuntimeInterfaceTypes = runtimeInterfaceTypes.filterNot { interfaceType ->
@@ -112,7 +113,7 @@ internal class RuntimeTypeRenderer(
         )?.let { projection ->
             builder.addSuperinterface(projection.superinterface, projection.delegateFactory)
         }
-        if (type.activationKind == WinMdActivationKind.Factory) {
+        if (activationKind == WinMdActivationKind.Factory) {
             builder.addFunction(
                 FunSpec.constructorBuilder()
                     .callThisConstructor(CodeBlock.of("Companion.%L().pointer", type.activationFunctionName))
@@ -181,31 +182,32 @@ internal class RuntimeTypeRenderer(
     }
 
     private fun renderFactoryConstructors(type: WinMdType): List<FunSpec> {
-        return typeRegistry.findRuntimeClassFactoryTypes(type.name, type.namespace)
-            .flatMap { factoryType ->
-                val factoryPropertyName = helperAccessorName(factoryType.name)
-                factoryType.methods
-                    .filter { method -> method.returnType == "${type.namespace}.${type.name}" }
-                    .map { method ->
-                        FunSpec.constructorBuilder()
-                            .addParameters(
-                                method.parameters.map { parameter ->
-                                    com.squareup.kotlinpoet.ParameterSpec.builder(
-                                        parameter.name,
-                                        typeNameMapper.mapTypeName(parameter.type, type.namespace),
-                                    ).build()
-                                },
-                            )
-                            .callThisConstructor(
-                                CodeBlock.of(
-                                    "Companion.%L%L(%L).pointer",
-                                    factoryPropertyName,
-                                    method.name,
-                                    method.parameters.joinToString(", ") { it.name },
-                                ),
-                            )
-                            .build()
-                    }
+        return typeRegistry.findRuntimeClassFactoryMethods(type.name, type.namespace)
+            .map { candidate ->
+                val factoryPropertyName = helperAccessorName(candidate.factoryType.name)
+                val constructorParameters = if (typeRegistry.isComposableFactoryMethod(type, candidate.method)) {
+                    candidate.method.parameters.dropLast(2)
+                } else {
+                    candidate.method.parameters
+                }
+                FunSpec.constructorBuilder()
+                    .addParameters(
+                        constructorParameters.map { parameter ->
+                            com.squareup.kotlinpoet.ParameterSpec.builder(
+                                parameter.name,
+                                typeNameMapper.mapTypeName(parameter.type, type.namespace),
+                            ).build()
+                        },
+                    )
+                    .callThisConstructor(
+                        CodeBlock.of(
+                            "Companion.%L%L(%L).pointer",
+                            factoryPropertyName,
+                            candidate.method.name,
+                            constructorParameters.joinToString(", ") { it.name },
+                        ),
+                    )
+                    .build()
             }
     }
 

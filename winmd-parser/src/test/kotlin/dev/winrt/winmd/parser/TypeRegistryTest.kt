@@ -1,9 +1,12 @@
 package dev.winrt.winmd.parser
 
 import dev.winrt.winmd.plugin.WinMdField
+import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdModel
 import dev.winrt.winmd.plugin.WinMdNamespace
+import dev.winrt.winmd.plugin.WinMdParameter
 import dev.winrt.winmd.plugin.WinMdType
+import dev.winrt.winmd.plugin.WinMdActivationKind
 import dev.winrt.winmd.plugin.WinMdTypeKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -188,6 +191,58 @@ class TypeRegistryTest {
             listOf("IWidgetOverrides", "IWidgetOverrides2"),
             runtimeRegistry.findRuntimeClassOverridesTypes("Widget", "Example.Xaml").map { it.name },
         )
+    }
+
+    @Test
+    fun recognizes_composable_factory_methods_from_out_inner_parameter_shape() {
+        val runtimeRegistry = TypeRegistry(
+            WinMdModel(
+                files = emptyList(),
+                namespaces = listOf(
+                    WinMdNamespace(
+                        name = "Example.Xaml",
+                        types = listOf(
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "Widget",
+                                kind = WinMdTypeKind.RuntimeClass,
+                                defaultInterface = "Example.Xaml.IWidget",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "IWidget",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "11111111-1111-1111-1111-111111111111",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "IWidgetFactory",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "22222222-2222-2222-2222-222222222222",
+                                methods = listOf(
+                                    WinMdMethod(
+                                        name = "CreateInstance",
+                                        returnType = "Example.Xaml.Widget",
+                                        parameters = listOf(
+                                            WinMdParameter(name = "label", type = "String"),
+                                            WinMdParameter(name = "baseInterface", type = "Object"),
+                                            WinMdParameter(name = "innerInterface", type = "Object", byRef = true, isOut = true),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val widget = runtimeRegistry.findType("Widget", "Example.Xaml")!!
+        val composableMethods = runtimeRegistry.findComposableFactoryMethods("Widget", "Example.Xaml")
+
+        assertEquals(1, composableMethods.size)
+        assertEquals("CreateInstance", composableMethods.single().method.name)
+        assertEquals(WinMdActivationKind.Composable, runtimeRegistry.runtimeClassActivationKind(widget))
     }
 
     @Test

@@ -209,7 +209,7 @@ object WinMdMetadataReader {
                 typeGenericParameterNames,
                 readMethodGenericParameterNames(methodIndex, tables),
             )
-            val params = readMethodParameters(methodIndex, method, tables, signature.parameterTypes)
+            val params = readMethodParameters(methodIndex, method, tables, signature.parameters)
             WinMdMethod(
                 name = method.name,
                 returnType = signature.returnType,
@@ -222,7 +222,7 @@ object WinMdMetadataReader {
         methodIndex: Int,
         method: MethodDefRow,
         tables: MetadataTables,
-        parameterTypes: List<String>,
+        parameterTypes: List<ParsedMethodParameter>,
     ): List<WinMdParameter> {
         val paramStart = method.paramListIndex
         if (paramStart == 0 || parameterTypes.isEmpty()) {
@@ -238,7 +238,9 @@ object WinMdMetadataReader {
             val paramRow = paramsBySequence[index + 1]
             WinMdParameter(
                 name = paramRow?.name?.takeIf(String::isNotBlank) ?: "p${index + 1}",
-                type = parameterType,
+                type = parameterType.type,
+                byRef = parameterType.byRef,
+                isOut = (paramRow?.flags ?: 0) and 0x0002 != 0,
             )
         }
     }
@@ -332,12 +334,12 @@ object WinMdMetadataReader {
         val returnType = parseElementType(reader, tables, typeGenericParameters, methodGenericParameters)
         val parameters = buildList {
             repeat(parameterCount) {
-                add(parseElementType(reader, tables, typeGenericParameters, methodGenericParameters))
+                add(parseMethodParameter(reader, tables, typeGenericParameters, methodGenericParameters))
             }
         }
         return ParsedMethodSignature(
             returnType = returnType,
-            parameterTypes = parameters,
+            parameters = parameters,
         )
     }
 
@@ -358,7 +360,48 @@ object WinMdMetadataReader {
         typeGenericParameters: List<String> = emptyList(),
         methodGenericParameters: List<String> = emptyList(),
     ): String {
-        return when (val elementType = reader.readByte()) {
+        return parseElementType(
+            reader.readByte(),
+            reader,
+            tables,
+            typeGenericParameters,
+            methodGenericParameters,
+        )
+    }
+
+    private fun parseMethodParameter(
+        reader: BlobReader,
+        tables: MetadataTables,
+        typeGenericParameters: List<String> = emptyList(),
+        methodGenericParameters: List<String> = emptyList(),
+    ): ParsedMethodParameter {
+        val elementType = reader.readByte()
+        return if (elementType == 0x10) {
+            ParsedMethodParameter(
+                type = parseElementType(reader, tables, typeGenericParameters, methodGenericParameters),
+                byRef = true,
+            )
+        } else {
+            ParsedMethodParameter(
+                type = parseElementType(
+                    elementType,
+                    reader,
+                    tables,
+                    typeGenericParameters,
+                    methodGenericParameters,
+                ),
+            )
+        }
+    }
+
+    private fun parseElementType(
+        elementType: Int,
+        reader: BlobReader,
+        tables: MetadataTables,
+        typeGenericParameters: List<String> = emptyList(),
+        methodGenericParameters: List<String> = emptyList(),
+    ): String {
+        return when (elementType) {
             0x01 -> "Unit"
             0x02 -> "Boolean"
             0x03 -> "Char16"
@@ -754,12 +797,13 @@ object WinMdMetadataReader {
                     }
                     tableParam -> {
                         repeat(rowCount) {
+                            val flags = readUInt16(tablesHeap, cursor)
                             cursor += 2
                             val sequence = readUInt16(tablesHeap, cursor)
                             cursor += 2
                             val name = readStringIndex(tablesHeap, stringHeap, cursor, stringIndexSize)
                             cursor += stringIndexSize
-                            paramRows += ParamRow(sequence = sequence, name = name)
+                            paramRows += ParamRow(flags = flags, sequence = sequence, name = name)
                         }
                     }
                     tablePropertyMap -> {
@@ -1059,5 +1103,10 @@ object WinMdMetadataReader {
 
 private data class ParsedMethodSignature(
     val returnType: String,
-    val parameterTypes: List<String>,
+    val parameters: List<ParsedMethodParameter>,
+)
+
+private data class ParsedMethodParameter(
+    val type: String,
+    val byRef: Boolean = false,
 )

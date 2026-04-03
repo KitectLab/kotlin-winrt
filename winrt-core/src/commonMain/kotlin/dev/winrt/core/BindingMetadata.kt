@@ -24,6 +24,7 @@ interface WinRtRuntimeClassMetadata : WinRtTypeMetadata {
 
 enum class WinRtActivationKind {
     Factory,
+    Composable,
 }
 
 fun guidOf(value: String): Guid {

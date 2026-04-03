@@ -28,6 +28,7 @@ internal class RuntimeCompanionRenderer(
 ) {
     fun render(type: WinMdType): TypeSpec {
         val typeClass = ClassName(type.namespace.lowercase(), type.name)
+        val activationKind = typeRegistry.runtimeClassActivationKind(type)
         val builder = TypeSpec.companionObjectBuilder()
             .addSuperinterface(PoetSymbols.winRtRuntimeClassMetadataClass)
             .addProperty(overrideStringProperty("qualifiedName", "${type.namespace}.${type.name}"))
@@ -46,15 +47,17 @@ internal class RuntimeCompanionRenderer(
             .addProperty(
                 PropertySpec.builder("activationKind", PoetSymbols.winRtActivationKindClass)
                     .addModifiers(KModifier.OVERRIDE)
-                    .initializer("%T.%L", PoetSymbols.winRtActivationKindClass, activationKindLiteral(type.activationKind))
+                    .initializer("%T.%L", PoetSymbols.winRtActivationKindClass, activationKindLiteral(activationKind))
                     .build(),
             )
-            .addFunction(
+        if (activationKind == WinMdActivationKind.Factory) {
+            builder.addFunction(
                 FunSpec.builder(type.activationFunctionName)
                     .returns(typeClass)
                     .addStatement("return %T.activate(this, ::%L)", PoetSymbols.winRtRuntimeClass, type.name)
                     .build(),
             )
+        }
         renderFactories(type).forEach { member ->
             when (member) {
                 is PropertySpec -> builder.addProperty(member)
@@ -292,20 +295,23 @@ internal class RuntimeCompanionRenderer(
         typeRegistry.findRuntimeClassFactoryTypes(type.name, type.namespace).forEach { factoryType ->
             val factoryClass = ClassName(factoryType.namespace.lowercase(), factoryType.name)
             val factoryPropertyName = helperAccessorName(factoryType.name)
-            members += PropertySpec.builder(factoryPropertyName, factoryClass)
-                .addModifiers(KModifier.PRIVATE)
-                .delegate(
-                    CodeBlock.of(
-                        "lazy { %T.projectActivationFactory(this, %T, ::%T) }",
-                        PoetSymbols.winRtRuntimeClass,
-                        factoryClass,
-                        factoryClass,
-                    ),
-                )
-                .build()
-            factoryType.methods
+            val runtimeFactoryMethods = factoryType.methods
                 .filter { method -> method.returnType == "${type.namespace}.${type.name}" }
-                .forEach { method ->
+            val projectedFactoryMethods = runtimeFactoryMethods
+                .filterNot { method -> typeRegistry.isComposableFactoryMethod(type, method) }
+            if (projectedFactoryMethods.isNotEmpty()) {
+                members += PropertySpec.builder(factoryPropertyName, factoryClass)
+                    .addModifiers(KModifier.PRIVATE)
+                    .delegate(
+                        CodeBlock.of(
+                            "lazy { %T.projectActivationFactory(this, %T, ::%T) }",
+                            PoetSymbols.winRtRuntimeClass,
+                            factoryClass,
+                            factoryClass,
+                        ),
+                    )
+                    .build()
+                projectedFactoryMethods.forEach { method ->
                     val helperName = "${factoryPropertyName}${method.name}"
                     val parameters = method.parameters.map { parameter ->
                         ParameterSpec.builder(parameter.name, exposedTypeName(parameter.type, type.namespace)).build()
@@ -321,6 +327,12 @@ internal class RuntimeCompanionRenderer(
                             parameters.joinToString(", ") { it.name },
                         )
                         .build()
+                }
+            }
+            runtimeFactoryMethods
+                .filter { method -> typeRegistry.isComposableFactoryMethod(type, method) }
+                .forEach { method ->
+                    members += renderComposableFactoryHelper(type, factoryType, factoryPropertyName, method)
                 }
         }
         return members
@@ -537,13 +549,97 @@ internal class RuntimeCompanionRenderer(
         return typeNameMapper.mapTypeName(typeName, currentNamespace)
     }
 
+    private fun renderComposableFactoryHelper(
+        type: WinMdType,
+        factoryType: WinMdType,
+        factoryPropertyName: String,
+        method: WinMdMethod,
+    ): FunSpec {
+        val helperName = "${factoryPropertyName}${method.name}"
+        val constructorParameters = method.parameters.dropLast(2)
+        val factoryGuid = requireNotNull(factoryType.guid) {
+            "Composable factory ${factoryType.namespace}.${factoryType.name} is missing a GUID"
+        }
+        val composeCall = CodeBlock.builder()
+            .add(
+                "return %T.compose(this, %M(%S), ",
+                PoetSymbols.winRtRuntimeClass,
+                PoetSymbols.guidOfMember,
+                factoryGuid,
+            )
+            .add("%L, ::%L, %L", defaultInterfaceGuidExpression(type), type.name, method.vtableIndex!!)
+        constructorParameters.forEach { parameter ->
+            composeCall.add(
+                ", %L",
+                loweredComposableFactoryArgumentExpression(parameter.name, parameter.type, type.namespace),
+            )
+        }
+        composeCall.add(", %T.NULL)", PoetSymbols.comPtrClass)
+
+        return FunSpec.builder(helperName)
+            .addModifiers(KModifier.PRIVATE)
+            .returns(ClassName(type.namespace.lowercase(), type.name))
+            .addParameters(
+                constructorParameters.map { parameter ->
+                    ParameterSpec.builder(parameter.name, exposedTypeName(parameter.type, type.namespace)).build()
+                },
+            )
+            .addStatement("%L", composeCall.build())
+            .build()
+    }
+
+    private fun defaultInterfaceGuidExpression(type: WinMdType): CodeBlock {
+        val defaultInterfaceGuid = type.defaultInterface
+            ?.let { typeRegistry.findType(it, type.namespace) }
+            ?.guid
+        return if (defaultInterfaceGuid != null) {
+            CodeBlock.of("%M(%S)", PoetSymbols.guidOfMember, defaultInterfaceGuid)
+        } else {
+            CodeBlock.of("null")
+        }
+    }
+
+    private fun loweredComposableFactoryArgumentExpression(
+        parameterName: String,
+        parameterType: String,
+        currentNamespace: String,
+    ): String {
+        return when (parameterType) {
+            "String" -> parameterName
+            "Int32",
+            "UInt32",
+            "Boolean",
+            "Int64",
+            "UInt64",
+            "Float32",
+            "Float64",
+            "EventRegistrationToken" -> "$parameterName.value"
+            else -> if (supportsComposableFactoryObjectType(parameterType, currentNamespace)) {
+                "$parameterName.pointer"
+            } else {
+                parameterName
+            }
+        }
+    }
+
     private fun supportsInterfaceObjectType(typeName: String, currentNamespace: String): Boolean {
         return typeName == "Object" || typeRegistry.findType(typeName, currentNamespace)?.kind == dev.winrt.winmd.plugin.WinMdTypeKind.Interface
+    }
+
+    private fun supportsComposableFactoryObjectType(typeName: String, currentNamespace: String): Boolean {
+        return typeName == "Object" ||
+            typeRegistry.findType(typeName, currentNamespace)?.kind in setOf(
+                dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                dev.winrt.winmd.plugin.WinMdTypeKind.Delegate,
+                dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass,
+            ) ||
+            (typeName.contains('.') && !typeName.contains('`') && !typeName.contains('<') && !typeName.endsWith("[]"))
     }
 
     private fun activationKindLiteral(kind: WinMdActivationKind): String {
         return when (kind) {
             WinMdActivationKind.Factory -> "Factory"
+            WinMdActivationKind.Composable -> "Composable"
         }
     }
 

@@ -30,6 +30,11 @@ sealed interface ComMethodResult {
     data class GuidValue(val value: Guid) : ComMethodResult
 }
 
+data class ComposableMethodResult(
+    val instance: ComPtr,
+    val inner: ComPtr,
+)
+
 fun ComMethodResult.requireHString(): HString = (this as ComMethodResult.HStringValue).value
 fun ComMethodResult.requireObject(): ComPtr = (this as ComMethodResult.ObjectValue).value
 fun ComMethodResult.requireInt32(): Int = (this as ComMethodResult.Int32Value).value
@@ -105,6 +110,11 @@ interface ComInterop {
         resultKind: ComMethodResultKind,
         vararg arguments: Any,
     ): Result<ComMethodResult>
+    fun invokeComposableMethod(
+        instance: ComPtr,
+        vtableIndex: Int,
+        vararg arguments: Any,
+    ): Result<ComposableMethodResult>
     fun invokeObjectSetter(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Unit>
     fun invokeInt64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Long>
     fun invokeInt64Method(instance: ComPtr, vtableIndex: Int): Result<Long>
