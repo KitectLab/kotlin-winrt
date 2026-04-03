@@ -72,9 +72,6 @@ object SampleBootstrap {
                             PlatformComInterop.release(factory)
                         }
                     }
-                    .recoverCatching {
-                        constructor(ComPtr.NULL)
-                    }
             }
 
             override fun getActivationFactory(metadata: WinRtRuntimeClassMetadata, iid: dev.winrt.kom.Guid): Result<ComPtr> {

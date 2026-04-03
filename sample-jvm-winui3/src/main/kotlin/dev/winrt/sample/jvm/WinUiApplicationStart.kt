@@ -88,8 +88,12 @@ object WinUiApplicationStart {
                 println("winui: application callback invoked")
                 application = Application.current
                 println("winui: application.current ready")
-                application!!.resources = XamlControlsResources()
-                println("winui: application resources set")
+                runCatching {
+                    application!!.resources = XamlControlsResources()
+                    println("winui: application resources set")
+                }.onFailure { error ->
+                    println("winui: application resources skipped: ${error::class.simpleName}: ${error.message}")
+                }
                 window = Window()
                 println("winui: window created")
                 val iWindow = IWindow.from(window!!)
@@ -101,7 +105,9 @@ object WinUiApplicationStart {
                 }.recoverCatching {
                     window!!.systemBackdrop = MicaBackdrop()
                     println("winui: window backdrop set=mica")
-                }.getOrThrow()
+                }.onFailure { error ->
+                    println("winui: window backdrop skipped: ${error::class.simpleName}: ${error.message}")
+                }
                 val layout = WinUiSampleLayout.build(windowTitle, messageText)
                 iWindow.setContent(layout.root)
                 println("winui: window content set")
