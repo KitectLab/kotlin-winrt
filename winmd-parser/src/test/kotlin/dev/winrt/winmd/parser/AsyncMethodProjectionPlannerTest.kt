@@ -50,4 +50,22 @@ class AsyncMethodProjectionPlannerTest {
             planner.asyncResultDescriptorExpression("String", "Windows.Foundation"),
         )
     }
+
+    @Test
+    fun rejects_generic_parameters_for_async_descriptors() {
+        assertNull(
+            planner.asyncResultDescriptorExpression(
+                "Windows.Foundation.IAsyncOperation<T>",
+                "Windows.Foundation",
+                setOf("T"),
+            ),
+        )
+        assertNull(
+            planner.asyncProgressDescriptorExpression(
+                "Windows.Foundation.IAsyncOperationWithProgress<T, TProgress>",
+                "Windows.Foundation",
+                setOf("T", "TProgress"),
+            ),
+        )
+    }
 }

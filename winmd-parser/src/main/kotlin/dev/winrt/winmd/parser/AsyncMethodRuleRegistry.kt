@@ -27,6 +27,16 @@ internal class AsyncMethodRuleRegistry(
             currentNamespace,
             genericParameters,
         )
+        if (requiresProjectedAsyncResult(method.returnType, genericParameters) &&
+            asyncMethodProjectionPlanner.asyncResultDescriptorExpression(method.returnType, currentNamespace, genericParameters) == null
+        ) {
+            return null
+        }
+        if (requiresProjectedAsyncProgress(method.returnType, genericParameters) &&
+            asyncMethodProjectionPlanner.asyncProgressDescriptorExpression(method.returnType, currentNamespace, genericParameters) == null
+        ) {
+            return null
+        }
         val rawTaskCallFactory = when {
             method.returnType == "Windows.Foundation.IAsyncAction" ->
                 AsyncRawTaskCallFactory { invocation ->
@@ -113,6 +123,28 @@ internal class AsyncMethodRuleRegistry(
         }
     }
 
+    private fun requiresProjectedAsyncResult(returnType: String, genericParameters: Set<String>): Boolean {
+        val resultTypeName = when {
+            returnType.startsWith("Windows.Foundation.IAsyncOperation<") ->
+                returnType.substringAfter('<').substringBeforeLast('>')
+            returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") ->
+                returnType.substringAfter('<').substringBeforeLast('>').substringBefore(',')
+            else -> null
+        } ?: return false
+        return resultTypeName in genericParameters && resultTypeName !in scalarAsyncResultTypeNames
+    }
+
+    private fun requiresProjectedAsyncProgress(returnType: String, genericParameters: Set<String>): Boolean {
+        val progressTypeName = when {
+            returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") ->
+                returnType.substringAfter('<').substringBeforeLast('>')
+            returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") ->
+                returnType.substringAfter('<').substringBeforeLast('>').substringAfter(',')
+            else -> null
+        } ?: return false
+        return progressTypeName in genericParameters && progressTypeName !in scalarAsyncProgressTypeNames
+    }
+
     private fun asyncUnaryInvocation(
         category: MethodParameterCategory,
         parameterName: String,
@@ -170,13 +202,36 @@ internal class AsyncMethodRuleRegistry(
         }
     }
 
-    private fun supportsAsyncObjectInput(typeName: String): Boolean {
-        return (typeName == "Object" || typeName.contains('.')) &&
-            !typeName.contains('<') &&
-            !typeName.contains('`') &&
-            !typeName.endsWith("[]")
-    }
+private fun supportsAsyncObjectInput(typeName: String): Boolean {
+    return (typeName == "Object" || typeName.contains('.')) &&
+        !typeName.contains('<') &&
+        !typeName.contains('`') &&
+        !typeName.endsWith("[]")
 }
+
+}
+
+private val scalarAsyncResultTypeNames = setOf(
+    "String",
+    "Boolean",
+    "Int32",
+    "UInt32",
+    "Int64",
+    "UInt64",
+    "Float32",
+    "Float64",
+)
+
+private val scalarAsyncProgressTypeNames = setOf(
+    "String",
+    "Boolean",
+    "Int32",
+    "UInt32",
+    "Int64",
+    "UInt64",
+    "Float32",
+    "Float64",
+)
 
 internal data class AsyncMethodRulePlan(
     val rawReturnType: TypeName,

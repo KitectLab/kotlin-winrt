@@ -64,4 +64,30 @@ class AsyncMethodRuleRegistryTest {
             ),
         )
     }
+
+    @Test
+    fun rejects_async_methods_when_generic_result_or_progress_cannot_be_projected() {
+        assertNull(
+            registry.plan(
+                WinMdMethod(
+                    name = "GetValueAsync",
+                    returnType = "Windows.Foundation.IAsyncOperation<T>",
+                    vtableIndex = 6,
+                ),
+                "Windows.Foundation",
+                genericParameters = setOf("T"),
+            ),
+        )
+        assertNull(
+            registry.plan(
+                WinMdMethod(
+                    name = "GetProgressAsync",
+                    returnType = "Windows.Foundation.IAsyncOperationWithProgress<T, TProgress>",
+                    vtableIndex = 7,
+                ),
+                "Windows.Foundation",
+                genericParameters = setOf("T", "TProgress"),
+            ),
+        )
+    }
 }

@@ -72,6 +72,9 @@ internal class AsyncMethodProjectionPlanner(
                 splitGenericArguments(returnType.substringAfter('<').substringBeforeLast('>')).firstOrNull()
             else -> null
         } ?: return null
+        if (resultTypeName in genericParameters && resultTypeName !in scalarAsyncResultTypeNames) {
+            return null
+        }
         val signature = winRtSignatureMapper.signatureFor(resultTypeName, currentNamespace)
         if (resultTypeName in genericParameters || resultTypeName in scalarAsyncResultTypeNames) {
             return CodeBlock.of("%T.signature(%S)", PoetSymbols.asyncResultTypesClass, signature)
@@ -116,6 +119,16 @@ internal class AsyncMethodProjectionPlanner(
         currentNamespace: String,
         genericParameters: Set<String> = emptySet(),
     ): CodeBlock? {
+        val progressType = when {
+            returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") ->
+                returnType.substringAfter('<').substringBeforeLast('>')
+            returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") ->
+                splitGenericArguments(returnType.substringAfter('<').substringBeforeLast('>')).getOrNull(1)
+            else -> null
+        } ?: return null
+        if (progressType in genericParameters && progressType !in scalarAsyncProgressPlan.keys) {
+            return null
+        }
         val progressPlan = when {
             returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") ->
                 asyncProgressPlan(returnType, currentNamespace, genericParameters)
