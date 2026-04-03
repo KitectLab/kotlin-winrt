@@ -3720,6 +3720,43 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_runtime_methods_with_boolean_float64_int64_and_uint64_return_values() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "ScalarReturnHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(name = "GetFlag", returnType = "Boolean", vtableIndex = 6),
+                                WinMdMethod(name = "GetRatio", returnType = "Float64", vtableIndex = 7),
+                                WinMdMethod(name = "GetSignedValue", returnType = "Int64", vtableIndex = 8),
+                                WinMdMethod(name = "GetUnsignedValue", returnType = "UInt64", vtableIndex = 9),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/ScalarReturnHost.kt" }.content
+
+        assertTrue(binding.contains("fun getFlag(): Boolean"))
+        assertTrue(binding.contains("return WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 6).getOrThrow())"))
+        assertTrue(binding.contains("fun getRatio(): Double"))
+        assertTrue(binding.contains("return PlatformComInterop.invokeFloat64Method(pointer, 7).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedValue(): Long"))
+        assertTrue(binding.contains("return Int64(PlatformComInterop.invokeInt64Getter(pointer, 8).getOrThrow())"))
+        assertTrue(binding.contains("fun getUnsignedValue(): ULong"))
+        assertTrue(binding.contains("return UInt64(PlatformComInterop.invokeInt64Getter(pointer, 9).getOrThrow().toULong())"))
+    }
+
+    @Test
     fun generates_runtime_methods_with_parameters_for_int32_and_uint32_returns() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
