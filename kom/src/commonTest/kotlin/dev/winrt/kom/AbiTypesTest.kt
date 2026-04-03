@@ -67,4 +67,20 @@ class AbiTypesTest {
         assertEquals(1.5, ComMethodResult.Float64Value(1.5).requireFloat64())
         assertEquals(guid, ComMethodResult.GuidValue(guid).requireGuid())
     }
+
+    @Test
+    fun com_method_result_require_helpers_fail_fast_for_wrong_variant() {
+        assertFailsWith<ClassCastException> {
+            ComMethodResult.Int32Value(42).requireObject()
+        }
+        assertFailsWith<ClassCastException> {
+            ComMethodResult.BooleanValue(true).requireGuid()
+        }
+    }
+
+    @Test
+    fun hstring_null_close_is_a_noop() {
+        HString.NULL.close()
+        assertTrue(HString.NULL.isNull)
+    }
 }
