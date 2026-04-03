@@ -11,6 +11,7 @@ import dev.winrt.winmd.plugin.WindowsSdkReferences
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import java.nio.file.Files
 
@@ -3684,6 +3685,38 @@ class KotlinBindingGeneratorTest {
         val binding = files.first { it.relativePath == "Example/Runtime/IntReturnHost.kt" }.content
         assertTrue(binding.contains("public val count: Int"))
         assertTrue(binding.contains("return Int32(PlatformComInterop.invokeInt32Method(pointer, 6).getOrThrow())"))
+    }
+
+    @Test
+    fun generates_runtime_methods_with_uint32_return_values() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "UIntReturnHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetValue",
+                                    returnType = "UInt32",
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/UIntReturnHost.kt" }.content
+
+        assertTrue(binding.contains("fun getValue(): UInt"))
+        assertTrue(binding.contains("return UInt32(PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow())"))
     }
 
     @Test
