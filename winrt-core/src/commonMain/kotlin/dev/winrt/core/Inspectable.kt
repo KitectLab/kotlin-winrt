@@ -36,7 +36,7 @@ open class Inspectable(pointer: ComPtr) : WinRtObject(pointer) {
     }
 
     open fun getObjectReferenceForType(typeKey: String, iid: Guid): ComPtr {
-        return queryInterfaceCache.getOrPut(typeKey) {
+        return queryInterfaceCache.getOrPut(referenceCacheKey(typeKey, iid)) {
             queryInterface(iid)
         }
     }
@@ -62,30 +62,37 @@ open class Inspectable(pointer: ComPtr) : WinRtObject(pointer) {
         abiHelperTypeKey: String,
         iid: Guid,
     ): ComPtr {
-        queryInterfaceCache[projectionTypeKey]?.let { cached ->
-            if (queryInterfaceCache[abiHelperTypeKey] == null) {
-                queryInterfaceCache[abiHelperTypeKey] = cached
+        val projectionReferenceKey = referenceCacheKey(projectionTypeKey, iid)
+        val abiReferenceKey = referenceCacheKey(abiHelperTypeKey, iid)
+        val winrtReferenceKey = referenceCacheKey(winrtTypeKey, iid)
+        queryInterfaceCache[projectionReferenceKey]?.let { cached ->
+            if (queryInterfaceCache[abiReferenceKey] == null) {
+                queryInterfaceCache[abiReferenceKey] = cached
             }
-            if (winrtTypeKey != projectionTypeKey && queryInterfaceCache[winrtTypeKey] == null) {
-                queryInterfaceCache[winrtTypeKey] = cached
+            if (winrtTypeKey != projectionTypeKey && queryInterfaceCache[winrtReferenceKey] == null) {
+                queryInterfaceCache[winrtReferenceKey] = cached
             }
             return cached
         }
-        queryInterfaceCache[winrtTypeKey]?.let { cached ->
-            if (queryInterfaceCache[projectionTypeKey] == null) {
-                queryInterfaceCache[projectionTypeKey] = cached
+        queryInterfaceCache[winrtReferenceKey]?.let { cached ->
+            if (queryInterfaceCache[projectionReferenceKey] == null) {
+                queryInterfaceCache[projectionReferenceKey] = cached
             }
-            if (queryInterfaceCache[abiHelperTypeKey] == null) {
-                queryInterfaceCache[abiHelperTypeKey] = cached
+            if (queryInterfaceCache[abiReferenceKey] == null) {
+                queryInterfaceCache[abiReferenceKey] = cached
             }
             return cached
         }
         val reference = getObjectReferenceForType(abiHelperTypeKey, iid)
-        queryInterfaceCache[projectionTypeKey] = reference
+        queryInterfaceCache[projectionReferenceKey] = reference
         if (winrtTypeKey != projectionTypeKey) {
-            queryInterfaceCache[winrtTypeKey] = reference
+            queryInterfaceCache[winrtReferenceKey] = reference
         }
         return reference
+    }
+
+    private fun referenceCacheKey(typeKey: String, iid: Guid): String {
+        return "$typeKey:$iid"
     }
 }
 

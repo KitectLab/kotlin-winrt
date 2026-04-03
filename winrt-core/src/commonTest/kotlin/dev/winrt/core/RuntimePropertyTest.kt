@@ -112,6 +112,25 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun inspectable_separates_cached_references_by_type_key_and_iid() {
+        val subject = object : Inspectable(ComPtr.NULL) {
+            var queryCount = 0
+
+            override fun queryInterface(iid: Guid): ComPtr {
+                queryCount += 1
+                return ComPtr.NULL
+            }
+        }
+
+        val first = subject.getObjectReferenceForType("kotlin.collections.MutableList", Guid(0, 0, 0, byteArrayOf(1, 1, 1, 1, 1, 1, 1, 1)))
+        val second = subject.getObjectReferenceForType("kotlin.collections.MutableList", Guid(0, 0, 0, byteArrayOf(2, 2, 2, 2, 2, 2, 2, 2)))
+
+        assertEquals(ComPtr.NULL, first)
+        assertEquals(ComPtr.NULL, second)
+        assertEquals(2, subject.queryCount)
+    }
+
+    @Test
     fun inspectable_separates_cached_references_by_type_key_for_same_iid() {
         val iid = Guid(0, 0, 0, byteArrayOf(5, 5, 5, 5, 5, 5, 5, 5))
         val subject = object : Inspectable(ComPtr.NULL) {
@@ -621,6 +640,36 @@ class RuntimePropertyTest {
         assertSame(first, second)
         assertEquals(1, subject.queryCount)
         assertEquals(1, subject.constructorCount)
+    }
+
+    @Test
+    fun interface_projection_separates_shared_projection_type_key_entries_by_iid() {
+        WinRtProjectionRegistry.resetForTests()
+
+        val metadataA = object : WinRtInterfaceMetadata {
+            override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
+            override val projectionTypeKey: String = "kotlin.collections.MutableList"
+            override val iid = Guid(0, 0, 0, byteArrayOf(7, 2, 7, 2, 7, 2, 7, 2))
+        }
+        val metadataB = object : WinRtInterfaceMetadata {
+            override val qualifiedName: String = "Test.AliasProjectedVector"
+            override val projectionTypeKey: String = "kotlin.collections.MutableList"
+            override val iid = Guid(0, 0, 0, byteArrayOf(8, 2, 8, 2, 8, 2, 8, 2))
+        }
+        val subject = object : Inspectable(ComPtr.NULL) {
+            var queryCount = 0
+
+            override fun queryInterface(iid: Guid): ComPtr {
+                queryCount += 1
+                return ComPtr.NULL
+            }
+        }
+
+        val first = subject.projectInterface(metadataA) { pointer -> WinRtInterfaceProjection(pointer) }
+        val second = subject.projectInterface(metadataB) { pointer -> WinRtInterfaceProjection(pointer) }
+
+        assertFalse(first === second)
+        assertEquals(2, subject.queryCount)
     }
 
     @Test
