@@ -20,3 +20,5 @@ captures
 node_modules/
 hs_err_pid*.log
 replay_pid*.log
+
+.cswinrt/
