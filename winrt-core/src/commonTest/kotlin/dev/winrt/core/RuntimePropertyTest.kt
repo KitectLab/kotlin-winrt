@@ -615,4 +615,37 @@ class RuntimePropertyTest {
         assertEquals(ComPtr.NULL, second.pointer)
         assertEquals(2, subject.queryCount)
     }
+
+    @Test
+    fun project_activation_factory_reuses_cached_factory_for_same_runtime_class_and_interface_iid() {
+        WinRtRuntime.resetForTests()
+
+        val runtimeClass = object : WinRtRuntimeClassMetadata {
+            override val qualifiedName: String = "Test.RuntimeClass"
+            override val classId = RuntimeClassId("Test", "RuntimeClass")
+            override val defaultInterfaceName: String? = null
+        }
+        val interfaceMetadata = object : WinRtInterfaceMetadata {
+            override val qualifiedName: String = "Test.IFactory"
+            override val iid = Guid(0, 0, 0, byteArrayOf(9, 9, 9, 9, 9, 9, 9, 9))
+        }
+        val provider = object : ActivationFactoryProvider {
+            var factoryCount = 0
+
+            override fun <T : WinRtObject> activate(metadata: WinRtRuntimeClassMetadata, constructor: (ComPtr) -> T): Result<T> {
+                error("not used")
+            }
+
+            override fun getActivationFactory(metadata: WinRtRuntimeClassMetadata, iid: Guid): Result<ComPtr> {
+                factoryCount += 1
+                return Result.success(ComPtr.NULL)
+            }
+        }
+        WinRtRuntime.activationFactoryProvider = provider
+
+        WinRtRuntime.projectActivationFactory(runtimeClass, interfaceMetadata) { pointer -> WinRtInterfaceProjection(pointer) }
+        WinRtRuntime.projectActivationFactory(runtimeClass, interfaceMetadata) { pointer -> WinRtInterfaceProjection(pointer) }
+
+        assertEquals(1, provider.factoryCount)
+    }
 }

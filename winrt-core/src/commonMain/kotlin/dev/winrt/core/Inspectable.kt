@@ -98,6 +98,7 @@ object NullActivationFactoryProvider : ActivationFactoryProvider {
 
 object WinRtRuntime {
     var activationFactoryProvider: ActivationFactoryProvider = NullActivationFactoryProvider
+    private val activationFactoryCache: MutableMap<String, ComPtr> = linkedMapOf()
 
     fun <T : WinRtObject> activate(metadata: WinRtRuntimeClassMetadata, constructor: (ComPtr) -> T): T {
         return activationFactoryProvider.activate(metadata, constructor).getOrElse { throw it }
@@ -108,12 +109,20 @@ object WinRtRuntime {
         interfaceMetadata: WinRtInterfaceMetadata,
         constructor: (ComPtr) -> T,
     ): T {
-        val factory = activationFactoryProvider.getActivationFactory(runtimeClass, interfaceMetadata.iid)
-            .getOrElse { throw it }
+        val factory = activationFactoryCache.getOrPut(
+            "${runtimeClass.classId.qualifiedName}:${interfaceMetadata.iid}",
+        ) {
+            activationFactoryProvider.getActivationFactory(runtimeClass, interfaceMetadata.iid)
+                .getOrElse { throw it }
+        }
         return interfaceMetadata.project(factory, constructor)
     }
 
     fun check(result: HResult, operation: String) {
         result.requireSuccess(operation)
+    }
+
+    internal fun resetForTests() {
+        activationFactoryCache.clear()
     }
 }
