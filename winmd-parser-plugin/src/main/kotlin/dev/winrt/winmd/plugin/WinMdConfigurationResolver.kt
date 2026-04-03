@@ -25,6 +25,8 @@ object WinMdConfigurationResolver {
             val componentRoots = buildList {
                 component.nugetRoot?.let { add(Path.of(it)) }
                 extension.nugetRoot?.let { add(Path.of(it)) }
+                extension.nugetSources.mapNotNullTo(this, ::existingLocalPathOrNull)
+                component.nugetSource?.let(::existingLocalPathOrNull)?.let(::add)
                 add(NuGetPackageReferences.discoverPackagesRoot())
             }.distinct()
             NuGetPackageReferences.resolvePackageFromRoots(
@@ -69,5 +71,11 @@ object WinMdConfigurationResolver {
         extension.referencesRoot?.let { return Path.of(it) }
         extension.windowsKitsRoot?.let { return Path.of(it).resolve("References") }
         return WindowsSdkReferences.discoverReferencesRoot()
+    }
+
+    private fun existingLocalPathOrNull(value: String): Path? {
+        return runCatching { Path.of(value) }
+            .getOrNull()
+            ?.takeIf { java.nio.file.Files.isDirectory(it) }
     }
 }

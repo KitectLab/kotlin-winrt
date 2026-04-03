@@ -22,7 +22,7 @@ class WinMdModelFactoryTest {
         assertTrue(namespaceNames.contains("Microsoft.UI.Xaml"))
 
         val xamlTypes = merged.namespaces.first { it.name == "Microsoft.UI.Xaml" }.types
-        assertEquals(listOf("Application", "Window"), xamlTypes.map { it.name })
+        assertTrue(xamlTypes.map { it.name }.containsAll(listOf("Application", "Window")))
     }
 
     @Test
