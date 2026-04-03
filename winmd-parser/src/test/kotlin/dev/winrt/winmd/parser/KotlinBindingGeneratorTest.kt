@@ -5175,6 +5175,156 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_observable_collection_event_slots_for_runtime_classes() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IObservableVector`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-1111-2222-3333-444444444444",
+                            genericParameters = listOf("T"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_VectorChanged",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(
+                                        WinMdParameter("handler", "Windows.Foundation.TypedEventHandler<Object, Int32>"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_VectorChanged",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("token", "EventRegistrationToken"),
+                                    ),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IObservableMap`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbbbbbbb-1111-2222-3333-444444444444",
+                            genericParameters = listOf("K", "V"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_MapChanged",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(
+                                        WinMdParameter("handler", "Windows.Foundation.TypedEventHandler<Object, String>"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_MapChanged",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("token", "EventRegistrationToken"),
+                                    ),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "TypedEventHandler`2",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "cccccccc-1111-2222-3333-444444444444",
+                            genericParameters = listOf("TSender", "TResult"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("sender", "TSender"),
+                                        WinMdParameter("args", "TResult"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Collections",
+                            name = "ObservableVectorHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IObservableVector<String>",
+                            baseInterfaces = listOf("Windows.Foundation.Collections.IObservableVector<String>"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_VectorChanged",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(
+                                        WinMdParameter("handler", "Windows.Foundation.TypedEventHandler<Object, Int32>"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_VectorChanged",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("token", "EventRegistrationToken"),
+                                    ),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Collections",
+                            name = "ObservableMapHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IObservableMap<String, Int32>",
+                            baseInterfaces = listOf("Windows.Foundation.Collections.IObservableMap<String, Int32>"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_MapChanged",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(
+                                        WinMdParameter("handler", "Windows.Foundation.TypedEventHandler<Object, String>"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_MapChanged",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("token", "EventRegistrationToken"),
+                                    ),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val vectorBinding = files.first { it.relativePath == "Example/Collections/ObservableVectorHost.kt" }.content
+        val mapBinding = files.first { it.relativePath == "Example/Collections/ObservableMapHost.kt" }.content
+
+        assertTrue(vectorBinding.contains("MutableList<String>"))
+        assertTrue(vectorBinding.contains("vectorChanged"))
+        assertTrue(vectorBinding.contains("fun subscribeScoped(handler: TypedEventHandler<Inspectable, Int>): AutoCloseable"))
+        assertTrue(vectorBinding.contains("delegateHandles.remove(token)?.close()"))
+
+        assertTrue(mapBinding.contains("MutableMap<String, Int>"))
+        assertTrue(mapBinding.contains("mapChanged"))
+        assertTrue(mapBinding.contains("fun subscribeScoped(handler: TypedEventHandler<Inspectable, String>): AutoCloseable"))
+        assertTrue(mapBinding.contains("delegateHandles.remove(token)?.close()"))
+    }
+
+    @Test
     fun generates_kotlin_iterable_shape_for_runtime_classes_with_key_value_pair_entries() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

@@ -246,6 +246,30 @@ internal class KotlinCollectionProjectionMapper {
                 winRtSizeSlot = 7,
             )
         }
+        if (qualifiedName.startsWith("Windows.Foundation.Collections.IObservableMap<") && qualifiedName.endsWith(">")) {
+            val argumentSource = qualifiedName.substringAfter('<').substringBeforeLast('>')
+            val arguments = splitGenericArguments(argumentSource)
+            if (arguments.size != 2) {
+                return null
+            }
+            val keyType = collectionElementTypeName(arguments[0], typeNameMapper)
+            val valueType = collectionElementTypeName(arguments[1], typeNameMapper)
+            val rawInterfaceClass = typeNameMapper.mapTypeName(
+                "Windows.Foundation.Collections.IObservableMap",
+                "Windows.Foundation.Collections",
+            ) as ClassName
+            return CollectionInterfaceMetadata(
+                collectionSuperinterface = PoetSymbols.mutableMapClass.parameterizedBy(keyType, valueType),
+                delegateFactory = CodeBlock.of(
+                    "%T.from(%T(pointer), %S, %S)",
+                    rawInterfaceClass,
+                    PoetSymbols.inspectableClass,
+                    winRtSignatureMapper.signatureFor(qualifiedName, "Windows.Foundation.Collections"),
+                    winRtProjectionTypeMapper.projectionTypeKeyFor(qualifiedName, "Windows.Foundation.Collections"),
+                ),
+                winRtSizeSlot = 7,
+            )
+        }
         if (qualifiedName.startsWith("Windows.Foundation.Collections.IMap<") && qualifiedName.endsWith(">")) {
             val argumentSource = qualifiedName.substringAfter('<').substringBeforeLast('>')
             val arguments = splitGenericArguments(argumentSource)
@@ -265,6 +289,28 @@ internal class KotlinCollectionProjectionMapper {
                     PoetSymbols.winRtMutableMapProjectionClass.parameterizedBy(keyType, valueType),
                 ),
                 winRtSizeSlot = 7,
+            )
+        }
+        if (qualifiedName.startsWith("Windows.Foundation.Collections.IObservableVector<") && qualifiedName.endsWith(">")) {
+            val elementType = qualifiedName.substringAfter('<').substringBeforeLast('>')
+            if (!supportsClosedGenericVectorElement(elementType)) {
+                return null
+            }
+            val rawInterfaceClass = typeNameMapper.mapTypeName(
+                "Windows.Foundation.Collections.IObservableVector",
+                "Windows.Foundation.Collections",
+            ) as ClassName
+            val elementTypeName = collectionElementTypeName(elementType, typeNameMapper)
+            return CollectionInterfaceMetadata(
+                collectionSuperinterface = PoetSymbols.mutableListClass.parameterizedBy(elementTypeName),
+                delegateFactory = CodeBlock.of(
+                    "%T.from(%T(pointer), %S, %S)",
+                    rawInterfaceClass,
+                    PoetSymbols.inspectableClass,
+                    winRtSignatureMapper.signatureFor(elementType, "Windows.Foundation.Collections"),
+                    winRtProjectionTypeMapper.projectionTypeKeyFor(elementType, "Windows.Foundation.Collections"),
+                ),
+                winRtSizeSlot = 8,
             )
         }
         if (qualifiedName.startsWith("Windows.Foundation.Collections.IVectorView<") && qualifiedName.endsWith(">")) {
