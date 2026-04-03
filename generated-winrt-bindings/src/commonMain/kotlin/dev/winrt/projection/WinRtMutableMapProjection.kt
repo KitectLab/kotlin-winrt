@@ -40,6 +40,8 @@ class WinRtMutableMapProjection<K, V> internal constructor(
     override val entries: MutableSet<MutableMap.MutableEntry<K, V>>
         get() = entriesProvider().mapTo(linkedSetOf()) { MapEntry(it.key, it.value) }
 
+    fun snapshot(): MutableMap<K, V> = entriesProvider().associateTo(linkedMapOf()) { it.key to it.value }
+
     private data class MapEntry<K, V>(
         override val key: K,
         override var value: V,
