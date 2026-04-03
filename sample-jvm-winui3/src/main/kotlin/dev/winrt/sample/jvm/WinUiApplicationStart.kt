@@ -6,7 +6,9 @@ import microsoft.ui.xaml.Application
 import microsoft.ui.xaml.ApplicationInitializationCallback
 import microsoft.ui.xaml.IApplicationInitializationCallbackParams
 import microsoft.ui.xaml.IWindow
+import microsoft.ui.xaml.IWindow2
 import microsoft.ui.xaml.Window
+import microsoft.ui.xaml.media.MicaBackdrop
 
 object WinUiApplicationStart {
     private var application: Application? = null
@@ -88,8 +90,11 @@ object WinUiApplicationStart {
                 window = Window()
                 println("winui: window created")
                 val iWindow = IWindow.from(window!!)
+                val iWindow2 = IWindow2.from(window!!)
                 iWindow.title = windowTitle
                 println("winui: window title set")
+                iWindow2.systemBackdrop = MicaBackdrop()
+                println("winui: window backdrop set")
                 val layout = WinUiSampleLayout.build(windowTitle, messageText)
                 iWindow.setContent(layout.root)
                 println("winui: window content set")

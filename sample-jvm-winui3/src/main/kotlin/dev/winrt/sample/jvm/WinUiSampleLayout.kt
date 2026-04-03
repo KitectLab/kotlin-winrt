@@ -26,14 +26,34 @@ object WinUiSampleLayout {
 
     fun build(windowTitle: String, messageText: String): WinUiSampleLayoutResult {
         val root = StackPanel()
-        val header = TextBlock()
-        header.text = windowTitle
-        root.children.append(header)
-
-        val summary = TextBlock()
-        summary.text = messageText
-        root.children.append(summary)
+        root.children.append(text(windowTitle))
+        root.children.append(text("WinUI3 sample dashboard"))
+        root.children.append(section("Runtime", "ActivationFactory", "Default interface projection", "Nested panel append"))
+        root.children.append(section("Bindings", "Window content", "TextBlock text", "UIElementCollection append"))
+        root.children.append(section("Status", "bootstrap-ready", messageText, "sample-jvm-winui3"))
+        root.children.append(timeline("Boot", "Activate", "Compose", "Visible"))
 
         return WinUiSampleLayoutResult(root = root)
     }
+
+    private fun section(title: String, vararg lines: String): StackPanel {
+        val panel = StackPanel()
+        panel.children.append(text("[$title]"))
+        lines.forEach { line ->
+            panel.children.append(text(" - $line"))
+        }
+        return panel
+    }
+
+    private fun timeline(vararg steps: String): StackPanel {
+        val panel = StackPanel()
+        panel.children.append(text("[Timeline]"))
+        steps.forEachIndexed { index, step ->
+            panel.children.append(text(" ${index + 1}. $step"))
+        }
+        return panel
+    }
+
+    private fun text(value: String): TextBlock =
+        TextBlock().also { it.text = value }
 }
