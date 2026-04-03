@@ -32,10 +32,9 @@ object WindowsSdkReferences {
         val installedSdkVersions = discoverInstalledSdkVersions(referencesRoot)
         val resolvedSdkVersion = sdkVersion
             ?: installedSdkVersions.maxWithOrNull(compareByVersion { it })
-            ?: error("No Windows SDK versions found under $referencesRoot")
+            ?: error(missingWindowsSdkMessage(referencesRoot, null, installedSdkVersions))
         require(installedSdkVersions.contains(resolvedSdkVersion)) {
-            "Windows SDK version $resolvedSdkVersion does not exist under $referencesRoot. " +
-                "Installed versions: ${installedSdkVersions.sortedWith(compareByVersion { it }).joinToString(", ")}"
+            missingWindowsSdkMessage(referencesRoot, resolvedSdkVersion, installedSdkVersions)
         }
         val sdkRoot = referencesRoot.resolve(resolvedSdkVersion)
         require(sdkRoot.exists() && sdkRoot.isDirectory()) {
@@ -158,6 +157,25 @@ object WindowsSdkReferences {
 
     private fun versionKey(value: String): List<Int> {
         return value.split('.').map { token -> token.toIntOrNull() ?: 0 }
+    }
+
+    private fun missingWindowsSdkMessage(
+        referencesRoot: Path,
+        requestedVersion: String?,
+        installedSdkVersions: List<String>,
+    ): String {
+        val installedVersionsText = if (installedSdkVersions.isEmpty()) {
+            "none"
+        } else {
+            installedSdkVersions.sortedWith(compareByVersion { it }).joinToString(", ")
+        }
+        val versionText = requestedVersion?.let { "Requested version: $it. " } ?: ""
+        return buildString {
+            append("No usable Windows SDK version found under $referencesRoot. ")
+            append(versionText)
+            append("Installed versions: $installedVersionsText. ")
+            append("Install a Windows 10 SDK and ensure the Windows Kits registry root is present.")
+        }
     }
 
     private fun <T> compareByVersion(selector: (T) -> String): Comparator<T> {

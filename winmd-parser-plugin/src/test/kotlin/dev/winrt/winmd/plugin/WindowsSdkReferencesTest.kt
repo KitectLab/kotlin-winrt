@@ -73,7 +73,9 @@ class WindowsSdkReferencesTest {
             )
         }
 
+        assertTrue(exception.message?.contains("Requested version: 10.0.20348.0") == true)
         assertTrue(exception.message?.contains("Installed versions: 10.0.19041.0, 10.0.22621.0") == true)
+        assertTrue(exception.message?.contains("Install a Windows 10 SDK") == true)
     }
 
     @Test
