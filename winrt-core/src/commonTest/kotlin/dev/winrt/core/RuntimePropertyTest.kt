@@ -586,6 +586,44 @@ class RuntimePropertyTest {
     }
 
     @Test
+    fun interface_projection_reuses_wrapper_for_shared_projection_type_key() {
+        WinRtProjectionRegistry.resetForTests()
+
+        val metadataA = object : WinRtInterfaceMetadata {
+            override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
+            override val projectionTypeKey: String = "kotlin.collections.MutableList"
+            override val iid = Guid(0, 0, 0, byteArrayOf(7, 1, 7, 1, 7, 1, 7, 1))
+        }
+        val metadataB = object : WinRtInterfaceMetadata {
+            override val qualifiedName: String = "Test.AliasProjectedVector"
+            override val projectionTypeKey: String = "kotlin.collections.MutableList"
+            override val iid = Guid(0, 0, 0, byteArrayOf(7, 1, 7, 1, 7, 1, 7, 1))
+        }
+        val subject = object : Inspectable(ComPtr.NULL) {
+            var queryCount = 0
+            var constructorCount = 0
+
+            override fun queryInterface(iid: Guid): ComPtr {
+                queryCount += 1
+                return ComPtr.NULL
+            }
+        }
+
+        val first = subject.projectInterface(metadataA) {
+            subject.constructorCount += 1
+            WinRtInterfaceProjection(it)
+        }
+        val second = subject.projectInterface(metadataB) {
+            subject.constructorCount += 1
+            WinRtInterfaceProjection(it)
+        }
+
+        assertSame(first, second)
+        assertEquals(1, subject.queryCount)
+        assertEquals(1, subject.constructorCount)
+    }
+
+    @Test
     fun interface_projection_separates_cache_entries_for_distinct_projection_type_keys() {
         WinRtProjectionRegistry.resetForTests()
 
