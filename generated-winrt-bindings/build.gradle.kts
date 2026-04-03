@@ -41,18 +41,6 @@ fun Project.nuGetComponentSpecs(): List<String> =
             ?: emptyList()
     }
 
-fun Project.renderNuGetConfigXml(contentSources: List<Pair<String, String>>): String = buildString {
-    appendLine("""<?xml version="1.0" encoding="utf-8"?>""")
-    appendLine("""<configuration>""")
-    appendLine("""  <packageSources>""")
-    appendLine("""    <clear />""")
-    contentSources.forEach { (name, value) ->
-        appendLine("""    <add key="$name" value="$value" />""")
-    }
-    appendLine("""  </packageSources>""")
-    appendLine("""</configuration>""")
-}
-
 fun Project.winMdSourceArgs(
     contracts: List<String>,
     namespaces: List<String>,
@@ -91,59 +79,62 @@ fun Project.winMdSourceArgs(
     }
 }
 
-val nugetConfigDir = layout.buildDirectory.dir("nuget")
-val nugetConfigFile = nugetConfigDir.map { it.file("nuget.config").asFile }
-val nugetPackagesDir = nugetConfigDir.map { it.dir("packages").asFile }
-
-val writeNuGetConfig by tasks.registering {
-    group = "code generation"
-    description = "Writes a NuGet.config for configured package sources."
-
-    outputs.file(nugetConfigFile)
-
-    doLast {
-        val sources = nuGetSourceEntries()
-        if (sources.isEmpty()) {
-            logger.lifecycle("No winmd.nugetSources configured; nuget.config will not be written.")
-            return@doLast
-        }
-        nugetConfigFile.get().parentFile.mkdirs()
-        nugetConfigFile.get().writeText(renderNuGetConfigXml(sources))
+fun Project.runNuGetInstall(
+    restoreCommand: String,
+    packageId: String,
+    packageVersion: String,
+    outputDirectory: String,
+    sources: List<String>,
+) {
+    val process = ProcessBuilder(
+        buildList {
+            add(restoreCommand)
+            add("install")
+            add(packageId)
+            add("-Version")
+            add(packageVersion)
+            add("-OutputDirectory")
+            add(outputDirectory)
+            add("-NonInteractive")
+            sources.forEach { source ->
+                add("-Source")
+                add(source)
+            }
+        },
+    )
+        .directory(project.projectDir)
+        .inheritIO()
+        .start()
+    val exitCode = process.waitFor()
+    require(exitCode == 0) {
+        "NuGet restore failed for $packageId@$packageVersion with exit code $exitCode."
     }
 }
 
-val restoreNuGetWinMdPackages by tasks.registering(Exec::class) {
+val nugetPackagesDir = layout.buildDirectory.dir("nuget").map { it.dir("packages").asFile }
+
+val restoreNuGetWinMdPackages by tasks.registering {
     group = "code generation"
     description = "Restores configured NuGet WinRT components into a local package cache."
-    dependsOn(writeNuGetConfig)
 
     val componentSpecs = nuGetComponentSpecs()
     onlyIf { componentSpecs.isNotEmpty() }
 
-    doFirst {
+    doLast {
         val restoreCommand = providers.gradleProperty("winmd.nugetCommand").orNull ?: "nuget"
-        val packageSourceConfig = nugetConfigFile.get()
         val outputDirectory = providers.gradleProperty("winmd.nugetRoot").orNull ?: nugetPackagesDir.get().absolutePath
+        val sources = nuGetSourceEntries().map { it.second }
         nugetPackagesDir.get().mkdirs()
-        executable = restoreCommand
-        args = buildList {
-            componentSpecs.forEach { spec ->
-                val packageId = spec.substringBefore('@')
-                val packageVersion = spec.substringAfter('@')
-                addAll(
-                    listOf(
-                        "install",
-                        packageId,
-                        "-Version",
-                        packageVersion,
-                        "-OutputDirectory",
-                        outputDirectory,
-                        "-ConfigFile",
-                        packageSourceConfig.absolutePath,
-                        "-NonInteractive",
-                    ),
-                )
-            }
+        componentSpecs.forEach { spec ->
+            val packageId = spec.substringBefore('@')
+            val packageVersion = spec.substringAfter('@')
+            project.runNuGetInstall(
+                restoreCommand = restoreCommand,
+                packageId = packageId,
+                packageVersion = packageVersion,
+                outputDirectory = outputDirectory,
+                sources = sources,
+            )
         }
     }
 }
