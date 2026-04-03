@@ -17,7 +17,7 @@ open class IBindableIterable(
 
     companion object : WinRtInterfaceMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableIterable"
-        override val projectionTypeKey: String = "System.Collections.IEnumerable"
+        override val projectionTypeKey: String = "kotlin.collections.Iterable"
         override val iid: Guid = guidOf("036d2c08-df29-41af-8aa2-d774be62ba6f")
 
         fun from(inspectable: Inspectable): IBindableIterable =

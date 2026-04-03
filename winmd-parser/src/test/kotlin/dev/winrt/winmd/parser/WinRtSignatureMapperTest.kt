@@ -29,6 +29,27 @@ class WinRtSignatureMapperTest {
                         guid = "bbe1fa4c-b0e3-4583-baef-1f1b2e483e56",
                         genericParameters = listOf("T"),
                     ),
+                    WinMdType(
+                        namespace = "Windows.Foundation.Collections",
+                        name = "IMap`2",
+                        kind = WinMdTypeKind.Interface,
+                        guid = "fbd6f7c2-0035-4f89-91cb-6b0bf5d8c9d6",
+                        genericParameters = listOf("K", "V"),
+                    ),
+                    WinMdType(
+                        namespace = "Windows.Foundation.Collections",
+                        name = "IMapView`2",
+                        kind = WinMdTypeKind.Interface,
+                        guid = "e5f839be-1a86-4e27-b357-f8c0d2d9d0d1",
+                        genericParameters = listOf("K", "V"),
+                    ),
+                    WinMdType(
+                        namespace = "Windows.Foundation.Collections",
+                        name = "IKeyValuePair`2",
+                        kind = WinMdTypeKind.Interface,
+                        guid = "8f4cf5d3-0fa1-4c97-aab5-2e6f2d0b5e5e",
+                        genericParameters = listOf("K", "V"),
+                    ),
                 ),
             ),
             WinMdNamespace(
@@ -90,6 +111,14 @@ class WinRtSignatureMapperTest {
     }
 
     @Test
+    fun maps_runtime_class_to_rc_signature_for_default_interface_in_same_namespace() {
+        assertEquals(
+            "rc(Microsoft.UI.Xaml.DependencyObject;{11111111-1111-1111-1111-111111111111})",
+            mapper.signatureFor("Microsoft.UI.Xaml.DependencyObject", "Microsoft.UI.Xaml"),
+        )
+    }
+
+    @Test
     fun maps_specialized_generic_interface_to_pinterface_signature() {
         assertEquals(
             "pinterface({913337e9-11a1-4345-a3a2-4e7f956e222d};rc(Microsoft.UI.Xaml.UIElement;{22222222-2222-2222-2222-222222222222}))",
@@ -112,6 +141,17 @@ class WinRtSignatureMapperTest {
     }
 
     @Test
+    fun computes_parameterized_interface_iid_for_scalar_arguments() {
+        assertEquals(
+            "51ceb9ce-8ac1-5bad-9d98-1f197b39a5db",
+            mapper.interfaceIdFor(
+                "Windows.Foundation.Collections.IVectorView`1<String>",
+                "Windows.Foundation.Collections",
+            ),
+        )
+    }
+
+    @Test
     fun maps_struct_to_struct_signature_using_field_signatures() {
         assertEquals(
             "struct(Windows.Foundation.Point;f8;f8)",
@@ -122,7 +162,7 @@ class WinRtSignatureMapperTest {
     @Test
     fun maps_bindable_vector_to_cswinrt_projection_type_key() {
         assertEquals(
-            "System.Collections.IList",
+            "kotlin.collections.MutableList",
             projectionTypeMapper.projectionTypeKeyFor(
                 "Microsoft.UI.Xaml.Interop.IBindableVector",
                 "Microsoft.UI.Xaml.Interop",
@@ -133,7 +173,7 @@ class WinRtSignatureMapperTest {
     @Test
     fun maps_specialized_vector_to_generic_list_projection_type_key() {
         assertEquals(
-            "System.Collections.Generic.IList<Microsoft.UI.Xaml.UIElement>",
+            "kotlin.collections.MutableList<Microsoft.UI.Xaml.UIElement>",
             projectionTypeMapper.projectionTypeKeyFor(
                 "Windows.Foundation.Collections.IVector`1<Microsoft.UI.Xaml.UIElement>",
                 "Microsoft.UI.Xaml.Controls",
@@ -151,9 +191,56 @@ class WinRtSignatureMapperTest {
             ),
         )
         assertEquals(
-            "System.Collections.Generic.IReadOnlyList<String>",
+            "kotlin.collections.List<String>",
             projectionTypeMapper.projectionTypeKeyFor(
                 "Windows.Foundation.Collections.IVectorView`1<String>",
+                "Windows.Foundation.Collections",
+            ),
+        )
+    }
+
+    @Test
+    fun maps_dictionary_interfaces_to_parameterized_interface_signatures() {
+        assertEquals(
+            "pinterface({fbd6f7c2-0035-4f89-91cb-6b0bf5d8c9d6};string;rc(Microsoft.UI.Xaml.UIElement;{22222222-2222-2222-2222-222222222222}))",
+            mapper.signatureFor(
+                "Windows.Foundation.Collections.IMap`2<String, Microsoft.UI.Xaml.UIElement>",
+                "Windows.Foundation.Collections",
+            ),
+        )
+        assertEquals(
+            "pinterface({e5f839be-1a86-4e27-b357-f8c0d2d9d0d1};string;rc(Microsoft.UI.Xaml.UIElement;{22222222-2222-2222-2222-222222222222}))",
+            mapper.signatureFor(
+                "Windows.Foundation.Collections.IMapView`2<String, Microsoft.UI.Xaml.UIElement>",
+                "Windows.Foundation.Collections",
+            ),
+        )
+    }
+
+    @Test
+    fun maps_nested_dictionary_interfaces_to_parameterized_interface_signatures() {
+        assertEquals(
+            "pinterface({e5f839be-1a86-4e27-b357-f8c0d2d9d0d1};string;pinterface({bbe1fa4c-b0e3-4583-baef-1f1b2e483e56};rc(Microsoft.UI.Xaml.UIElement;{22222222-2222-2222-2222-222222222222})))",
+            mapper.signatureFor(
+                "Windows.Foundation.Collections.IMapView`2<String, Windows.Foundation.Collections.IVectorView`1<Microsoft.UI.Xaml.UIElement>>",
+                "Windows.Foundation.Collections",
+            ),
+        )
+        assertEquals(
+            "kotlin.collections.Map<String, kotlin.collections.List<Microsoft.UI.Xaml.UIElement>>",
+            projectionTypeMapper.projectionTypeKeyFor(
+                "Windows.Foundation.Collections.IMapView`2<String, Windows.Foundation.Collections.IVectorView`1<Microsoft.UI.Xaml.UIElement>>",
+                "Windows.Foundation.Collections",
+            ),
+        )
+    }
+
+    @Test
+    fun maps_key_value_pair_to_parameterized_interface_signature() {
+        assertEquals(
+            "pinterface({8f4cf5d3-0fa1-4c97-aab5-2e6f2d0b5e5e};string;rc(Microsoft.UI.Xaml.UIElement;{22222222-2222-2222-2222-222222222222}))",
+            mapper.signatureFor(
+                "Windows.Foundation.Collections.IKeyValuePair`2<String, Microsoft.UI.Xaml.UIElement>",
                 "Windows.Foundation.Collections",
             ),
         )

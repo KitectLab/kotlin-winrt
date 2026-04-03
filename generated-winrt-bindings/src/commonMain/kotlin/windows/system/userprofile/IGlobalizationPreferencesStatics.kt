@@ -11,7 +11,7 @@ import dev.winrt.kom.PlatformComInterop
 import windows.foundation.collections.StringVectorView
 import windows.globalization.DayOfWeek
 
-public open class IGlobalizationPreferencesStatics(
+internal open class IGlobalizationPreferencesStatics(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
   public val calendars: StringVectorView

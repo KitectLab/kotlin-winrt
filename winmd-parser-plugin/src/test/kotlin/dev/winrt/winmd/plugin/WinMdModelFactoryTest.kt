@@ -138,6 +138,7 @@ class WinMdModelFactoryTest {
 
         assertEquals(
             listOf(
+                "GetNamedValue" to 6,
                 "GetNamedString" to 10,
                 "GetNamedObject" to 8,
                 "GetNamedArray" to 9,
@@ -224,5 +225,74 @@ class WinMdModelFactoryTest {
             listOf(10, 17),
             methods.map { it.vtableIndex },
         )
+    }
+
+    @Test
+    fun runtime_classes_prefer_verified_json_interface_slots_over_primary_runtime_metadata() {
+        val primary = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Data.Json",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonObject",
+                            kind = WinMdTypeKind.Interface,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetNamedValue",
+                                    returnType = "Windows.Data.Json.JsonValue",
+                                    vtableIndex = 13,
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetNamedString",
+                                    returnType = "String",
+                                    vtableIndex = 17,
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "JsonObject",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Data.Json.IJsonObject",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetNamedValue",
+                                    returnType = "Windows.Data.Json.JsonValue",
+                                    vtableIndex = 13,
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetNamedString",
+                                    returnType = "String",
+                                    vtableIndex = 17,
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val merged = WinMdModelFactory.merge(
+            primary = primary,
+            supplemental = WinMdModelFactory.sampleSupplementalModel(),
+        )
+
+        val jsonObject = merged.namespaces
+            .first { it.name == "Windows.Data.Json" }
+            .types.first { it.name == "JsonObject" }
+
+        val relevantMethods = jsonObject.methods
+            .filter { it.name == "GetNamedValue" || it.name == "GetNamedString" }
+            .map { Triple(it.name, it.returnType, it.vtableIndex) }
+
+        assertTrue(relevantMethods.toString(), relevantMethods.contains(Triple("GetNamedValue", "Windows.Data.Json.IJsonValue", 6)))
+        assertTrue(relevantMethods.toString(), relevantMethods.contains(Triple("GetNamedString", "String", 10)))
     }
 }

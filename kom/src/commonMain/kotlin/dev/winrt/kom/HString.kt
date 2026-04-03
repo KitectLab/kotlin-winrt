@@ -26,4 +26,4 @@ interface HStringBridge {
     fun release(value: HString)
 }
 
-expect object PlatformHStringBridge : HStringBridge
+expect val PlatformHStringBridge: HStringBridge

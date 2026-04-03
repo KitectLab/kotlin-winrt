@@ -31,7 +31,10 @@ open class IBindableVectorView(
 
     override fun containsAll(elements: Collection<Inspectable>): Boolean = elements.all { contains(it) }
 
-    override fun get(index: Int): Inspectable = getAt(UInt32(index.toUInt()))
+    override fun get(index: Int): Inspectable {
+        require(index >= 0) { "index must be non-negative" }
+        return getAt(UInt32(index.toUInt()))
+    }
 
     override fun indexOf(element: Inspectable): Int {
         for (index in 0 until size) {
@@ -76,7 +79,7 @@ open class IBindableVectorView(
 
     companion object : WinRtInterfaceMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVectorView"
-        override val projectionTypeKey: String = "Microsoft.UI.Xaml.Interop.IBindableVectorView"
+        override val projectionTypeKey: String = "kotlin.collections.List"
         override val iid: Guid = guidOf("346dd6e7-976e-4bc3-815d-ece243bc0f33")
 
         fun from(inspectable: Inspectable): IBindableVectorView =

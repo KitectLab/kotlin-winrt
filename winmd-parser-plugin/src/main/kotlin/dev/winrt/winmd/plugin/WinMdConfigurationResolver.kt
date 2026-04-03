@@ -6,26 +6,37 @@ object WinMdConfigurationResolver {
     fun resolve(extension: WinMdExtension): ResolvedWinMdConfiguration {
         val explicitWinMdFiles = extension.winmdFiles.map(Path::of)
 
-        val nugetPackageId = extension.nugetPackageId
-        val nugetPackage = if (nugetPackageId != null) {
-            NuGetPackageReferences.resolvePackage(
-                packageId = nugetPackageId,
-                packageVersion = extension.nugetPackageVersion
-                    ?: error("NuGet package version is required when nugetPackageId is set."),
-                nugetRoot = extension.nugetRoot?.let(Path::of) ?: NuGetPackageReferences.discoverPackagesRoot(),
-            )
-        } else {
-            null
+        val requestedNuGetPackages = mutableListOf<NuGetComponentReference>().apply {
+            addAll(extension.nugetComponents)
+            extension.nugetPackageId?.let { packageId ->
+                add(
+                    NuGetComponentReference(
+                        packageId = packageId,
+                        packageVersion = extension.nugetPackageVersion
+                            ?: error("NuGet package version is required when nugetPackageId is set."),
+                        nugetRoot = extension.nugetRoot,
+                        nugetSource = extension.nugetSources.firstOrNull() ?: WinMdExtension.OFFICIAL_NUGET_SOURCE,
+                    ),
+                )
+            }
         }
 
-        val resolvedWinMdFiles = buildList {
-            addAll(explicitWinMdFiles)
-            addAll(nugetPackage?.winmdFiles.orEmpty())
+        val nugetPackages = requestedNuGetPackages.map { component ->
+            val componentRoots = buildList {
+                component.nugetRoot?.let { add(Path.of(it)) }
+                extension.nugetRoot?.let { add(Path.of(it)) }
+                add(NuGetPackageReferences.discoverPackagesRoot())
+            }.distinct()
+            NuGetPackageReferences.resolvePackageFromRoots(
+                packageId = component.packageId,
+                packageVersion = component.packageVersion,
+                nugetRoots = componentRoots,
+            )
         }
 
         val referencesRoot = resolveReferencesRoot(extension)
         val contractNames = extension.contracts.ifEmpty {
-            if (resolvedWinMdFiles.isEmpty()) {
+            if (explicitWinMdFiles.isEmpty() && nugetPackages.isEmpty()) {
                 listOf("Windows.Foundation.UniversalApiContract")
             } else {
                 emptyList()
@@ -49,8 +60,8 @@ object WinMdConfigurationResolver {
             sdkVersion = sdkVersion,
             referencesRoot = referencesRoot,
             contracts = contracts,
-            winmdFiles = resolvedWinMdFiles,
-            nugetPackage = nugetPackage,
+            winmdFiles = explicitWinMdFiles,
+            nugetPackages = nugetPackages,
         )
     }
 

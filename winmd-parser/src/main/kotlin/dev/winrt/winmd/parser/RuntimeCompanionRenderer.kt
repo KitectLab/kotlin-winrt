@@ -4,10 +4,13 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asTypeName
+import com.squareup.kotlinpoet.ParameterSpec
 import dev.winrt.winmd.plugin.WinMdActivationKind
 import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdProperty
@@ -17,7 +20,9 @@ internal class RuntimeCompanionRenderer(
     private val typeRegistry: TypeRegistry,
     private val typeNameMapper: TypeNameMapper,
     private val delegateLambdaPlanResolver: DelegateLambdaPlanResolver,
+    private val eventSlotDelegatePlanResolver: EventSlotDelegatePlanResolver,
     private val winRtSignatureMapper: WinRtSignatureMapper,
+    private val asyncMethodRuleRegistry: AsyncMethodRuleRegistry,
     private val winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     private val kotlinCollectionProjectionMapper: KotlinCollectionProjectionMapper,
 ) {
@@ -50,6 +55,12 @@ internal class RuntimeCompanionRenderer(
                     .addStatement("return %T.activate(this, ::%L)", PoetSymbols.winRtRuntimeClass, type.name)
                     .build(),
             )
+        renderFactories(type).forEach { member ->
+            when (member) {
+                is PropertySpec -> builder.addProperty(member)
+                is FunSpec -> builder.addFunction(member)
+            }
+        }
         renderStatics(type).forEach { member ->
             when (member) {
                 is PropertySpec -> builder.addProperty(member)
@@ -60,37 +71,277 @@ internal class RuntimeCompanionRenderer(
     }
 
     private fun renderStatics(type: WinMdType): List<Any> {
-        val staticsType = typeRegistry.findRuntimeClassStaticsType(type.name, type.namespace) ?: return emptyList()
-        val staticsClass = ClassName(staticsType.namespace.lowercase(), staticsType.name)
         val members = mutableListOf<Any>()
+        typeRegistry.findRuntimeClassStaticsTypes(type.name, type.namespace).forEach { staticsType ->
+            val staticsClass = ClassName(staticsType.namespace.lowercase(), staticsType.name)
+            val staticsPropertyName = helperAccessorName(staticsType.name)
+            members += PropertySpec.builder(staticsPropertyName, staticsClass)
+                .addModifiers(KModifier.PRIVATE)
+                .delegate(
+                    CodeBlock.of(
+                        "lazy { %T.projectActivationFactory(this, %T, ::%T) }",
+                        PoetSymbols.winRtRuntimeClass,
+                        staticsClass,
+                        staticsClass,
+                    ),
+                )
+                .build()
 
-        members += PropertySpec.builder("statics", staticsClass)
-            .addModifiers(KModifier.PRIVATE)
-            .delegate(CodeBlock.of("lazy { %T.projectActivationFactory(this, %T, ::%T) }", PoetSymbols.winRtRuntimeClass, staticsClass, staticsClass))
-            .build()
-
-        val declaredPropertyNames = staticsType.properties.map { it.name }.toSet()
-        staticsType.properties.forEach { property ->
-            members += renderForwardingProperty(property, type.namespace)
-        }
-        staticsType.methods
-            .filterNot { method -> isGetterLike(method) || isSetterLike(method) }
-            .forEach { method ->
-                members += renderForwardingMethod(method, type.namespace)
-                renderForwardingLambdaOverload(method, type.namespace)?.let(members::add)
+            val declaredPropertyNames = staticsType.properties.map { it.name }.toSet()
+            staticsType.properties.forEach { property ->
+                members += renderForwardingProperty(property, type.namespace, staticsPropertyName)
             }
-        synthesizeGetterProperties(staticsType.methods, declaredPropertyNames, type.namespace).forEach(members::add)
+            staticsType.methods
+                .filterNot { method -> isGetterLike(method) || isSetterLike(method) }
+                .filterNot(::isTemporarilyUnsupportedJsonStaticMethod)
+                .forEach { method ->
+                    members += renderForwardingMethod(method, type.namespace, staticsPropertyName)
+                    renderForwardingAsyncAwaitMethod(method, type.namespace, staticsPropertyName)?.let(members::add)
+                    renderForwardingLambdaOverload(method, type.namespace, staticsPropertyName)?.let(members::add)
+                }
+            renderEventSlotMembers(type, staticsType, staticsPropertyName).let { eventMembers ->
+                members.addAll(eventMembers.properties)
+            }
+            synthesizeGetterProperties(staticsType.methods, declaredPropertyNames, type.namespace, staticsPropertyName)
+                .forEach(members::add)
+        }
         return members
     }
 
-    private fun renderForwardingProperty(property: WinMdProperty, currentNamespace: String): PropertySpec {
+    fun renderStaticEventSlotTypes(type: WinMdType): List<TypeSpec> {
+        return typeRegistry.findRuntimeClassStaticsTypes(type.name, type.namespace)
+            .flatMap { staticsType ->
+                renderEventSlotMembers(type, staticsType, helperAccessorName(staticsType.name)).types
+            }
+    }
+
+    private fun renderEventSlotMembers(
+        type: WinMdType,
+        staticsType: WinMdType,
+        staticsPropertyName: String,
+    ): RuntimeCompanionEventMembers {
+        val methodsByName = staticsType.methods.associateBy { it.name }
+        val plans = staticsType.methods.mapNotNull { addMethod ->
+            if (!addMethod.name.startsWith("add_") || addMethod.parameters.size != 1 || addMethod.returnType != "EventRegistrationToken") {
+                return@mapNotNull null
+            }
+            val eventName = addMethod.name.removePrefix("add_")
+            val removeMethod = methodsByName["remove_$eventName"] ?: return@mapNotNull null
+            if (removeMethod.parameters.size != 1 || removeMethod.parameters.single().type != "EventRegistrationToken" || removeMethod.returnType != "Unit") {
+                return@mapNotNull null
+            }
+            val delegateTypeName = addMethod.parameters.single().type
+            val delegatePlan = eventSlotDelegatePlanResolver.resolve(delegateTypeName, type.namespace)
+                ?: return@mapNotNull null
+            RuntimeCompanionEventSlotPlan(
+                propertyName = eventName.replaceFirstChar(Char::lowercase),
+                typeName = "${eventName}StaticEvent",
+                nestedType = ClassName(type.namespace.lowercase(), type.name, "${eventName}StaticEvent"),
+                delegateType = delegatePlan.delegateType,
+                lambdaType = delegatePlan.lambdaType,
+                delegateGuid = delegatePlan.delegateGuid,
+                lambdaArgumentKindsLiteral = delegatePlan.argumentKindsLiteral(),
+                lambdaCallbackInvocation = delegatePlan.callbackInvocation("handler"),
+                staticsClass = ClassName(staticsType.namespace.lowercase(), staticsType.name),
+                addVtableIndex = addMethod.vtableIndex ?: return@mapNotNull null,
+                removeVtableIndex = removeMethod.vtableIndex ?: return@mapNotNull null,
+            )
+        }
+        return RuntimeCompanionEventMembers(
+            properties = plans.flatMap { plan ->
+                listOf(
+                    PropertySpec.builder("${plan.propertyName}EventSlot", plan.nestedType)
+                        .addModifiers(KModifier.PRIVATE)
+                        .initializer("%L { %N }", plan.typeName, staticsPropertyName)
+                        .build(),
+                    PropertySpec.builder("${plan.propertyName}Event", plan.nestedType)
+                        .getter(
+                            FunSpec.getterBuilder()
+                                .addStatement("return %N", "${plan.propertyName}EventSlot")
+                                .build(),
+                        )
+                        .build(),
+                )
+            },
+            types = plans.map { plan ->
+                TypeSpec.classBuilder(plan.typeName)
+                    .primaryConstructor(
+                        FunSpec.constructorBuilder()
+                            .addParameter("staticsProvider", LambdaTypeName.get(returnType = plan.staticsClass))
+                            .build(),
+                    )
+                        .addProperty(
+                            PropertySpec.builder("staticsProvider", LambdaTypeName.get(returnType = plan.staticsClass))
+                                .addModifiers(KModifier.PRIVATE)
+                                .initializer("staticsProvider")
+                                .build(),
+                    )
+                    .addProperty(
+                        PropertySpec.builder(
+                            "delegateHandles",
+                            PoetSymbols.mutableMapClass.parameterizedBy(
+                                PoetSymbols.eventRegistrationTokenClass,
+                                PoetSymbols.winRtDelegateHandleClass,
+                            ),
+                        )
+                            .addModifiers(KModifier.PRIVATE)
+                            .initializer("mutableMapOf()")
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("subscribe")
+                            .addParameter("handler", plan.delegateType)
+                            .returns(PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement(
+                                "return %T(%T.invokeInt64MethodWithObjectArg(staticsProvider().pointer, %L, handler.pointer).getOrThrow())",
+                                PoetSymbols.eventRegistrationTokenClass,
+                                PoetSymbols.platformComInteropClass,
+                                plan.addVtableIndex,
+                            )
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("subscribeScoped")
+                            .addParameter("handler", plan.delegateType)
+                            .returns(AutoCloseable::class)
+                            .addStatement("val token = subscribe(handler)")
+                            .addStatement("return AutoCloseable { unsubscribe(token) }")
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("subscribe")
+                            .addParameter("handler", plan.lambdaType)
+                            .returns(PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement(
+                                "val delegateHandle = %T.createUnitDelegate(%M(%S), %L) { args -> %L }",
+                                PoetSymbols.winRtDelegateBridgeClass,
+                                PoetSymbols.guidOfMember,
+                                plan.delegateGuid,
+                                plan.lambdaArgumentKindsLiteral,
+                                plan.lambdaCallbackInvocation,
+                            )
+                            .beginControlFlow("try")
+                            .addStatement("val token = subscribe(%T(delegateHandle.pointer))", plan.delegateType)
+                            .addStatement("delegateHandles[token] = delegateHandle")
+                            .addStatement("return token")
+                            .nextControlFlow("catch (t: Throwable)")
+                            .addStatement("delegateHandle.close()")
+                            .addStatement("throw t")
+                            .endControlFlow()
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("subscribeScoped")
+                            .addParameter("handler", plan.lambdaType)
+                            .returns(AutoCloseable::class)
+                            .addStatement("val token = subscribe(handler)")
+                            .addStatement("return AutoCloseable { unsubscribe(token) }")
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("plusAssign")
+                            .addModifiers(KModifier.OPERATOR)
+                            .addParameter("handler", plan.delegateType)
+                            .addStatement("subscribe(handler)")
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("invoke")
+                            .addModifiers(KModifier.OPERATOR)
+                            .addParameter("handler", plan.delegateType)
+                            .returns(PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement("return subscribe(handler)")
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("invoke")
+                            .addModifiers(KModifier.OPERATOR)
+                            .addParameter("handler", plan.lambdaType)
+                            .returns(PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement("return subscribe(handler)")
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("unsubscribe")
+                            .addParameter("token", PoetSymbols.eventRegistrationTokenClass)
+                            .beginControlFlow("try")
+                            .addStatement(
+                                "%T.invokeUnitMethodWithInt64Arg(staticsProvider().pointer, %L, token.value).getOrThrow()",
+                                PoetSymbols.platformComInteropClass,
+                                plan.removeVtableIndex,
+                            )
+                            .nextControlFlow("finally")
+                            .addStatement("delegateHandles.remove(token)?.close()")
+                            .endControlFlow()
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("minusAssign")
+                            .addModifiers(KModifier.OPERATOR)
+                            .addParameter("token", PoetSymbols.eventRegistrationTokenClass)
+                            .addStatement("unsubscribe(token)")
+                            .build(),
+                    )
+                    .build()
+            },
+        )
+    }
+
+    private fun renderFactories(type: WinMdType): List<Any> {
+        val members = mutableListOf<Any>()
+        typeRegistry.findRuntimeClassFactoryTypes(type.name, type.namespace).forEach { factoryType ->
+            val factoryClass = ClassName(factoryType.namespace.lowercase(), factoryType.name)
+            val factoryPropertyName = helperAccessorName(factoryType.name)
+            members += PropertySpec.builder(factoryPropertyName, factoryClass)
+                .addModifiers(KModifier.PRIVATE)
+                .delegate(
+                    CodeBlock.of(
+                        "lazy { %T.projectActivationFactory(this, %T, ::%T) }",
+                        PoetSymbols.winRtRuntimeClass,
+                        factoryClass,
+                        factoryClass,
+                    ),
+                )
+                .build()
+            factoryType.methods
+                .filter { method -> method.returnType == "${type.namespace}.${type.name}" }
+                .forEach { method ->
+                    val helperName = "${factoryPropertyName}${method.name}"
+                    val parameters = method.parameters.map { parameter ->
+                        ParameterSpec.builder(parameter.name, exposedTypeName(parameter.type, type.namespace)).build()
+                    }
+                    members += FunSpec.builder(helperName)
+                        .addModifiers(KModifier.PRIVATE)
+                        .returns(ClassName(type.namespace.lowercase(), type.name))
+                        .addParameters(parameters)
+                        .addStatement(
+                            "return %N.%L(%L)",
+                            factoryPropertyName,
+                            companionForwardTargetName(method),
+                            parameters.joinToString(", ") { it.name },
+                        )
+                        .build()
+                }
+        }
+        return members
+    }
+
+    private fun isTemporarilyUnsupportedJsonStaticMethod(method: WinMdMethod): Boolean {
+        return method.name == "TryParse" || method.name == "CreateNumberValue"
+    }
+
+    private fun renderForwardingProperty(
+        property: WinMdProperty,
+        currentNamespace: String,
+        targetPropertyName: String,
+    ): PropertySpec {
         val typeName = exposedTypeName(property.type, currentNamespace)
         val propertyName = property.name.replaceFirstChar { it.lowercase() }
         return PropertySpec.builder(propertyName, typeName)
             .mutable(property.mutable)
             .getter(
                 FunSpec.getterBuilder()
-                    .addStatement("return statics.%L", propertyName)
+                    .addStatement("return %N.%L", targetPropertyName, propertyName)
                     .build(),
             )
             .apply {
@@ -98,7 +349,7 @@ internal class RuntimeCompanionRenderer(
                     setter(
                         FunSpec.setterBuilder()
                             .addParameter("value", typeName)
-                            .addStatement("statics.%L = value", propertyName)
+                            .addStatement("%N.%L = value", targetPropertyName, propertyName)
                             .build(),
                     )
                 }
@@ -106,7 +357,7 @@ internal class RuntimeCompanionRenderer(
             .build()
     }
 
-    private fun renderForwardingMethod(method: WinMdMethod, currentNamespace: String): FunSpec {
+    private fun renderForwardingMethod(method: WinMdMethod, currentNamespace: String, targetPropertyName: String): FunSpec {
         val builder = FunSpec.builder(method.name.replaceFirstChar { it.lowercase() })
         method.parameters.forEach { parameter ->
             builder.addParameter(parameter.name, exposedTypeName(parameter.type, currentNamespace))
@@ -114,13 +365,15 @@ internal class RuntimeCompanionRenderer(
         if (method.returnType != "Unit") {
             builder.returns(exposedTypeName(method.returnType, currentNamespace))
             builder.addStatement(
-                "return statics.%L(%L)",
+                "return %N.%L(%L)",
+                targetPropertyName,
                 companionForwardTargetName(method),
                 method.parameters.joinToString(", ") { it.name },
             )
         } else {
             builder.addStatement(
-                "statics.%L(%L)",
+                "%N.%L(%L)",
+                targetPropertyName,
                 companionForwardTargetName(method),
                 method.parameters.joinToString(", ") { it.name },
             )
@@ -128,7 +381,44 @@ internal class RuntimeCompanionRenderer(
         return builder.build()
     }
 
-    private fun renderForwardingLambdaOverload(method: WinMdMethod, currentNamespace: String): FunSpec? {
+    private fun renderForwardingAsyncAwaitMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+        targetPropertyName: String,
+    ): FunSpec? {
+        val asyncPlan = asyncMethodRuleRegistry.plan(method, currentNamespace) ?: return null
+        val baseFunctionName = method.name.replaceFirstChar { it.lowercase() }
+        val parameterSpecs = method.parameters.map { parameter ->
+            ParameterSpec.builder(parameter.name, exposedTypeName(parameter.type, currentNamespace)).build()
+        }
+        val invocation = buildString {
+            append(targetPropertyName)
+            append('.')
+            append(baseFunctionName)
+            append('(')
+            append(parameterSpecs.joinToString(", ") { it.name })
+            append(')')
+        }
+        val builder = FunSpec.builder("${baseFunctionName}Await")
+            .addModifiers(KModifier.SUSPEND)
+            .returns(asyncPlan.awaitReturnType)
+            .addParameters(parameterSpecs)
+        asyncPlan.progressLambdaType?.let { progressLambdaType ->
+            builder.addParameter(
+                ParameterSpec.builder("onProgress", progressLambdaType)
+                    .defaultValue("{ _ -> }")
+                    .build(),
+            )
+            builder.addStatement("return %L.%M(onProgress = onProgress)", invocation, PoetSymbols.awaitMember)
+        } ?: builder.addStatement("return %L.%M()", invocation, PoetSymbols.awaitMember)
+        return builder.build()
+    }
+
+    private fun renderForwardingLambdaOverload(
+        method: WinMdMethod,
+        currentNamespace: String,
+        targetPropertyName: String,
+    ): FunSpec? {
         if (method.parameters.size != 1) return null
         val delegateTypeName = method.parameters.single().type
         val delegateType = typeRegistry.findType(delegateTypeName, currentNamespace) ?: return null
@@ -162,7 +452,12 @@ internal class RuntimeCompanionRenderer(
             argumentKindsLiteral,
             callbackInvocation,
         )
-        builder.addStatement("statics.%L(%T(delegateHandle.pointer))", companionForwardTargetName(method), delegateClass)
+        builder.beginControlFlow("try")
+        builder.addStatement("%N.%L(%T(delegateHandle.pointer))", targetPropertyName, companionForwardTargetName(method), delegateClass)
+        builder.nextControlFlow("catch (t: Throwable)")
+        builder.addStatement("delegateHandle.close()")
+        builder.addStatement("throw t")
+        builder.endControlFlow()
         builder.addStatement("return delegateHandle")
         return builder.build()
     }
@@ -189,6 +484,7 @@ internal class RuntimeCompanionRenderer(
         methods: List<WinMdMethod>,
         declaredPropertyNames: Set<String>,
         currentNamespace: String,
+        targetPropertyName: String,
     ): List<PropertySpec> {
         return methods.asSequence()
             .filter { it.name.startsWith("get_") && it.parameters.isEmpty() }
@@ -201,7 +497,7 @@ internal class RuntimeCompanionRenderer(
                 PropertySpec.builder(propertyName.replaceFirstChar { it.lowercase() }, exposedTypeName(method.returnType, currentNamespace))
                     .getter(
                         FunSpec.getterBuilder()
-                            .addStatement("return statics.%L()", method.name.replaceFirstChar { it.lowercase() })
+                            .addStatement("return %N.%L()", targetPropertyName, method.name.replaceFirstChar { it.lowercase() })
                             .build(),
                     )
                     .build()
@@ -250,4 +546,23 @@ internal class RuntimeCompanionRenderer(
             WinMdActivationKind.Factory -> "Factory"
         }
     }
+
+    private data class RuntimeCompanionEventMembers(
+        val properties: List<PropertySpec>,
+        val types: List<TypeSpec>,
+    )
+
+    private data class RuntimeCompanionEventSlotPlan(
+        val propertyName: String,
+        val typeName: String,
+        val nestedType: ClassName,
+        val delegateType: TypeName,
+        val lambdaType: LambdaTypeName,
+        val delegateGuid: String,
+        val lambdaArgumentKindsLiteral: String,
+        val lambdaCallbackInvocation: CodeBlock,
+        val staticsClass: ClassName,
+        val addVtableIndex: Int,
+        val removeVtableIndex: Int,
+    )
 }

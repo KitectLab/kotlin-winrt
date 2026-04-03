@@ -28,9 +28,7 @@ open class UIElementCollection(
 
     override fun get(index: Int): UIElement {
         require(index >= 0) { "index must be non-negative" }
-        return UIElement(
-            PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 6, index.toUInt()).getOrThrow(),
-        )
+        return getAt(UInt32(index.toUInt()))
     }
 
     private fun readAll(): MutableList<UIElement> =

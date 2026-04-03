@@ -6,7 +6,7 @@ actual object PlatformRuntime {
     actual val ffiBackend: String = "kotlin-native-cinterop"
 }
 
-actual object PlatformComInterop : ComInterop {
+private object MingwPlatformComInterop : ComInterop {
     override fun queryInterface(instance: ComPtr, iid: Guid): Result<ComPtr> {
         return Result.failure(
             UnsupportedOperationException("Native COM interop is not wired yet for $iid"),
@@ -25,6 +25,12 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeUnitMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with UInt32 input is not wired yet"),
+        )
+    }
+
     override fun invokeUnitMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit> {
         return Result.failure(
             UnsupportedOperationException("Native Unit method invocation with Int64 input is not wired yet"),
@@ -34,6 +40,141 @@ actual object PlatformComInterop : ComInterop {
     override fun invokeUnitMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit> {
         return Result.failure(
             UnsupportedOperationException("Native Unit method invocation with String input is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithTwoInt32Args(instance: ComPtr, vtableIndex: Int, first: Int, second: Int): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with two Int32 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithInt32AndInt64Args(instance: ComPtr, vtableIndex: Int, first: Int, second: Long): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with Int32 and Int64 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithInt64AndInt32Args(instance: ComPtr, vtableIndex: Int, first: Long, second: Int): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with Int64 and Int32 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithTwoInt64Args(instance: ComPtr, vtableIndex: Int, first: Long, second: Long): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with two Int64 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithObjectAndInt32Args(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: Int): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with Object and Int32 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithInt32AndObjectArgs(instance: ComPtr, vtableIndex: Int, first: Int, second: ComPtr): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with Int32 and Object inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithObjectAndInt64Args(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: Long): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with Object and Int64 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithInt64AndObjectArgs(instance: ComPtr, vtableIndex: Int, first: Long, second: ComPtr): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with Int64 and Object inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithStringAndInt32Args(instance: ComPtr, vtableIndex: Int, first: String, second: Int): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with String and Int32 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithInt32AndStringArgs(instance: ComPtr, vtableIndex: Int, first: Int, second: String): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with Int32 and String inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithStringAndUInt32Args(instance: ComPtr, vtableIndex: Int, first: String, second: UInt): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with String and UInt32 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithUInt32AndStringArgs(instance: ComPtr, vtableIndex: Int, first: UInt, second: String): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with UInt32 and String inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithStringAndBooleanArgs(instance: ComPtr, vtableIndex: Int, first: String, second: Boolean): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with String and Boolean inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithBooleanAndStringArgs(instance: ComPtr, vtableIndex: Int, first: Boolean, second: String): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with Boolean and String inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithStringAndInt64Args(instance: ComPtr, vtableIndex: Int, first: String, second: Long): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with String and Int64 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithInt64AndStringArgs(instance: ComPtr, vtableIndex: Int, first: Long, second: String): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with Int64 and String inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithTwoStringArgs(instance: ComPtr, vtableIndex: Int, first: String, second: String): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with two String inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithObjectAndStringArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        first: ComPtr,
+        second: String,
+    ): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with object and String inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithStringAndObjectArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        first: String,
+        second: ComPtr,
+    ): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with String and object inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithTwoObjectArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        first: ComPtr,
+        second: ComPtr,
+    ): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with two object inputs is not wired yet"),
         )
     }
 
@@ -71,6 +212,12 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeObjectMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<ComPtr> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with object input is not wired yet"),
+        )
+    }
+
     override fun invokeObjectMethod(instance: ComPtr, vtableIndex: Int): Result<ComPtr> {
         return Result.failure(
             UnsupportedOperationException("Native object invocation is not wired yet"),
@@ -83,9 +230,272 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeMethodWithObjectAndStringArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: ComPtr,
+        second: String,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with object and String inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeMethodWithObjectAndInt32Args(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: ComPtr,
+        second: Int,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with object and Int32 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeMethodWithInt32AndObjectArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: Int,
+        second: ComPtr,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with Int32 and object inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeMethodWithObjectAndInt64Args(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: ComPtr,
+        second: Long,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with object and Int64 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeMethodWithStringAndInt32Args(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: String,
+        second: Int,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with String and Int32 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeMethodWithInt32AndStringArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: Int,
+        second: String,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with Int32 and String inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeMethodWithStringAndInt64Args(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: String,
+        second: Long,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with String and Int64 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeMethodWithTwoInt32Args(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: Int,
+        second: Int,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with two Int32 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeMethodWithInt32AndInt64Args(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: Int,
+        second: Long,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with Int32 and Int64 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeMethodWithInt64AndInt32Args(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: Long,
+        second: Int,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with Int64 and Int32 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeMethodWithTwoInt64Args(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: Long,
+        second: Long,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with two Int64 inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeMethodWithInt64AndStringArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: Long,
+        second: String,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with Int64 and String inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeMethodWithInt64AndObjectArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: Long,
+        second: ComPtr,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with Int64 and object inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeMethodWithStringAndObjectArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: String,
+        second: ComPtr,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with String and object inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeMethodWithTwoObjectArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        first: ComPtr,
+        second: ComPtr,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with two object inputs is not wired yet"),
+        )
+    }
+
+    override fun invokeMethodWithResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        resultKind: ComMethodResultKind,
+        vararg arguments: Any,
+    ): Result<ComMethodResult> {
+        return Result.failure(
+            UnsupportedOperationException("Native object invocation with generic arguments is not wired yet"),
+        )
+    }
+
     override fun invokeObjectSetter(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Unit> {
         return Result.failure(
             UnsupportedOperationException("Native object setter invocation is not wired yet"),
+        )
+    }
+
+    override fun invokeInt64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Long> {
+        return Result.failure(
+            UnsupportedOperationException("Native Int64 method invocation with object input is not wired yet"),
+        )
+    }
+
+    override fun invokeInt64Method(instance: ComPtr, vtableIndex: Int): Result<Long> {
+        return Result.failure(
+            UnsupportedOperationException("Native Int64 method invocation is not wired yet"),
+        )
+    }
+
+    override fun invokeInt64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Long> {
+        return Result.failure(
+            UnsupportedOperationException("Native Int64 method invocation with String input is not wired yet"),
+        )
+    }
+
+    override fun invokeInt64MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Long> {
+        return Result.failure(
+            UnsupportedOperationException("Native Int64 method invocation with Int32 input is not wired yet"),
+        )
+    }
+
+    override fun invokeInt64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Long> {
+        return Result.failure(
+            UnsupportedOperationException("Native Int64 method invocation with UInt32 input is not wired yet"),
+        )
+    }
+
+    override fun invokeInt64MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Long> {
+        return Result.failure(
+            UnsupportedOperationException("Native Int64 method invocation with Boolean input is not wired yet"),
+        )
+    }
+
+    override fun invokeUInt64Method(instance: ComPtr, vtableIndex: Int): Result<ULong> {
+        return Result.failure(
+            UnsupportedOperationException("Native UInt64 method invocation is not wired yet"),
+        )
+    }
+
+    override fun invokeUInt64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<ULong> {
+        return Result.failure(
+            UnsupportedOperationException("Native UInt64 method invocation with object input is not wired yet"),
+        )
+    }
+
+    override fun invokeUInt64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ULong> {
+        return Result.failure(
+            UnsupportedOperationException("Native UInt64 method invocation with String input is not wired yet"),
+        )
+    }
+
+    override fun invokeUInt64MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<ULong> {
+        return Result.failure(
+            UnsupportedOperationException("Native UInt64 method invocation with Int32 input is not wired yet"),
+        )
+    }
+
+    override fun invokeUInt64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ULong> {
+        return Result.failure(
+            UnsupportedOperationException("Native UInt64 method invocation with UInt32 input is not wired yet"),
+        )
+    }
+
+    override fun invokeUInt64MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<ULong> {
+        return Result.failure(
+            UnsupportedOperationException("Native UInt64 method invocation with Boolean input is not wired yet"),
         )
     }
 
@@ -101,15 +511,99 @@ actual object PlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeUInt32Setter(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native UInt32 setter invocation is not wired yet"),
+        )
+    }
+
+    override fun invokeFloat32Setter(instance: ComPtr, vtableIndex: Int, value: Float): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Float32 setter invocation is not wired yet"),
+        )
+    }
+
+    override fun invokeBooleanSetter(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Boolean setter invocation is not wired yet"),
+        )
+    }
+
+    override fun invokeFloat64Setter(instance: ComPtr, vtableIndex: Int, value: Double): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Float64 setter invocation is not wired yet"),
+        )
+    }
+
+    override fun invokeInt64Setter(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Int64 setter invocation is not wired yet"),
+        )
+    }
+
+    override fun invokeUInt64Setter(instance: ComPtr, vtableIndex: Int, value: ULong): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native UInt64 setter invocation is not wired yet"),
+        )
+    }
+
     override fun invokeInt32Method(instance: ComPtr, vtableIndex: Int): Result<Int> {
         return Result.failure(
             UnsupportedOperationException("Native Int32 method invocation is not wired yet"),
         )
     }
 
+    override fun invokeInt32MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Int> {
+        return Result.failure(
+            UnsupportedOperationException("Native Int32 method invocation with String input is not wired yet"),
+        )
+    }
+
+    override fun invokeInt32MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Int> {
+        return Result.failure(
+            UnsupportedOperationException("Native Int32 method invocation with Int32 input is not wired yet"),
+        )
+    }
+
+    override fun invokeInt32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Int> {
+        return Result.failure(
+            UnsupportedOperationException("Native Int32 method invocation with UInt32 input is not wired yet"),
+        )
+    }
+
+    override fun invokeInt32MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Int> {
+        return Result.failure(
+            UnsupportedOperationException("Native Int32 method invocation with object input is not wired yet"),
+        )
+    }
+
     override fun invokeUInt32Method(instance: ComPtr, vtableIndex: Int): Result<UInt> {
         return Result.failure(
             UnsupportedOperationException("Native UInt32 method invocation is not wired yet"),
+        )
+    }
+
+    override fun invokeUInt32MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<UInt> {
+        return Result.failure(
+            UnsupportedOperationException("Native UInt32 method invocation with String input is not wired yet"),
+        )
+    }
+
+    override fun invokeUInt32MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<UInt> {
+        return Result.failure(
+            UnsupportedOperationException("Native UInt32 method invocation with Int32 input is not wired yet"),
+        )
+    }
+
+    override fun invokeUInt32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<UInt> {
+        return Result.failure(
+            UnsupportedOperationException("Native UInt32 method invocation with UInt32 input is not wired yet"),
+        )
+    }
+
+    override fun invokeUInt32MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<UInt> {
+        return Result.failure(
+            UnsupportedOperationException("Native UInt32 method invocation with object input is not wired yet"),
         )
     }
 
@@ -186,7 +680,9 @@ actual object PlatformComInterop : ComInterop {
     }
 }
 
-actual object PlatformHStringBridge : HStringBridge {
+actual val PlatformComInterop: ComInterop = MingwPlatformComInterop
+
+private object MingwPlatformHStringBridge : HStringBridge {
     override fun create(value: String): HString = HString.NULL
 
     override fun toKotlinString(value: HString): String = ""
@@ -194,3 +690,5 @@ actual object PlatformHStringBridge : HStringBridge {
     override fun release(value: HString) {
     }
 }
+
+actual val PlatformHStringBridge: HStringBridge = MingwPlatformHStringBridge

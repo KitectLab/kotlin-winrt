@@ -7,11 +7,15 @@ data class ResolvedWinMdConfiguration(
     val referencesRoot: Path? = null,
     val contracts: List<WindowsSdkContractReference> = emptyList(),
     val winmdFiles: List<Path> = emptyList(),
-    val nugetPackage: NuGetWinMdPackageReference? = null,
+    val nugetPackages: List<NuGetWinMdPackageReference> = emptyList(),
 ) {
     val sourceFiles: List<Path>
         get() = buildList {
             addAll(winmdFiles)
             addAll(contracts.map { it.winmdPath })
+            addAll(nugetPackages.flatMap { it.winmdFiles })
         }.distinct()
+
+    val runtimeDllFiles: List<Path>
+        get() = nugetPackages.flatMap { it.runtimeDllFiles }.distinct()
 }

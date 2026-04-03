@@ -9,7 +9,7 @@ import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 
-public open class IApplicationStatics(
+internal open class IApplicationStatics(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
   public fun get_Current(): Application = Application(PlatformComInterop.invokeObjectMethod(pointer,

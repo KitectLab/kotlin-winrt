@@ -15,6 +15,10 @@ class NuGetPackageReferencesTest {
             packageRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd"),
             byteArrayOf('M'.code.toByte(), 'Z'.code.toByte()),
         )
+        Files.write(
+            packageRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.dll"),
+            byteArrayOf('M'.code.toByte(), 'Z'.code.toByte()),
+        )
 
         val resolved = NuGetPackageReferences.resolvePackage(
             packageId = "Microsoft.WindowsAppSDK",
@@ -25,6 +29,8 @@ class NuGetPackageReferencesTest {
         assertEquals("Microsoft.WindowsAppSDK", resolved.packageId)
         assertEquals("1.6.0", resolved.packageVersion)
         assertEquals(1, resolved.winmdFiles.size)
+        assertEquals(1, resolved.runtimeDllFiles.size)
         assertTrue(resolved.winmdFiles.single().toString().endsWith("Microsoft.UI.Xaml.winmd"))
+        assertTrue(resolved.runtimeDllFiles.single().toString().endsWith("Microsoft.UI.Xaml.dll"))
     }
 }

@@ -8,4 +8,4 @@
 4. Do not bundle unrelated edits into the same commit.
 5. If a task contains multiple independent change items, split them into separate branches and separate commits.
 6. This project must be built and tested in a Windows environment.
-7. When running Gradle in the required Windows environment from WSL, use `./.agent_scripts/run_windows_gradle.sh <gradle-args...>` instead of invoking `gradlew.bat` directly.
+7. When the agent is running in WSL, use `./.agent_scripts/run_windows_gradle.sh <gradle-args...>` to invoke Gradle on Windows; when the agent is running directly on Windows, call Gradle directly.

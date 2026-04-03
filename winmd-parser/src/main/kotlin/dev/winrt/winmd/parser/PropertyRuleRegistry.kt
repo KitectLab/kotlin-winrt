@@ -1,9 +1,11 @@
 package dev.winrt.winmd.parser
 
 internal enum class RuntimePropertyGetterRuleFamily {
+    OBJECT,
     IREFERENCE_STRING,
     STRING,
     FLOAT32,
+    FLOAT64,
     BOOLEAN,
     GUID,
     DATE_TIME,
@@ -16,8 +18,15 @@ internal enum class RuntimePropertyGetterRuleFamily {
 }
 
 internal enum class RuntimePropertySetterRuleFamily {
+    OBJECT,
     STRING,
     INT32,
+    UINT32,
+    FLOAT32,
+    BOOLEAN,
+    FLOAT64,
+    INT64,
+    UINT64,
 }
 
 internal enum class InterfacePropertyRuleFamily {
@@ -25,6 +34,7 @@ internal enum class InterfacePropertyRuleFamily {
     OBJECT,
     STRING,
     FLOAT32,
+    FLOAT64,
     BOOLEAN,
     GUID,
     DATE_TIME,
@@ -38,9 +48,11 @@ internal enum class InterfacePropertyRuleFamily {
 
 internal object PropertyRuleRegistry {
     private val getterRules: Map<String, RuntimePropertyGetterRuleFamily> = mapOf(
+        "Object" to RuntimePropertyGetterRuleFamily.OBJECT,
         "IReference<String>" to RuntimePropertyGetterRuleFamily.IREFERENCE_STRING,
         "String" to RuntimePropertyGetterRuleFamily.STRING,
         "Float32" to RuntimePropertyGetterRuleFamily.FLOAT32,
+        "Float64" to RuntimePropertyGetterRuleFamily.FLOAT64,
         "Boolean" to RuntimePropertyGetterRuleFamily.BOOLEAN,
         "Guid" to RuntimePropertyGetterRuleFamily.GUID,
         "DateTime" to RuntimePropertyGetterRuleFamily.DATE_TIME,
@@ -53,8 +65,15 @@ internal object PropertyRuleRegistry {
     )
 
     private val setterRules: Map<String, RuntimePropertySetterRuleFamily> = mapOf(
+        "Object" to RuntimePropertySetterRuleFamily.OBJECT,
         "String" to RuntimePropertySetterRuleFamily.STRING,
         "Int32" to RuntimePropertySetterRuleFamily.INT32,
+        "UInt32" to RuntimePropertySetterRuleFamily.UINT32,
+        "Float32" to RuntimePropertySetterRuleFamily.FLOAT32,
+        "Boolean" to RuntimePropertySetterRuleFamily.BOOLEAN,
+        "Float64" to RuntimePropertySetterRuleFamily.FLOAT64,
+        "Int64" to RuntimePropertySetterRuleFamily.INT64,
+        "UInt64" to RuntimePropertySetterRuleFamily.UINT64,
     )
 
     fun interfaceGetterRuleFamily(
@@ -67,6 +86,7 @@ internal object PropertyRuleRegistry {
             isObjectType -> InterfacePropertyRuleFamily.OBJECT
             type == "String" -> InterfacePropertyRuleFamily.STRING
             type == "Float32" -> InterfacePropertyRuleFamily.FLOAT32
+            type == "Float64" -> InterfacePropertyRuleFamily.FLOAT64
             type == "Boolean" -> InterfacePropertyRuleFamily.BOOLEAN
             type == "Guid" -> InterfacePropertyRuleFamily.GUID
             type == "DateTime" -> InterfacePropertyRuleFamily.DATE_TIME
@@ -82,9 +102,15 @@ internal object PropertyRuleRegistry {
 
     fun interfaceSetterRuleFamily(type: String, isObjectType: Boolean): InterfacePropertyRuleFamily? {
         return when (type) {
-            in setOf(type).takeIf { isObjectType } ?: emptySet() -> InterfacePropertyRuleFamily.OBJECT
+            if (isObjectType) type else null -> InterfacePropertyRuleFamily.OBJECT
             "String" -> InterfacePropertyRuleFamily.STRING
+            "Float32" -> InterfacePropertyRuleFamily.FLOAT32
+            "Boolean" -> InterfacePropertyRuleFamily.BOOLEAN
+            "Float64" -> InterfacePropertyRuleFamily.FLOAT64
             "Int32" -> InterfacePropertyRuleFamily.INT32
+            "UInt32" -> InterfacePropertyRuleFamily.UINT32
+            "Int64" -> InterfacePropertyRuleFamily.INT64
+            "UInt64" -> InterfacePropertyRuleFamily.UINT64
             else -> null
         }
     }

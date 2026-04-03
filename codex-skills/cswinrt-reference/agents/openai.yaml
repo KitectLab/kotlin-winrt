@@ -1,0 +1,4 @@
+interface:
+  display_name: "CsWinRT Reference"
+  short_description: "Use CsWinRT as Kotlin WinRT reference"
+  default_prompt: "Use $cswinrt-reference to align a kotlin-winrt change with CsWinRT projection behavior."

@@ -10,16 +10,22 @@ import dev.winrt.winmd.plugin.WinMdProperty
 
 internal class RuntimePropertyRenderer(
     private val typeNameMapper: TypeNameMapper,
+    private val typeRegistry: TypeRegistry,
 ) {
-    fun canRenderRuntimeProperty(property: WinMdProperty): Boolean {
-        return runtimePropertyPlan(property) != null
+    fun canRenderRuntimeProperty(property: WinMdProperty, currentNamespace: String): Boolean {
+        return runtimePropertyPlan(property, currentNamespace) != null
     }
 
     fun renderBackingProperty(property: WinMdProperty, currentNamespace: String): PropertySpec {
         val kotlinType = typeNameMapper.mapTypeName(property.type, currentNamespace)
+        val defaultValue = when {
+            typeRegistry.isEnumType(property.type, currentNamespace) ->
+                CodeBlock.of("%T.fromValue(0)", kotlinType)
+            else -> typeNameMapper.defaultValueFor(kotlinType)
+        }
         return PropertySpec.builder("backing_${property.name}", PoetSymbols.runtimePropertyClass.parameterizedBy(kotlinType))
             .addModifiers(KModifier.PRIVATE)
-            .initializer("%T(%L)", PoetSymbols.runtimePropertyClass.parameterizedBy(kotlinType), typeNameMapper.defaultValueFor(kotlinType))
+            .initializer("%T(%L)", PoetSymbols.runtimePropertyClass.parameterizedBy(kotlinType), defaultValue)
             .build()
     }
 
@@ -30,15 +36,15 @@ internal class RuntimePropertyRenderer(
         if (property.mutable) {
             builder.mutable()
         }
-        builder.getter(renderRuntimeGetter(property))
+        builder.getter(renderRuntimeGetter(property, currentNamespace))
         if (property.mutable) {
             builder.setter(renderRuntimeSetter(property, currentNamespace))
         }
         return builder.build()
     }
 
-    private fun renderRuntimeGetter(property: WinMdProperty): FunSpec {
-        val plan = runtimePropertyPlan(property)
+    private fun renderRuntimeGetter(property: WinMdProperty, currentNamespace: String): FunSpec {
+        val plan = runtimePropertyPlan(property, currentNamespace)
         val backingName = "backing_${property.name}"
         val builder = FunSpec.getterBuilder()
         val getterPlan = plan?.getter
@@ -56,7 +62,7 @@ internal class RuntimePropertyRenderer(
     }
 
     private fun renderRuntimeSetter(property: WinMdProperty, currentNamespace: String): FunSpec {
-        val plan = runtimePropertyPlan(property)
+        val plan = runtimePropertyPlan(property, currentNamespace)
         val backingName = "backing_${property.name}"
         val builder = FunSpec.setterBuilder()
             .addParameter("value", typeNameMapper.mapTypeName(property.type, currentNamespace))
@@ -85,25 +91,32 @@ internal class RuntimePropertyRenderer(
 
     private fun scalarRuntimePropertyPlan(type: String): ScalarRuntimePropertyPlan? {
         return when (PropertyRuleRegistry.getterRuleFamily(type)) {
-            RuntimePropertyGetterRuleFamily.BOOLEAN -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+            RuntimePropertyGetterRuleFamily.OBJECT -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 CodeBlock.of(
                     "%T(%L)",
-                    PoetSymbols.winRtBooleanClass,
-                    AbiCallCatalog.booleanMethod(getterVtableIndex),
+                    PoetSymbols.inspectableClass,
+                    AbiCallCatalog.objectMethod(getterVtableIndex),
                 )
+            }
+            RuntimePropertyGetterRuleFamily.BOOLEAN -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+                CodeBlock.of("%T(%L)", PoetSymbols.winRtBooleanClass, AbiCallCatalog.booleanGetter(getterVtableIndex))
             }
             RuntimePropertyGetterRuleFamily.GUID -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 CodeBlock.of(
-                    "%T(%L.toString())",
+                    "%T.parse(%L.toString())",
                     PoetSymbols.guidValueClass,
                     AbiCallCatalog.guidGetter(getterVtableIndex),
                 )
             }
             RuntimePropertyGetterRuleFamily.DATE_TIME -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+                val dateTimeTicks = AbiCallCatalog.int64Getter(getterVtableIndex)
                 CodeBlock.of(
-                    "%T(%L)",
+                    "%T.fromEpochSeconds((%L - %L) / 10000000L, ((%L - %L) %% 10000000L * 100).toInt())",
                     PoetSymbols.dateTimeClass,
-                    AbiCallCatalog.int64Getter(getterVtableIndex),
+                    dateTimeTicks,
+                    WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
+                    dateTimeTicks,
+                    WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
                 )
             }
             RuntimePropertyGetterRuleFamily.TIME_SPAN -> ScalarRuntimePropertyPlan { getterVtableIndex ->
@@ -128,6 +141,13 @@ internal class RuntimePropertyRenderer(
                     "%T(%L)",
                     PoetSymbols.float32Class,
                     AbiCallCatalog.float32Method(getterVtableIndex),
+                )
+            }
+            RuntimePropertyGetterRuleFamily.FLOAT64 -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+                CodeBlock.of(
+                    "%T(%L)",
+                    PoetSymbols.float64Class,
+                    AbiCallCatalog.float64Method(getterVtableIndex),
                 )
             }
             RuntimePropertyGetterRuleFamily.INT32 -> ScalarRuntimePropertyPlan { getterVtableIndex ->
@@ -162,22 +182,48 @@ internal class RuntimePropertyRenderer(
         }
     }
 
-    private fun runtimePropertyPlan(property: WinMdProperty): RuntimePropertyPlan? {
+    private fun runtimePropertyPlan(property: WinMdProperty, currentNamespace: String): RuntimePropertyPlan? {
+        val iReferenceInnerType = iReferenceInnerType(property.type)
         val getterPlan = when {
             property.getterVtableIndex == null -> null
-            PropertyRuleRegistry.getterRuleFamily(property.type) == RuntimePropertyGetterRuleFamily.IREFERENCE_STRING -> RuntimePropertyGetterPlan { getterVtableIndex ->
-                CodeBlock.of(
-                    "%T(%L)",
-                    PoetSymbols.iReferenceClass.parameterizedBy(String::class.asTypeName()),
-                    hStringToKotlinString("pointer", getterVtableIndex),
-                )
+            iReferenceInnerType != null -> RuntimePropertyGetterPlan { getterVtableIndex ->
+                val valueGetter = when (iReferenceInnerType) {
+                    "String" -> CodeBlock.of(
+                        "%T.invokeHStringMethod(pointer, %L).getOrThrow().use { value -> value.takeUnless { it.isNull }?.toKotlinString() }",
+                        PoetSymbols.platformComInteropClass,
+                        getterVtableIndex,
+                    )
+                    "Object" -> CodeBlock.of(
+                        "%T.invokeObjectMethod(pointer, %L).getOrThrow().let { if (it.isNull) null else %T(it) }",
+                        PoetSymbols.platformComInteropClass,
+                        getterVtableIndex,
+                        PoetSymbols.inspectableClass,
+                    )
+                    else -> scalarRuntimePropertyPlan(iReferenceInnerType)?.renderGetter(getterVtableIndex)
+                        ?: error("Unsupported IReference projection type: $iReferenceInnerType")
+                }
+                CodeBlock.of("if (pointer.isNull) null else %L", valueGetter)
             }
-            else -> scalarRuntimePropertyPlan(property.type)?.let { scalarPlan ->
+            else -> when {
+                typeRegistry.isEnumType(property.type, currentNamespace) -> RuntimePropertyGetterPlan { getterVtableIndex ->
+                    CodeBlock.of(
+                        "%T.fromValue(%T.invokeUInt32Method(pointer, %L).getOrThrow().toInt())",
+                        typeNameMapper.mapTypeName(property.type, currentNamespace),
+                        PoetSymbols.platformComInteropClass,
+                        getterVtableIndex,
+                    )
+                }
+                else -> scalarRuntimePropertyPlan(property.type)?.let { scalarPlan ->
                 RuntimePropertyGetterPlan { getterVtableIndex -> scalarPlan.renderGetter(getterVtableIndex) }
+            }
             }
         }
         val setterPlan = when (PropertyRuleRegistry.setterRuleFamily(property.type)) {
             null -> null
+            RuntimePropertySetterRuleFamily.OBJECT -> RuntimePropertySetterPlan(
+                statement = "%L",
+                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.objectSetter(setterVtableIndex, "value")) },
+            )
             RuntimePropertySetterRuleFamily.STRING -> RuntimePropertySetterPlan(
                 statement = "%L",
                 args = { setterVtableIndex -> arrayOf(AbiCallCatalog.stringSetter(setterVtableIndex)) },
@@ -186,12 +232,44 @@ internal class RuntimePropertyRenderer(
                 statement = "%L",
                 args = { setterVtableIndex -> arrayOf(AbiCallCatalog.int32Setter(setterVtableIndex)) },
             )
+            RuntimePropertySetterRuleFamily.UINT32 -> RuntimePropertySetterPlan(
+                statement = "%L",
+                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.uint32Setter(setterVtableIndex)) },
+            )
+            RuntimePropertySetterRuleFamily.FLOAT32 -> RuntimePropertySetterPlan(
+                statement = "%L",
+                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.float32Setter(setterVtableIndex)) },
+            )
+            RuntimePropertySetterRuleFamily.BOOLEAN -> RuntimePropertySetterPlan(
+                statement = "%L",
+                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.booleanSetter(setterVtableIndex)) },
+            )
+            RuntimePropertySetterRuleFamily.FLOAT64 -> RuntimePropertySetterPlan(
+                statement = "%L",
+                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.float64Setter(setterVtableIndex)) },
+            )
+            RuntimePropertySetterRuleFamily.INT64 -> RuntimePropertySetterPlan(
+                statement = "%L",
+                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.int64Setter(setterVtableIndex)) },
+            )
+            RuntimePropertySetterRuleFamily.UINT64 -> RuntimePropertySetterPlan(
+                statement = "%L",
+                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.uint64Setter(setterVtableIndex)) },
+            )
         }
         return if (getterPlan != null || setterPlan != null) {
             RuntimePropertyPlan(getter = getterPlan, setter = setterPlan)
         } else {
             null
         }
+    }
+
+    private fun iReferenceInnerType(type: String): String? {
+        val rawType = type.substringBefore('<').substringAfterLast('.')
+        if (rawType != "IReference" || !type.endsWith(">") || '<' !in type) {
+            return null
+        }
+        return type.substringAfter('<').substringBeforeLast('>')
     }
 
     private data class ScalarRuntimePropertyPlan(

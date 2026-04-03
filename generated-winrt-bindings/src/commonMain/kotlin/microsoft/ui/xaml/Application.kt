@@ -13,6 +13,26 @@ import dev.winrt.kom.PlatformComInterop
 open class Application(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
     constructor() : this(Companion.activate().pointer)
 
+    private val backingResources = dev.winrt.core.RuntimeProperty(ResourceDictionary(ComPtr.NULL))
+
+    var resources: ResourceDictionary
+        get() {
+            if (pointer.isNull) return backingResources.get()
+            return IApplication.from(this).resources
+        }
+        set(value) {
+            if (pointer.isNull) {
+                backingResources.set(value)
+                return
+            }
+            IApplication.from(this).resources = value
+        }
+
+    protected open fun onLaunched(args: LaunchActivatedEventArgs) {
+        if (pointer.isNull) return
+        PlatformComInterop.invokeObjectSetter(pointer, 6, args.pointer).getOrThrow()
+    }
+
     fun start() {
         if (pointer.isNull) return
         PlatformComInterop.invokeUnitMethod(pointer, 6).getOrThrow()
@@ -46,7 +66,12 @@ open class Application(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
                 val arg = args.single() as ComPtr
                 callback(IApplicationInitializationCallbackParams(arg))
             }
-            statics.start(ApplicationInitializationCallback(delegateHandle.pointer))
+            try {
+                statics.start(ApplicationInitializationCallback(delegateHandle.pointer))
+            } catch (t: Throwable) {
+                delegateHandle.close()
+                throw t
+            }
             return delegateHandle
         }
 

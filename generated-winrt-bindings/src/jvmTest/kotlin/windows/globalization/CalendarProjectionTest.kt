@@ -46,7 +46,7 @@ class CalendarProjectionTest {
                         assertTrue(calendar.firstYearInThisEra.value > 0)
                         assertTrue(calendar.lastYearInThisEra.value >= calendar.firstYearInThisEra.value)
                         assertTrue(calendar.numberOfYearsInThisEra.value > 0)
-                        assertTrue(calendar.dateTime.universalTime > 0)
+                        assertTrue(calendar.dateTime.toEpochMilliseconds() > 0)
                         calendar.setDateTime(calendar.dateTime)
                         calendar.setToNow()
                         assertTrue(calendar.firstMonthInThisYear.value > 0)

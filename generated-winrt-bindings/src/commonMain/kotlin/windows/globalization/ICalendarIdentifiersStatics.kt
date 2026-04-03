@@ -9,7 +9,7 @@ import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 
-public open class ICalendarIdentifiersStatics(
+internal open class ICalendarIdentifiersStatics(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
   public val gregorian: String

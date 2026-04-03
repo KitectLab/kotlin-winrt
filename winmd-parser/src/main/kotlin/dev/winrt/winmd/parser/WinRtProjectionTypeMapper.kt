@@ -48,15 +48,19 @@ internal class WinRtProjectionTypeMapper {
     }
 
     private fun interfaceProjectionTypeKey(typeName: String): String? = when (typeName) {
-        "Microsoft.UI.Xaml.Interop.IBindableIterable" -> "System.Collections.IEnumerable"
-        "Microsoft.UI.Xaml.Interop.IBindableVector" -> "System.Collections.IList"
-        "Windows.Foundation.Collections.IIterable`1" -> "System.Collections.Generic.IEnumerable"
-        "Windows.Foundation.Collections.IIterator`1" -> "System.Collections.Generic.IEnumerator"
-        "Windows.Foundation.Collections.IVector`1" -> "System.Collections.Generic.IList"
-        "Windows.Foundation.Collections.IVectorView`1" -> "System.Collections.Generic.IReadOnlyList"
-        "Windows.Foundation.Collections.IMap`2" -> "System.Collections.Generic.IDictionary"
-        "Windows.Foundation.Collections.IMapView`2" -> "System.Collections.Generic.IReadOnlyDictionary"
-        "Windows.Foundation.Collections.IKeyValuePair`2" -> "System.Collections.Generic.KeyValuePair"
+        "Microsoft.UI.Xaml.Interop.IBindableIterable" -> "kotlin.collections.Iterable"
+        "Microsoft.UI.Xaml.Interop.IBindableIterator" -> "kotlin.collections.Iterator"
+        "Microsoft.UI.Xaml.Interop.IBindableVector" -> "kotlin.collections.MutableList"
+        "Microsoft.UI.Xaml.Interop.IBindableVectorView" -> "kotlin.collections.List"
+        "Windows.Foundation.Collections.IIterable`1" -> "kotlin.collections.Iterable"
+        "Windows.Foundation.Collections.IIterator`1" -> "kotlin.collections.Iterator"
+        "Windows.Foundation.Collections.IVector`1" -> "kotlin.collections.MutableList"
+        "Windows.Foundation.Collections.IVectorView`1" -> "kotlin.collections.List"
+        "Windows.Foundation.Collections.IMap`2" -> "kotlin.collections.MutableMap"
+        "Windows.Foundation.Collections.IMapView`2" -> "kotlin.collections.Map"
+        "Windows.Foundation.Collections.IKeyValuePair`2" -> "kotlin.collections.Map.Entry"
+        "Windows.Foundation.Collections.IObservableVector`1" -> "kotlin.collections.MutableList"
+        "Windows.Foundation.Collections.IObservableMap`2" -> "kotlin.collections.MutableMap"
         else -> null
     }
 

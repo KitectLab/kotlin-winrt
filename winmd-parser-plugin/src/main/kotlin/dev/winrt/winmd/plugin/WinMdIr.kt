@@ -157,6 +157,11 @@ object WinMdModelFactory {
                     types = listOf(
                         WinMdType(
                             namespace = "Microsoft.UI.Xaml",
+                            name = "ApplicationHighContrastAdjustment",
+                            kind = WinMdTypeKind.Enum,
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
                             name = "Application",
                             kind = WinMdTypeKind.RuntimeClass,
                             defaultInterface = "Microsoft.UI.Xaml.IApplication",
@@ -165,6 +170,29 @@ object WinMdModelFactory {
                                 WinMdMethod("Start", "Unit", vtableIndex = 6),
                                 WinMdMethod("GetLaunchCount", "UInt32", vtableIndex = 7),
                             ),
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "ApplicationInitializationCallbackParams",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Microsoft.UI.Xaml.IApplicationInitializationCallbackParams",
+                            activationKind = WinMdActivationKind.Factory,
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "ApplicationTheme",
+                            kind = WinMdTypeKind.Enum,
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "ApplicationRequiresPointerMode",
+                            kind = WinMdTypeKind.Enum,
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "IApplicationInitializationCallbackParams",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "1b1906ea-5b7b-5876-81ab-7c2281ac3d20",
                         ),
                         WinMdType(
                             namespace = "Microsoft.UI.Xaml",
@@ -247,8 +275,31 @@ object WinMdModelFactory {
                             namespace = "Windows.Data.Json",
                             name = "IJsonValue",
                             kind = WinMdTypeKind.Interface,
-                            guid = "a3219a91-eccd-42e5-b553-261d0aefde37",
+                            guid = "a3219ecb-f0b3-4dcd-beee-19d48cd3ed1e",
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "ValueType",
+                                    type = "Windows.Data.Json.JsonValueType",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                            ),
                             methods = listOf(
+                                WinMdMethod(
+                                    name = "Get_ValueType",
+                                    returnType = "Windows.Data.Json.JsonValueType",
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "Stringify",
+                                    returnType = "String",
+                                    vtableIndex = 7,
+                                ),
+                                WinMdMethod(
+                                    name = "GetString",
+                                    returnType = "String",
+                                    vtableIndex = 8,
+                                ),
                                 WinMdMethod(
                                     name = "GetNumber",
                                     returnType = "Float64",
@@ -412,6 +463,29 @@ object WinMdModelFactory {
                         ),
                         WinMdType(
                             namespace = "Microsoft.UI.Xaml",
+                            name = "ApplicationTheme",
+                            kind = WinMdTypeKind.Enum,
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "ApplicationRequiresPointerMode",
+                            kind = WinMdTypeKind.Enum,
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "ApplicationInitializationCallbackParams",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Microsoft.UI.Xaml.IApplicationInitializationCallbackParams",
+                            activationKind = WinMdActivationKind.Factory,
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "IApplicationInitializationCallbackParams",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "1b1906ea-5b7b-5876-81ab-7c2281ac3d20",
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
                             name = "Window",
                             kind = WinMdTypeKind.RuntimeClass,
                             defaultInterface = "Microsoft.UI.Xaml.IWindow",
@@ -455,9 +529,11 @@ object WinMdModelFactory {
                 )
             }
 
-        return WinMdModel(
-            files = mergedFiles,
-            namespaces = mergedNamespaces,
+        return expandSpecializedInterfaceMembers(
+            WinMdModel(
+                files = mergedFiles,
+                namespaces = mergedNamespaces,
+            ),
         )
     }
 
@@ -542,6 +618,24 @@ object WinMdModelFactory {
         )
     }
 
+    private fun mergeRuntimeClassMethods(primary: List<WinMdMethod>, supplemental: List<WinMdMethod>): List<WinMdMethod> {
+        if (primary.isEmpty()) return supplemental
+        if (supplemental.isEmpty()) return primary
+        val preferred = primary.asReversed().distinctBy(::runtimeMethodMergeKey).asReversed()
+        val existingKeys = preferred.mapTo(linkedSetOf(), ::runtimeMethodMergeKey)
+        val appended = supplemental.filterNot { runtimeMethodMergeKey(it) in existingKeys }
+        return preferred + appended
+    }
+
+    private fun runtimeMethodMergeKey(method: WinMdMethod): String {
+        return buildString {
+            append(method.name)
+            append('(')
+            append(method.parameters.joinToString(",") { it.type })
+            append(')')
+        }
+    }
+
     private fun mergeProperties(primary: List<WinMdProperty>, supplemental: List<WinMdProperty>): List<WinMdProperty> {
         if (primary.isEmpty()) return supplemental
         if (supplemental.isEmpty()) return primary
@@ -593,12 +687,17 @@ object WinMdModelFactory {
                         }
                     }
                     WinMdTypeKind.RuntimeClass -> {
-                        if (type.implementedInterfaces.isEmpty()) {
+                        val inheritedInterfaces = buildList {
+                            addAll(type.implementedInterfaces.filterNot { it == type.defaultInterface })
+                            addAll(type.baseInterfaces.filterNot { it == type.defaultInterface })
+                            type.defaultInterface?.let(::add)
+                        }.distinct()
+                        if (inheritedInterfaces.isEmpty()) {
                             type
                         } else {
                             val inheritedMethods = mutableListOf<WinMdMethod>()
                             val inheritedProperties = mutableListOf<WinMdProperty>()
-                            type.implementedInterfaces.forEach { implementedInterface ->
+                            inheritedInterfaces.forEach { implementedInterface ->
                                 val specialization = parseSpecializedType(implementedInterface)
                                 val interfaceType = typeIndex[specialization.rawType]?.let(::expand) ?: return@forEach
                                 val substitutions = interfaceType.genericParameters.zip(specialization.arguments).toMap()
@@ -608,8 +707,8 @@ object WinMdModelFactory {
                                 inheritedProperties += interfaceType.properties.map { substituteProperty(it, substitutions) }
                             }
                             type.copy(
-                                methods = pruneUnresolvedGenericMethods(mergeMethods(type.methods, inheritedMethods)),
-                                properties = pruneUnresolvedGenericProperties(mergeProperties(type.properties, inheritedProperties)),
+                                methods = pruneUnresolvedGenericMethods(mergeRuntimeClassMethods(inheritedMethods, type.methods)),
+                                properties = pruneUnresolvedGenericProperties(mergeProperties(inheritedProperties, type.properties)),
                             )
                         }
                     }

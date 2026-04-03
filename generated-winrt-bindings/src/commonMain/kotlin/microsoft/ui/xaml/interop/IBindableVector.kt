@@ -198,7 +198,7 @@ open class IBindableVector(
 
     companion object : WinRtInterfaceMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableVector"
-        override val projectionTypeKey: String = "System.Collections.IList"
+        override val projectionTypeKey: String = "kotlin.collections.MutableList"
         override val iid: Guid = guidOf("393de7de-6fd0-4c0d-bb71-47244a113e93")
 
         fun from(inspectable: Inspectable): IBindableVector =

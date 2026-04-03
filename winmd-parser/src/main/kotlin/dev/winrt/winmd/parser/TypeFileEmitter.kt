@@ -1,6 +1,7 @@
 package dev.winrt.winmd.parser
 
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.TypeSpec
 import dev.winrt.winmd.plugin.WinMdNamespace
 import dev.winrt.winmd.plugin.WinMdType
 import dev.winrt.winmd.plugin.WinMdTypeKind
@@ -10,23 +11,35 @@ internal class TypeFileEmitter(
 ) {
     private val typeNameMapper = TypeNameMapper()
     private val delegateLambdaPlanResolver = DelegateLambdaPlanResolver(typeNameMapper)
+    private val eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(typeNameMapper, typeRegistry)
     private val winRtSignatureMapper = WinRtSignatureMapper(typeRegistry)
+    private val asyncMethodProjectionPlanner = AsyncMethodProjectionPlanner(typeNameMapper, winRtSignatureMapper)
+    private val asyncMethodRuleRegistry = AsyncMethodRuleRegistry(typeNameMapper, asyncMethodProjectionPlanner)
     private val winRtProjectionTypeMapper = WinRtProjectionTypeMapper()
     private val interfaceTypeRenderer = InterfaceTypeRenderer(
         typeNameMapper,
         delegateLambdaPlanResolver,
+        eventSlotDelegatePlanResolver,
         typeRegistry,
-        winRtSignatureMapper,
+        asyncMethodProjectionPlanner,
+        asyncMethodRuleRegistry,
         winRtProjectionTypeMapper,
     )
     private val delegateTypeRenderer = DelegateTypeRenderer(typeNameMapper)
-    private val runtimePropertyRenderer = RuntimePropertyRenderer(typeNameMapper)
-    private val runtimeMethodRenderer = RuntimeMethodRenderer(typeNameMapper, delegateLambdaPlanResolver, typeRegistry)
+    private val runtimePropertyRenderer = RuntimePropertyRenderer(typeNameMapper, typeRegistry)
+    private val runtimeMethodRenderer = RuntimeMethodRenderer(
+        typeNameMapper,
+        delegateLambdaPlanResolver,
+        typeRegistry,
+        asyncMethodRuleRegistry,
+    )
     private val runtimeCompanionRenderer = RuntimeCompanionRenderer(
         typeRegistry = typeRegistry,
         typeNameMapper = typeNameMapper,
         delegateLambdaPlanResolver = delegateLambdaPlanResolver,
+        eventSlotDelegatePlanResolver = eventSlotDelegatePlanResolver,
         winRtSignatureMapper = winRtSignatureMapper,
+        asyncMethodRuleRegistry = asyncMethodRuleRegistry,
         winRtProjectionTypeMapper = winRtProjectionTypeMapper,
         kotlinCollectionProjectionMapper = KotlinCollectionProjectionMapper(),
     )
@@ -34,6 +47,8 @@ internal class TypeFileEmitter(
     private val runtimeTypeRenderer = RuntimeTypeRenderer(
         typeNameMapper,
         typeRegistry,
+        delegateLambdaPlanResolver,
+        eventSlotDelegatePlanResolver,
         runtimePropertyRenderer,
         runtimeMethodRenderer,
         runtimeCompanionRenderer,
@@ -41,8 +56,8 @@ internal class TypeFileEmitter(
         winRtProjectionTypeMapper,
     )
 
-    fun emit(namespace: WinMdNamespace, type: WinMdType): GeneratedFile {
-        val fileSpec = renderTypeFile(namespace, type)
+    fun emit(namespace: WinMdNamespace, type: WinMdType): GeneratedFile? {
+        val fileSpec = renderTypeFile(namespace, type) ?: return null
         val content = try {
             fileSpec.toString()
         } catch (error: IllegalArgumentException) {
@@ -54,22 +69,25 @@ internal class TypeFileEmitter(
         )
     }
 
-    private fun renderTypeFile(namespace: WinMdNamespace, type: WinMdType): FileSpec {
+    private fun renderTypeFile(namespace: WinMdNamespace, type: WinMdType): FileSpec? {
+        val renderedTypes = renderTypes(type)
+        if (renderedTypes.isEmpty()) {
+            return null
+        }
         val builder = FileSpec.builder(namespace.name.lowercase(), type.name)
         if (type.kind == WinMdTypeKind.Delegate) {
             delegateTypeRenderer.renderLambdaAlias(type)?.let(builder::addTypeAlias)
         }
-        return builder
-            .addType(renderType(type))
-            .build()
+        renderedTypes.forEach(builder::addType)
+        return builder.build()
     }
 
-    private fun renderType(type: WinMdType) = when (type.kind) {
+    private fun renderTypes(type: WinMdType): List<TypeSpec> = when (type.kind) {
         WinMdTypeKind.Interface -> interfaceTypeRenderer.render(type)
-        WinMdTypeKind.Delegate -> delegateTypeRenderer.render(type)
-        WinMdTypeKind.RuntimeClass -> runtimeTypeRenderer.render(type)
+        WinMdTypeKind.Delegate -> listOf(delegateTypeRenderer.render(type))
+        WinMdTypeKind.RuntimeClass -> listOf(runtimeTypeRenderer.render(type))
         WinMdTypeKind.Struct,
         WinMdTypeKind.Enum,
-        -> valueTypeRenderer.render(type)
+        -> listOf(valueTypeRenderer.render(type))
     }
 }

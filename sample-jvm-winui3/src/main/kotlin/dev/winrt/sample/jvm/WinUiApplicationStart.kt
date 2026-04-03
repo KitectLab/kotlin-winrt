@@ -7,8 +7,9 @@ import microsoft.ui.xaml.ApplicationInitializationCallback
 import microsoft.ui.xaml.IApplicationInitializationCallbackParams
 import microsoft.ui.xaml.IWindow
 import microsoft.ui.xaml.Window
-import microsoft.ui.xaml.controls.StackPanel
-import microsoft.ui.xaml.controls.TextBlock
+import microsoft.ui.xaml.controls.XamlControlsResources
+import microsoft.ui.xaml.media.DesktopAcrylicBackdrop
+import microsoft.ui.xaml.media.MicaBackdrop
 
 object WinUiApplicationStart {
     private var application: Application? = null
@@ -84,22 +85,46 @@ object WinUiApplicationStart {
         ) {
             val arg = it.single() as dev.winrt.kom.ComPtr
             runCatching {
+                println("winui: application callback invoked")
                 application = Application.current
+                println("winui: application.current ready")
+                runCatching {
+                    application!!.resources = XamlControlsResources()
+                    println("winui: application resources set")
+                }.onFailure { error ->
+                    println("winui: application resources skipped: ${error::class.simpleName}: ${error.message}")
+                }
                 window = Window()
+                println("winui: window created")
                 val iWindow = IWindow.from(window!!)
-                val stackPanel = StackPanel()
                 iWindow.title = windowTitle
-                iWindow.setContent(stackPanel)
+                println("winui: window title set")
+                runCatching {
+                    window!!.systemBackdrop = DesktopAcrylicBackdrop()
+                    println("winui: window backdrop set=desktop-acrylic")
+                }.recoverCatching {
+                    window!!.systemBackdrop = MicaBackdrop()
+                    println("winui: window backdrop set=mica")
+                }.onFailure { error ->
+                    println("winui: window backdrop skipped: ${error::class.simpleName}: ${error.message}")
+                }
+                val layout = WinUiSampleLayout.build(windowTitle, messageText)
+                iWindow.setContent(layout.root)
+                println("winui: window content set")
                 iWindow.activate()
+                println("winui: window activated")
                 val uiThreadId = WindowsMessageLoop.currentThreadId()
                 val autoQuitVisible = System.getProperty("dev.winrt.autoQuitVisible", "false").equals("true", ignoreCase = true)
                 Thread.ofPlatform().daemon(true).start {
                     val visible = WindowsWindowProbe.waitForWindowByTitle(windowTitle, timeoutMillis = 5_000L)
                     windowVisible = visible
+                    println("winui: window visible=$visible")
                     if (!visible || autoQuitVisible) {
                         if (visible) {
                             Thread.sleep(500L)
                             WindowsWindowProbe.closeWindowByTitle(windowTitle)
+                            println("winui: window close requested")
+                            WindowsMessageLoop.postThreadQuit(uiThreadId)
                         } else {
                             WindowsMessageLoop.postThreadQuit(uiThreadId)
                         }
@@ -107,10 +132,12 @@ object WinUiApplicationStart {
                 }
             }.getOrElse { error ->
                 launchFailure = error
+                println("winui: launch failed: ${error::class.simpleName}: ${error.message}")
             }
         }
         activeCallback = callback
         Application.start(ApplicationInitializationCallback(callback.pointer))
+        println("winui: Application.start returned")
         launchFailure?.let { throw it }
         return if (windowVisible) {
             "xaml=application-start-visible"

@@ -9,7 +9,7 @@ import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 
-public open class IClockIdentifiersStatics(
+internal open class IClockIdentifiersStatics(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
   public val twelveHour: String

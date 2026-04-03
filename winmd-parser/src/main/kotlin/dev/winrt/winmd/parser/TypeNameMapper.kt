@@ -7,7 +7,10 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asTypeName
 
+internal const val WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET = 116444736000000000L
+
 internal class TypeNameMapper {
+
     fun mapTypeName(
         typeName: String,
         currentNamespace: String,
@@ -18,14 +21,14 @@ internal class TypeNameMapper {
             typeName == "String" -> String::class.asTypeName()
             typeName == "Unit" -> Unit::class.asTypeName()
             typeName == "Object" -> PoetSymbols.inspectableClass
-            typeName == "Boolean" -> PoetSymbols.winRtBooleanClass
+            typeName == "Boolean" -> Boolean::class.asTypeName()
             typeName == "Int" -> Int::class.asTypeName()
-            typeName == "Int32" -> PoetSymbols.int32Class
-            typeName == "UInt32" -> PoetSymbols.uint32Class
-            typeName == "Int64" -> PoetSymbols.int64Class
-            typeName == "UInt64" -> PoetSymbols.uint64Class
-            typeName == "Float32" -> PoetSymbols.float32Class
-            typeName == "Float64" -> PoetSymbols.float64Class
+            typeName == "Int32" -> Int::class.asTypeName()
+            typeName == "UInt32" -> UInt::class.asTypeName()
+            typeName == "Int64" -> Long::class.asTypeName()
+            typeName == "UInt64" -> ULong::class.asTypeName()
+            typeName == "Float32" -> Float::class.asTypeName()
+            typeName == "Float64" -> Double::class.asTypeName()
             typeName == "Guid" -> PoetSymbols.guidValueClass
             typeName == "DateTime" -> PoetSymbols.dateTimeClass
             typeName == "TimeSpan" -> PoetSymbols.timeSpanClass
@@ -40,22 +43,26 @@ internal class TypeNameMapper {
     }
 
     fun defaultValueFor(typeName: TypeName, functionName: String? = null): CodeBlock {
+        if (typeName.isNullable) {
+            return CodeBlock.of("null")
+        }
         val rendered = typeName.toString()
         return when {
             rendered == "kotlin.String" -> CodeBlock.of("%S", "")
             rendered == "kotlin.Int" -> CodeBlock.of("0")
             rendered == "kotlin.Unit" -> CodeBlock.of("Unit")
-            rendered.endsWith(".WinRtBoolean") -> CodeBlock.of("%T.FALSE", PoetSymbols.winRtBooleanClass)
-            rendered.endsWith(".Int32") -> CodeBlock.of("%T(0)", PoetSymbols.int32Class)
-            rendered.endsWith(".UInt32") -> CodeBlock.of("%T(0u)", PoetSymbols.uint32Class)
-            rendered.endsWith(".Int64") -> CodeBlock.of("%T(0L)", PoetSymbols.int64Class)
-            rendered.endsWith(".UInt64") -> CodeBlock.of("%T(0uL)", PoetSymbols.uint64Class)
-            rendered.endsWith(".Float32") -> CodeBlock.of("%T(0f)", PoetSymbols.float32Class)
-            rendered.endsWith(".Float64") -> CodeBlock.of("%T(0.0)", PoetSymbols.float64Class)
-            rendered.endsWith(".DateTime") -> CodeBlock.of("%T(0)", PoetSymbols.dateTimeClass)
-            rendered.endsWith(".TimeSpan") -> CodeBlock.of("%T(0)", PoetSymbols.timeSpanClass)
+            rendered == "dev.winrt.core.Inspectable" -> CodeBlock.of("%T(%T.NULL)", PoetSymbols.inspectableClass, PoetSymbols.comPtrClass)
+            rendered.endsWith(".Boolean") -> CodeBlock.of("false")
+            rendered.endsWith(".Int32") -> CodeBlock.of("0")
+            rendered.endsWith(".UInt32") -> CodeBlock.of("0u")
+            rendered.endsWith(".Int64") -> CodeBlock.of("0L")
+            rendered.endsWith(".UInt64") -> CodeBlock.of("0uL")
+            rendered.endsWith(".Float32") -> CodeBlock.of("0f")
+            rendered.endsWith(".Float64") -> CodeBlock.of("0.0")
+            rendered.endsWith(".DateTime") -> CodeBlock.of("%T.fromEpochSeconds(0)", PoetSymbols.dateTimeClass)
+            rendered.endsWith(".TimeSpan") -> CodeBlock.of("%T.parse(" + "\"0s\"" + ")", PoetSymbols.timeSpanClass)
             rendered.endsWith(".EventRegistrationToken") -> CodeBlock.of("%T(0)", PoetSymbols.eventRegistrationTokenClass)
-            rendered.endsWith(".GuidValue") -> CodeBlock.of("%T(%S)", PoetSymbols.guidValueClass, "")
+            rendered.endsWith(".Uuid") -> CodeBlock.of("%T.parse(%S)", PoetSymbols.guidValueClass, "00000000000000000000000000000000")
             rendered.startsWith("kotlin.Array<") -> CodeBlock.of("emptyArray()")
             rendered.startsWith("dev.winrt.core.IReference<") -> {
                 CodeBlock.of(
@@ -82,12 +89,14 @@ internal class TypeNameMapper {
             mapTypeName(argument, currentNamespace, genericParameters)
         }
         val rawTypeName = when (normalizeSimpleName(rawType.substringAfterLast('.'))) {
-            "IReference" -> PoetSymbols.iReferenceClass
+            "IReference" -> return arguments.single().copy(nullable = true)
             "IIterable" -> PoetSymbols.iterableClass
             "IIterator" -> PoetSymbols.iteratorClass
             "IMap" -> PoetSymbols.mutableMapClass
             "IMapView" -> PoetSymbols.mapClass
             "IKeyValuePair" -> PoetSymbols.mapEntryClass
+            "IObservableVector" -> PoetSymbols.mutableListClass
+            "IObservableMap" -> PoetSymbols.mutableMapClass
             else -> normalizeQualifiedType(rawType) as ClassName
         }
         return rawTypeName.parameterizedBy(arguments)

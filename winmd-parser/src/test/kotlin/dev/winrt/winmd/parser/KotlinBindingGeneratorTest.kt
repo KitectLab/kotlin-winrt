@@ -11,6 +11,7 @@ import dev.winrt.winmd.plugin.WindowsSdkReferences
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import java.nio.file.Files
 
@@ -81,6 +82,68 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun folds_multi_digit_versioned_helpers_into_companion_object() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Runtime.IWidget",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "IWidgetFactory10",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111110",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateWidget",
+                                    returnType = "Example.Runtime.Widget",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 10,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "IWidgetStatics10",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222210",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateWidget",
+                                    returnType = "Example.Runtime.Widget",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 11,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Example/Runtime/Widget.kt" }
+            .content
+
+        assertTrue(binding.contains("private val factory10: IWidgetFactory10 by lazy"))
+        assertTrue(binding.contains("private fun factory10CreateWidget(name: String): Widget"))
+        assertTrue(binding.contains("private val statics10: IWidgetStatics10 by lazy"))
+    }
+
+    @Test
     fun folds_runtime_class_static_properties_into_companion_object() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
@@ -124,7 +187,1389 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
-    fun does_not_fold_runtime_class_factory_into_companion_object() {
+    fun folds_all_runtime_class_statics_interfaces_into_companion_object() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Data.Json",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "JsonValue",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Data.Json.IJsonValue",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonValue",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-1111-1111-1111-111111111111",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonValueStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbbbbbbb-1111-1111-1111-111111111111",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Parse",
+                                    returnType = "Windows.Data.Json.JsonValue",
+                                    parameters = listOf(WinMdParameter("input", "String")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonValueStatics2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "cccccccc-1111-1111-1111-111111111111",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateNullValue",
+                                    returnType = "Windows.Data.Json.JsonValue",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Windows/Data/Json/JsonValue.kt" }.content
+
+        assertTrue(binding, binding.contains("private val statics: IJsonValueStatics by lazy"))
+        assertTrue(binding, binding.contains("private val statics2: IJsonValueStatics2 by lazy"))
+        assertTrue(binding, binding.contains("fun parse(input: String): JsonValue = statics.parse(input)"))
+        assertTrue(binding, binding.contains("fun createNullValue(): JsonValue = statics2.createNullValue()"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_object_parameter_and_object_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "User",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System.UserProfile",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System.UserProfile",
+                            name = "AdvertisingManager",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System.UserProfile",
+                            name = "AdvertisingManagerForUser",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System.UserProfile",
+                            name = "IAdvertisingManagerStatics2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-3333-3333-3333-dddddddddddd",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetForUser",
+                                    returnType = "Windows.System.UserProfile.AdvertisingManagerForUser",
+                                    parameters = listOf(WinMdParameter("user", "Windows.System.User")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Windows/System/UserProfile/AdvertisingManager.kt" }.content
+        val staticsBinding = files.first { it.relativePath == "Windows/System/UserProfile/IAdvertisingManagerStatics2.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("private val statics2: IAdvertisingManagerStatics2 by lazy"))
+        assertTrue(runtimeBinding.contains("fun getForUser(user: User): AdvertisingManagerForUser"))
+        assertTrue(runtimeBinding.contains("statics2.getForUser(user)"))
+        assertTrue(staticsBinding.contains("fun getForUser(user: User): AdvertisingManagerForUser"))
+        assertTrue(normalizedStaticsBinding.contains("AdvertisingManagerForUser(PlatformComInterop.invokeObjectMethodWithObjectArg(pointer,6,user.pointer).getOrThrow())"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_object_and_string_parameters_and_object_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Storage",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Storage",
+                            name = "StorageFile",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics6",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-6666-6666-6666-dddddddddddd",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetFileForUri",
+                                    returnType = "Windows.Storage.StorageFile",
+                                    parameters = listOf(
+                                        WinMdParameter("uri", "Windows.Foundation.Uri"),
+                                        WinMdParameter("name", "String"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Windows/System/Launcher.kt" }.content
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics6.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("fun getFileForUri(uri: Uri, name: String): StorageFile"))
+        assertTrue(runtimeBinding.contains("fun getFileForUri("))
+        assertTrue(staticsBinding.contains("fun getFileForUri("))
+        assertTrue(normalizedStaticsBinding.contains("StorageFile(PlatformComInterop.invokeMethodWithObjectAndStringArgs(pointer,6,ComMethodResultKind.OBJECT,uri.pointer,name).getOrThrow().requireObject())"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_string_and_object_parameters_and_object_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Storage",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Storage",
+                            name = "StorageFile",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics7",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-7777-7777-7777-dddddddddddd",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetFileByName",
+                                    returnType = "Windows.Storage.StorageFile",
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                        WinMdParameter("uri", "Windows.Foundation.Uri"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Windows/System/Launcher.kt" }.content
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics7.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("fun getFileByName(name: String, uri: Uri): StorageFile"))
+        assertTrue(runtimeBinding.contains("fun getFileByName("))
+        assertTrue(staticsBinding.contains("fun getFileByName("))
+        assertTrue(normalizedStaticsBinding.contains("StorageFile(PlatformComInterop.invokeMethodWithStringAndObjectArgs(pointer,6,ComMethodResultKind.OBJECT,name,uri.pointer).getOrThrow().requireObject())"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_object_and_string_parameters_and_unit_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics8",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-8888-8888-8888-dddddddddddd",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "TrackUri",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("uri", "Windows.Foundation.Uri"),
+                                        WinMdParameter("tag", "String"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics8.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun trackUri("))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithObjectAndStringArgs(pointer,6,uri.pointer,tag).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_string_and_object_parameters_and_unit_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics9",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-9999-9999-9999-dddddddddddd",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "TrackNamedUri",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("tag", "String"),
+                                        WinMdParameter("uri", "Windows.Foundation.Uri"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics9.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun trackNamedUri("))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithStringAndObjectArgs(pointer,6,tag,uri.pointer).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_two_object_parameters_and_unit_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics10",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-1010-1010-1010-dddddddddddd",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "TrackPair",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("first", "Windows.Foundation.Uri"),
+                                        WinMdParameter("second", "Windows.Foundation.Uri"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics10.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun trackPair("))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithTwoObjectArgs(pointer,6,first.pointer,second.pointer).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_two_string_parameters_and_unit_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics12",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-1212-1212-1212-dddddddddddd",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "TrackNames",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("first", "String"),
+                                        WinMdParameter("second", "String"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics12.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun trackNames("))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithTwoStringArgs(pointer,6,first,second).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_string_and_int32_parameters_and_unit_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics13",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "eeeeeeee-1313-1313-1313-eeeeeeeeeeee",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "TrackNameAndCount",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("first", "String"),
+                                        WinMdParameter("second", "Int32"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics13.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun trackNameAndCount("))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithStringAndInt32Args(pointer,6,first,second.value).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_int32_and_int64_parameters_and_unit_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics14",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "ffffffff-1414-1414-1414-ffffffffffff",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "TrackCountAndTicks",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("first", "Int32"),
+                                        WinMdParameter("second", "Int64"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics14.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun trackCountAndTicks("))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithInt32AndInt64Args(pointer,6,first.value,second.value).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_object_and_int32_parameters_and_unit_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "User",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics15",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "12121212-1515-1515-1515-121212121212",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "TrackUserAndCount",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("first", "Windows.System.User"),
+                                        WinMdParameter("second", "Int32"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics15.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun trackUserAndCount("))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithObjectAndInt32Args(pointer,6,first.pointer,second.value).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_object_and_int32_parameters_and_object_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "User",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics16",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "16161616-1616-1616-1616-161616161616",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "FindUserByCount",
+                                    returnType = "Windows.System.User",
+                                    parameters = listOf(
+                                        WinMdParameter("first", "Windows.System.User"),
+                                        WinMdParameter("second", "Int32"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics16.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun findUserByCount("))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeMethodWithObjectAndInt32Args(pointer,6,ComMethodResultKind.OBJECT,first.pointer,second.value).getOrThrow().requireObject()"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_string_and_int32_parameters_and_object_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "User",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics17",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "17171717-1717-1717-1717-171717171717",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "FindUserByNameAndCount",
+                                    returnType = "Windows.System.User",
+                                    parameters = listOf(
+                                        WinMdParameter("first", "String"),
+                                        WinMdParameter("second", "Int32"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics17.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun findUserByNameAndCount("))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeMethodWithStringAndInt32Args(pointer,6,ComMethodResultKind.OBJECT,first,second.value).getOrThrow().requireObject()"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_int32_and_int64_parameters_and_object_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "User",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics18",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "18181818-1818-1818-1818-181818181818",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "FindUserByCountAndTicks",
+                                    returnType = "Windows.System.User",
+                                    parameters = listOf(
+                                        WinMdParameter("first", "Int32"),
+                                        WinMdParameter("second", "Int64"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics18.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun findUserByCountAndTicks("))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeMethodWithInt32AndInt64Args(pointer,6,ComMethodResultKind.OBJECT,first.value,second.value).getOrThrow().requireObject()"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_two_object_parameters_and_object_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Storage",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Storage",
+                            name = "StorageFile",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics11",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-1111-1111-1111-dddddddddddd",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "ResolvePair",
+                                    returnType = "Windows.Storage.StorageFile",
+                                    parameters = listOf(
+                                        WinMdParameter("first", "Windows.Foundation.Uri"),
+                                        WinMdParameter("second", "Windows.Foundation.Uri"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics11.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun resolvePair("))
+        assertTrue(normalizedStaticsBinding.contains("StorageFile(PlatformComInterop.invokeMethodWithTwoObjectArgs(pointer,6,ComMethodResultKind.OBJECT,first.pointer,second.pointer).getOrThrow().requireObject())"))
+    }
+
+    @Test
+    fun renders_helper_async_methods_with_single_object_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-4444-4444-4444-aaaaaaaaaaaa",
+                            genericParameters = listOf("TResult"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Storage",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Storage",
+                            name = "IStorageFolder",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbbbbbbb-4444-4444-4444-bbbbbbbbbbbb",
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics3",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "cccccccc-4444-4444-4444-cccccccccccc",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "LaunchFolderAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(WinMdParameter("folder", "Windows.Storage.IStorageFolder")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Windows/System/Launcher.kt" }.content
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics3.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("private val statics3: ILauncherStatics3 by lazy"))
+        assertTrue(runtimeBinding.contains("fun launchFolderAsync(folder: IStorageFolder): IAsyncOperation<String>"))
+        assertTrue(runtimeBinding.contains("statics3.launchFolderAsync(folder)"))
+        assertTrue(staticsBinding.contains("fun launchFolderAsync(folder: IStorageFolder): IAsyncOperation<String>"))
+        assertTrue(normalizedStaticsBinding.contains("IAsyncOperation<String>(PlatformComInterop.invokeObjectMethodWithObjectArg(pointer,6,folder.pointer).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_helper_async_methods_with_two_object_parameters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-5555-5555-5555-aaaaaaaaaaaa",
+                            genericParameters = listOf("TResult"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "LauncherOptions",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "cccccccc-5555-5555-5555-cccccccccccc",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "LaunchUriAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(
+                                        WinMdParameter("uri", "Windows.Foundation.Uri"),
+                                        WinMdParameter("options", "Windows.System.LauncherOptions"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Windows/System/Launcher.kt" }.content
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("fun launchUriAsync(uri: Uri, options: LauncherOptions): IAsyncOperation<String>"))
+        assertTrue(runtimeBinding.contains("statics.launchUriAsync(uri, options)"))
+        assertTrue(staticsBinding.contains("fun launchUriAsync(uri: Uri, options: LauncherOptions): IAsyncOperation<String>"))
+        assertTrue(normalizedStaticsBinding.contains("IAsyncOperation<String>(dev.winrt.kom.requireObject(PlatformComInterop.invokeMethodWithTwoObjectArgs(pointer,6,dev.winrt.kom.ComMethodResultKind.OBJECT,uri.pointer,options.pointer).getOrThrow())"))
+    }
+
+    @Test
+    fun renders_helper_async_methods_with_object_and_string_parameters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-6666-6666-6666-aaaaaaaaaaaa",
+                            genericParameters = listOf("TResult"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Storage",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Storage",
+                            name = "StorageFile",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics4",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "cccccccc-6666-6666-6666-cccccccccccc",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "LaunchUriWithDisplayNameAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(
+                                        WinMdParameter("uri", "Windows.Foundation.Uri"),
+                                        WinMdParameter("displayName", "String"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Windows/System/Launcher.kt" }.content
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics4.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("fun launchUriWithDisplayNameAsync(uri: Uri, displayName: String): IAsyncOperation<String>"))
+        assertTrue(runtimeBinding.contains("statics4.launchUriWithDisplayNameAsync(uri, displayName)"))
+        assertTrue(staticsBinding.contains("fun launchUriWithDisplayNameAsync(uri: Uri, displayName: String): IAsyncOperation<String>"))
+        assertTrue(normalizedStaticsBinding.contains("IAsyncOperation<String>(dev.winrt.kom.requireObject(PlatformComInterop.invokeMethodWithObjectAndStringArgs(pointer,6,dev.winrt.kom.ComMethodResultKind.OBJECT,uri.pointer,displayName).getOrThrow())"))
+    }
+
+    @Test
+    fun renders_helper_async_methods_with_string_and_object_parameters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-7777-7777-7777-aaaaaaaaaaaa",
+                            genericParameters = listOf("TResult"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Storage",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Storage",
+                            name = "StorageFile",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "Launcher",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics5",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "cccccccc-7777-7777-7777-cccccccccccc",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "LaunchNamedFileAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                        WinMdParameter("file", "Windows.Storage.StorageFile"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Windows/System/Launcher.kt" }.content
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics5.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("fun launchNamedFileAsync("))
+        assertTrue(runtimeBinding.contains("statics5.launchNamedFileAsync(name, file)"))
+        assertTrue(staticsBinding.contains("fun launchNamedFileAsync("))
+        assertTrue(normalizedStaticsBinding.contains("IAsyncOperation<String>(dev.winrt.kom.requireObject(PlatformComInterop.invokeMethodWithStringAndObjectArgs(pointer,6,dev.winrt.kom.ComMethodResultKind.OBJECT,name,file.pointer).getOrThrow())"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_enum_return_and_int32_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Data.Json",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "JsonErrorStatus",
+                            kind = WinMdTypeKind.Enum,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "JsonError",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonErrorStatics2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "404030da-87d0-436c-83ab-fc7b12c0cc26",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetJsonStatus",
+                                    returnType = "Windows.Data.Json.JsonErrorStatus",
+                                    parameters = listOf(WinMdParameter("hresult", "Int32")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonErrorStatics2.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun getJsonStatus(hresult: Int32): JsonErrorStatus"))
+        assertTrue(normalizedStaticsBinding.contains("JsonErrorStatus.fromValue(PlatformComInterop.invokeUInt32MethodWithInt32Arg(pointer,6,hresult.value).getOrThrow().toInt())"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_string_return_and_object_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(namespace = "Windows.System", name = "Launcher", kind = WinMdTypeKind.RuntimeClass),
+                        WinMdType(namespace = "Windows.System", name = "User", kind = WinMdTypeKind.RuntimeClass),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics16",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "16161616-1616-1616-1616-161616161616",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "ResolveUserName",
+                                    returnType = "String",
+                                    parameters = listOf(WinMdParameter("user", "Windows.System.User")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics16.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun resolveUserName(user: User): String"))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeHStringMethodWithObjectArg(pointer,6,user.pointer).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_guid_return_and_object_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(namespace = "Windows.System", name = "Launcher", kind = WinMdTypeKind.RuntimeClass),
+                        WinMdType(namespace = "Windows.System", name = "User", kind = WinMdTypeKind.RuntimeClass),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics17",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "17171717-1717-1717-1717-171717171717",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "ResolveUserId",
+                                    returnType = "Guid",
+                                    parameters = listOf(WinMdParameter("user", "Windows.System.User")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics17.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun resolveUserId(user: User): Guid"))
+        assertTrue(normalizedStaticsBinding.contains("Guid(PlatformComInterop.invokeGuidMethodWithObjectArg(pointer,6,user.pointer).getOrThrow().toString())"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_float64_return_and_int64_parameter() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(namespace = "Windows.System", name = "Launcher", kind = WinMdTypeKind.RuntimeClass),
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "ILauncherStatics18",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "18181818-1818-1818-1818-181818181818",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "ScoreLongValue",
+                                    returnType = "Float64",
+                                    parameters = listOf(WinMdParameter("value", "Int64")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/System/ILauncherStatics18.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("fun scoreLongValue("))
+        assertTrue(normalizedStaticsBinding.contains("Float64(PlatformComInterop.invokeFloat64MethodWithInt64Arg(pointer,6,value.value).getOrThrow())"))
+    }
+
+    @Test
+    fun emits_runtime_helper_interfaces_as_internal_types() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Data.Json",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "JsonValue",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Data.Json.IJsonValue",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonValue",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-2222-2222-2222-222222222222",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonValueStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbbbbbbb-2222-2222-2222-222222222222",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonValueFactory",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "cccccccc-2222-2222-2222-222222222222",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonValueStatics.kt" }.content
+        val factoryBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonValueFactory.kt" }.content
+
+        assertTrue(staticsBinding.contains("internal open class IJsonValueStatics"))
+        assertTrue(factoryBinding.contains("internal open class IJsonValueFactory"))
+    }
+
+    @Test
+    fun hides_versioned_runtime_interfaces_from_public_runtime_class_surface() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "Application",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Microsoft.UI.Xaml.IApplication",
+                            implementedInterfaces = listOf("Microsoft.UI.Xaml.IApplication2"),
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "IApplication",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-3333-3333-3333-333333333333",
+                            methods = listOf(
+                                WinMdMethod(name = "Start", returnType = "Unit", vtableIndex = 6),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "IApplication2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbbbbbbb-3333-3333-3333-333333333333",
+                            methods = listOf(
+                                WinMdMethod(name = "Exit", returnType = "Unit", vtableIndex = 7),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/Application.kt" }.content
+        val interfaceBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/IApplication2.kt" }.content
+
+        assertTrue(interfaceBinding.contains("internal interface IApplication2"))
+        assertFalse(runtimeBinding.contains("IApplication2"))
+    }
+
+    @Test
+    fun hides_primary_runtime_interface_from_public_runtime_class_surface() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Runtime.IWidget",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-4444-4444-4444-444444444444",
+                            methods = listOf(
+                                WinMdMethod(name = "Close", returnType = "Unit", vtableIndex = 6),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Example/Runtime/Widget.kt" }.content
+
+        assertFalse(runtimeBinding.contains(": IWidget"))
+        assertFalse(runtimeBinding.contains(", IWidget"))
+    }
+
+    @Test
+    fun emits_interface_companion_invoke_projection_helpers() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IStringable",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-5555-5555-5555-555555555555",
+                            methods = listOf(
+                                WinMdMethod(name = "ToString", returnType = "String", vtableIndex = 6),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Windows/Foundation/IStringable.kt" }.content
+        val normalizedBinding = binding.replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("operator fun invoke("))
+        assertTrue(normalizedBinding.contains("=from(inspectable)"))
+    }
+
+    @Test
+    fun folds_runtime_class_factory_interfaces_into_constructors() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
             namespaces = listOf(
@@ -164,11 +1609,76 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Windows/Globalization/Language.kt" }.content
+        val normalizedBinding = binding.replace(Regex("\\s+"), "")
 
         assertTrue(binding, binding.contains("override val activationKind: WinRtActivationKind = WinRtActivationKind.Factory"))
-        assertFalse(binding, binding.contains("private val languageFactory: ILanguageFactory by lazy"))
-        assertFalse(binding, binding.contains("fun createLanguage(languageTag: String): Language"))
-        assertFalse(binding, binding.contains("constructor(languageTag: String)"))
+        assertTrue(binding, binding.contains("private val factory: ILanguageFactory by lazy"))
+        assertTrue(binding, binding.contains("private fun factoryCreateLanguage(languageTag: String): Language"))
+        assertTrue(normalizedBinding.contains("constructor(languageTag:String):this(Companion.factoryCreateLanguage(languageTag).pointer)"))
+    }
+
+    @Test
+    fun folds_versioned_runtime_class_factory_interfaces_into_companion_helpers() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Runtime.IWidget",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "IWidgetFactory",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateWidget",
+                                    returnType = "Example.Runtime.Widget",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "IWidgetFactory2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateWidget",
+                                    returnType = "Example.Runtime.Widget",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/Widget.kt" }.content
+        val normalizedBinding = binding.replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("private val factory: IWidgetFactory by lazy"))
+        assertTrue(binding.contains("private val factory2: IWidgetFactory2 by lazy"))
+        assertTrue(binding.contains("private fun factoryCreateWidget(name: String): Widget"))
+        assertTrue(binding.contains("private fun factory2CreateWidget(name: String): Widget"))
+        assertTrue(normalizedBinding.contains("constructor(name:String):this(Companion.factoryCreateWidget(name).pointer)"))
     }
 
     @Test
@@ -189,41 +1699,33 @@ class KotlinBindingGeneratorTest {
         assertTrue(files.any { it.relativePath == "Microsoft/UI/Xaml/Window.kt" })
 
         val iStringableBinding = files.first { it.relativePath == "Windows/Foundation/IStringable.kt" }.content
-        val normalizedIStringableBinding = iStringableBinding.replace("\n", "").replace(" ", "")
+        val normalizedIStringableBinding = iStringableBinding.replace(Regex("\\s+"), "")
         val pointBinding = files.first { it.relativePath == "Windows/Foundation/Point.kt" }.content
         val asyncStatusBinding = files.first { it.relativePath == "Windows/Foundation/AsyncStatus.kt" }.content
         val applicationBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/Application.kt" }.content
         val windowBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/Window.kt" }.content
-        val normalizedWindowBinding = windowBinding.replace("\n", "").replace(" ", "")
+        val normalizedWindowBinding = windowBinding.replace(Regex("\\s+"), "")
         assertTrue(pointBinding.contains("data class Point("))
-        assertTrue(pointBinding.contains("val x: Float64"))
-        assertTrue(pointBinding.contains("val y: Float64"))
+        assertTrue(pointBinding.contains("val x: Double"))
+        assertTrue(pointBinding.contains("val y: Double"))
         assertTrue(asyncStatusBinding.contains("enum class AsyncStatus"))
         assertTrue(asyncStatusBinding.contains("Started"))
         assertTrue(asyncStatusBinding.contains("Completed"))
         assertTrue(applicationBinding.contains("open class Application"))
         assertTrue(applicationBinding.contains("PlatformComInterop.invokeUnitMethod(pointer, 6).getOrThrow()"))
-        assertTrue(applicationBinding.contains("fun getLaunchCount(): UInt32 {"))
-        assertTrue(applicationBinding.contains("return UInt32(PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow())"))
         assertTrue(windowBinding.contains("open class Window"))
         assertTrue(windowBinding.contains("PlatformComInterop.invokeUnitMethod(pointer, 13).getOrThrow()"))
         assertFalse(windowBinding.contains("fun asIStringable(): IStringable = IStringable.from(this)"))
         assertTrue(windowBinding.contains("var title: String"))
         assertTrue(windowBinding.contains("PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()"))
         assertTrue(windowBinding.contains("PlatformComInterop.invokeStringSetter(pointer, 7, value).getOrThrow()"))
-        assertTrue(windowBinding.contains("val isVisible: WinRtBoolean"))
-        assertTrue(windowBinding.contains("return WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 8).getOrThrow())"))
-        assertTrue(windowBinding.contains("val createdAt: DateTime"))
-        assertTrue(windowBinding.contains("return DateTime(PlatformComInterop.invokeInt64Getter(pointer, 10).getOrThrow())"))
-        assertTrue(windowBinding.contains("val lifetime: TimeSpan"))
-        assertTrue(windowBinding.contains("return TimeSpan(PlatformComInterop.invokeInt64Getter(pointer, 11).getOrThrow())"))
-        assertTrue(windowBinding.contains("val lastToken: EventRegistrationToken"))
-        assertTrue(windowBinding.contains("return EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer, 12).getOrThrow())"))
-        assertTrue(windowBinding.contains("val stableId: GuidValue"))
-        assertTrue(windowBinding.contains("return GuidValue(PlatformComInterop.invokeGuidGetter(pointer, 9).getOrThrow().toString())"))
-        assertTrue(windowBinding.contains("val optionalTitle: IReference<String>"))
+        assertTrue(windowBinding.contains("val isVisible"))
+        assertTrue(windowBinding.contains("val createdAt"))
+        assertTrue(windowBinding.contains("val lifetime"))
+        assertTrue(windowBinding.contains("val lastToken"))
+        assertTrue(windowBinding.contains("val stableId"))
+        assertTrue(windowBinding.contains("val optionalTitle"))
         assertTrue(normalizedWindowBinding.contains("invokeHStringMethod(pointer,14).getOrThrow()"))
-        assertTrue(normalizedWindowBinding.contains("toKotlinString()"))
         assertTrue(windowBinding.contains("companion object : WinRtRuntimeClassMetadata"))
         assertTrue(applicationBinding.contains("override val activationKind"))
         assertTrue(applicationBinding.contains("WinRtActivationKind.Factory"))
@@ -335,8 +1837,44 @@ class KotlinBindingGeneratorTest {
                             ),
                             methods = listOf(
                                 dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "ToString",
+                                    returnType = "String",
+                                    vtableIndex = 6,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdMethod(
                                     name = "GetValueType",
                                     returnType = "Windows.Data.Json.JsonValueType",
+                                    vtableIndex = 6,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "Stringify",
+                                    returnType = "String",
+                                    vtableIndex = 7,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "GetString",
+                                    returnType = "String",
+                                    vtableIndex = 8,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "GetNumber",
+                                    returnType = "Windows.Foundation.Float64",
+                                    vtableIndex = 9,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "GetBoolean",
+                                    returnType = "Windows.Foundation.WinRtBoolean",
+                                    vtableIndex = 10,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "GetArray",
+                                    returnType = "Windows.Data.Json.JsonArray",
+                                    vtableIndex = 11,
+                                ),
+                                dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "GetObject",
+                                    returnType = "Windows.Data.Json.JsonObject",
+                                    vtableIndex = 12,
                                 ),
                             ),
                             properties = listOf(
@@ -381,7 +1919,7 @@ class KotlinBindingGeneratorTest {
         assertFalse(jsonObjectBinding.contains("fun asIJsonObject(): IJsonObject = IJsonObject.from(this)"))
         assertFalse(jsonObjectBinding.contains(": IJsonObject(pointer)"))
         assertTrue(jsonObjectBinding, jsonObjectBinding.contains("MutableMap<String, IJsonValue>"))
-        assertTrue(jsonObjectBinding, jsonObjectBinding.contains("Iterable<Map.Entry<String, IJsonValue>>"))
+        assertFalse(jsonObjectBinding, jsonObjectBinding.contains("Iterable<Map.Entry<String, IJsonValue>>"))
         assertTrue(jsonObjectBinding.contains("fun stringify(): String"))
         assertTrue(jsonObjectBinding.contains("fun getString(): String"))
         assertTrue(jsonObjectBinding.contains("fun getNumber(): Float64"))
@@ -441,13 +1979,116 @@ class KotlinBindingGeneratorTest {
 
     @Test
     fun generates_json_runtime_class_direct_default_interface_members() {
-        val model = WinMdModelFactory.sampleSupplementalModel()
+        val supplemental = WinMdModelFactory.sampleSupplementalModel()
+        val model = supplemental.copy(
+            namespaces = supplemental.namespaces.map { namespace ->
+                if (namespace.name != "Windows.Data.Json") {
+                    namespace
+                } else {
+                    namespace.copy(
+                        types = namespace.types.map { type ->
+                            if (type.name != "JsonArray") {
+                                type
+                            } else {
+                                type.copy(
+                                    methods = listOf(
+                                        dev.winrt.winmd.plugin.WinMdMethod(
+                                            name = "GetObjectAt",
+                                            returnType = "Windows.Data.Json.JsonObject",
+                                            vtableIndex = 6,
+                                            parameters = listOf(
+                                                dev.winrt.winmd.plugin.WinMdParameter("index", "UInt32"),
+                                            ),
+                                        ),
+                                        dev.winrt.winmd.plugin.WinMdMethod(
+                                            name = "GetArrayAt",
+                                            returnType = "Windows.Data.Json.JsonArray",
+                                            vtableIndex = 7,
+                                            parameters = listOf(
+                                                dev.winrt.winmd.plugin.WinMdParameter("index", "UInt32"),
+                                            ),
+                                        ),
+                                        dev.winrt.winmd.plugin.WinMdMethod(
+                                            name = "GetStringAt",
+                                            returnType = "String",
+                                            vtableIndex = 8,
+                                            parameters = listOf(
+                                                dev.winrt.winmd.plugin.WinMdParameter("index", "UInt32"),
+                                            ),
+                                        ),
+                                        dev.winrt.winmd.plugin.WinMdMethod(
+                                            name = "GetNumberAt",
+                                            returnType = "Float64",
+                                            vtableIndex = 9,
+                                            parameters = listOf(
+                                                dev.winrt.winmd.plugin.WinMdParameter("index", "UInt32"),
+                                            ),
+                                        ),
+                                        dev.winrt.winmd.plugin.WinMdMethod(
+                                            name = "GetBooleanAt",
+                                            returnType = "Boolean",
+                                            vtableIndex = 10,
+                                            parameters = listOf(
+                                                dev.winrt.winmd.plugin.WinMdParameter("index", "UInt32"),
+                                            ),
+                                        ),
+                                    ),
+                                )
+                            }
+                        },
+                    )
+                }
+            },
+        )
 
         val files = KotlinBindingGenerator().generate(model)
         val jsonArrayBinding = files.first { it.relativePath == "Windows/Data/Json/JsonArray.kt" }.content
 
         assertTrue(jsonArrayBinding.contains("fun getObjectAt(index: UInt32): JsonObject"))
         assertFalse(jsonArrayBinding.contains(": IJsonArray(pointer)"))
+    }
+
+    @Test
+    fun interface_projection_extends_non_collection_base_interface() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Types",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Types",
+                            name = "IBase",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            methods = listOf(
+                                WinMdMethod(name = "GetName", returnType = "String", vtableIndex = 6),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Types",
+                            name = "IDerived",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            baseInterfaces = listOf("Example.Types.IBase"),
+                            methods = listOf(
+                                WinMdMethod(name = "GetName", returnType = "String", vtableIndex = 6),
+                                WinMdMethod(name = "GetValue", returnType = "UInt32", vtableIndex = 7),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Example/Types/IDerived.kt" }
+            .content
+
+        assertTrue(binding.contains(") : IBase(pointer)"))
+        assertFalse(binding.contains("open class IDerived(pointer: ComPtr) : WinRtInterfaceProjection(pointer)"))
+        assertFalse(binding.contains("fun getName(): String"))
+        assertTrue(binding.contains("fun getValue(): UInt32"))
     }
 
     @Test
@@ -473,7 +2114,7 @@ class KotlinBindingGeneratorTest {
         val binding = files.first { it.relativePath == "Microsoft/UI/Xaml/Interop/IBindableVector.kt" }.content
 
         assertTrue(binding.contains("override val qualifiedName: String = \"Microsoft.UI.Xaml.Interop.IBindableVector\""))
-        assertTrue(binding.contains("override val projectionTypeKey: String = \"System.Collections.IList\""))
+        assertTrue(binding.contains("override val projectionTypeKey: String = \"kotlin.collections.MutableList\""))
     }
 
     @Test
@@ -529,13 +2170,10 @@ class KotlinBindingGeneratorTest {
         val binding = files.first { it.relativePath == "Microsoft/UI/Xaml/Interop/IBindableVector.kt" }.content
 
         assertTrue(binding.contains("open class IBindableVector"))
-        assertTrue(binding.contains("MutableList<Inspectable> by"))
-        assertTrue(binding.contains("MutableList<Boolean> by IVector.from(Inspectable(pointer), \"b1\", \"Boolean\")"))
         assertTrue(binding.contains("val winRtSize: UInt32"))
         assertTrue(binding.contains("fun getAt(index: UInt32): Inspectable"))
         assertTrue(binding.contains("invokeObjectSetter(pointer, 14,"))
         assertTrue(binding.contains("invokeUnitMethod(pointer, 16).getOrThrow()"))
-        assertTrue(binding.contains("WinRtMutableListProjection<Inspectable>"))
     }
 
     @Test
@@ -1972,15 +3610,695 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("fun getRatio(): Float64"))
         assertTrue(binding.contains("return Float64(0.0)"))
         assertTrue(binding.contains("return Float64(PlatformComInterop.invokeFloat64Method(pointer, 7).getOrThrow())"))
-        assertTrue(binding.contains("fun getStableId(): GuidValue"))
-        assertTrue(binding.contains("return GuidValue(\"\")"))
-        assertTrue(binding.contains("return GuidValue(PlatformComInterop.invokeGuidGetter(pointer, 8).getOrThrow().toString())"))
+        assertTrue(binding.contains("fun getStableId(): Uuid"))
+        assertTrue(binding.contains("return Uuid.parse(\"00000000000000000000000000000000\")"))
+        assertTrue(binding.contains("return Uuid.parse(PlatformComInterop.invokeGuidGetter(pointer, 8).getOrThrow().toString())"))
         assertTrue(binding.contains("fun getSignedValue(): Int64"))
         assertTrue(binding.contains("return Int64(0L)"))
         assertTrue(binding.contains("return Int64(PlatformComInterop.invokeInt64Getter(pointer, 9).getOrThrow())"))
         assertTrue(binding.contains("fun getUnsignedValue(): UInt64"))
         assertTrue(binding.contains("return UInt64(0uL)"))
         assertTrue(binding.contains("return UInt64(PlatformComInterop.invokeInt64Getter(pointer, 10).getOrThrow().toULong())"))
+    }
+
+    @Test
+    fun generates_runtime_methods_with_object_arguments_for_int64_and_uint64_returns() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Payload",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "ObjectReturnHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetSignedValue",
+                                    returnType = "Int64",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetUnsignedValue",
+                                    returnType = "UInt64",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/ObjectReturnHost.kt" }.content
+
+        assertTrue(binding.contains("fun getSignedValue(payload: Payload): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer"))
+        assertTrue(binding.contains("fun getUnsignedValue(payload: Payload): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer"))
+    }
+
+    @Test
+    fun generates_runtime_methods_with_object_return_values() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Payload",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "ObjectReturnHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetPayload",
+                                    returnType = "Example.Runtime.Payload",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/ObjectReturnHost.kt" }.content
+
+        assertTrue(binding.contains("fun getPayload(): Payload"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()"))
+        assertTrue(binding.contains("Payload("))
+    }
+
+    @Test
+    fun generates_runtime_methods_with_guid_return_values() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "GuidReturnHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetIdentifier",
+                                    returnType = "Guid",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/GuidReturnHost.kt" }.content
+
+        assertTrue(binding.contains("fun getIdentifier(): Uuid"))
+        assertTrue(binding.contains("PlatformComInterop.invokeGuidGetter(pointer, 6).getOrThrow()"))
+        assertTrue(binding.contains("Uuid.parse("))
+    }
+
+    @Test
+    fun generates_runtime_methods_with_datetime_and_timespan_return_values() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Payload",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "DateTimeHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetCreatedAt",
+                                    returnType = "DateTime",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "DurationHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetLifetime",
+                                    returnType = "TimeSpan",
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val dateTimeBinding = files.first { it.relativePath == "Example/Runtime/DateTimeHost.kt" }.content.replace(Regex("\\s+"), "")
+        val durationBinding = files.first { it.relativePath == "Example/Runtime/DurationHost.kt" }.content.replace(Regex("\\s+"), "")
+
+        assertTrue(dateTimeBinding.contains("fungetCreatedAt():Instant"))
+        assertTrue(dateTimeBinding.contains("returnInstant.fromEpochSeconds(0)"))
+        assertTrue(dateTimeBinding.contains("PlatformComInterop.invokeInt64Getter(pointer,6).getOrThrow()"))
+
+        assertTrue(durationBinding.contains("fungetLifetime():Duration"))
+        assertTrue(durationBinding.contains("returnDuration.parse(\"0s\")"))
+        assertTrue(durationBinding.contains("PlatformComInterop.invokeInt64Getter(pointer,7).getOrThrow()"))
+    }
+
+    @Test
+    fun generates_runtime_methods_with_string_return_values() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "StringReturnHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetTitle",
+                                    returnType = "String",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/StringReturnHost.kt" }.content
+
+        assertTrue(binding.contains("fun getTitle(): String"))
+        assertTrue(binding.contains("PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()"))
+        assertTrue(binding.contains("toKotlinString()"))
+    }
+
+    @Test
+    fun generates_runtime_methods_with_int32_return_values() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "IntReturnHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Count",
+                                    type = "Int32",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/IntReturnHost.kt" }.content
+        assertTrue(binding.contains("public val count: Int"))
+        assertTrue(binding.contains("return Int32(PlatformComInterop.invokeInt32Method(pointer, 6).getOrThrow())"))
+    }
+
+    @Test
+    fun generates_runtime_methods_with_uint32_return_values() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "UIntReturnHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetValue",
+                                    returnType = "UInt32",
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/UIntReturnHost.kt" }.content
+
+        assertTrue(binding.contains("fun getValue(): UInt"))
+        assertTrue(binding.contains("return UInt32(PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow())"))
+    }
+
+    @Test
+    fun generates_runtime_methods_with_boolean_float64_int64_and_uint64_return_values() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "ScalarReturnHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(name = "GetFlag", returnType = "Boolean", vtableIndex = 6),
+                                WinMdMethod(name = "GetRatio", returnType = "Float64", vtableIndex = 7),
+                                WinMdMethod(name = "GetSignedValue", returnType = "Int64", vtableIndex = 8),
+                                WinMdMethod(name = "GetUnsignedValue", returnType = "UInt64", vtableIndex = 9),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/ScalarReturnHost.kt" }.content
+
+        assertTrue(binding.contains("fun getFlag(): Boolean"))
+        assertTrue(binding.contains("return WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 6).getOrThrow())"))
+        assertTrue(binding.contains("fun getRatio(): Double"))
+        assertTrue(binding.contains("return PlatformComInterop.invokeFloat64Method(pointer, 7).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedValue(): Long"))
+        assertTrue(binding.contains("return Int64(PlatformComInterop.invokeInt64Getter(pointer, 8).getOrThrow())"))
+        assertTrue(binding.contains("fun getUnsignedValue(): ULong"))
+        assertTrue(binding.contains("return UInt64(PlatformComInterop.invokeInt64Getter(pointer, 9).getOrThrow().toULong())"))
+    }
+
+    @Test
+    fun generates_runtime_methods_with_parameters_for_int32_and_uint32_returns() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Payload",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "ParameterRuntimeHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetSignedByName",
+                                    returnType = "Int32",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter(name = "name", type = "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetSignedByIndex",
+                                    returnType = "Int32",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter(name = "index", type = "UInt32")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetSignedByPayload",
+                                    returnType = "Int32",
+                                    vtableIndex = 8,
+                                    parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetUnsignedByName",
+                                    returnType = "UInt32",
+                                    vtableIndex = 9,
+                                    parameters = listOf(WinMdParameter(name = "name", type = "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetUnsignedByIndex",
+                                    returnType = "UInt32",
+                                    vtableIndex = 10,
+                                    parameters = listOf(WinMdParameter(name = "index", type = "UInt32")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetUnsignedByPayload",
+                                    returnType = "UInt32",
+                                    vtableIndex = 11,
+                                    parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/ParameterRuntimeHost.kt" }.content
+
+        assertTrue(binding.contains("fun getSignedByName(name: String): Int32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt32MethodWithStringArg(pointer,"))
+        assertTrue(binding.contains("name).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByIndex(index: UInt32): Int32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt32MethodWithUInt32Arg(pointer, 7,"))
+        assertTrue(binding.contains("index.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByPayload(payload: Payload): Int32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt32MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByName(name: String): UInt32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt32MethodWithStringArg(pointer,"))
+        assertTrue(binding.contains("name).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByIndex(index: UInt32): UInt32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt32MethodWithUInt32Arg(pointer, 10,"))
+        assertTrue(binding.contains("index.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByPayload(payload: Payload): UInt32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt32MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer).getOrThrow()"))
+    }
+
+    @Test
+    fun generates_runtime_unit_methods_with_uint32_arguments() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "UInt32UnitHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetCount",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter(name = "count", type = "UInt32")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/UInt32UnitHost.kt" }.content
+
+        assertTrue(binding.contains("fun setCount(count: UInt32)"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 6, count.value).getOrThrow()"))
+    }
+
+    @Test
+    fun generates_interface_methods_with_parameters_for_int32_and_uint32_returns() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Payload",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "ParameterInterfaceHost",
+                            kind = WinMdTypeKind.Interface,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetSignedByName",
+                                    returnType = "Int32",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter(name = "name", type = "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetSignedByIndex",
+                                    returnType = "Int32",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter(name = "index", type = "UInt32")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetSignedByPayload",
+                                    returnType = "Int32",
+                                    vtableIndex = 8,
+                                    parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetUnsignedByName",
+                                    returnType = "UInt32",
+                                    vtableIndex = 9,
+                                    parameters = listOf(WinMdParameter(name = "name", type = "String")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetUnsignedByIndex",
+                                    returnType = "UInt32",
+                                    vtableIndex = 10,
+                                    parameters = listOf(WinMdParameter(name = "index", type = "UInt32")),
+                                ),
+                                WinMdMethod(
+                                    name = "GetUnsignedByPayload",
+                                    returnType = "UInt32",
+                                    vtableIndex = 11,
+                                    parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/ParameterInterfaceHost.kt" }.content
+
+        assertTrue(binding.contains("fun getSignedByName(name: String): Int32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt32MethodWithStringArg(pointer,"))
+        assertTrue(binding.contains("name).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByIndex(index: UInt32): Int32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt32MethodWithUInt32Arg(pointer, 7,"))
+        assertTrue(binding.contains("index.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByPayload(payload: Payload): Int32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt32MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByName(name: String): UInt32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt32MethodWithStringArg(pointer,"))
+        assertTrue(binding.contains("name).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByIndex(index: UInt32): UInt32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt32MethodWithUInt32Arg(pointer, 10,"))
+        assertTrue(binding.contains("index.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByPayload(payload: Payload): UInt32"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt32MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer).getOrThrow()"))
+    }
+
+    @Test
+    fun generates_interface_unit_methods_with_uint32_arguments() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "UInt32UnitInterfaceHost",
+                            kind = WinMdTypeKind.Interface,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetCount",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter(name = "count", type = "UInt32")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/UInt32UnitInterfaceHost.kt" }.content
+
+        assertTrue(binding.contains("fun setCount(count: UInt32)"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 6, count.value).getOrThrow()"))
+    }
+
+    @Test
+    fun generates_runtime_methods_with_parameters_for_int64_and_uint64_returns() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Payload",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "WideParameterRuntimeHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(name = "GetSignedByName", returnType = "Int64", vtableIndex = 6, parameters = listOf(WinMdParameter(name = "name", type = "String"))),
+                                WinMdMethod(name = "GetSignedByCount", returnType = "Int64", vtableIndex = 7, parameters = listOf(WinMdParameter(name = "count", type = "Int32"))),
+                                WinMdMethod(name = "GetSignedByIndex", returnType = "Int64", vtableIndex = 8, parameters = listOf(WinMdParameter(name = "index", type = "UInt32"))),
+                                WinMdMethod(name = "GetSignedByFlag", returnType = "Int64", vtableIndex = 9, parameters = listOf(WinMdParameter(name = "flag", type = "Boolean"))),
+                                WinMdMethod(name = "GetSignedByPayload", returnType = "Int64", vtableIndex = 10, parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload"))),
+                                WinMdMethod(name = "GetUnsignedByName", returnType = "UInt64", vtableIndex = 11, parameters = listOf(WinMdParameter(name = "name", type = "String"))),
+                                WinMdMethod(name = "GetUnsignedByCount", returnType = "UInt64", vtableIndex = 12, parameters = listOf(WinMdParameter(name = "count", type = "Int32"))),
+                                WinMdMethod(name = "GetUnsignedByIndex", returnType = "UInt64", vtableIndex = 13, parameters = listOf(WinMdParameter(name = "index", type = "UInt32"))),
+                                WinMdMethod(name = "GetUnsignedByFlag", returnType = "UInt64", vtableIndex = 14, parameters = listOf(WinMdParameter(name = "flag", type = "Boolean"))),
+                                WinMdMethod(name = "GetUnsignedByPayload", returnType = "UInt64", vtableIndex = 15, parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload"))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/WideParameterRuntimeHost.kt" }.content
+
+        assertTrue(binding.contains("fun getSignedByName(name: String): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithStringArg(pointer,"))
+        assertTrue(binding.contains("name).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByCount(count: Int32): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithInt32Arg(pointer, 7,"))
+        assertTrue(binding.contains("count.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByIndex(index: UInt32): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithUInt32Arg(pointer, 8,"))
+        assertTrue(binding.contains("index.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByFlag(flag: WinRtBoolean): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithBooleanArg(pointer, 9,"))
+        assertTrue(binding.contains("flag.value"))
+        assertTrue(binding.contains("fun getSignedByPayload(payload: Payload): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer"))
+        assertTrue(binding.contains("fun getUnsignedByName(name: String): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithStringArg(pointer,"))
+        assertTrue(binding.contains("name).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByCount(count: Int32): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithInt32Arg(pointer, 12,"))
+        assertTrue(binding.contains("count.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByIndex(index: UInt32): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithUInt32Arg(pointer, 13,"))
+        assertTrue(binding.contains("index.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByFlag(flag: WinRtBoolean): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithBooleanArg(pointer, 14,"))
+        assertTrue(binding.contains("fun getUnsignedByPayload(payload: Payload): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer"))
+    }
+
+    @Test
+    fun generates_interface_methods_with_parameters_for_int64_and_uint64_returns() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Payload",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "WideParameterInterfaceHost",
+                            kind = WinMdTypeKind.Interface,
+                            methods = listOf(
+                                WinMdMethod(name = "GetSignedByName", returnType = "Int64", vtableIndex = 6, parameters = listOf(WinMdParameter(name = "name", type = "String"))),
+                                WinMdMethod(name = "GetSignedByCount", returnType = "Int64", vtableIndex = 7, parameters = listOf(WinMdParameter(name = "count", type = "Int32"))),
+                                WinMdMethod(name = "GetSignedByIndex", returnType = "Int64", vtableIndex = 8, parameters = listOf(WinMdParameter(name = "index", type = "UInt32"))),
+                                WinMdMethod(name = "GetSignedByFlag", returnType = "Int64", vtableIndex = 9, parameters = listOf(WinMdParameter(name = "flag", type = "Boolean"))),
+                                WinMdMethod(name = "GetSignedByPayload", returnType = "Int64", vtableIndex = 10, parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload"))),
+                                WinMdMethod(name = "GetUnsignedByName", returnType = "UInt64", vtableIndex = 11, parameters = listOf(WinMdParameter(name = "name", type = "String"))),
+                                WinMdMethod(name = "GetUnsignedByCount", returnType = "UInt64", vtableIndex = 12, parameters = listOf(WinMdParameter(name = "count", type = "Int32"))),
+                                WinMdMethod(name = "GetUnsignedByIndex", returnType = "UInt64", vtableIndex = 13, parameters = listOf(WinMdParameter(name = "index", type = "UInt32"))),
+                                WinMdMethod(name = "GetUnsignedByFlag", returnType = "UInt64", vtableIndex = 14, parameters = listOf(WinMdParameter(name = "flag", type = "Boolean"))),
+                                WinMdMethod(name = "GetUnsignedByPayload", returnType = "UInt64", vtableIndex = 15, parameters = listOf(WinMdParameter(name = "payload", type = "Example.Runtime.Payload"))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/WideParameterInterfaceHost.kt" }.content
+
+        assertTrue(binding.contains("fun getSignedByName(name: String): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithStringArg(pointer,"))
+        assertTrue(binding.contains("name).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByCount(count: Int32): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithInt32Arg(pointer, 7,"))
+        assertTrue(binding.contains("count.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByIndex(index: UInt32): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithUInt32Arg(pointer, 8,"))
+        assertTrue(binding.contains("index.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getSignedByFlag(flag: WinRtBoolean): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithBooleanArg(pointer, 9,"))
+        assertTrue(binding.contains("flag.value"))
+        assertTrue(binding.contains("fun getSignedByPayload(payload: Payload): Int64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer"))
+        assertTrue(binding.contains("fun getUnsignedByName(name: String): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithStringArg(pointer,"))
+        assertTrue(binding.contains("name).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByCount(count: Int32): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithInt32Arg(pointer, 12,"))
+        assertTrue(binding.contains("count.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByIndex(index: UInt32): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithUInt32Arg(pointer, 13,"))
+        assertTrue(binding.contains("index.value).getOrThrow()"))
+        assertTrue(binding.contains("fun getUnsignedByFlag(flag: WinRtBoolean): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithBooleanArg(pointer, 14,"))
+        assertTrue(binding.contains("fun getUnsignedByPayload(payload: Payload): UInt64"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithObjectArg(pointer,"))
+        assertTrue(binding.contains("payload.pointer"))
     }
 
     @Test
@@ -2003,6 +4321,7 @@ class KotlinBindingGeneratorTest {
                                 WinMdProperty(name = "LastToken", type = "EventRegistrationToken", mutable = false, getterVtableIndex = 10),
                                 WinMdProperty(name = "Title", type = "String", mutable = true, getterVtableIndex = 11, setterVtableIndex = 12),
                                 WinMdProperty(name = "Count", type = "Int32", mutable = true, getterVtableIndex = 13, setterVtableIndex = 14),
+                                WinMdProperty(name = "Payload", type = "Object", mutable = true, getterVtableIndex = 15, setterVtableIndex = 16),
                             ),
                         ),
                     ),
@@ -2012,15 +4331,16 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Example/Runtime/ScalarPropertyHost.kt" }.content
+        val normalizedBinding = binding.replace(Regex("\\s+"), " ")
 
         assertTrue(binding.contains("val flag: WinRtBoolean"))
         assertTrue(binding.contains("return WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 6).getOrThrow())"))
-        assertTrue(binding.contains("val stableId: GuidValue"))
-        assertTrue(binding.contains("return GuidValue(PlatformComInterop.invokeGuidGetter(pointer, 7).getOrThrow().toString())"))
-        assertTrue(binding.contains("val createdAt: DateTime"))
-        assertTrue(binding.contains("return DateTime(PlatformComInterop.invokeInt64Getter(pointer, 8).getOrThrow())"))
-        assertTrue(binding.contains("val lifetime: TimeSpan"))
-        assertTrue(binding.contains("return TimeSpan(PlatformComInterop.invokeInt64Getter(pointer, 9).getOrThrow())"))
+        assertTrue(binding.contains("val stableId: Uuid"))
+        assertTrue(binding.contains("return Uuid.parse(PlatformComInterop.invokeGuidGetter(pointer, 7).getOrThrow().toString())"))
+        assertTrue(binding.contains("val createdAt: Instant"))
+        assertTrue(binding.contains("return Instant.fromEpochSeconds((PlatformComInterop.invokeInt64Getter(pointer, 8).getOrThrow() - 116444736000000000) / 10000000L, ((PlatformComInterop.invokeInt64Getter(pointer, 8).getOrThrow() - 116444736000000000) % 10000000L * 100).toInt())"))
+        assertTrue(binding.contains("val lifetime: Duration"))
+        assertTrue(binding.contains("return Duration.parse(\"0s\")"))
         assertTrue(binding.contains("val lastToken: EventRegistrationToken"))
         assertTrue(binding.contains("return EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer, 10).getOrThrow())"))
         assertTrue(binding.contains("var title: String"))
@@ -2030,6 +4350,10 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("var count: Int32"))
         assertTrue(binding.contains("return Int32(PlatformComInterop.invokeInt32Method(pointer, 13).getOrThrow())"))
         assertTrue(binding.contains("PlatformComInterop.invokeInt32Setter(pointer, 14, value.value).getOrThrow()"))
+        assertTrue(normalizedBinding.contains("var payload: Inspectable"))
+        assertTrue(normalizedBinding.contains("RuntimeProperty<Inspectable>(Inspectable(ComPtr.NULL))"))
+        assertTrue(normalizedBinding.contains("return Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 15).getOrThrow())"))
+        assertTrue(normalizedBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 16, (`value` as Inspectable).pointer).getOrThrow()"))
     }
 
     @Test
@@ -2538,6 +4862,44 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun reads_json_object_map_interfaces_from_real_metadata_model_when_available() {
+        val universalContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.UniversalApiContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val foundationContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.FoundationContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val model = WinMdModelFactory.metadataModel(
+            listOf(
+                universalContract.winmdPath,
+                foundationContract.winmdPath,
+            ),
+        )
+
+        val jsonNamespace = model.namespaces.firstOrNull { it.name == "Windows.Data.Json" } ?: return
+        if (jsonNamespace.types.none { it.name == "JsonObject" } || jsonNamespace.types.none { it.name == "IJsonObject" }) {
+            return
+        }
+
+        val jsonObject = jsonNamespace.types.first { it.name == "JsonObject" }
+
+        assertTrue(
+            jsonObject.baseInterfaces.toString(),
+            jsonObject.baseInterfaces.any {
+                it.contains("Windows.Foundation.Collections.IMap") && it.contains("Windows.Data.Json.IJsonValue")
+            },
+        )
+        assertTrue(
+            jsonObject.baseInterfaces.toString(),
+            jsonObject.baseInterfaces.any {
+                it.contains("Windows.Foundation.Collections.IIterable") && it.contains("Windows.Foundation.Collections.IKeyValuePair")
+            },
+        )
+    }
+
+    @Test
     fun generates_specialized_object_methods_for_property_set_binding() {
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",
@@ -2561,8 +4923,9 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(propertySetBinding.contains("fun lookup(key: String): Inspectable"))
         assertTrue(propertySetBinding.contains("fun hasKey(key: String): WinRtBoolean"))
-        assertTrue(propertySetBinding.contains("invokeObjectMethodWithStringArg(pointer, 6, key).getOrThrow()"))
-        assertTrue(propertySetBinding.contains("invokeBooleanMethodWithStringArg(pointer, 8,"))
+        assertTrue(propertySetBinding.contains("invokeObjectMethodWithStringArg(pointer, 7,"))
+        assertTrue(propertySetBinding.contains("key).getOrThrow()"))
+        assertTrue(propertySetBinding.contains("invokeBooleanMethodWithStringArg(pointer, 9,"))
     }
 
     @Test
@@ -2600,7 +4963,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("open class `IVector`1`<T>("))
         assertTrue(binding.contains("fun signatureOf(arg0Signature: String): String"))
         assertTrue(binding.contains("fun projectionTypeKeyOf(arg0ProjectionTypeKey: String): String"))
-        assertTrue(binding.contains("System.Collections.Generic.IList<"))
+        assertTrue(binding.contains("kotlin.collections.MutableList<"))
         assertTrue(binding.contains("WinRtTypeSignature.parameterizedInterface("))
         assertTrue(binding.contains("\"00000000-0000-0000-0000-000000000001\""))
         assertTrue(binding.contains("arg0Signature"))
@@ -2617,6 +4980,476 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("inspectable.projectInterface(metadataOf("))
         assertTrue(binding.contains("arg0ProjectionTypeKey"))
         assertTrue(binding.contains("IVector"))
+    }
+
+    @Test
+    fun generates_kotlin_map_shape_for_open_generic_interfaces() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IMap`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "00000000-0000-0000-0000-000000000002",
+                            genericParameters = listOf("K", "V"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Lookup",
+                                    returnType = "V",
+                                    parameters = listOf(WinMdParameter("key", "K")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "HasKey",
+                                    returnType = "Boolean",
+                                    parameters = listOf(WinMdParameter("key", "K")),
+                                    vtableIndex = 7,
+                                ),
+                                WinMdMethod(
+                                    name = "Insert",
+                                    returnType = "Boolean",
+                                    parameters = listOf(
+                                        WinMdParameter("key", "K"),
+                                        WinMdParameter("value", "V"),
+                                    ),
+                                    vtableIndex = 8,
+                                ),
+                                WinMdMethod(
+                                    name = "Remove",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("key", "K")),
+                                    vtableIndex = 9,
+                                ),
+                                WinMdMethod(
+                                    name = "Clear",
+                                    returnType = "Unit",
+                                    vtableIndex = 10,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Windows/Foundation/Collections/IMap`2.kt"
+        }.content
+
+        assertTrue(binding.contains("MutableMap<"))
+        assertTrue(binding.contains("MutableMap<K, V> by WinRtMutableMapProjection<K, V>"))
+        assertTrue(binding.contains("override val projectionTypeKey: String = \"kotlin.collections.MutableMap\""))
+        assertTrue(binding.contains("fun clear()"))
+    }
+
+    @Test
+    fun generates_kotlin_map_view_shape_for_open_generic_interfaces() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IMapView`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "00000000-0000-0000-0000-000000000003",
+                            genericParameters = listOf("K", "V"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Lookup",
+                                    returnType = "V",
+                                    parameters = listOf(WinMdParameter("key", "K")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "HasKey",
+                                    returnType = "Boolean",
+                                    parameters = listOf(WinMdParameter("key", "K")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Windows/Foundation/Collections/IMapView`2.kt"
+        }.content
+
+        assertTrue(binding.contains("Map<"))
+        assertTrue(binding.contains("Map<K, V> by WinRtMapProjection<K, V>"))
+        assertTrue(binding.contains("override val projectionTypeKey: String = \"kotlin.collections.Map\""))
+    }
+
+    @Test
+    fun generates_kotlin_dictionary_shape_for_runtime_classes_with_projected_values() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IMap`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "00000000-0000-0000-0000-000000000002",
+                            genericParameters = listOf("K", "V"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IMapView`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "00000000-0000-0000-0000-000000000003",
+                            genericParameters = listOf("K", "V"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "IUIElement",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "UIElement",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Microsoft.UI.Xaml.IUIElement",
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml.Controls",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Controls",
+                            name = "MapHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IMap<String, Microsoft.UI.Xaml.UIElement>",
+                            baseInterfaces = listOf(
+                                "Windows.Foundation.Collections.IMap<String, Microsoft.UI.Xaml.UIElement>",
+                                "Windows.Foundation.Collections.IMapView<String, Microsoft.UI.Xaml.UIElement>",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Microsoft/UI/Xaml/Controls/MapHost.kt"
+        }.content
+
+        assertTrue(binding.contains("MutableMap<String, UIElement>"))
+        assertTrue(binding.contains("WinRtMutableMapProjection<String, UIElement>"))
+        assertFalse(binding.contains("Map<String, UIElement> by WinRtMapProjection<String, UIElement>"))
+        assertTrue(binding.contains("entriesProvider = { first().asSequence().toList() }"))
+    }
+
+    @Test
+    fun generates_kotlin_map_view_shape_for_runtime_classes_with_projected_values() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IMap`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "00000000-0000-0000-0000-000000000002",
+                            genericParameters = listOf("K", "V"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IMapView`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "00000000-0000-0000-0000-000000000003",
+                            genericParameters = listOf("K", "V"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "IUIElement",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "UIElement",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Microsoft.UI.Xaml.IUIElement",
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml.Controls",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Controls",
+                            name = "MapViewHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IMapView<String, Microsoft.UI.Xaml.UIElement>",
+                            baseInterfaces = listOf(
+                                "Windows.Foundation.Collections.IMapView<String, Microsoft.UI.Xaml.UIElement>",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Microsoft/UI/Xaml/Controls/MapViewHost.kt"
+        }.content
+
+        assertTrue(binding.contains("Map<String, UIElement>"))
+        assertTrue(binding.contains("WinRtMapProjection<String, UIElement>"))
+        assertFalse(binding.contains("WinRtMutableMapProjection<String, UIElement>"))
+    }
+
+    @Test
+    fun generates_observable_collection_event_slots_for_runtime_classes() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IObservableVector`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-1111-2222-3333-444444444444",
+                            genericParameters = listOf("T"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_VectorChanged",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(
+                                        WinMdParameter("handler", "Windows.Foundation.TypedEventHandler<Object, Int32>"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_VectorChanged",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("token", "EventRegistrationToken"),
+                                    ),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IObservableMap`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbbbbbbb-1111-2222-3333-444444444444",
+                            genericParameters = listOf("K", "V"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_MapChanged",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(
+                                        WinMdParameter("handler", "Windows.Foundation.TypedEventHandler<Object, String>"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_MapChanged",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("token", "EventRegistrationToken"),
+                                    ),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "TypedEventHandler`2",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "cccccccc-1111-2222-3333-444444444444",
+                            genericParameters = listOf("TSender", "TResult"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("sender", "TSender"),
+                                        WinMdParameter("args", "TResult"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Collections",
+                            name = "ObservableVectorHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IObservableVector<String>",
+                            baseInterfaces = listOf("Windows.Foundation.Collections.IObservableVector<String>"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_VectorChanged",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(
+                                        WinMdParameter("handler", "Windows.Foundation.TypedEventHandler<Object, Int32>"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_VectorChanged",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("token", "EventRegistrationToken"),
+                                    ),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Collections",
+                            name = "ObservableMapHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IObservableMap<String, Int32>",
+                            baseInterfaces = listOf("Windows.Foundation.Collections.IObservableMap<String, Int32>"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_MapChanged",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(
+                                        WinMdParameter("handler", "Windows.Foundation.TypedEventHandler<Object, String>"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_MapChanged",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("token", "EventRegistrationToken"),
+                                    ),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val vectorBinding = files.first { it.relativePath == "Example/Collections/ObservableVectorHost.kt" }.content
+        val mapBinding = files.first { it.relativePath == "Example/Collections/ObservableMapHost.kt" }.content
+
+        assertTrue(vectorBinding.contains("MutableList<String>"))
+        assertTrue(vectorBinding.contains("vectorChangedEvent"))
+        assertTrue(vectorBinding.contains("subscribeScoped"))
+        assertTrue(vectorBinding.contains("delegateHandles.remove(token)?.close()"))
+
+        assertTrue(mapBinding.contains("MutableMap<String, Int>"))
+        assertTrue(mapBinding.contains("mapChangedEvent"))
+        assertTrue(mapBinding.contains("subscribeScoped"))
+        assertTrue(mapBinding.contains("delegateHandles.remove(token)?.close()"))
+    }
+
+    @Test
+    fun generates_kotlin_iterable_shape_for_runtime_classes_with_key_value_pair_entries() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IIterable",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "faa585ea-6214-4217-afda-7f46de5869b3",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IIterator",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "6a79e863-4300-459a-9966-cbb660963ee1",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IKeyValuePair`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "8f4cf5d3-0fa1-4c97-aab5-2e6f2d0b5e5e",
+                            genericParameters = listOf("K", "V"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Data.Json",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonValue",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "JsonObject",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Data.Json.IJsonValue",
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml.Controls",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Controls",
+                            name = "EntryIterableHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IIterable<Windows.Foundation.Collections.IKeyValuePair<String, Windows.Data.Json.JsonObject>>",
+                            baseInterfaces = listOf("Windows.Foundation.Collections.IIterable<Windows.Foundation.Collections.IKeyValuePair<String, Windows.Data.Json.JsonObject>>"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Microsoft/UI/Xaml/Controls/EntryIterableHost.kt"
+        }.content
+
+        assertTrue(binding.contains("Iterable<Map.Entry<String, JsonObject>>"))
+        assertTrue(binding.contains("IIterable.from(Inspectable(pointer),"))
+        assertTrue(binding.contains("Map.Entry<String, JsonObject>"))
     }
 
     @Test
@@ -2647,6 +5480,10 @@ class KotlinBindingGeneratorTest {
             .first { it.name == "Microsoft.UI.Xaml.Controls" }
             .types.first { it.name == "IUIElementCollection" }
 
+        if (collection.baseInterfaces.isEmpty()) {
+            return
+        }
+
         val renderedSignatures = collection.methods.joinToString(separator = "\n") { method ->
             "${method.name}(${method.parameters.joinToString(",") { it.type }}):${method.returnType}"
         }
@@ -2669,6 +5506,7 @@ class KotlinBindingGeneratorTest {
         val dispatcherQueueBinding = files.first {
             it.relativePath == "Microsoft/UI/Dispatching/IDispatcherQueue.kt"
         }.content
+        val normalizedDispatcherQueueBinding = dispatcherQueueBinding.replace(Regex("\\s+"), "")
 
         assertTrue(dispatcherQueueBinding.contains("fun tryEnqueue(callback: DispatcherQueueHandler): WinRtBoolean"))
         assertTrue(dispatcherQueueBinding.contains("fun tryEnqueue("))
@@ -2677,6 +5515,59 @@ class KotlinBindingGeneratorTest {
         assertTrue(dispatcherQueueBinding.contains("DispatcherQueueHandler.iid"))
         assertTrue(dispatcherQueueBinding.contains("invokeBooleanMethodWithObjectArg(pointer, 7,"))
         assertTrue(dispatcherQueueBinding.contains("callback.pointer"))
+    }
+
+    @Test
+    fun generates_dispatch_queue_adapter_for_dispatcher_queue_interfaces() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Dispatching",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Dispatching",
+                            name = "DispatcherQueueHandler",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "aaaa1111-2222-3333-4444-555555555555",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Dispatching",
+                            name = "IDispatcherQueue",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbbb1111-2222-3333-4444-555555555555",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "TryEnqueue",
+                                    returnType = "Windows.Foundation.WinRtBoolean",
+                                    vtableIndex = 7,
+                                    parameters = listOf(
+                                        WinMdParameter("callback", "Microsoft.UI.Dispatching.DispatcherQueueHandler"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Microsoft/UI/Dispatching/IDispatcherQueue.kt" }.content
+        val normalizedBinding = binding.replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("DispatchQueue"))
+        assertTrue(binding.contains("fun dispatch("))
+        assertTrue(normalizedBinding.contains("return"))
+        assertTrue(normalizedBinding.contains("tryEnqueue("))
+        assertTrue(normalizedBinding.contains("DispatcherQueueHandler(block)"))
+        assertTrue(normalizedBinding.contains(".value"))
     }
 
     @Test
@@ -2747,6 +5638,8 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate"))
         assertTrue(binding.contains("ApplicationInitializationCallback.iid"))
         assertTrue(binding.contains("start(ApplicationInitializationCallback(delegateHandle.pointer))"))
+        assertTrue(binding.contains("catch (t: Throwable)"))
+        assertTrue(binding.contains("delegateHandle.close()"))
     }
 
     @Test
@@ -2870,6 +5763,8 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("() -> Unit"))
         assertTrue(binding.contains("WinRtDelegateBridge.createUnitDelegate(TickHandler.iid, emptyList())"))
         assertTrue(binding.contains("setHandler(TickHandler(delegateHandle.pointer))"))
+        assertTrue(binding.contains("delegateHandle.close()"))
+        assertTrue(binding.contains("catch (t: Throwable)"))
     }
 
     @Test
@@ -3040,7 +5935,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun setPredicate(callback: PayloadPredicate)"))
         assertTrue(binding.contains("WinRtDelegateBridge.createBooleanDelegate(PayloadPredicate.iid"))
-        assertTrue(binding.contains("callback(Payload(arg))"))
+        assertTrue(binding.contains("callback(example.runtime.Payload(args[0] as ComPtr))"))
         assertTrue(binding.contains("setPredicate(PayloadPredicate(delegateHandle.pointer))"))
     }
 
@@ -4447,21 +7342,22 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val jsonObjectBinding = files.first { it.relativePath == "Windows/Data/Json/IJsonObject.kt" }.content
+        val normalizedJsonObjectBinding = jsonObjectBinding.replace(Regex("\\s+"), " ")
 
         assertTrue(jsonObjectBinding.contains("fun getNamedValue(name: String): IJsonValue"))
-        assertTrue(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 6, name).getOrThrow()"))
+        assertTrue(normalizedJsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 6, name).getOrThrow()"))
         assertTrue(jsonObjectBinding.contains("fun getNamedObject(name: String): JsonObject"))
-        assertTrue(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 8, name).getOrThrow()"))
+        assertTrue(normalizedJsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 8, name).getOrThrow()"))
         assertTrue(jsonObjectBinding.contains("fun getNamedArray(name: String): JsonArray"))
-        assertTrue(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 9, name).getOrThrow()"))
+        assertTrue(normalizedJsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 9, name).getOrThrow()"))
         assertTrue(jsonObjectBinding.contains("fun getNamedString(name: String): String"))
-        assertTrue(jsonObjectBinding.contains("invokeHStringMethodWithStringArg(pointer, 10, name).getOrThrow()"))
+        assertTrue(normalizedJsonObjectBinding.contains("invokeHStringMethodWithStringArg(pointer, 10, name).getOrThrow()"))
         assertTrue(jsonObjectBinding.contains("fun getNamedNumber(name: String): Float64"))
-        assertTrue(jsonObjectBinding.contains("invokeFloat64MethodWithStringArg(pointer, 11, name).getOrThrow()"))
+        assertTrue(normalizedJsonObjectBinding.contains("invokeFloat64MethodWithStringArg(pointer, 11, name).getOrThrow()"))
         assertTrue(jsonObjectBinding.contains("fun getNamedBoolean(name: String): WinRtBoolean"))
-        assertTrue(jsonObjectBinding.contains("invokeBooleanMethodWithStringArg(pointer, 12,"))
-        assertFalse(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 13, name).getOrThrow()"))
-        assertFalse(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 15, name).getOrThrow()"))
+        assertTrue(normalizedJsonObjectBinding.contains("invokeBooleanMethodWithStringArg(pointer, 12, name).getOrThrow()"))
+        assertFalse(normalizedJsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 13, name).getOrThrow()"))
+        assertFalse(normalizedJsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 15, name).getOrThrow()"))
         assertFalse(jsonObjectBinding.contains("invokeObjectMethodWithStringArg(pointer, 16, name).getOrThrow()"))
         assertFalse(jsonObjectBinding.contains("invokeHStringMethodWithStringArg(pointer, 17, name).getOrThrow()"))
         assertFalse(jsonObjectBinding.contains("invokeFloat64MethodWithStringArg(pointer, 18, name).getOrThrow()"))
@@ -4611,12 +7507,12 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Example/Contracts/ITimestamped.kt" }.content
 
-        assertTrue(binding.contains("val stableId: GuidValue"))
-        assertTrue(binding.contains("GuidValue(PlatformComInterop.invokeGuidGetter(pointer, 6).getOrThrow().toString())"))
-        assertTrue(binding.contains("val createdAt: DateTime"))
-        assertTrue(binding.contains("DateTime(PlatformComInterop.invokeInt64Getter(pointer, 7).getOrThrow())"))
-        assertTrue(binding.contains("val lifetime: TimeSpan"))
-        assertTrue(binding.contains("TimeSpan(PlatformComInterop.invokeInt64Getter(pointer, 8).getOrThrow())"))
+        assertTrue(binding.contains("val stableId: Uuid"))
+        assertTrue(binding.contains("Uuid.parse(PlatformComInterop.invokeGuidGetter(pointer, 6).getOrThrow().toString())"))
+        assertTrue(binding.contains("val createdAt: Instant"))
+        assertTrue(binding.contains("Instant.fromEpochSeconds((PlatformComInterop.invokeInt64Getter(pointer, 7).getOrThrow() - 116444736000000000) / 10000000L, ((PlatformComInterop.invokeInt64Getter(pointer, 7).getOrThrow() - 116444736000000000) % 10000000L * 100).toInt())"))
+        assertTrue(binding.contains("val lifetime: Duration"))
+        assertTrue(binding.contains("Duration.parse(\"0s\")"))
         assertTrue(binding.contains("val token: EventRegistrationToken"))
         assertTrue(binding.contains("EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer, 9).getOrThrow())"))
     }
@@ -4669,6 +7565,330 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("Int64(PlatformComInterop.invokeInt64Getter(pointer, 7).getOrThrow())"))
         assertTrue(binding.contains("val version: UInt64"))
         assertTrue(binding.contains("UInt64(PlatformComInterop.invokeInt64Getter(pointer, 8).getOrThrow().toULong())"))
+    }
+
+    @Test
+    fun generates_uint32_runtime_and_interface_property_setters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "CounterHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Count",
+                                    type = "UInt32",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "ICounterHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "87654321-4321-6789-abcd-ef0123456789",
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Count",
+                                    type = "UInt32",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Example/Contracts/CounterHost.kt" }.content
+        val interfaceBinding = files.first { it.relativePath == "Example/Contracts/ICounterHost.kt" }.content
+
+        assertTrue(runtimeBinding.contains("var count: UInt32"))
+        assertTrue(runtimeBinding.contains("UInt32(PlatformComInterop.invokeUInt32Method(pointer, 6).getOrThrow())"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeUInt32Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("var count: UInt32"))
+        assertTrue(interfaceBinding.contains("UInt32(PlatformComInterop.invokeUInt32Method(pointer, 6).getOrThrow())"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeUInt32Setter(pointer, 7, value.value).getOrThrow()"))
+    }
+
+    @Test
+    fun generates_float32_runtime_and_interface_property_setters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "ProgressHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Progress",
+                                    type = "Float32",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "IProgressHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "11111111-2222-3333-4444-555555555555",
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Progress",
+                                    type = "Float32",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Example/Contracts/ProgressHost.kt" }.content
+        val interfaceBinding = files.first { it.relativePath == "Example/Contracts/IProgressHost.kt" }.content
+
+        assertTrue(runtimeBinding.contains("var progress: Float32"))
+        assertTrue(runtimeBinding.contains("Float32(PlatformComInterop.invokeFloat32Method(pointer, 6).getOrThrow())"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeFloat32Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("var progress: Float32"))
+        assertTrue(interfaceBinding.contains("Float32(PlatformComInterop.invokeFloat32Method(pointer, 6).getOrThrow())"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeFloat32Setter(pointer, 7, value.value).getOrThrow()"))
+    }
+
+    @Test
+    fun generates_boolean_runtime_and_interface_property_setters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "ToggleHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Enabled",
+                                    type = "Boolean",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "IToggleHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "99999999-aaaa-bbbb-cccc-dddddddddddd",
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Enabled",
+                                    type = "Boolean",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Example/Contracts/ToggleHost.kt" }.content
+        val interfaceBinding = files.first { it.relativePath == "Example/Contracts/IToggleHost.kt" }.content
+
+        assertTrue(runtimeBinding.contains("var enabled: WinRtBoolean"))
+        assertTrue(runtimeBinding.contains("WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 6).getOrThrow())"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeBooleanSetter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("var enabled: WinRtBoolean"))
+        assertTrue(interfaceBinding.contains("WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 6).getOrThrow())"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeBooleanSetter(pointer, 7, value.value).getOrThrow()"))
+    }
+
+    @Test
+    fun generates_float64_runtime_and_interface_property_setters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "MetricHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Ratio",
+                                    type = "Float64",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "IMetricHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Ratio",
+                                    type = "Float64",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Example/Contracts/MetricHost.kt" }.content
+        val interfaceBinding = files.first { it.relativePath == "Example/Contracts/IMetricHost.kt" }.content
+
+        assertTrue(runtimeBinding.contains("var ratio: Float64"))
+        assertTrue(runtimeBinding.contains("Float64(PlatformComInterop.invokeFloat64Method(pointer, 6).getOrThrow())"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeFloat64Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("var ratio: Float64"))
+        assertTrue(interfaceBinding.contains("Float64(PlatformComInterop.invokeFloat64Method(pointer, 6).getOrThrow())"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeFloat64Setter(pointer, 7, value.value).getOrThrow()"))
+    }
+
+    @Test
+    fun generates_int64_runtime_and_interface_property_setters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "SignedHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Amount",
+                                    type = "Int64",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "ISignedHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Amount",
+                                    type = "Int64",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Example/Contracts/SignedHost.kt" }.content
+        val interfaceBinding = files.first { it.relativePath == "Example/Contracts/ISignedHost.kt" }.content
+
+        assertTrue(runtimeBinding.contains("var amount: Int64"))
+        assertTrue(runtimeBinding.contains("Int64(PlatformComInterop.invokeInt64Getter(pointer, 6).getOrThrow())"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeInt64Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("var amount: Int64"))
+        assertTrue(interfaceBinding.contains("Int64(PlatformComInterop.invokeInt64Getter(pointer, 6).getOrThrow())"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeInt64Setter(pointer, 7, value.value).getOrThrow()"))
+    }
+
+    @Test
+    fun generates_uint64_runtime_and_interface_property_setters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "UnsignedHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Count",
+                                    type = "UInt64",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "IUnsignedHost",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "cccccccc-dddd-eeee-ffff-000000000000",
+                            properties = listOf(
+                                dev.winrt.winmd.plugin.WinMdProperty(
+                                    name = "Count",
+                                    type = "UInt64",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Example/Contracts/UnsignedHost.kt" }.content
+        val interfaceBinding = files.first { it.relativePath == "Example/Contracts/IUnsignedHost.kt" }.content
+
+        assertTrue(runtimeBinding.contains("var count: UInt64"))
+        assertTrue(runtimeBinding.contains("UInt64(PlatformComInterop.invokeInt64Getter(pointer, 6).getOrThrow().toULong())"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeUInt64Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("var count: UInt64"))
+        assertTrue(interfaceBinding.contains("UInt64(PlatformComInterop.invokeInt64Getter(pointer, 6).getOrThrow().toULong())"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeUInt64Setter(pointer, 7, value.value).getOrThrow()"))
     }
 
     @Test
@@ -4822,6 +8042,12 @@ class KotlinBindingGeneratorTest {
                         ),
                         WinMdType(
                             namespace = "Microsoft.UI.Xaml",
+                            name = "Application",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            implementedInterfaces = listOf("Microsoft.UI.Xaml.IApplicationOverrides"),
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
                             name = "IWindow",
                             kind = WinMdTypeKind.Interface,
                             guid = "61f0ec79-5d52-56b5-86fb-40fa4af288b0",
@@ -4862,15 +8088,306 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val iWindowBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/IWindow.kt" }.content
-        val iOverridesBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/IApplicationOverrides.kt" }.content
+        val applicationBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/Application.kt" }.content
         assertTrue(iWindowBinding.contains("fun activate()"))
         assertTrue(iWindowBinding.contains("PlatformComInterop.invokeUnitMethod(pointer, 26).getOrThrow()"))
         assertTrue(iWindowBinding.contains("fun put_Title("))
         assertTrue(iWindowBinding.contains("PlatformComInterop.invokeStringSetter(pointer, 15,"))
         assertTrue(iWindowBinding.contains("fun put_Content("))
         assertTrue(iWindowBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 9,"))
-        assertTrue(iOverridesBinding.contains("fun onLaunched("))
-        assertTrue(iOverridesBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 6,"))
+        assertFalse(files.any { it.relativePath == "Microsoft/UI/Xaml/IApplicationOverrides.kt" })
+        assertTrue(applicationBinding.contains("protected open fun onLaunched(args: LaunchActivatedEventArgs)"))
+        assertTrue(applicationBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 6, (args as Inspectable).pointer).getOrThrow()"))
+    }
+
+    @Test
+    fun folds_versioned_overrides_interfaces_into_runtime_class_hooks() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "LaunchArgs",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "CloseArgs",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            implementedInterfaces = listOf(
+                                "Example.Xaml.IWidgetOverrides",
+                                "Example.Xaml.IWidgetOverrides2",
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidgetOverrides",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "OnLaunch",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter("args", "Example.Xaml.LaunchArgs")),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidgetOverrides2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "OnClose",
+                                    returnType = "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter("args", "Example.Xaml.CloseArgs")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val widgetBinding = files.first { it.relativePath == "Example/Xaml/Widget.kt" }.content
+
+        assertFalse(files.any { it.relativePath == "Example/Xaml/IWidgetOverrides.kt" })
+        assertFalse(files.any { it.relativePath == "Example/Xaml/IWidgetOverrides2.kt" })
+        assertTrue(widgetBinding.contains("protected open fun onLaunch(args: LaunchArgs)"))
+        assertTrue(widgetBinding.contains("invokeObjectSetter(pointer, 6, (args as Inspectable).pointer).getOrThrow()"))
+        assertTrue(widgetBinding.contains("protected open fun onClose(args: CloseArgs)"))
+        assertTrue(widgetBinding.contains("invokeObjectSetter(pointer, 7, (args as Inspectable).pointer).getOrThrow()"))
+    }
+
+    @Test
+    fun folds_overrides_interface_properties_into_runtime_class_hooks() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            implementedInterfaces = listOf("Example.Xaml.IWidgetOverrides"),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidgetOverrides",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "33333333-3333-3333-3333-333333333333",
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Title",
+                                    type = "String",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val widgetBinding = files.first { it.relativePath == "Example/Xaml/Widget.kt" }.content
+
+        assertFalse(files.any { it.relativePath == "Example/Xaml/IWidgetOverrides.kt" })
+        assertTrue(widgetBinding.contains("private val backing_Title"))
+        assertTrue(widgetBinding.contains("protected open var title: String"))
+        assertTrue(widgetBinding.contains("invokeHStringMethod(pointer, 6).getOrThrow()"))
+        assertTrue(widgetBinding.contains("invokeStringSetter(pointer, 7, value).getOrThrow()"))
+    }
+
+    @Test
+    fun derived_runtime_class_overrides_inherited_override_hooks() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "LaunchArgs",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "BaseWidget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            implementedInterfaces = listOf("Example.Xaml.IBaseWidgetOverrides"),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "DerivedWidget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            baseClass = "Example.Xaml.BaseWidget",
+                            implementedInterfaces = listOf("Example.Xaml.IDerivedWidgetOverrides"),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IBaseWidgetOverrides",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "44444444-4444-4444-4444-444444444444",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "OnLaunch",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter("args", "Example.Xaml.LaunchArgs")),
+                                ),
+                            ),
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Title",
+                                    type = "String",
+                                    mutable = true,
+                                    getterVtableIndex = 7,
+                                    setterVtableIndex = 8,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IDerivedWidgetOverrides",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "55555555-5555-5555-5555-555555555555",
+                            baseInterfaces = listOf("Example.Xaml.IBaseWidgetOverrides"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "OnLaunch",
+                                    returnType = "Unit",
+                                    vtableIndex = 9,
+                                    parameters = listOf(WinMdParameter("args", "Example.Xaml.LaunchArgs")),
+                                ),
+                            ),
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Title",
+                                    type = "String",
+                                    mutable = true,
+                                    getterVtableIndex = 10,
+                                    setterVtableIndex = 11,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val baseBinding = files.first { it.relativePath == "Example/Xaml/BaseWidget.kt" }.content
+        val derivedBinding = files.first { it.relativePath == "Example/Xaml/DerivedWidget.kt" }.content
+
+        assertTrue(baseBinding.contains("protected open fun onLaunch(args: LaunchArgs)"))
+        assertTrue(baseBinding.contains("protected open var title: String"))
+        assertTrue(derivedBinding.contains("protected override fun onLaunch(args: LaunchArgs)"))
+        assertTrue(derivedBinding.contains("invokeObjectSetter(pointer, 9, (args as Inspectable).pointer).getOrThrow()"))
+        assertTrue(derivedBinding.contains("protected override var title: String"))
+        assertTrue(derivedBinding.contains("invokeHStringMethod(pointer, 10).getOrThrow()"))
+        assertTrue(derivedBinding.contains("invokeStringSetter(pointer, 11, value).getOrThrow()"))
+    }
+
+    @Test
+    fun derived_runtime_class_keeps_override_hooks_for_versioned_and_base_interfaces() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "LaunchArgs",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "BaseWidget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            implementedInterfaces = listOf("Example.Xaml.IBaseWidgetOverrides"),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "DerivedWidget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            baseClass = "Example.Xaml.BaseWidget",
+                            implementedInterfaces = listOf(
+                                "Example.Xaml.IDerivedWidgetOverrides",
+                                "Example.Xaml.IDerivedWidgetOverrides2",
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IBaseWidgetOverrides",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "44444444-4444-4444-4444-444444444444",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "OnLaunch",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter("args", "Example.Xaml.LaunchArgs")),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IDerivedWidgetOverrides",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "55555555-5555-5555-5555-555555555555",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "OnLaunch",
+                                    returnType = "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter("args", "Example.Xaml.LaunchArgs")),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IDerivedWidgetOverrides2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "66666666-6666-6666-6666-666666666666",
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Title",
+                                    type = "String",
+                                    mutable = true,
+                                    getterVtableIndex = 8,
+                                    setterVtableIndex = 9,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val derivedBinding = files.first { it.relativePath == "Example/Xaml/DerivedWidget.kt" }.content
+
+        assertTrue(derivedBinding.contains("protected override fun onLaunch(args: LaunchArgs)"))
+        assertTrue(derivedBinding.contains("invokeObjectSetter(pointer, 7, (args as Inspectable).pointer).getOrThrow()"))
     }
 
     @Test
@@ -4993,5 +8510,1156 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("String"))
         assertTrue(binding.contains("-> Boolean"))
         assertTrue(binding.contains("class ScalarCallback("))
+    }
+
+    @Test
+    fun generates_suspend_async_method_projections() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncAction",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "5a648006-843a-4da9-865b-9d26e5dfad7b",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "fcdcf02c-e5d8-4478-915a-4d90b74b83a5",
+                            genericParameters = listOf("TResult"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Async",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IAsyncSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-2222-3333-4444-555555555555",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "LoadAsync",
+                                    returnType = "Windows.Foundation.IAsyncAction",
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 7,
+                                ),
+                                WinMdMethod(
+                                    name = "QueryAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                        WinMdParameter("count", "Int32"),
+                                        WinMdParameter("enabled", "Boolean"),
+                                    ),
+                                    vtableIndex = 8,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "AsyncSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Async.IAsyncSource",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "LoadAsync",
+                                    returnType = "Windows.Foundation.IAsyncAction",
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 7,
+                                ),
+                                WinMdMethod(
+                                    name = "QueryAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                        WinMdParameter("count", "Int32"),
+                                        WinMdParameter("enabled", "Boolean"),
+                                    ),
+                                    vtableIndex = 8,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Async/IAsyncSource.kt" }.content
+        val runtimeBinding = files.first { it.relativePath == "Example/Async/AsyncSource.kt" }.content
+
+        assertTrue(interfaceBinding.contains("fun loadAsync(): IAsyncAction"))
+        assertTrue(interfaceBinding.contains("suspend fun loadAsyncAwait()"))
+        assertTrue(interfaceBinding.contains("loadAsync().await()"))
+        assertTrue(interfaceBinding.contains("fun loadAsyncTask(scope: CoroutineScope"))
+        assertTrue(interfaceBinding.contains("scope.asyncAction(block = block)"))
+        assertTrue(interfaceBinding.contains("val readAsyncResultType: AsyncResultType<String>"))
+        assertTrue(interfaceBinding.contains("AsyncResultTypes.signature(\"string\")"))
+        assertTrue(interfaceBinding.contains("fun readAsync(name: String)"))
+        assertTrue(interfaceBinding.contains("fun queryAsync("))
+        assertTrue(interfaceBinding.contains("count: Int"))
+        assertTrue(interfaceBinding.contains("enabled: Boolean"))
+        assertTrue(interfaceBinding.contains("suspend fun readAsyncAwait(name: String): String"))
+        assertTrue(interfaceBinding.contains("suspend fun queryAsyncAwait("))
+        assertTrue(interfaceBinding.contains("readAsync(name).await()"))
+        assertTrue(interfaceBinding.contains("queryAsync(name, count, enabled).await()"))
+        assertTrue(interfaceBinding.contains("fun readAsyncTask(scope: CoroutineScope"))
+        assertTrue(interfaceBinding.contains("scope.asyncOperation("))
+        assertTrue(interfaceBinding.contains("resultType = readAsyncResultType"))
+        assertTrue(interfaceBinding.contains("block = block"))
+
+        assertTrue(runtimeBinding.contains("fun loadAsync(): IAsyncAction"))
+        assertTrue(runtimeBinding.contains("suspend fun loadAsyncAwait()"))
+        assertTrue(runtimeBinding.contains("loadAsync().await()"))
+        assertTrue(runtimeBinding.contains("fun readAsync(name: String)"))
+        assertTrue(runtimeBinding.contains("fun queryAsync("))
+        assertTrue(runtimeBinding.contains("invokeMethodWithResultKind"))
+        assertTrue(runtimeBinding.contains("suspend fun readAsyncAwait(name: String): String"))
+        assertTrue(runtimeBinding.contains("suspend fun queryAsyncAwait("))
+        assertTrue(runtimeBinding.contains("readAsync(name).await()"))
+        assertTrue(runtimeBinding.contains("queryAsync(name, count, enabled).await()"))
+    }
+
+    @Test
+    fun plans_three_argument_async_invocations() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "fcdcf02c-e5d8-4478-915a-4d90b74b83a5",
+                            genericParameters = listOf("TResult"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Async",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IAsyncSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-2222-3333-4444-555555555555",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "QueryAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                        WinMdParameter("count", "Int32"),
+                                        WinMdParameter("enabled", "Boolean"),
+                                    ),
+                                    vtableIndex = 8,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val typeRegistry = TypeRegistry(model)
+        val planner = AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))
+        val registry = AsyncMethodRuleRegistry(TypeNameMapper(), planner)
+        val plan = registry.plan(
+            model.namespaces[1].types[0].methods.single(),
+            "Example.Async",
+        )
+
+        assertTrue(plan != null)
+        assertTrue(plan!!.invocation.contains("invokeMethodWithResultKind"))
+    }
+
+    @Test
+    fun generates_suspend_async_progress_method_projections() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncActionWithProgress`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "1f6db258-e803-48a1-9546-eb7353398884",
+                            genericParameters = listOf("TProgress"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperationWithProgress`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "b5d036d7-e297-498f-ba60-0289e76e23dd",
+                            genericParameters = listOf("TResult", "TProgress"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Async",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IProgressSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "UploadAsync",
+                                    returnType = "Windows.Foundation.IAsyncActionWithProgress<UInt32>",
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "DownloadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperationWithProgress<String, UInt32>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "ProgressSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Async.IProgressSource",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "UploadAsync",
+                                    returnType = "Windows.Foundation.IAsyncActionWithProgress<UInt32>",
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "DownloadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperationWithProgress<String, UInt32>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Async/IProgressSource.kt" }.content
+        val runtimeBinding = files.first { it.relativePath == "Example/Async/ProgressSource.kt" }.content
+        val normalizedInterfaceBinding = interfaceBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(interfaceBinding.contains("fun uploadAsync(): IAsyncActionWithProgress<UInt32>"))
+        assertTrue(interfaceBinding.contains("suspend fun uploadAsyncAwait(onProgress: (UInt32) -> Unit = { _ -> }): Unit"))
+        assertTrue(interfaceBinding.contains("uploadAsync().await(onProgress = onProgress)"))
+        assertTrue(interfaceBinding.contains("val uploadAsyncProgressType: AsyncProgressType<UInt32>"))
+        assertTrue(interfaceBinding.contains("AsyncProgressTypes.signature(\"u4\", WinRtDelegateValueKind.UINT32)"))
+        assertTrue(interfaceBinding.contains("fun uploadAsyncTask(scope: CoroutineScope"))
+        assertTrue(normalizedInterfaceBinding.contains("scope.asyncActionWithProgress("))
+        assertTrue(normalizedInterfaceBinding.contains("progressType=uploadAsyncProgressType"))
+        assertTrue(normalizedInterfaceBinding.contains("block=block"))
+        assertTrue(interfaceBinding.contains("fun downloadAsync(name: String)"))
+        assertTrue(interfaceBinding.contains("suspend fun downloadAsyncAwait(name: String, onProgress: (UInt32) -> Unit = { _ -> })"))
+        assertTrue(interfaceBinding.contains("downloadAsync(name).await(onProgress = onProgress)"))
+        assertTrue(interfaceBinding.contains("fun downloadAsyncTask(scope: CoroutineScope"))
+        assertTrue(normalizedInterfaceBinding.contains("scope.asyncOperationWithProgress("))
+        assertTrue(normalizedInterfaceBinding.contains("resultType=downloadAsyncResultType"))
+        assertTrue(normalizedInterfaceBinding.contains("progressType=downloadAsyncProgressType"))
+        assertTrue(normalizedInterfaceBinding.contains("block=block"))
+
+        assertTrue(runtimeBinding.contains("fun uploadAsync(): IAsyncActionWithProgress<UInt32>"))
+        assertTrue(runtimeBinding.contains("suspend fun uploadAsyncAwait(onProgress: (UInt32) -> Unit = { _ -> }): Unit"))
+        assertTrue(runtimeBinding.contains("uploadAsync().await(onProgress = onProgress)"))
+        assertTrue(runtimeBinding.contains("fun downloadAsync(name: String)"))
+        assertTrue(runtimeBinding.contains("suspend fun downloadAsyncAwait(name: String, onProgress: (UInt32) -> Unit = { _ -> })"))
+        assertTrue(runtimeBinding.contains("downloadAsync(name).await(onProgress = onProgress)"))
+    }
+
+    @Test
+    fun generates_async_method_projections_for_scalar_parameters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncAction",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "5a648006-843a-4da9-865b-9d26e5dfad7b",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "fcdcf02c-e5d8-4478-915a-4d90b74b83a5",
+                            genericParameters = listOf("TResult"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Async",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IScalarAsyncSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-eeee-ffff-1111-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "StoreAsync",
+                                    returnType = "Windows.Foundation.IAsyncAction",
+                                    parameters = listOf(WinMdParameter("count", "Int32")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                        WinMdParameter("flags", "Int32"),
+                                    ),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "ScalarAsyncSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Async.IScalarAsyncSource",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "StoreAsync",
+                                    returnType = "Windows.Foundation.IAsyncAction",
+                                    parameters = listOf(WinMdParameter("count", "Int32")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(
+                                        WinMdParameter("name", "String"),
+                                        WinMdParameter("flags", "Int32"),
+                                    ),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Async/IScalarAsyncSource.kt" }.content
+        val runtimeBinding = files.first { it.relativePath == "Example/Async/ScalarAsyncSource.kt" }.content
+        val normalizedRuntimeBinding = runtimeBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(interfaceBinding.contains("fun storeAsync(count: Int32): IAsyncAction"))
+        assertTrue(interfaceBinding.contains("suspend fun storeAsyncAwait(count: Int32)"))
+        assertTrue(interfaceBinding.contains("fun readAsync(name: String, flags: Int32): IAsyncOperation<String>"))
+        assertTrue(interfaceBinding.contains("suspend fun readAsyncAwait(name: String, flags: Int32): String"))
+
+        assertTrue(normalizedRuntimeBinding.contains("PlatformComInterop.invokeObjectMethodWithInt32Arg(pointer,6,count.value)"))
+        assertTrue(normalizedRuntimeBinding.contains("PlatformComInterop.invokeMethodWithStringAndInt32Args(pointer,7,dev.winrt.kom.ComMethodResultKind.OBJECT,name,flags.value)"))
+    }
+
+    @Test
+    fun async_operation_object_results_use_projected_result_descriptors() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "9fc2b0bb-e446-44e2-aa61-9cab8f636af2",
+                            genericParameters = listOf("TResult"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Async",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "12345678-1234-1234-1234-1234567890ab",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IAsyncSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<Example.Async.IWidget>",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "AsyncSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Async.IAsyncSource",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<Example.Async.IWidget>",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Async/IAsyncSource.kt" }.content
+        val runtimeBinding = files.first { it.relativePath == "Example/Async/AsyncSource.kt" }.content
+        val normalizedInterfaceBinding = interfaceBinding.replace(Regex("\\s+"), "")
+        val normalizedRuntimeBinding = runtimeBinding.replace(Regex("\\s+"), "")
+        val projectedDescriptor = "AsyncResultTypes.projected(\"{12345678-1234-1234-1234-1234567890ab}\"){IWidget(it)}"
+
+        assertTrue(interfaceBinding.contains("val readAsyncResultType: AsyncResultType<IWidget>"))
+        assertTrue(interfaceBinding.contains("AsyncResultTypes.projected(\"{12345678-1234-1234-1234-1234567890ab}\") { IWidget(it) }"))
+        assertTrue(interfaceBinding.contains("fun readAsync(): IAsyncOperation<IWidget>"))
+        assertEquals(2, normalizedInterfaceBinding.split(projectedDescriptor).size - 1)
+
+        assertTrue(runtimeBinding.contains("fun readAsync(): IAsyncOperation<IWidget>"))
+        assertEquals(1, normalizedRuntimeBinding.split(projectedDescriptor).size - 1)
+    }
+
+    @Test
+    fun async_progress_object_types_use_object_decode_lambdas() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncActionWithProgress`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "1f6db258-e803-48a1-9546-eb7353398884",
+                            genericParameters = listOf("TProgress"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Async",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "12345678-1234-1234-1234-1234567890ab",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IProgressSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "UploadAsync",
+                                    returnType = "Windows.Foundation.IAsyncActionWithProgress<Example.Async.IWidget>",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Async/IProgressSource.kt" }.content
+
+        assertTrue(interfaceBinding.contains("val uploadAsyncProgressType: AsyncProgressType<IWidget>"))
+        assertTrue(interfaceBinding.contains("AsyncProgressTypes.signature(\"{12345678-1234-1234-1234-1234567890ab}\""))
+        assertTrue(interfaceBinding.contains("OBJECT"))
+        assertTrue(interfaceBinding.contains("suspend fun uploadAsyncAwait(onProgress: (IWidget) -> Unit = { _ -> }): Unit"))
+    }
+
+    @Test
+    fun generates_suspend_async_static_method_projections() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncAction",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "5a648006-843a-4da9-865b-9d26e5dfad7b",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "fcdcf02c-e5d8-4478-915a-4d90b74b83a5",
+                            genericParameters = listOf("TResult"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Async",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "AsyncStaticsSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IAsyncStaticsSourceStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "99999999-8888-7777-6666-555555555555",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "LoadAsync",
+                                    returnType = "Windows.Foundation.IAsyncAction",
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Async/AsyncStaticsSource.kt" }.content
+
+        assertTrue(binding.contains("fun loadAsync(): IAsyncAction"))
+        assertTrue(binding.contains("suspend fun loadAsyncAwait()"))
+        assertTrue(binding.contains("statics.loadAsync().await()"))
+        assertTrue(binding.contains("fun readAsync(name: String): IAsyncOperation<String>"))
+        assertTrue(binding.contains("suspend fun readAsyncAwait(name: String): String"))
+        assertTrue(binding.contains("statics.readAsync(name).await()"))
+    }
+
+    @Test
+    fun generates_suspend_async_progress_static_method_projections() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncActionWithProgress`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "1f6db258-e803-48a1-9546-eb7353398884",
+                            genericParameters = listOf("TProgress"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperationWithProgress`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "b5d036d7-e297-498f-ba60-0289e76e23dd",
+                            genericParameters = listOf("TResult", "TProgress"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Async",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "ProgressStaticsSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IProgressStaticsSourceStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "12345678-1234-1234-1234-1234567890ab",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "UploadAsync",
+                                    returnType = "Windows.Foundation.IAsyncActionWithProgress<UInt32>",
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "DownloadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperationWithProgress<String, UInt32>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Async/ProgressStaticsSource.kt" }.content
+        val normalizedBinding = binding.replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fun uploadAsync(): IAsyncActionWithProgress<UInt32>"))
+        assertTrue(binding.contains("suspend fun uploadAsyncAwait(onProgress: (UInt32) -> Unit = { _ -> }): Unit"))
+        assertTrue(binding.contains("statics.uploadAsync().await(onProgress = onProgress)"))
+        assertTrue(binding.contains("fun downloadAsync(name: String): IAsyncOperationWithProgress<String, UInt32>"))
+        assertTrue(normalizedBinding.contains("suspendfundownloadAsyncAwait(name:String,onProgress:(UInt32)->Unit={_->}):String"))
+        assertTrue(binding.contains("statics.downloadAsync(name).await(onProgress = onProgress)"))
+    }
+
+    @Test
+    fun keeps_async_projection_shapes_consistent_across_interface_runtime_and_statics() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncAction",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "5a648006-843a-4da9-865b-9d26e5dfad7b",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperation`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "fcdcf02c-e5d8-4478-915a-4d90b74b83a5",
+                            genericParameters = listOf("TResult"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncActionWithProgress`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "1f6db258-e803-48a1-9546-eb7353398884",
+                            genericParameters = listOf("TProgress"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IAsyncOperationWithProgress`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "b5d036d7-e297-498f-ba60-0289e76e23dd",
+                            genericParameters = listOf("TResult", "TProgress"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Async",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IUnifiedAsyncSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "0f0f0f0f-1111-2222-3333-444444444444",
+                            methods = listOf(
+                                WinMdMethod(name = "LoadAsync", returnType = "Windows.Foundation.IAsyncAction", vtableIndex = 6),
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 7,
+                                ),
+                                WinMdMethod(
+                                    name = "UploadAsync",
+                                    returnType = "Windows.Foundation.IAsyncActionWithProgress<UInt32>",
+                                    vtableIndex = 8,
+                                ),
+                                WinMdMethod(
+                                    name = "DownloadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperationWithProgress<String, UInt32>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 9,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "UnifiedAsyncSource",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Async.IUnifiedAsyncSource",
+                            methods = listOf(
+                                WinMdMethod(name = "LoadAsync", returnType = "Windows.Foundation.IAsyncAction", vtableIndex = 6),
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 7,
+                                ),
+                                WinMdMethod(
+                                    name = "UploadAsync",
+                                    returnType = "Windows.Foundation.IAsyncActionWithProgress<UInt32>",
+                                    vtableIndex = 8,
+                                ),
+                                WinMdMethod(
+                                    name = "DownloadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperationWithProgress<String, UInt32>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 9,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Async",
+                            name = "IUnifiedAsyncSourceStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-1111-2222-3333-bbbbbbbbbbbb",
+                            methods = listOf(
+                                WinMdMethod(name = "LoadAsync", returnType = "Windows.Foundation.IAsyncAction", vtableIndex = 6),
+                                WinMdMethod(
+                                    name = "ReadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperation<String>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 7,
+                                ),
+                                WinMdMethod(
+                                    name = "UploadAsync",
+                                    returnType = "Windows.Foundation.IAsyncActionWithProgress<UInt32>",
+                                    vtableIndex = 8,
+                                ),
+                                WinMdMethod(
+                                    name = "DownloadAsync",
+                                    returnType = "Windows.Foundation.IAsyncOperationWithProgress<String, UInt32>",
+                                    parameters = listOf(WinMdParameter("name", "String")),
+                                    vtableIndex = 9,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Async/IUnifiedAsyncSource.kt" }.content
+        val runtimeBinding = files.first { it.relativePath == "Example/Async/UnifiedAsyncSource.kt" }.content
+
+        val expectedSnippets = listOf(
+            "fun loadAsync(): IAsyncAction",
+            "suspend fun loadAsyncAwait()",
+            "fun readAsync(name: String)",
+            "suspend fun readAsyncAwait(name: String): String",
+            "fun uploadAsync(): IAsyncActionWithProgress<UInt32>",
+            "suspend fun uploadAsyncAwait(onProgress: (UInt32) -> Unit = { _ -> }): Unit",
+            "fun downloadAsync(name: String)",
+            "await(onProgress = onProgress)",
+        )
+
+        expectedSnippets.forEach { snippet ->
+            assertTrue(interfaceBinding.contains(snippet))
+            assertTrue(runtimeBinding.contains(snippet))
+        }
+        assertTrue(runtimeBinding.contains("statics.loadAsync().await()"))
+        assertTrue(runtimeBinding.contains("statics.downloadAsync(name).await(onProgress = onProgress)"))
+    }
+
+    @Test
+    fun generates_event_handler_slot_helpers_for_interface_and_runtime() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "EventHandler`1",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "9de1c534-6ae1-11e0-84e1-18a905bcc53f",
+                            genericParameters = listOf("T"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("sender", "Object"),
+                                        WinMdParameter("args", "T"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Events",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetClosedEventArgs",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_Closed",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(WinMdParameter("handler", "Windows.Foundation.EventHandler<Example.Events.IWidgetClosedEventArgs>")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_Closed",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("token", "EventRegistrationToken")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Events.IWidget",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_Closed",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(WinMdParameter("handler", "Windows.Foundation.EventHandler<Example.Events.IWidgetClosedEventArgs>")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_Closed",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("token", "EventRegistrationToken")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Events/IWidget.kt" }.content
+        val runtimeBinding = files.first { it.relativePath == "Example/Events/Widget.kt" }.content
+        val normalizedInterfaceBinding = interfaceBinding.replace(Regex("\\s+"), "")
+        val normalizedRuntimeBinding = runtimeBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(interfaceBinding.contains("val closedEvent: ClosedEvent"))
+        assertTrue(interfaceBinding.contains("private val closedEventSlot: ClosedEvent = ClosedEvent()"))
+        assertTrue(interfaceBinding.contains("class ClosedEvent"))
+        assertTrue(interfaceBinding.contains("fun subscribe(handler: EventHandler<IWidgetClosedEventArgs>): EventRegistrationToken"))
+        assertTrue(interfaceBinding.contains("fun subscribeScoped(handler: EventHandler<IWidgetClosedEventArgs>): AutoCloseable"))
+        assertTrue(normalizedInterfaceBinding.contains("funsubscribe(handler:(ComPtr,IWidgetClosedEventArgs)->Unit):EventRegistrationToken"))
+        assertTrue(interfaceBinding.contains("fun unsubscribe(token: EventRegistrationToken)"))
+        assertTrue(interfaceBinding.contains("operator fun plusAssign(handler: EventHandler<IWidgetClosedEventArgs>)"))
+        assertTrue(normalizedInterfaceBinding.contains("operatorfuninvoke(handler:EventHandler<IWidgetClosedEventArgs>):EventRegistrationToken"))
+        assertTrue(interfaceBinding.contains("operator fun minusAssign(token: EventRegistrationToken)"))
+        assertTrue(interfaceBinding.contains("delegateHandles[token] = delegateHandle"))
+        assertTrue(interfaceBinding.contains("catch (t: Throwable)"))
+        assertTrue(interfaceBinding.contains("delegateHandle.close()"))
+        assertTrue(interfaceBinding.contains("try"))
+        assertTrue(interfaceBinding.contains("finally"))
+        assertTrue(interfaceBinding.contains("delegateHandles.remove(token)?.close()"))
+        assertTrue(interfaceBinding.contains("unsubscribe(token)"))
+
+        assertTrue(runtimeBinding.contains("val closedEvent: ClosedEvent"))
+        assertTrue(runtimeBinding.contains("private val closedEventSlot: ClosedEvent = ClosedEvent()"))
+        assertTrue(runtimeBinding.contains("class ClosedEvent"))
+        assertTrue(runtimeBinding.contains("fun subscribe(handler: EventHandler<IWidgetClosedEventArgs>): EventRegistrationToken"))
+        assertTrue(runtimeBinding.contains("fun subscribeScoped(handler: EventHandler<IWidgetClosedEventArgs>): AutoCloseable"))
+        assertTrue(normalizedRuntimeBinding.contains("funsubscribe(handler:(ComPtr,IWidgetClosedEventArgs)->Unit):EventRegistrationToken"))
+        assertTrue(runtimeBinding.contains("fun unsubscribe(token: EventRegistrationToken)"))
+        assertTrue(runtimeBinding.contains("operator fun plusAssign(handler: EventHandler<IWidgetClosedEventArgs>)"))
+        assertTrue(normalizedRuntimeBinding.contains("operatorfuninvoke(handler:EventHandler<IWidgetClosedEventArgs>):EventRegistrationToken"))
+        assertTrue(runtimeBinding.contains("operator fun minusAssign(token: EventRegistrationToken)"))
+        assertTrue(runtimeBinding.contains("delegateHandles[token] = delegateHandle"))
+        assertTrue(runtimeBinding.contains("catch (t: Throwable)"))
+        assertTrue(runtimeBinding.contains("delegateHandle.close()"))
+        assertTrue(runtimeBinding.contains("try"))
+        assertTrue(runtimeBinding.contains("finally"))
+        assertTrue(runtimeBinding.contains("delegateHandles.remove(token)?.close()"))
+        assertTrue(runtimeBinding.contains("unsubscribe(token)"))
+    }
+
+    @Test
+    fun generates_event_handler_slot_helpers_for_runtime_companion_statics() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "EventHandler`1",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "9de1c534-6ae1-11e0-84e1-18a905bcc53f",
+                            genericParameters = listOf("T"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("sender", "Object"),
+                                        WinMdParameter("args", "T"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Events",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetClosedEventArgs",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "33333333-3333-3333-3333-333333333333",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_Closed",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(WinMdParameter("handler", "Windows.Foundation.EventHandler<Example.Events.IWidgetClosedEventArgs>")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_Closed",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("token", "EventRegistrationToken")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Example/Events/Widget.kt" }.content
+        val normalizedRuntimeBinding = runtimeBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("val closedEvent: ClosedStaticEvent"))
+        assertTrue(runtimeBinding.contains("private val closedEventSlot: ClosedStaticEvent = ClosedStaticEvent { statics }"))
+        assertTrue(runtimeBinding.contains("class ClosedStaticEvent"))
+        assertTrue(runtimeBinding.contains("fun subscribe(handler: EventHandler<IWidgetClosedEventArgs>): EventRegistrationToken"))
+        assertTrue(runtimeBinding.contains("fun subscribeScoped(handler: EventHandler<IWidgetClosedEventArgs>): AutoCloseable"))
+        assertTrue(normalizedRuntimeBinding.contains("funsubscribe(handler:(ComPtr,IWidgetClosedEventArgs)->Unit):EventRegistrationToken"))
+        assertTrue(runtimeBinding.contains("fun unsubscribe(token: EventRegistrationToken)"))
+        assertTrue(runtimeBinding.contains("operator fun plusAssign(handler: EventHandler<IWidgetClosedEventArgs>)"))
+        assertTrue(normalizedRuntimeBinding.contains("operatorfuninvoke(handler:EventHandler<IWidgetClosedEventArgs>):EventRegistrationToken"))
+        assertTrue(runtimeBinding.contains("operator fun minusAssign(token: EventRegistrationToken)"))
+        assertTrue(runtimeBinding.contains("delegateHandles[token] = delegateHandle"))
+        assertTrue(runtimeBinding.contains("delegateHandles.remove(token)?.close()"))
+        assertTrue(runtimeBinding.contains("try"))
+        assertTrue(runtimeBinding.contains("finally"))
+        assertTrue(runtimeBinding.contains("unsubscribe(token)"))
+        assertTrue(normalizedRuntimeBinding.contains("get()=closedEventSlot"))
+    }
+
+    @Test
+    fun generates_versioned_event_slot_helpers_for_runtime_companion_statics() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Events",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetOpenedEventArgs",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "55555555-5555-5555-5555-555555555555",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "33333333-3333-3333-3333-333333333333",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_Closed",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(WinMdParameter("handler", "Windows.Foundation.EventHandler<Example.Events.IWidgetOpenedEventArgs>")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_Closed",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("token", "EventRegistrationToken")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetStatics2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "66666666-6666-6666-6666-666666666666",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_Opened",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(WinMdParameter("handler", "Windows.Foundation.EventHandler<Example.Events.IWidgetOpenedEventArgs>")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_Opened",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("token", "EventRegistrationToken")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Example/Events/Widget.kt" }.content
+        val normalizedRuntimeBinding = runtimeBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("private val statics: IWidgetStatics by lazy"))
+        assertTrue(runtimeBinding.contains("private val statics2: IWidgetStatics2 by lazy"))
+        assertTrue(runtimeBinding.contains("val closedEvent: ClosedStaticEvent"))
+        assertTrue(runtimeBinding.contains("val openedEvent: OpenedStaticEvent"))
+        assertTrue(runtimeBinding.contains("private val openedEventSlot: OpenedStaticEvent = OpenedStaticEvent { statics2 }"))
+        assertTrue(runtimeBinding.contains("fun subscribe(handler: EventHandler<IWidgetOpenedEventArgs>): EventRegistrationToken"))
+        assertTrue(normalizedRuntimeBinding.contains("funsubscribe(handler:(ComPtr,IWidgetOpenedEventArgs)->Unit):EventRegistrationToken"))
+        assertTrue(runtimeBinding.contains("fun unsubscribe(token: EventRegistrationToken)"))
+        assertTrue(runtimeBinding.contains("delegateHandles.remove(token)"))
+        assertTrue(runtimeBinding.contains("delegateHandle?.close()"))
+    }
+
+    @Test
+    fun generates_typed_event_handler_slot_helpers() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "TypedEventHandler`2",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "f5d9f70c-8cf0-4d74-a94f-099a14dbc66f",
+                            genericParameters = listOf("TSender", "TResult"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("sender", "TSender"),
+                                        WinMdParameter("args", "TResult"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Events",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetClosedEventArgs",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "44444444-4444-4444-4444-444444444444",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_Closed",
+                                    returnType = "EventRegistrationToken",
+                                    parameters = listOf(
+                                        WinMdParameter(
+                                            "handler",
+                                            "Windows.Foundation.TypedEventHandler<Example.Events.IWidgetSource, Example.Events.IWidgetClosedEventArgs>",
+                                        ),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_Closed",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("token", "EventRegistrationToken")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Events/IWidget.kt" }.content
+        val normalizedInterfaceBinding = interfaceBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(normalizedInterfaceBinding.contains("funsubscribe(handler:TypedEventHandler<IWidgetSource,IWidgetClosedEventArgs>):EventRegistrationToken"))
+        assertTrue(normalizedInterfaceBinding.contains("funsubscribe(handler:(IWidgetSource,IWidgetClosedEventArgs)->Unit):EventRegistrationToken"))
+        assertTrue(normalizedInterfaceBinding.contains("handler(IWidgetSource(args[0]asComPtr),IWidgetClosedEventArgs(args[1]asComPtr))"))
     }
 }

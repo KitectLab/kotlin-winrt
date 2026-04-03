@@ -36,23 +36,30 @@ open class Inspectable(pointer: ComPtr) : WinRtObject(pointer) {
     }
 
     open fun getObjectReferenceForType(typeKey: String, iid: Guid): ComPtr {
-        return queryInterfaceCache.getOrPut(typeKey) {
+        val reference = queryInterfaceCache.getOrPut(referenceCacheKey(typeKey, iid)) {
             queryInterface(iid)
         }
+        val projectionTypeKey = WinRtProjectionRegistry.findProjectionTypeKey(typeKey)
+        if (projectionTypeKey != null) {
+            val projectionReferenceKey = referenceCacheKey(projectionTypeKey, iid)
+            if (queryInterfaceCache[projectionReferenceKey] == null) {
+                queryInterfaceCache[projectionReferenceKey] = reference
+            }
+            val abiHelperTypeKey = WinRtProjectionRegistry.findAbiHelperTypeKey(projectionTypeKey)
+            if (abiHelperTypeKey != null) {
+                val abiReferenceKey = referenceCacheKey(abiHelperTypeKey, iid)
+                if (queryInterfaceCache[abiReferenceKey] == null) {
+                    queryInterfaceCache[abiReferenceKey] = reference
+                }
+            }
+        }
+        return reference
     }
 
     fun getObjectReferenceForProjectedType(typeKey: String, iid: Guid): ComPtr {
         val projectionTypeKey = WinRtProjectionRegistry.projectionTypeKeyFor(typeKey)
         val abiHelperTypeKey = WinRtProjectionRegistry.abiHelperTypeKeyFor(projectionTypeKey)
-        val reference = getObjectReferenceForType(
-            typeKey = abiHelperTypeKey,
-            iid = iid,
-        )
-        queryInterfaceCache.putIfAbsent(projectionTypeKey, reference)
-        if (typeKey != projectionTypeKey) {
-            queryInterfaceCache.putIfAbsent(typeKey, reference)
-        }
-        return reference
+        return getOrPutProjectedTypeReference(typeKey, projectionTypeKey, abiHelperTypeKey, iid)
     }
 
     fun getInspectableArgumentPointer(): ComPtr {
@@ -62,6 +69,45 @@ open class Inspectable(pointer: ComPtr) : WinRtObject(pointer) {
     @Suppress("UNCHECKED_CAST")
     fun <T : Any> getOrPutHelperWrapper(typeKey: String, factory: () -> T): T {
         return additionalTypeData.getOrPut("helper-wrapper:$typeKey", factory) as T
+    }
+
+    private fun getOrPutProjectedTypeReference(
+        winrtTypeKey: String,
+        projectionTypeKey: String,
+        abiHelperTypeKey: String,
+        iid: Guid,
+    ): ComPtr {
+        val projectionReferenceKey = referenceCacheKey(projectionTypeKey, iid)
+        val abiReferenceKey = referenceCacheKey(abiHelperTypeKey, iid)
+        val winrtReferenceKey = referenceCacheKey(winrtTypeKey, iid)
+        queryInterfaceCache[projectionReferenceKey]?.let { cached ->
+            if (queryInterfaceCache[abiReferenceKey] == null) {
+                queryInterfaceCache[abiReferenceKey] = cached
+            }
+            if (winrtTypeKey != projectionTypeKey && queryInterfaceCache[winrtReferenceKey] == null) {
+                queryInterfaceCache[winrtReferenceKey] = cached
+            }
+            return cached
+        }
+        queryInterfaceCache[winrtReferenceKey]?.let { cached ->
+            if (queryInterfaceCache[projectionReferenceKey] == null) {
+                queryInterfaceCache[projectionReferenceKey] = cached
+            }
+            if (queryInterfaceCache[abiReferenceKey] == null) {
+                queryInterfaceCache[abiReferenceKey] = cached
+            }
+            return cached
+        }
+        val reference = getObjectReferenceForType(abiHelperTypeKey, iid)
+        queryInterfaceCache[projectionReferenceKey] = reference
+        if (winrtTypeKey != projectionTypeKey) {
+            queryInterfaceCache[winrtReferenceKey] = reference
+        }
+        return reference
+    }
+
+    private fun referenceCacheKey(typeKey: String, iid: Guid): String {
+        return "$typeKey:$iid"
     }
 }
 
@@ -92,6 +138,8 @@ object NullActivationFactoryProvider : ActivationFactoryProvider {
 
 object WinRtRuntime {
     var activationFactoryProvider: ActivationFactoryProvider = NullActivationFactoryProvider
+    private val activationFactoryCache: MutableMap<String, ComPtr> = linkedMapOf()
+    private val activationFactoryProjectionCache: MutableMap<String, Any> = linkedMapOf()
 
     fun <T : WinRtObject> activate(metadata: WinRtRuntimeClassMetadata, constructor: (ComPtr) -> T): T {
         return activationFactoryProvider.activate(metadata, constructor).getOrElse { throw it }
@@ -102,12 +150,32 @@ object WinRtRuntime {
         interfaceMetadata: WinRtInterfaceMetadata,
         constructor: (ComPtr) -> T,
     ): T {
-        val factory = activationFactoryProvider.getActivationFactory(runtimeClass, interfaceMetadata.iid)
-            .getOrElse { throw it }
-        return interfaceMetadata.project(factory, constructor)
+        val projectionTypeCacheKey = "${runtimeClass.classId.qualifiedName}:projection-type:${interfaceMetadata.projectionTypeKey}:${interfaceMetadata.iid}"
+        activationFactoryProjectionCache[projectionTypeCacheKey]?.let { cached ->
+            @Suppress("UNCHECKED_CAST")
+            return cached as T
+        }
+        val cacheKey = "${runtimeClass.classId.qualifiedName}:${interfaceMetadata.projectionCacheKey}:${interfaceMetadata.iid}"
+        @Suppress("UNCHECKED_CAST")
+        return activationFactoryProjectionCache.getOrPut(cacheKey) {
+            val factory = activationFactoryCache.getOrPut(
+                "${runtimeClass.classId.qualifiedName}:${interfaceMetadata.iid}",
+            ) {
+                activationFactoryProvider.getActivationFactory(runtimeClass, interfaceMetadata.iid)
+                    .getOrElse { throw it }
+            }
+            interfaceMetadata.project(factory, constructor).also { wrapper ->
+                activationFactoryProjectionCache.putIfAbsent(projectionTypeCacheKey, wrapper)
+            }
+        } as T
     }
 
     fun check(result: HResult, operation: String) {
         result.requireSuccess(operation)
+    }
+
+    internal fun resetForTests() {
+        activationFactoryCache.clear()
+        activationFactoryProjectionCache.clear()
     }
 }

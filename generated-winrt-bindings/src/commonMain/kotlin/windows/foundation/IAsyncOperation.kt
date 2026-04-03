@@ -5,8 +5,11 @@ import dev.winrt.kom.PlatformComInterop
 
 public open class IAsyncOperation<TResult>(
   pointer: ComPtr,
-  public open val resultSignature: String,
+  public open val resultType: AsyncResultType<TResult>,
 ) : IAsyncInfo(pointer) {
+  public open val resultSignature: String
+    get() = resultType.signature
+
   public open var completed: AsyncOperationCompletedHandler<TResult>
     get() = get_Completed()
     set(value) {
@@ -20,5 +23,10 @@ public open class IAsyncOperation<TResult>(
   public open fun get_Completed(): AsyncOperationCompletedHandler<TResult> =
       AsyncOperationCompletedHandler(PlatformComInterop.invokeObjectMethod(pointer, 12).getOrThrow())
 
-  public open fun getResults(): TResult = error("Generic async operation projection requires an override")
+  public constructor(
+    pointer: ComPtr,
+    resultSignature: String,
+  ) : this(pointer, AsyncResultTypes.signature(resultSignature))
+
+  public open fun getResults(): TResult = resultType.getResults(pointer, 13)
 }
