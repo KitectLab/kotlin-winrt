@@ -280,10 +280,13 @@ class TypeRegistryTest {
     fun helper_accessor_names_preserve_versioned_factory_and_static_suffixes() {
         assertEquals("statics", helperAccessorName("IWidgetStatics"))
         assertEquals("statics2", helperAccessorName("IWidgetStatics2"))
+        assertEquals("statics10", helperAccessorName("IWidgetStatics10"))
         assertEquals("factory", helperAccessorName("IWidgetFactory"))
         assertEquals("factory2", helperAccessorName("IWidgetFactory2"))
+        assertEquals("factory10", helperAccessorName("IWidgetFactory10"))
         assertEquals("widgetOverrides", helperAccessorName("IWidgetOverrides"))
         assertEquals("widgetOverrides2", helperAccessorName("IWidgetOverrides2"))
+        assertEquals("widgetOverrides10", helperAccessorName("IWidgetOverrides10"))
     }
 
     @Test
