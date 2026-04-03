@@ -38,6 +38,9 @@ object WindowsAppSdkBootstrap {
         val explicitCandidates = buildList {
             System.getenv("WINAPPSDK_BOOTSTRAP_DLL")?.let { add(Path.of(it)) }
             System.getProperty("dev.winrt.bootstrapDll")?.takeIf { it.isNotBlank() }?.let { add(Path.of(it)) }
+            System.getProperty("dev.winrt.windowsAppSdkRoot")?.takeIf { it.isNotBlank() }?.let {
+                addAll(bootstrapDllCandidates(Path.of(it)))
+            }
         }
 
         return explicitCandidates
@@ -50,6 +53,37 @@ object WindowsAppSdkBootstrap {
             }
     }
 
+    private fun bootstrapDllCandidates(root: Path): List<Path> {
+        return if (Files.isDirectory(root)) {
+            Files.walk(root).use { stream ->
+                stream.filter { file ->
+                    Files.isRegularFile(file) && file.fileName.toString()
+                        .equals("Microsoft.WindowsAppRuntime.Bootstrap.dll", ignoreCase = true)
+                }.toList()
+            }
+        } else {
+            emptyList()
+        }
+    }
+
+    private fun preloadRuntimeLibraries(root: Path) {
+        if (!Files.isDirectory(root)) {
+            return
+        }
+
+        Files.walk(root).use { stream ->
+            stream.filter { file ->
+                Files.isRegularFile(file) && file.fileName.toString().endsWith(".dll", ignoreCase = true)
+            }
+                .sorted()
+                .forEach { dll ->
+                    runCatching {
+                        System.load(dll.toAbsolutePath().toString())
+                    }
+                }
+        }
+    }
+
     private fun downcall(library: BootstrapLibrary, name: String, descriptor: FunctionDescriptor): MethodHandle {
         val symbol = library.lookup.find(name).orElse(null)
         requireNotNull(symbol) {
@@ -60,6 +94,9 @@ object WindowsAppSdkBootstrap {
 
     fun initialize(majorMinorVersion: Int = defaultMajorMinorVersion): Result<BootstrapLibrary> {
         return runCatching {
+            System.getProperty("dev.winrt.windowsAppSdkRoot")
+                ?.takeIf { it.isNotBlank() }
+                ?.let { preloadRuntimeLibraries(Path.of(it)) }
             val library = discoverBootstrapLibrary()
                 ?: error("Microsoft.WindowsAppRuntime.Bootstrap.dll was not found")
             val versionInfo = discoverVersionInfo(library.path) ?: BootstrapVersionInfo(
