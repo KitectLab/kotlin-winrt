@@ -20,4 +20,12 @@ class WinRtMapProjection<K, V> internal constructor(
 
     override val entries: Set<Map.Entry<K, V>>
         get() = entriesProvider().toSet()
+
+    fun split(): Pair<Map<K, V>, Map<K, V>> {
+        val entries = entriesProvider().toList()
+        val midpoint = entries.size / 2
+        val first = entries.take(midpoint).associate { it.key to it.value }
+        val second = entries.drop(midpoint).associate { it.key to it.value }
+        return first to second
+    }
 }
