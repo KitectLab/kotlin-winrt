@@ -5041,6 +5041,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("MutableMap<String, UIElement>"))
         assertTrue(binding.contains("WinRtMutableMapProjection<String, UIElement>"))
         assertFalse(binding.contains("Map<String, UIElement> by WinRtMapProjection<String, UIElement>"))
+        assertTrue(binding.contains("entriesProvider = { first().asSequence().toList() }"))
     }
 
     @Test
