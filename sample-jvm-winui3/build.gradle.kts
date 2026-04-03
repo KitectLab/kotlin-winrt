@@ -37,6 +37,8 @@ fun latestWindowsAppSdkPackageRoot(): File? {
         ?.maxWithOrNull { left, right -> compareVersions(left.name, right.name) }
 }
 
+val winUiRuntimeAssetsDir = layout.buildDirectory.dir("winui-runtime-assets")
+
 kotlin {
     jvmToolchain(22)
 }
@@ -49,7 +51,7 @@ tasks.withType<Test>().configureEach {
     }
     systemProperty(
         "dev.winrt.windowsAppSdkRoot",
-        layout.buildDirectory.dir("winui-runtime-assets").get().asFile.absolutePath,
+        winUiRuntimeAssetsDir.get().asFile.absolutePath,
     )
 }
 
@@ -66,7 +68,7 @@ tasks.withType<JavaExec>().configureEach {
     systemProperty(
         "dev.winrt.windowsAppSdkRoot",
         providers.systemProperty("dev.winrt.windowsAppSdkRoot").orNull
-            ?: layout.buildDirectory.dir("winui-runtime-assets").get().asFile.absolutePath,
+            ?: winUiRuntimeAssetsDir.get().asFile.absolutePath,
     )
     systemProperty(
         "dev.winrt.autoQuitVisible",
@@ -78,8 +80,7 @@ val collectWinUiRuntimeAssets by tasks.registering(Sync::class) {
     group = "code generation"
     description = "Collects the latest restored Microsoft.WindowsAppSDK runtime package into a local staging directory."
 
-    val outputDir = layout.buildDirectory.dir("winui-runtime-assets")
-    into(outputDir)
+    into(winUiRuntimeAssetsDir)
 
     val packageRoot = latestWindowsAppSdkPackageRoot()
     onlyIf { packageRoot != null }
@@ -102,4 +103,29 @@ dependencies {
 
 application {
     mainClass = "dev.winrt.sample.jvm.MainKt"
+    applicationDefaultJvmArgs = listOf(
+        "-Ddev.winrt.windowsAppSdkRoot=%APP_HOME%/winui-runtime-assets",
+    )
+}
+
+distributions {
+    main {
+        contents {
+            into("winui-runtime-assets") {
+                from(winUiRuntimeAssetsDir)
+            }
+        }
+    }
+}
+
+tasks.named("installDist") {
+    dependsOn(collectWinUiRuntimeAssets)
+}
+
+tasks.named("distZip") {
+    dependsOn(collectWinUiRuntimeAssets)
+}
+
+tasks.named("distTar") {
+    dependsOn(collectWinUiRuntimeAssets)
 }
