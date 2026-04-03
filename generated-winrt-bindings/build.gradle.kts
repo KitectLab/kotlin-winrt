@@ -539,7 +539,11 @@ val generateWinUiBindingsFromNuGet by registerPresetNuGetGenerationTask(
         "Windows.Foundation.FoundationContract",
     ),
     namespaces = listOf("Microsoft.UI.Xaml"),
-)
+).also {
+    it.configure {
+        dependsOn(restoreNuGetWinMdPackages)
+    }
+}
 
 val regenerateGlobalizationBindingsFromSdk by registerPresetSdkRegenerationTask(
     name = "regenerateGlobalizationBindingsFromSdk",
@@ -580,4 +584,8 @@ val regenerateWinUiBindingsFromNuGet by registerPresetNuGetRegenerationTask(
         "Windows.Foundation.FoundationContract",
     ),
     namespaces = listOf("Microsoft.UI.Xaml"),
-)
+).also {
+    it.configure {
+        dependsOn(restoreNuGetWinMdPackages)
+    }
+}

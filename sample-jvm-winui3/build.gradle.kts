@@ -3,18 +3,58 @@ plugins {
     application
 }
 
+fun versionKey(value: String): List<Int> =
+    value.split('.').map { token -> token.toIntOrNull() ?: 0 }
+
+fun compareVersions(left: String, right: String): Int {
+    val leftParts = versionKey(left)
+    val rightParts = versionKey(right)
+    val maxSize = maxOf(leftParts.size, rightParts.size)
+    for (index in 0 until maxSize) {
+        val leftValue = leftParts.getOrElse(index) { 0 }
+        val rightValue = rightParts.getOrElse(index) { 0 }
+        if (leftValue != rightValue) {
+            return leftValue.compareTo(rightValue)
+        }
+    }
+    return 0
+}
+
+fun discoverNuGetGlobalPackagesRoot(): File {
+    return System.getenv("NUGET_PACKAGES")
+        ?.takeIf { it.isNotBlank() }
+        ?.let(::File)
+        ?: File(System.getProperty("user.home"), ".nuget/packages")
+}
+
+fun latestWindowsAppSdkPackageRoot(): File? {
+    val packageRoot = discoverNuGetGlobalPackagesRoot().resolve("microsoft.windowsappsdk")
+    if (!packageRoot.exists() || !packageRoot.isDirectory) {
+        return null
+    }
+    return packageRoot.listFiles()
+        ?.filter { it.isDirectory }
+        ?.maxWithOrNull { left, right -> compareVersions(left.name, right.name) }
+}
+
 kotlin {
     jvmToolchain(22)
 }
 
 tasks.withType<Test>().configureEach {
+    dependsOn(collectWinUiRuntimeAssets)
     jvmArgs("--enable-native-access=ALL-UNNAMED")
     providers.systemProperty("dev.winrt.errorFile").orNull?.let { errorFile ->
         jvmArgs("-XX:ErrorFile=$errorFile")
     }
+    systemProperty(
+        "dev.winrt.windowsAppSdkRoot",
+        layout.buildDirectory.dir("winui-runtime-assets").get().asFile.absolutePath,
+    )
 }
 
 tasks.withType<JavaExec>().configureEach {
+    dependsOn(collectWinUiRuntimeAssets)
     jvmArgs("--enable-native-access=ALL-UNNAMED")
     providers.systemProperty("dev.winrt.errorFile").orNull?.let { errorFile ->
         jvmArgs("-XX:ErrorFile=$errorFile")
@@ -25,12 +65,32 @@ tasks.withType<JavaExec>().configureEach {
     )
     systemProperty(
         "dev.winrt.windowsAppSdkRoot",
-        providers.systemProperty("dev.winrt.windowsAppSdkRoot").orNull ?: "",
+        providers.systemProperty("dev.winrt.windowsAppSdkRoot").orNull
+            ?: layout.buildDirectory.dir("winui-runtime-assets").get().asFile.absolutePath,
     )
     systemProperty(
         "dev.winrt.autoQuitVisible",
         providers.systemProperty("dev.winrt.autoQuitVisible").orNull ?: "",
     )
+}
+
+val collectWinUiRuntimeAssets by tasks.registering(Sync::class) {
+    group = "code generation"
+    description = "Collects the latest restored Microsoft.WindowsAppSDK runtime package into a local staging directory."
+
+    val outputDir = layout.buildDirectory.dir("winui-runtime-assets")
+    into(outputDir)
+
+    val packageRoot = latestWindowsAppSdkPackageRoot()
+    onlyIf { packageRoot != null }
+
+    doFirst {
+        val resolvedPackageRoot = packageRoot
+            ?: error("Microsoft.WindowsAppSDK is not restored in the NuGet global packages cache.")
+        from(resolvedPackageRoot) {
+            include("**/*")
+        }
+    }
 }
 
 dependencies {
