@@ -5,6 +5,7 @@ import dev.winrt.winmd.plugin.WinMdNamespace
 import dev.winrt.winmd.plugin.WinMdType
 import dev.winrt.winmd.plugin.WinMdTypeKind
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class KotlinCollectionProjectionMapperTest {
@@ -166,6 +167,89 @@ class KotlinCollectionProjectionMapperTest {
             true,
             mapProjection.delegateFactory.toString().contains("WinRtMapProjection"),
         )
+    }
+
+    @Test
+    fun projects_runtime_classes_with_nested_dictionary_values_to_map_surfaces() {
+        val nestedValueRegistry = TypeRegistry(
+            WinMdModel(
+                files = emptyList(),
+                namespaces = listOf(
+                    WinMdNamespace(
+                        name = "Windows.Foundation.Collections",
+                        types = listOf(
+                            WinMdType(
+                                namespace = "Windows.Foundation.Collections",
+                                name = "IIterable`1",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "faa585ea-6214-4217-afda-7f46de5869b3",
+                                genericParameters = listOf("T"),
+                            ),
+                            WinMdType(
+                                namespace = "Windows.Foundation.Collections",
+                                name = "IIterator`1",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "6a79e863-4300-459a-9966-cbb660963ee1",
+                                genericParameters = listOf("T"),
+                            ),
+                            WinMdType(
+                                namespace = "Windows.Foundation.Collections",
+                                name = "IVectorView`1",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "bbe1fa4c-b0e3-4583-baef-1f1b2e483e56",
+                                genericParameters = listOf("T"),
+                            ),
+                            WinMdType(
+                                namespace = "Windows.Foundation.Collections",
+                                name = "IMapView`2",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "e5f839be-1a86-4e27-b357-f8c0d2d9d0d1",
+                                genericParameters = listOf("K", "V"),
+                            ),
+                        ),
+                    ),
+                    WinMdNamespace(
+                        name = "Microsoft.UI.Xaml",
+                        types = listOf(
+                            WinMdType(
+                                namespace = "Microsoft.UI.Xaml",
+                                name = "IUIElement",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "22222222-2222-2222-2222-222222222222",
+                            ),
+                            WinMdType(
+                                namespace = "Microsoft.UI.Xaml",
+                                name = "UIElement",
+                                kind = WinMdTypeKind.RuntimeClass,
+                                defaultInterface = "Microsoft.UI.Xaml.IUIElement",
+                            ),
+                        ),
+                    ),
+                    WinMdNamespace(
+                        name = "Windows.Foundation.Collections",
+                        types = listOf(
+                            WinMdType(
+                                namespace = "Windows.Foundation.Collections",
+                                name = "MapViewHost",
+                                kind = WinMdTypeKind.RuntimeClass,
+                                defaultInterface = "Windows.Foundation.Collections.IMapView<String, Windows.Foundation.Collections.IVectorView<Microsoft.UI.Xaml.UIElement>>",
+                                baseInterfaces = listOf("Windows.Foundation.Collections.IMapView<String, Windows.Foundation.Collections.IVectorView<Microsoft.UI.Xaml.UIElement>>"),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val projection = mapper.runtimeClassInterfaceProjection(
+            nestedValueRegistry.findType("MapViewHost", "Windows.Foundation.Collections")!!,
+            TypeNameMapper(),
+            WinRtSignatureMapper(nestedValueRegistry),
+            WinRtProjectionTypeMapper(),
+        )
+        requireNotNull(projection)
+        assertEquals("kotlin.collections.Map<kotlin.String, windows.foundation.collections.IVectorView<microsoft.ui.xaml.UIElement>>", projection.superinterface.toString())
+        assertTrue(projection.delegateFactory.toString().contains("WinRtMapProjection"))
     }
 
     @Test

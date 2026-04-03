@@ -36,6 +36,17 @@ class TypeNameMapperTest {
     }
 
     @Test
+    fun maps_nested_dictionary_interfaces_to_kotlin_map_types() {
+        assertEquals(
+            "kotlin.collections.Map<kotlin.String, windows.foundation.collections.IVectorView<microsoft.ui.xaml.UIElement>>",
+            mapper.mapTypeName(
+                "Windows.Foundation.Collections.IMapView`2<String, Windows.Foundation.Collections.IVectorView`1<Microsoft.UI.Xaml.UIElement>>",
+                "Windows.Foundation.Collections",
+            ).toString(),
+        )
+    }
+
+    @Test
     fun maps_ireference_to_nullable_kotlin_type() {
         assertEquals(
             "kotlin.String?",
