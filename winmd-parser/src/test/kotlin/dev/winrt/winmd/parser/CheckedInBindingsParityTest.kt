@@ -103,9 +103,18 @@ class CheckedInBindingsParityTest {
         val mismatches = exactParityRelativePaths.mapNotNull { relativePath ->
             val generated = generatedFiles[relativePath.lowercase()]
                 ?: return@mapNotNull "Missing generated file: $relativePath"
-            val checkedIn = checkedInRoot.resolve(relativePath).readText()
-            if (checkedIn != generated.content) {
-                "Generated file differs: $relativePath"
+            val checkedIn = checkedInRoot.resolve(relativePath).readText().replace("\r\n", "\n")
+            val generatedContent = generated.content.replace("\r\n", "\n")
+            if (checkedIn != generatedContent) {
+                val mismatchIndex = checkedIn.zip(generatedContent).indexOfFirst { (left, right) -> left != right }
+                val detail = if (mismatchIndex >= 0) {
+                    " at index $mismatchIndex: expected '${checkedIn.getOrNull(mismatchIndex)}' but was '${generatedContent.getOrNull(mismatchIndex)}'"
+                } else if (checkedIn.length != generatedContent.length) {
+                    " with lengths ${checkedIn.length} vs ${generatedContent.length}"
+                } else {
+                    ""
+                }
+                "Generated file differs: $relativePath$detail"
             } else null
         }
 
@@ -286,6 +295,61 @@ class CheckedInBindingsParityTest {
         assertTrue(runtimeClass.contains("private val statics: IJsonArrayStatics by lazy"))
         assertTrue(runtimeClass.contains("WinRtRuntime.projectActivationFactory(this,"))
         assertTrue(runtimeClass.contains("public fun parse(input: String): JsonArray = statics.parse(input)"))
+    }
+
+    @Test
+    fun checked_in_application_runtime_class_keeps_verified_activation_surface() {
+        val runtimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/microsoft/ui/xaml/Application.kt").readText()
+
+        assertTrue(runtimeClass.contains("Microsoft.UI.Xaml.Application"))
+        assertTrue(runtimeClass.contains("override val defaultInterfaceName: String? = \"Microsoft.UI.Xaml.IApplication\""))
+        assertTrue(runtimeClass.contains("override val activationKind = WinRtActivationKind.Factory"))
+        assertTrue(runtimeClass.contains("val current: Application"))
+        assertTrue(runtimeClass.contains("private val statics: IApplicationStatics by lazy"))
+        assertTrue(runtimeClass.contains("WinRtRuntime.projectActivationFactory(this, IApplicationStatics"))
+        assertTrue(runtimeClass.contains("fun start(callback: ApplicationInitializationCallback)"))
+        assertTrue(runtimeClass.contains("fun start(callback: (IApplicationInitializationCallbackParams) -> Unit): WinRtDelegateHandle"))
+    }
+
+    @Test
+    fun checked_in_globalization_preferences_runtime_class_keeps_verified_activation_surface() {
+        val runtimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/system/userprofile/GlobalizationPreferences.kt").readText()
+
+        assertTrue(runtimeClass.contains("Windows.System.UserProfile.GlobalizationPreferences"))
+        assertTrue(runtimeClass.contains("override val defaultInterfaceName: String? = null"))
+        assertTrue(runtimeClass.contains("override val activationKind: WinRtActivationKind = WinRtActivationKind.Factory"))
+        assertTrue(runtimeClass.contains("private val statics: IGlobalizationPreferencesStatics by lazy"))
+        assertTrue(runtimeClass.contains("private val statics2: IGlobalizationPreferencesStatics2 by lazy"))
+        assertTrue(runtimeClass.contains("WinRtRuntime.projectActivationFactory(this, IGlobalizationPreferencesStatics"))
+        assertTrue(runtimeClass.contains("WinRtRuntime.projectActivationFactory(this, IGlobalizationPreferencesStatics2"))
+        assertTrue(runtimeClass.contains("public val homeGeographicRegion: String"))
+        assertTrue(runtimeClass.contains("public fun trySetHomeGeographicRegion(region: String): WinRtBoolean"))
+    }
+
+    @Test
+    fun checked_in_calendar_identifiers_runtime_class_keeps_verified_activation_surface() {
+        val runtimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/CalendarIdentifiers.kt").readText()
+
+        assertTrue(runtimeClass.contains("Windows.Globalization.CalendarIdentifiers"))
+        assertTrue(runtimeClass.contains("override val defaultInterfaceName: String? = null"))
+        assertTrue(runtimeClass.contains("override val activationKind: WinRtActivationKind = WinRtActivationKind.Factory"))
+        assertTrue(runtimeClass.contains("private val statics: ICalendarIdentifiersStatics by lazy"))
+        assertTrue(runtimeClass.contains("WinRtRuntime.projectActivationFactory(this, ICalendarIdentifiersStatics"))
+        assertTrue(runtimeClass.contains("public val gregorian: String"))
+        assertTrue(runtimeClass.contains("public val umAlQura: String"))
+    }
+
+    @Test
+    fun checked_in_clock_identifiers_runtime_class_keeps_verified_activation_surface() {
+        val runtimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/ClockIdentifiers.kt").readText()
+
+        assertTrue(runtimeClass.contains("Windows.Globalization.ClockIdentifiers"))
+        assertTrue(runtimeClass.contains("override val defaultInterfaceName: String? = null"))
+        assertTrue(runtimeClass.contains("override val activationKind: WinRtActivationKind = WinRtActivationKind.Factory"))
+        assertTrue(runtimeClass.contains("private val statics: IClockIdentifiersStatics by lazy"))
+        assertTrue(runtimeClass.contains("WinRtRuntime.projectActivationFactory(this, IClockIdentifiersStatics"))
+        assertTrue(runtimeClass.contains("public val twelveHour: String"))
+        assertTrue(runtimeClass.contains("public val twentyFourHour: String"))
     }
 
     @Test

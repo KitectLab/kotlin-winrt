@@ -1,8 +1,8 @@
 package windows.foundation
 
-import dev.winrt.core.Float64
+import kotlin.Double
 
 public data class Point(
-  public val x: Float64,
-  public val y: Float64,
+  public val x: Double,
+  public val y: Double,
 )
