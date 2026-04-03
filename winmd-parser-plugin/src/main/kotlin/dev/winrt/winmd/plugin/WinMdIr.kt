@@ -185,6 +185,11 @@ object WinMdModelFactory {
                         ),
                         WinMdType(
                             namespace = "Microsoft.UI.Xaml",
+                            name = "ApplicationRequiresPointerMode",
+                            kind = WinMdTypeKind.Enum,
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
                             name = "IApplicationInitializationCallbackParams",
                             kind = WinMdTypeKind.Interface,
                             guid = "1b1906ea-5b7b-5876-81ab-7c2281ac3d20",
@@ -455,6 +460,29 @@ object WinMdModelFactory {
                                 WinMdMethod("Start", "Unit", vtableIndex = 6),
                                 WinMdMethod("GetLaunchCount", "UInt32", vtableIndex = 7),
                             ),
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "ApplicationTheme",
+                            kind = WinMdTypeKind.Enum,
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "ApplicationRequiresPointerMode",
+                            kind = WinMdTypeKind.Enum,
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "ApplicationInitializationCallbackParams",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Microsoft.UI.Xaml.IApplicationInitializationCallbackParams",
+                            activationKind = WinMdActivationKind.Factory,
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "IApplicationInitializationCallbackParams",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "1b1906ea-5b7b-5876-81ab-7c2281ac3d20",
                         ),
                         WinMdType(
                             namespace = "Microsoft.UI.Xaml",

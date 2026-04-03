@@ -33,6 +33,7 @@ class CheckedInBindingsParityTest {
         "windows/globalization/numberformatting/NumeralSystemTranslator.kt",
         "windows/globalization/numberformatting/INumeralSystemTranslator.kt",
         "microsoft/ui/xaml/Application.kt",
+        "microsoft/ui/xaml/ApplicationRequiresPointerMode.kt",
         "microsoft/ui/xaml/Window.kt",
     )
     private val foundationRelativePaths = listOf(
@@ -51,7 +52,7 @@ class CheckedInBindingsParityTest {
         "Windows.Globalization" to setOf("ApplicationLanguages", "Calendar", "CalendarIdentifiers", "ClockIdentifiers", "DayOfWeek", "IApplicationLanguagesStatics", "ICalendar", "ICalendarIdentifiersStatics", "IClockIdentifiersStatics"),
         "Windows.Globalization.NumberFormatting" to setOf("INumeralSystemTranslator", "NumeralSystemTranslator"),
         "Windows.System.UserProfile" to setOf("GlobalizationPreferences", "IGlobalizationPreferencesStatics"),
-        "Microsoft.UI.Xaml" to setOf("Application", "Window"),
+        "Microsoft.UI.Xaml" to setOf("Application", "ApplicationRequiresPointerMode", "Window"),
     )
 
     @Test
