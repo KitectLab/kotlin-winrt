@@ -113,6 +113,92 @@ class TypeRegistryTest {
     }
 
     @Test
+    fun orders_versioned_runtime_class_helper_types_by_numeric_suffix() {
+        val runtimeRegistry = TypeRegistry(
+            WinMdModel(
+                files = emptyList(),
+                namespaces = listOf(
+                    WinMdNamespace(
+                        name = "Example.Xaml",
+                        types = listOf(
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "Widget",
+                                kind = WinMdTypeKind.RuntimeClass,
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "IWidgetStatics2",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "11111111-1111-1111-1111-111111111112",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "IWidgetStatics",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "11111111-1111-1111-1111-111111111111",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "IWidgetStatics10",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "11111111-1111-1111-1111-111111111120",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "IWidgetFactory2",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "22222222-2222-2222-2222-222222222222",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "IWidgetFactory",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "22222222-2222-2222-2222-222222222221",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "IWidgetOverrides2",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "33333333-3333-3333-3333-333333333332",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "IWidgetOverrides",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "33333333-3333-3333-3333-333333333331",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals(
+            listOf("IWidgetStatics", "IWidgetStatics2", "IWidgetStatics10"),
+            runtimeRegistry.findRuntimeClassStaticsTypes("Widget", "Example.Xaml").map { it.name },
+        )
+        assertEquals(
+            listOf("IWidgetFactory", "IWidgetFactory2"),
+            runtimeRegistry.findRuntimeClassFactoryTypes("Widget", "Example.Xaml").map { it.name },
+        )
+        assertEquals(
+            listOf("IWidgetOverrides", "IWidgetOverrides2"),
+            runtimeRegistry.findRuntimeClassOverridesTypes("Widget", "Example.Xaml").map { it.name },
+        )
+    }
+
+    @Test
+    fun helper_accessor_names_preserve_versioned_factory_and_static_suffixes() {
+        assertEquals("statics", helperAccessorName("IWidgetStatics"))
+        assertEquals("statics2", helperAccessorName("IWidgetStatics2"))
+        assertEquals("factory", helperAccessorName("IWidgetFactory"))
+        assertEquals("factory2", helperAccessorName("IWidgetFactory2"))
+        assertEquals("widgetOverrides", helperAccessorName("IWidgetOverrides"))
+        assertEquals("widgetOverrides2", helperAccessorName("IWidgetOverrides2"))
+    }
+
+    @Test
     fun finds_default_interface_by_runtime_class_name() {
         val runtimeRegistry = TypeRegistry(
             WinMdModel(
