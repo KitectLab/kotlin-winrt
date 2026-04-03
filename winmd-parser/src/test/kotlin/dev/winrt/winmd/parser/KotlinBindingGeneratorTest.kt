@@ -5045,6 +5045,74 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_kotlin_map_view_shape_for_runtime_classes_with_projected_values() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IMap`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "00000000-0000-0000-0000-000000000002",
+                            genericParameters = listOf("K", "V"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IMapView`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "00000000-0000-0000-0000-000000000003",
+                            genericParameters = listOf("K", "V"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "IUIElement",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "UIElement",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Microsoft.UI.Xaml.IUIElement",
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml.Controls",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Controls",
+                            name = "MapViewHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IMapView<String, Microsoft.UI.Xaml.UIElement>",
+                            baseInterfaces = listOf(
+                                "Windows.Foundation.Collections.IMapView<String, Microsoft.UI.Xaml.UIElement>",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Microsoft/UI/Xaml/Controls/MapViewHost.kt"
+        }.content
+
+        assertTrue(binding.contains("Map<String, UIElement>"))
+        assertTrue(binding.contains("WinRtMapProjection<String, UIElement>"))
+        assertFalse(binding.contains("WinRtMutableMapProjection<String, UIElement>"))
+    }
+
+    @Test
     fun expands_winui_ui_element_collection_members_from_real_metadata_model_when_available() {
         val winUiRoot = java.nio.file.Path.of("F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002")
         val xamlWinmd = winUiRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd")
