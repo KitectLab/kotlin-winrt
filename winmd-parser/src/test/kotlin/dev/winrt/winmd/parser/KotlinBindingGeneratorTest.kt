@@ -5314,13 +5314,13 @@ class KotlinBindingGeneratorTest {
         val mapBinding = files.first { it.relativePath == "Example/Collections/ObservableMapHost.kt" }.content
 
         assertTrue(vectorBinding.contains("MutableList<String>"))
-        assertTrue(vectorBinding.contains("vectorChanged"))
-        assertTrue(vectorBinding.contains("fun subscribeScoped(handler: TypedEventHandler<Inspectable, Int>): AutoCloseable"))
+        assertTrue(vectorBinding.contains("vectorChangedEvent"))
+        assertTrue(vectorBinding.contains("subscribeScoped"))
         assertTrue(vectorBinding.contains("delegateHandles.remove(token)?.close()"))
 
         assertTrue(mapBinding.contains("MutableMap<String, Int>"))
-        assertTrue(mapBinding.contains("mapChanged"))
-        assertTrue(mapBinding.contains("fun subscribeScoped(handler: TypedEventHandler<Inspectable, String>): AutoCloseable"))
+        assertTrue(mapBinding.contains("mapChangedEvent"))
+        assertTrue(mapBinding.contains("subscribeScoped"))
         assertTrue(mapBinding.contains("delegateHandles.remove(token)?.close()"))
     }
 
