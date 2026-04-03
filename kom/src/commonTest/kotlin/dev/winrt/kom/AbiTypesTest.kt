@@ -4,6 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
 
 class AbiTypesTest {
     @Test
@@ -28,5 +29,19 @@ class AbiTypesTest {
     fun native_boolean_converts_to_kotlin_boolean() {
         assertTrue(NativeBoolean.TRUE.toBoolean())
         assertFalse(NativeBoolean.FALSE.toBoolean())
+    }
+
+    @Test
+    fun hresult_require_success_reports_hex_value() {
+        val error = assertFailsWith<KomException> {
+            HResult(-1).requireSuccess("Invoke")
+        }
+
+        assertTrue(error.message!!.contains("Invoke failed with HRESULT=0xffffffff"))
+    }
+
+    @Test
+    fun com_ptr_null_is_reported_as_null() {
+        assertTrue(ComPtr.NULL.isNull)
     }
 }
