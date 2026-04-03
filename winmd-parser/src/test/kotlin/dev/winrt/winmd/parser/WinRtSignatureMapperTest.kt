@@ -111,6 +111,14 @@ class WinRtSignatureMapperTest {
     }
 
     @Test
+    fun maps_runtime_class_to_rc_signature_for_default_interface_in_same_namespace() {
+        assertEquals(
+            "rc(Microsoft.UI.Xaml.DependencyObject;{11111111-1111-1111-1111-111111111111})",
+            mapper.signatureFor("Microsoft.UI.Xaml.DependencyObject", "Microsoft.UI.Xaml"),
+        )
+    }
+
+    @Test
     fun maps_specialized_generic_interface_to_pinterface_signature() {
         assertEquals(
             "pinterface({913337e9-11a1-4345-a3a2-4e7f956e222d};rc(Microsoft.UI.Xaml.UIElement;{22222222-2222-2222-2222-222222222222}))",
@@ -128,6 +136,17 @@ class WinRtSignatureMapperTest {
             mapper.interfaceIdFor(
                 "Windows.Foundation.Collections.IVector`1<Microsoft.UI.Xaml.UIElement>",
                 "Microsoft.UI.Xaml.Controls",
+            ),
+        )
+    }
+
+    @Test
+    fun computes_parameterized_interface_iid_for_scalar_arguments() {
+        assertEquals(
+            "51ceb9ce-8ac1-5bad-9d98-1f197b39a5db",
+            mapper.interfaceIdFor(
+                "Windows.Foundation.Collections.IVectorView`1<String>",
+                "Windows.Foundation.Collections",
             ),
         )
     }
