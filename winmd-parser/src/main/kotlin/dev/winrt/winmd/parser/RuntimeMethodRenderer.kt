@@ -754,6 +754,8 @@ internal class RuntimeMethodRenderer(
             MethodReturnKind.STRING,
             MethodReturnKind.FLOAT32,
             MethodReturnKind.FLOAT64,
+            MethodReturnKind.DATE_TIME,
+            MethodReturnKind.TIME_SPAN,
             MethodReturnKind.OBJECT,
             MethodReturnKind.UNIT -> plannedUnaryRuntimeMethodForReturnKind(signatureKey.returnKind, parameterCategory)
             else -> null
@@ -778,6 +780,8 @@ internal class RuntimeMethodRenderer(
         MethodReturnKind.STRING -> PlannedStatement("return %S", arrayOf(""))
         MethodReturnKind.FLOAT32 -> PlannedStatement("return 0f")
         MethodReturnKind.FLOAT64 -> PlannedStatement("return 0.0")
+        MethodReturnKind.DATE_TIME -> PlannedStatement("return %T.fromEpochSeconds(0)", arrayOf(PoetSymbols.dateTimeClass))
+        MethodReturnKind.TIME_SPAN -> PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.timeSpanClass, "0s"))
         MethodReturnKind.OBJECT -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: $methodName"))
         MethodReturnKind.UNIT -> PlannedStatement("return")
         else -> error("Unsupported unary runtime return kind: $returnKind")
@@ -788,6 +792,8 @@ internal class RuntimeMethodRenderer(
         MethodReturnKind.OBJECT,
         MethodReturnKind.FLOAT32,
         MethodReturnKind.FLOAT64,
+        MethodReturnKind.DATE_TIME,
+        MethodReturnKind.TIME_SPAN,
         MethodReturnKind.UNIT -> if (returnKind == MethodReturnKind.UNIT) "%L" else "return %L"
         else -> error("Unsupported unary runtime return kind: $returnKind")
     }
@@ -801,6 +807,8 @@ internal class RuntimeMethodRenderer(
         MethodReturnKind.STRING -> arrayOf(HStringSupport.fromCall(abiCall))
         MethodReturnKind.FLOAT32 -> arrayOf(abiCall)
         MethodReturnKind.FLOAT64 -> arrayOf(abiCall)
+        MethodReturnKind.DATE_TIME -> arrayOf(CodeBlock.of("%T.fromEpochSeconds((%L - %L) / 10000000L, ((%L - %L) %% 10000000L * 100).toInt())", PoetSymbols.dateTimeClass, abiCall, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET, abiCall, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET))
+        MethodReturnKind.TIME_SPAN -> arrayOf(CodeBlock.of("%T(%L)", PoetSymbols.timeSpanClass, abiCall))
         MethodReturnKind.OBJECT -> arrayOf(runtimeObjectReturnCode(method, currentNamespace, abiCall))
         MethodReturnKind.UNIT -> arrayOf(abiCall)
         else -> error("Unsupported unary runtime return kind: $returnKind")
@@ -817,6 +825,8 @@ internal class RuntimeMethodRenderer(
                 MethodReturnKind.STRING -> AbiCallCatalog.hstringMethod(vtableIndex)
                 MethodReturnKind.FLOAT32 -> AbiCallCatalog.float32Method(vtableIndex)
                 MethodReturnKind.FLOAT64 -> AbiCallCatalog.float64Method(vtableIndex)
+                MethodReturnKind.DATE_TIME,
+                MethodReturnKind.TIME_SPAN -> AbiCallCatalog.int64Getter(vtableIndex)
                 MethodReturnKind.OBJECT -> AbiCallCatalog.objectMethod(vtableIndex)
                 MethodReturnKind.UNIT -> AbiCallCatalog.unitMethod(vtableIndex)
                 else -> error("Unsupported unary runtime return kind: $returnKind")
@@ -850,6 +860,16 @@ internal class RuntimeMethodRenderer(
                 MethodParameterCategory.INT64,
                 MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.float64MethodWithInt64(vtableIndex, loweredArgument)
                 MethodParameterCategory.OBJECT -> AbiCallCatalog.float64MethodWithObject(vtableIndex, loweredArgument)
+            }
+            MethodReturnKind.DATE_TIME,
+            MethodReturnKind.TIME_SPAN -> when (parameterCategory) {
+                MethodParameterCategory.STRING -> AbiCallCatalog.int64MethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.INT32 -> AbiCallCatalog.int64MethodWithInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.int64MethodWithUInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.int64MethodWithBoolean(vtableIndex, AbiCallCatalog.booleanAsInt64Expression(argumentName))
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.int64MethodWithInt64(vtableIndex, loweredArgument)
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.int64MethodWithObject(vtableIndex, loweredArgument)
             }
             MethodReturnKind.OBJECT -> when (parameterCategory) {
                 MethodParameterCategory.STRING -> AbiCallCatalog.objectMethodWithString(vtableIndex, argumentName)
@@ -1018,6 +1038,8 @@ internal class RuntimeMethodRenderer(
             "String" -> HStringSupport.fromCall(abiCall)
             "Float32" -> CodeBlock.of("%L", abiCall)
             "Float64" -> CodeBlock.of("%L", abiCall)
+            "DateTime" -> CodeBlock.of("%T.fromEpochSeconds((%L - %L) / 10000000L, ((%L - %L) %% 10000000L * 100).toInt())", PoetSymbols.dateTimeClass, abiCall, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET, abiCall, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET)
+            "TimeSpan" -> CodeBlock.of("%T(%L)", PoetSymbols.timeSpanClass, abiCall)
             "Boolean" -> CodeBlock.of("%L", abiCall)
             "Int32" -> CodeBlock.of("%L", abiCall)
             "UInt32" -> CodeBlock.of("%L", abiCall)
@@ -1033,6 +1055,8 @@ internal class RuntimeMethodRenderer(
             "String" -> PlannedStatement("return %S", arrayOf(""))
             "Float32" -> PlannedStatement("return 0f")
             "Float64" -> PlannedStatement("return 0.0")
+            "DateTime" -> PlannedStatement("return %T.fromEpochSeconds(0)", arrayOf(PoetSymbols.dateTimeClass))
+            "TimeSpan" -> PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.timeSpanClass, "0s"))
             "Boolean" -> PlannedStatement("return false")
             "Int32" -> PlannedStatement("return 0")
             "UInt32" -> PlannedStatement("return 0u")
@@ -1048,6 +1072,8 @@ internal class RuntimeMethodRenderer(
             "String" -> "HSTRING"
             "Float32" -> "FLOAT32"
             "Float64" -> "FLOAT64"
+            "DateTime" -> "INT64"
+            "TimeSpan" -> "INT64"
             "Boolean" -> "BOOLEAN"
             "Int32" -> "INT32"
             "UInt32" -> "UINT32"
@@ -1063,6 +1089,8 @@ internal class RuntimeMethodRenderer(
             "String" -> PoetSymbols.requireHStringMember
             "Float32" -> PoetSymbols.requireFloat32Member
             "Float64" -> PoetSymbols.requireFloat64Member
+            "DateTime" -> PoetSymbols.requireInt64Member
+            "TimeSpan" -> PoetSymbols.requireInt64Member
             "Boolean" -> PoetSymbols.requireBooleanMember
             "Int32" -> PoetSymbols.requireInt32Member
             "UInt32" -> PoetSymbols.requireUInt32Member

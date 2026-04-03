@@ -23,6 +23,14 @@ class MethodRuleRegistryTest {
             SharedMethodRuleFamily.GUID,
             MethodRuleRegistry.sharedMethodRuleFamily(MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.STRING)),
         )
+        assertEquals(
+            SharedMethodRuleFamily.DATE_TIME,
+            MethodRuleRegistry.sharedMethodRuleFamily(MethodSignatureKey(MethodReturnKind.DATE_TIME, MethodSignatureShape.STRING)),
+        )
+        assertEquals(
+            SharedMethodRuleFamily.TIME_SPAN,
+            MethodRuleRegistry.sharedMethodRuleFamily(MethodSignatureKey(MethodReturnKind.TIME_SPAN, MethodSignatureShape.OBJECT)),
+        )
     }
 
     @Test

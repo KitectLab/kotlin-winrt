@@ -3741,6 +3741,61 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_runtime_methods_with_datetime_and_timespan_return_values() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "Payload",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "DateTimeHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetCreatedAt",
+                                    returnType = "DateTime",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "DurationHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetLifetime",
+                                    returnType = "TimeSpan",
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val dateTimeBinding = files.first { it.relativePath == "Example/Runtime/DateTimeHost.kt" }.content.replace(Regex("\\s+"), "")
+        val durationBinding = files.first { it.relativePath == "Example/Runtime/DurationHost.kt" }.content.replace(Regex("\\s+"), "")
+
+        assertTrue(dateTimeBinding.contains("fungetCreatedAt():Instant"))
+        assertTrue(dateTimeBinding.contains("returnInstant.fromEpochSeconds(0)"))
+        assertTrue(dateTimeBinding.contains("PlatformComInterop.invokeInt64Getter(pointer,6).getOrThrow()"))
+
+        assertTrue(durationBinding.contains("fungetLifetime():Duration"))
+        assertTrue(durationBinding.contains("returnDuration.parse(\"0s\")"))
+        assertTrue(durationBinding.contains("PlatformComInterop.invokeInt64Getter(pointer,7).getOrThrow()"))
+    }
+
+    @Test
     fun generates_runtime_methods_with_string_return_values() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

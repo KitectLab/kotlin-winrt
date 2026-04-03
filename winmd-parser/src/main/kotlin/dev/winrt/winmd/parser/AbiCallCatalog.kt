@@ -347,6 +347,9 @@ internal object AbiCallCatalog {
     fun int64MethodWithBoolean(vtableIndex: Int, argumentName: String): CodeBlock =
         unaryCall(MethodAbiToken.INT64, MethodParameterAbiToken.INT32, vtableIndex, "${argumentName}.value")
 
+    fun int64MethodWithInt64(vtableIndex: Int, argumentExpression: String): CodeBlock =
+        unaryCall(MethodAbiToken.INT64, MethodParameterAbiToken.INT64, vtableIndex, argumentExpression)
+
     fun uint64Method(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeUInt64Method(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 

@@ -75,6 +75,8 @@ internal enum class MethodReturnKind {
     STRING,
     FLOAT32,
     FLOAT64,
+    DATE_TIME,
+    TIME_SPAN,
     BOOLEAN,
     INT32,
     UINT32,
@@ -194,6 +196,10 @@ internal fun MethodReturnKind.twoArgumentSharedRuleFamily(
         if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.FLOAT32 else null
     MethodReturnKind.FLOAT64 ->
         if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.FLOAT64 else null
+    MethodReturnKind.DATE_TIME ->
+        if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.DATE_TIME else null
+    MethodReturnKind.TIME_SPAN ->
+        if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.TIME_SPAN else null
     MethodReturnKind.BOOLEAN ->
         if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.BOOLEAN else null
     MethodReturnKind.INT32,
@@ -292,6 +298,8 @@ internal fun methodSignatureKey(
         "String" -> MethodReturnKind.STRING
         "Float32" -> MethodReturnKind.FLOAT32
         "Float64" -> MethodReturnKind.FLOAT64
+        "DateTime" -> MethodReturnKind.DATE_TIME
+        "TimeSpan" -> MethodReturnKind.TIME_SPAN
         "Boolean" -> MethodReturnKind.BOOLEAN
         "Int32" -> MethodReturnKind.INT32
         "UInt32" -> MethodReturnKind.UINT32
