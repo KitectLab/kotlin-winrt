@@ -45,6 +45,7 @@ kotlin {
 
 tasks.withType<Test>().configureEach {
     dependsOn(collectWinUiRuntimeAssets)
+    jvmArgs("-Xms128m", "-Xmx768m")
     jvmArgs("--enable-native-access=ALL-UNNAMED")
     providers.systemProperty("dev.winrt.errorFile").orNull?.let { errorFile ->
         jvmArgs("-XX:ErrorFile=$errorFile")
@@ -57,6 +58,7 @@ tasks.withType<Test>().configureEach {
 
 tasks.withType<JavaExec>().configureEach {
     dependsOn(collectWinUiRuntimeAssets)
+    jvmArgs("-Xms128m", "-Xmx768m")
     jvmArgs("--enable-native-access=ALL-UNNAMED")
     providers.systemProperty("dev.winrt.errorFile").orNull?.let { errorFile ->
         jvmArgs("-XX:ErrorFile=$errorFile")

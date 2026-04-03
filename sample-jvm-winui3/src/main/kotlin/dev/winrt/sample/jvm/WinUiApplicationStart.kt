@@ -97,6 +97,7 @@ object WinUiApplicationStart {
                         if (visible) {
                             Thread.sleep(500L)
                             WindowsWindowProbe.closeWindowByTitle(windowTitle)
+                            WindowsMessageLoop.postThreadQuit(uiThreadId)
                         } else {
                             WindowsMessageLoop.postThreadQuit(uiThreadId)
                         }

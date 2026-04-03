@@ -22,27 +22,11 @@ object WinUiSampleLayout {
 
     fun build(windowTitle: String, messageText: String): StackPanel {
         val root = StackPanel()
-
         root.children.add(makeTextBlock("kotlin-winrt sample"))
         root.children.add(makeTextBlock(windowTitle))
-
-        val statusPanel = StackPanel()
-        statusPanel.children.add(makeTextBlock("Bootstrap: ready"))
-        statusPanel.children.add(makeTextBlock("Projection: WinRT bindings loaded"))
-        root.children.add(statusPanel)
-
-        val bodyPanel = StackPanel()
-        bodyPanel.children.add(makeTextBlock(messageText))
-        bodyPanel.children.add(makeTextBlock("Runtime bridge: active"))
-        bodyPanel.children.add(makeTextBlock("Layout: nested StackPanel sections"))
-        root.children.add(bodyPanel)
-
-        val metricsPanel = StackPanel()
-        metricsPanel.children.add(makeTextBlock("Cards: 2"))
-        metricsPanel.children.add(makeTextBlock("Sections: 5"))
-        metricsPanel.children.add(makeTextBlock("Mode: sample launch"))
-        root.children.add(metricsPanel)
-
+        root.children.add(makeTextBlock("Bootstrap: ready"))
+        root.children.add(makeTextBlock(messageText))
+        root.children.add(makeTextBlock("Runtime bridge: active"))
         root.children.add(makeTextBlock("winrt-core + generated-winrt-bindings + kom"))
         return root
     }
