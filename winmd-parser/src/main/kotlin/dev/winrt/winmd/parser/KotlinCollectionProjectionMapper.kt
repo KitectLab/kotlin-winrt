@@ -388,7 +388,11 @@ internal class KotlinCollectionProjectionMapper {
                     AbiCallCatalog.booleanGetter(7, "iteratorProjection.pointer"),
                     elementTypeName,
                     NoSuchElementException::class,
-                    elementReadExpression(elementTypeName, "iteratorProjection.pointer", 6),
+                    if (isKeyValuePairElement(elementType)) {
+                        keyValuePairEntryExpression(elementType, "iteratorProjection.pointer")
+                    } else {
+                        elementReadExpression(elementTypeName, "iteratorProjection.pointer", 6)
+                    },
                     PoetSymbols.platformComInteropClass,
                 ),
             )
@@ -427,7 +431,11 @@ internal class KotlinCollectionProjectionMapper {
                     AbiCallCatalog.booleanGetter(7, "iteratorProjection.pointer"),
                     elementTypeName,
                     NoSuchElementException::class,
-                    elementReadExpression(elementTypeName, "iteratorProjection.pointer", 6),
+                    if (isKeyValuePairElement(elementType)) {
+                        keyValuePairEntryExpression(elementType, "iteratorProjection.pointer")
+                    } else {
+                        elementReadExpression(elementTypeName, "iteratorProjection.pointer", 6)
+                    },
                     PoetSymbols.platformComInteropClass,
                 ),
             )
@@ -438,8 +446,8 @@ internal class KotlinCollectionProjectionMapper {
     private fun supportsClosedGenericIterableElement(typeName: String): Boolean {
         return typeName == "String" || typeName == "Boolean" || typeName == "Int32" || typeName == "UInt32" || typeName == "Int64" || typeName == "UInt64" || typeName == "Float64" || (
             (typeName == "Object" || typeName.contains('.')) &&
-                !typeName.contains('<') &&
-                !typeName.endsWith("[]")
+                !typeName.endsWith("[]") &&
+                (typeName.indexOf('<') < 0 || isKeyValuePairElement(typeName))
             )
     }
 
@@ -522,6 +530,31 @@ internal class KotlinCollectionProjectionMapper {
                 slot,
             )
         }
+    }
+
+    private fun keyValuePairEntryExpression(elementType: String, pointerExpression: String): CodeBlock {
+        val argumentSource = elementType.substringAfter('<').substringBeforeLast('>')
+        val arguments = splitGenericArguments(argumentSource)
+        require(arguments.size == 2) { "Invalid IKeyValuePair type: $elementType" }
+        val keyTypeName = collectionElementTypeName(arguments[0], TypeNameMapper())
+        val valueTypeName = collectionElementTypeName(arguments[1], TypeNameMapper())
+        return CodeBlock.of(
+            "object : %T {\n" +
+                "  override val key: %T\n" +
+                "    get() = %L\n" +
+                "  override val value: %T\n" +
+                "    get() = %L\n" +
+                "}",
+            PoetSymbols.mapEntryClass.parameterizedBy(keyTypeName, valueTypeName),
+            keyTypeName,
+            elementReadExpression(keyTypeName, pointerExpression, 6),
+            valueTypeName,
+            elementReadExpression(valueTypeName, pointerExpression, 7),
+        )
+    }
+
+    private fun isKeyValuePairElement(typeName: String): Boolean {
+        return typeName.startsWith("Windows.Foundation.Collections.IKeyValuePair<") && typeName.endsWith(">")
     }
 
     private fun collectionElementTypeName(typeName: String, typeNameMapper: TypeNameMapper): TypeName {
