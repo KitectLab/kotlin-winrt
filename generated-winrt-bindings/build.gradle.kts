@@ -4,6 +4,23 @@ plugins {
 
 import java.net.URI
 
+fun versionKey(value: String): List<Int> =
+    value.split('.').map { token -> token.toIntOrNull() ?: 0 }
+
+fun compareVersions(left: String, right: String): Int {
+    val leftParts = versionKey(left)
+    val rightParts = versionKey(right)
+    val maxSize = maxOf(leftParts.size, rightParts.size)
+    for (index in 0 until maxSize) {
+        val leftValue = leftParts.getOrElse(index) { 0 }
+        val rightValue = rightParts.getOrElse(index) { 0 }
+        if (leftValue != rightValue) {
+            return leftValue.compareTo(rightValue)
+        }
+    }
+    return 0
+}
+
 fun Project.stringListProperty(name: String): List<String> =
     providers.gradleProperty(name)
         .orNull
@@ -203,6 +220,17 @@ fun Project.resolveNuGetCommand(): String {
     }
 }
 
+fun Project.latestNuGetPackageVersion(packageId: String, nugetCommand: String): String? {
+    val packageRoot = File(discoverNuGetGlobalPackagesRoot(nugetCommand)).resolve(packageId.lowercase())
+    if (!packageRoot.exists() || !packageRoot.isDirectory) {
+        return null
+    }
+    return packageRoot.listFiles()
+        ?.filter { it.isDirectory }
+        ?.maxWithOrNull { left, right -> compareVersions(left.name, right.name) }
+        ?.name
+}
+
 fun Project.discoverNuGetGlobalPackagesRoot(nugetCommand: String): String {
     val process = ProcessBuilder(
         listOf(nugetCommand, "locals", "global-packages", "-list"),
@@ -229,6 +257,7 @@ fun Project.discoverNuGetGlobalPackagesRoot(nugetCommand: String): String {
 val restoreNuGetWinMdPackages by tasks.registering {
     group = "code generation"
     description = "Restores configured NuGet WinRT components into a local package cache."
+    notCompatibleWithConfigurationCache("NuGet restore tasks build dynamic process arguments from Gradle properties.")
 
     val componentSpecs = nuGetComponentSpecs()
     onlyIf { componentSpecs.isNotEmpty() }
@@ -351,7 +380,9 @@ fun registerPresetNuGetGenerationTask(
     dependsOn(project(":winmd-parser").tasks.named("classes"))
 
     doFirst {
+        val nugetCommand = resolveNuGetCommand()
         val packageVersion = providers.gradleProperty(versionProperty).orNull
+            ?: latestNuGetPackageVersion(packageId, nugetCommand)
             ?: error("Set -P$versionProperty=<version> to choose the NuGet package version.")
         val nugetRoot = providers.gradleProperty(rootProperty).orNull
         val nugetSources = winMdNuGetSourceArgs(packageId)
@@ -382,7 +413,9 @@ fun registerPresetNuGetRegenerationTask(
     dependsOn(project(":winmd-parser").tasks.named("classes"))
 
     doFirst {
+        val nugetCommand = resolveNuGetCommand()
         val packageVersion = providers.gradleProperty(versionProperty).orNull
+            ?: latestNuGetPackageVersion(packageId, nugetCommand)
             ?: error("Set -P$versionProperty=<version> to choose the NuGet package version.")
         val nugetRoot = providers.gradleProperty(rootProperty).orNull
         val nugetSources = winMdNuGetSourceArgs(packageId)

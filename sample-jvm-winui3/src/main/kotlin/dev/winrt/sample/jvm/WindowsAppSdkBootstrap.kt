@@ -1,7 +1,6 @@
 package dev.winrt.sample.jvm
 
 import dev.winrt.kom.HResult
-import dev.winrt.kom.KomException
 import java.lang.foreign.Arena
 import java.lang.foreign.MemorySegment
 import java.lang.foreign.FunctionDescriptor
@@ -12,9 +11,6 @@ import java.lang.invoke.MethodHandle
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.charset.StandardCharsets
-import kotlin.io.path.isDirectory
-import kotlin.io.path.name
-import kotlin.streams.asSequence
 
 object WindowsAppSdkBootstrap {
     private const val defaultMajorMinorVersion = 0x00010006
@@ -42,13 +38,6 @@ object WindowsAppSdkBootstrap {
         val explicitCandidates = buildList {
             System.getenv("WINAPPSDK_BOOTSTRAP_DLL")?.let { add(Path.of(it)) }
             System.getProperty("dev.winrt.bootstrapDll")?.takeIf { it.isNotBlank() }?.let { add(Path.of(it)) }
-            System.getenv("WINAPPSDK_ROOT")?.takeIf { it.isNotBlank() }?.let { addAll(bootstrapDllCandidates(Path.of(it))) }
-            System.getProperty("dev.winrt.windowsAppSdkRoot")?.takeIf { it.isNotBlank() }?.let {
-                addAll(bootstrapDllCandidates(Path.of(it)))
-            }
-            discoverNuGetPackageRoots().forEach { addAll(bootstrapDllCandidates(it)) }
-            add(Path.of("C:/Program Files (x86)/Microsoft SDKs/Windows App SDK/bootstrap/Microsoft.WindowsAppRuntime.Bootstrap.dll"))
-            add(Path.of("C:/Program Files (x86)/Mica For Everyone/Microsoft.WindowsAppRuntime.Bootstrap.dll"))
         }
 
         return explicitCandidates
@@ -59,74 +48,6 @@ object WindowsAppSdkBootstrap {
                     lookup = SymbolLookup.libraryLookup(path, arena),
                 )
             }
-    }
-
-    private fun bootstrapDllCandidates(root: Path): List<Path> {
-        return when {
-            root.fileName?.toString()?.equals("native", ignoreCase = true) == true -> {
-                listOf(root.resolve("Microsoft.WindowsAppRuntime.Bootstrap.dll"))
-            }
-            root.name.endsWith(".dll", ignoreCase = true) -> listOf(root)
-            else -> listOf(
-                root.resolve("Microsoft.WindowsAppRuntime.Bootstrap.dll"),
-                root.resolve("runtimes").resolve("win-x64").resolve("native").resolve("Microsoft.WindowsAppRuntime.Bootstrap.dll"),
-                root.resolve("runtimes").resolve("win-arm64").resolve("native").resolve("Microsoft.WindowsAppRuntime.Bootstrap.dll"),
-                root.resolve("runtimes").resolve("win-x86").resolve("native").resolve("Microsoft.WindowsAppRuntime.Bootstrap.dll"),
-            )
-        }
-    }
-
-    private fun discoverNuGetPackageRoots(): List<Path> {
-        val explicit = System.getenv("NUGET_PACKAGES")
-            ?.takeIf { it.isNotBlank() }
-            ?.let { parseNuGetGlobalPackagesOutput("global-packages: $it") }
-            .orEmpty()
-
-        val discovered = runCatching {
-            val process = ProcessBuilder(
-                "dotnet",
-                "nuget",
-                "locals",
-                "global-packages",
-                "--list",
-            )
-                .redirectErrorStream(true)
-                .start()
-            val output = process.inputStream.bufferedReader().use { it.readText() }
-            val exitCode = process.waitFor()
-            if (exitCode == 0) parseNuGetGlobalPackagesOutput(output) else emptyList()
-        }.getOrDefault(emptyList())
-
-        return (explicit + discovered)
-            .flatMap { root -> discoverWindowsAppSdkPackageRoots(root) }
-            .distinct()
-    }
-
-    internal fun parseNuGetGlobalPackagesOutput(output: String): List<Path> {
-        return output.lineSequence()
-            .mapNotNull { line ->
-                val separator = line.indexOf(':')
-                if (separator < 0) {
-                    null
-                } else {
-                    line.substring(separator + 1).trim().takeIf { it.isNotBlank() }?.let(Path::of)
-                }
-            }
-            .toList()
-    }
-
-    private fun discoverWindowsAppSdkPackageRoots(root: Path): List<Path> {
-        val packageDirectory = root.resolve("microsoft.windowsappsdk")
-        if (!packageDirectory.isDirectory()) {
-            return emptyList()
-        }
-
-        return Files.list(packageDirectory).use { stream ->
-            stream.asSequence()
-                .filter { it.isDirectory() }
-                .sortedByDescending { it.fileName.toString() }
-                .toList()
-        }
     }
 
     private fun downcall(library: BootstrapLibrary, name: String, descriptor: FunctionDescriptor): MethodHandle {
@@ -191,12 +112,6 @@ object WindowsAppSdkBootstrap {
     private fun discoverVersionInfo(bootstrapDll: Path): BootstrapVersionInfo? {
         val candidates = buildList {
             inferPackageRoot(bootstrapDll)?.let { add(it.resolve("include").resolve("WindowsAppSDK-VersionInfo.h")) }
-            System.getProperty("dev.winrt.windowsAppSdkRoot")
-                ?.takeIf { it.isNotBlank() }
-                ?.let { add(Path.of(it).resolve("include").resolve("WindowsAppSDK-VersionInfo.h")) }
-            System.getenv("WINAPPSDK_ROOT")
-                ?.takeIf { it.isNotBlank() }
-                ?.let { add(Path.of(it).resolve("include").resolve("WindowsAppSDK-VersionInfo.h")) }
         }
         val versionInfoHeader = candidates.firstOrNull(Files::isRegularFile) ?: return null
         val content = Files.readString(versionInfoHeader)

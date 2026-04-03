@@ -37,7 +37,41 @@ fun latestWindowsAppSdkPackageRoot(): File? {
         ?.maxWithOrNull { left, right -> compareVersions(left.name, right.name) }
 }
 
+fun findBootstrapDll(packageRoot: File): File? {
+    val archPreferences = buildList {
+        when {
+            System.getProperty("os.arch").contains("aarch64", ignoreCase = true) ||
+                System.getProperty("os.arch").contains("arm64", ignoreCase = true) -> {
+                add("win-arm64")
+                add("win-x64")
+                add("win-x86")
+            }
+            else -> {
+                add("win-x64")
+                add("win-x86")
+                add("win-arm64")
+            }
+        }
+    }
+    val candidates = buildList {
+        add(packageRoot.resolve("Microsoft.WindowsAppRuntime.Bootstrap.dll"))
+        archPreferences.forEach { arch ->
+            add(packageRoot.resolve("runtimes").resolve(arch).resolve("native").resolve("Microsoft.WindowsAppRuntime.Bootstrap.dll"))
+        }
+        packageRoot.walkTopDown().forEach { file ->
+            if (file.isFile && file.name.equals("Microsoft.WindowsAppRuntime.Bootstrap.dll", ignoreCase = true)) {
+                add(file)
+            }
+        }
+    }
+    return candidates.firstOrNull { it.isFile }
+}
+
 val winUiRuntimeAssetsDir = layout.buildDirectory.dir("winui-runtime-assets")
+val latestWindowsAppSdkPackageRootProvider = providers.provider { latestWindowsAppSdkPackageRoot() }
+val latestWindowsAppSdkBootstrapDllProvider = latestWindowsAppSdkPackageRootProvider.map { packageRoot ->
+    packageRoot?.let(::findBootstrapDll)
+}
 
 kotlin {
     jvmToolchain(22)
@@ -50,6 +84,11 @@ tasks.withType<Test>().configureEach {
     providers.systemProperty("dev.winrt.errorFile").orNull?.let { errorFile ->
         jvmArgs("-XX:ErrorFile=$errorFile")
     }
+    systemProperty(
+        "dev.winrt.bootstrapDll",
+        providers.systemProperty("dev.winrt.bootstrapDll").orNull
+            ?: winUiRuntimeAssetsDir.get().asFile.resolve("Microsoft.WindowsAppRuntime.Bootstrap.dll").absolutePath,
+    )
     systemProperty(
         "dev.winrt.windowsAppSdkRoot",
         winUiRuntimeAssetsDir.get().asFile.absolutePath,
@@ -65,7 +104,8 @@ tasks.withType<JavaExec>().configureEach {
     }
     systemProperty(
         "dev.winrt.bootstrapDll",
-        providers.systemProperty("dev.winrt.bootstrapDll").orNull ?: "",
+        providers.systemProperty("dev.winrt.bootstrapDll").orNull
+            ?: winUiRuntimeAssetsDir.get().asFile.resolve("Microsoft.WindowsAppRuntime.Bootstrap.dll").absolutePath,
     )
     systemProperty(
         "dev.winrt.windowsAppSdkRoot",
@@ -81,18 +121,20 @@ tasks.withType<JavaExec>().configureEach {
 val collectWinUiRuntimeAssets by tasks.registering(Sync::class) {
     group = "code generation"
     description = "Collects the latest restored Microsoft.WindowsAppSDK runtime package into a local staging directory."
+    notCompatibleWithConfigurationCache("WinUI runtime asset staging depends on resolved package cache contents.")
+    dependsOn(project(":generated-winrt-bindings").tasks.named("restoreNuGetWinMdPackages"))
 
     into(winUiRuntimeAssetsDir)
 
-    val packageRoot = latestWindowsAppSdkPackageRoot()
-    onlyIf { packageRoot != null }
-
-    doFirst {
-        val resolvedPackageRoot = packageRoot
+    from(latestWindowsAppSdkPackageRootProvider.map { resolvedPackageRoot ->
+        resolvedPackageRoot
             ?: error("Microsoft.WindowsAppSDK is not restored in the NuGet global packages cache.")
-        from(resolvedPackageRoot) {
-            include("**/*")
-        }
+    })
+    from(latestWindowsAppSdkBootstrapDllProvider.map { resolvedBootstrapDll ->
+        resolvedBootstrapDll
+            ?: error("Microsoft.WindowsAppRuntime.Bootstrap.dll is not restored in the NuGet global packages cache.")
+    }) {
+        rename { "Microsoft.WindowsAppRuntime.Bootstrap.dll" }
     }
 }
 
@@ -106,6 +148,7 @@ dependencies {
 application {
     mainClass = "dev.winrt.sample.jvm.MainKt"
     applicationDefaultJvmArgs = listOf(
+        "-Ddev.winrt.bootstrapDll=%APP_HOME%/winui-runtime-assets/Microsoft.WindowsAppRuntime.Bootstrap.dll",
         "-Ddev.winrt.windowsAppSdkRoot=%APP_HOME%/winui-runtime-assets",
     )
 }

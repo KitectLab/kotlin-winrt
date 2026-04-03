@@ -20,13 +20,7 @@ object DefaultWinUiApplicationLauncher : WinUiApplicationLauncher {
         val packageState = WindowsAppSdkEnvironment.detect()
         val activationSummary = when {
             !PlatformRuntime.isWindows -> "xaml=skipped(non-windows)"
-            !SampleBootstrap.isWindowsAppSdkReady() -> when (packageState?.readiness()) {
-                WindowsAppSdkEnvironment.Readiness.MissingFramework -> "xaml=blocked(missing-framework-package)"
-                WindowsAppSdkEnvironment.Readiness.MissingMain -> "xaml=blocked(missing-main-package)"
-                WindowsAppSdkEnvironment.Readiness.MissingDdlm -> "xaml=blocked(missing-ddlm-package)"
-                WindowsAppSdkEnvironment.Readiness.MissingSingleton -> "xaml=blocked(missing-singleton-package)"
-                else -> "xaml=skipped(bootstrap-not-ready)"
-            }
+            !SampleBootstrap.isWindowsAppSdkReady() -> "xaml=blocked(bootstrap-not-ready)"
             else -> runCatching {
                 WinUiApplicationStart.launchWindow(
                     windowTitle = sampleWindowTitle,
@@ -38,7 +32,8 @@ object DefaultWinUiApplicationLauncher : WinUiApplicationLauncher {
         }
 
         val summary = if (PlatformRuntime.isWindows) {
-            "Sample launcher completed with $activationSummary"
+            val packageSummary = packageState?.summary()?.let { " | $it" }.orEmpty()
+            "Sample launcher completed with $activationSummary$packageSummary"
         } else {
             "Non-Windows host detected. Static sample launcher path executed without native WinUI 3 launch."
         }
