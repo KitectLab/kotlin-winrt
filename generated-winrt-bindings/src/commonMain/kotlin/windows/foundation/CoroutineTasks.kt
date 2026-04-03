@@ -565,7 +565,7 @@ private class LocalAsyncOperationWithProgress<TResult, TProgress>(
       handler.invoke(pointer, progress)
       return
     }
-    progressHandler?.invoke(pointer, progress) ?: pendingProgress.add(progress)
+    pendingProgress.add(progress)
   }
 
   override fun put_Progress(handler: AsyncOperationProgressHandler<TResult, TProgress>) {
