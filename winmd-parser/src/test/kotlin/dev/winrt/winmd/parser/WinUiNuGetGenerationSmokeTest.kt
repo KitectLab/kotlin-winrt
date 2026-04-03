@@ -27,6 +27,25 @@ class WinUiNuGetGenerationSmokeTest {
         assertTrue(generatedFiles["Microsoft/UI/Xaml/Window.kt"]!!.content.contains("class Window"))
     }
 
+    @Test
+    fun generates_additional_application_surface_from_local_windows_app_sdk_winmd_when_available() {
+        val winuiWinmd = localWinUiXamlWinmd() ?: return
+
+        val model = WinMdModelFilters.filterNamespaces(
+            model = WinMdModelFactory.merge(
+                primary = WinMdModelFactory.metadataModel(listOf(winuiWinmd)),
+                supplemental = WinMdModelFactory.sampleSupplementalModel(),
+            ),
+            namespaceFilters = listOf("Microsoft.UI.Xaml"),
+        )
+        val generatedFiles = KotlinBindingGenerator().generate(model).associateBy { it.relativePath }
+
+        assertNotNull(generatedFiles["Microsoft/UI/Xaml/ApplicationHighContrastAdjustment.kt"])
+        assertNotNull(generatedFiles["Microsoft/UI/Xaml/ApplicationTheme.kt"])
+        assertNotNull(generatedFiles["Microsoft/UI/Xaml/IApplicationInitializationCallbackParams.kt"])
+        assertNotNull(generatedFiles["Microsoft/UI/Xaml/ApplicationInitializationCallbackParams.kt"])
+    }
+
     private fun localWinUiXamlWinmd(): Path? {
         val candidatePaths = buildList {
             System.getProperty("dev.winrt.windowsAppSdkRoot")

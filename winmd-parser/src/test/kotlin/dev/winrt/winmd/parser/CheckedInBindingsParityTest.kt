@@ -5,6 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.readText
 
@@ -71,15 +72,24 @@ class CheckedInBindingsParityTest {
             .associateBy { it.relativePath.lowercase() }
         val checkedInRoot = Path.of("../generated-winrt-bindings/src/commonMain/kotlin")
         val generatedTrackedFiles = generatedFiles.filterKeys { it in trackedRelativePaths.map { path -> path.lowercase() }.toSet() }
+        val missingFiles = mutableListOf<String>()
 
-        assertEquals(trackedRelativePaths.size, generatedTrackedFiles.size)
         trackedRelativePaths.forEach { relativePath ->
             val generated = generatedTrackedFiles[relativePath.replace('\\', '/').lowercase()]
-            assertTrue("Missing generated file: $relativePath", generated != null)
+            if (generated == null) {
+                missingFiles += relativePath
+                return@forEach
+            }
             val checkedIn = checkedInRoot.resolve(relativePath).readText()
-            assertTrue("Generated content should not be blank: $relativePath", generated!!.content.isNotBlank())
+            assertTrue("Generated content should not be blank: $relativePath", generated.content.isNotBlank())
             assertTrue("Checked-in content should not be blank: $relativePath", checkedIn.isNotBlank())
         }
+
+        if (missingFiles.isNotEmpty()) {
+            File("build/winui-parity-missing.txt").writeText(missingFiles.joinToString("\n"))
+            System.err.println("Missing generated WinUI3 files: ${missingFiles.joinToString(", ")}")
+        }
+        assertTrue("Missing generated WinUI3 files: ${missingFiles.joinToString(", ")}", missingFiles.isEmpty())
     }
 
     @Test
