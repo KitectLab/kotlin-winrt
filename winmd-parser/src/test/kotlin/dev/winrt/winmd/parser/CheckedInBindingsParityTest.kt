@@ -203,6 +203,46 @@ class CheckedInBindingsParityTest {
     }
 
     @Test
+    fun projection_closure_retains_versioned_runtime_factories_as_hidden_dependencies() {
+        val model = WinMdModelFactory.sampleSupplementalModel().copy(
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "Widget",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass,
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidgetFactory",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "33333333-3333-3333-3333-333333333341",
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidgetFactory2",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "33333333-3333-3333-3333-333333333342",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val trackedModel = WinMdProjectionModelClosure.retainTypesWithHiddenProjectionDependencies(
+            model,
+            mapOf("Example.Xaml" to setOf("Widget")),
+        )
+        val exampleTypes = trackedModel.namespaces.first { it.name == "Example.Xaml" }.types.map { it.name }.toSet()
+
+        assertTrue(exampleTypes.contains("Widget"))
+        assertTrue(exampleTypes.contains("IWidgetFactory"))
+        assertTrue(exampleTypes.contains("IWidgetFactory2"))
+    }
+
+    @Test
     fun checked_in_json_object_retains_verified_runtime_surface() {
         val checkedIn = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/data/json/IJsonObject.kt").readText()
 
