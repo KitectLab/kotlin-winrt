@@ -326,6 +326,14 @@ internal class RuntimeTypeRenderer(
                             .build(),
                     )
                     .addFunction(
+                        FunSpec.builder("subscribeScoped")
+                            .addParameter("handler", plan.delegateType)
+                            .returns(AutoCloseable::class)
+                            .addStatement("val token = subscribe(handler)")
+                            .addStatement("return AutoCloseable { unsubscribe(token) }")
+                            .build(),
+                    )
+                    .addFunction(
                         FunSpec.builder("subscribe")
                             .addParameter("handler", plan.lambdaType)
                             .returns(PoetSymbols.eventRegistrationTokenClass)
@@ -345,6 +353,14 @@ internal class RuntimeTypeRenderer(
                             .addStatement("delegateHandle.close()")
                             .addStatement("throw t")
                             .endControlFlow()
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("subscribeScoped")
+                            .addParameter("handler", plan.lambdaType)
+                            .returns(AutoCloseable::class)
+                            .addStatement("val token = subscribe(handler)")
+                            .addStatement("return AutoCloseable { unsubscribe(token) }")
                             .build(),
                     )
                     .addFunction(
