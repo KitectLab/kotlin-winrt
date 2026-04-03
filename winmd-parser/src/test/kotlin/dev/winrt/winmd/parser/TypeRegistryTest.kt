@@ -189,6 +189,49 @@ class TypeRegistryTest {
     }
 
     @Test
+    fun ignores_non_versioned_helper_suffixes() {
+        val runtimeRegistry = TypeRegistry(
+            WinMdModel(
+                files = emptyList(),
+                namespaces = listOf(
+                    WinMdNamespace(
+                        name = "Example.Xaml",
+                        types = listOf(
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "Widget",
+                                kind = WinMdTypeKind.RuntimeClass,
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "IWidgetStaticsHelper",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "44444444-4444-4444-4444-444444444444",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "IWidgetFactoryHelper",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "55555555-5555-5555-5555-555555555555",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "IWidgetOverridesHelper",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "66666666-6666-6666-6666-666666666666",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals(emptyList<String>(), runtimeRegistry.findRuntimeClassStaticsTypes("Widget", "Example.Xaml").map { it.name })
+        assertEquals(emptyList<String>(), runtimeRegistry.findRuntimeClassFactoryTypes("Widget", "Example.Xaml").map { it.name })
+        assertEquals(emptyList<String>(), runtimeRegistry.findRuntimeClassOverridesTypes("Widget", "Example.Xaml").map { it.name })
+    }
+
+    @Test
     fun helper_accessor_names_preserve_versioned_factory_and_static_suffixes() {
         assertEquals("statics", helperAccessorName("IWidgetStatics"))
         assertEquals("statics2", helperAccessorName("IWidgetStatics2"))
