@@ -5113,6 +5113,79 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_kotlin_iterable_shape_for_runtime_classes_with_key_value_pair_entries() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IIterable",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "faa585ea-6214-4217-afda-7f46de5869b3",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IIterator",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "6a79e863-4300-459a-9966-cbb660963ee1",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IKeyValuePair`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "8f4cf5d3-0fa1-4c97-aab5-2e6f2d0b5e5e",
+                            genericParameters = listOf("K", "V"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Data.Json",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonValue",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "JsonObject",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Data.Json.IJsonValue",
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml.Controls",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Controls",
+                            name = "EntryIterableHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.Collections.IIterable<Windows.Foundation.Collections.IKeyValuePair<String, Windows.Data.Json.JsonObject>>",
+                            baseInterfaces = listOf("Windows.Foundation.Collections.IIterable<Windows.Foundation.Collections.IKeyValuePair<String, Windows.Data.Json.JsonObject>>"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Microsoft/UI/Xaml/Controls/EntryIterableHost.kt"
+        }.content
+
+        assertTrue(binding.contains("Iterable<Map.Entry<String, JsonObject>>"))
+        assertTrue(binding.contains("IIterable.from(Inspectable(pointer),"))
+        assertTrue(binding.contains("Map.Entry<String, JsonObject>"))
+    }
+
+    @Test
     fun expands_winui_ui_element_collection_members_from_real_metadata_model_when_available() {
         val winUiRoot = java.nio.file.Path.of("F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002")
         val xamlWinmd = winUiRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd")
