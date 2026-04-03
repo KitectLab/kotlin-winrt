@@ -167,4 +167,15 @@ class KotlinCollectionProjectionMapperTest {
             mapProjection.delegateFactory.toString().contains("WinRtMapProjection"),
         )
     }
+
+    @Test
+    fun maps_key_value_pair_interfaces_to_entry_projections() {
+        assertEquals(
+            "kotlin.collections.Map.Entry<String, Microsoft.UI.Xaml.UIElement>",
+            WinRtProjectionTypeMapper().projectionTypeKeyFor(
+                "Windows.Foundation.Collections.IKeyValuePair`2<String, Microsoft.UI.Xaml.UIElement>",
+                "Windows.Foundation.Collections",
+            ),
+        )
+    }
 }
