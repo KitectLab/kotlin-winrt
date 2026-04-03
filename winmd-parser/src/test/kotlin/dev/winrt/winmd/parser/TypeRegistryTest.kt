@@ -6,7 +6,9 @@ import dev.winrt.winmd.plugin.WinMdNamespace
 import dev.winrt.winmd.plugin.WinMdType
 import dev.winrt.winmd.plugin.WinMdTypeKind
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TypeRegistryTest {
@@ -229,6 +231,49 @@ class TypeRegistryTest {
         assertEquals(emptyList<String>(), runtimeRegistry.findRuntimeClassStaticsTypes("Widget", "Example.Xaml").map { it.name })
         assertEquals(emptyList<String>(), runtimeRegistry.findRuntimeClassFactoryTypes("Widget", "Example.Xaml").map { it.name })
         assertEquals(emptyList<String>(), runtimeRegistry.findRuntimeClassOverridesTypes("Widget", "Example.Xaml").map { it.name })
+    }
+
+    @Test
+    fun recognizes_only_factory_and_static_interfaces_as_runtime_class_helpers() {
+        val runtimeRegistry = TypeRegistry(
+            WinMdModel(
+                files = emptyList(),
+                namespaces = listOf(
+                    WinMdNamespace(
+                        name = "Example.Xaml",
+                        types = listOf(
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "Widget",
+                                kind = WinMdTypeKind.RuntimeClass,
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "IWidgetStatics",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "77777777-7777-7777-7777-777777777771",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "IWidgetFactory2",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "77777777-7777-7777-7777-777777777772",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Xaml",
+                                name = "IWidgetOverrides2",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "77777777-7777-7777-7777-777777777773",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        assertTrue(runtimeRegistry.isRuntimeClassHelperInterface("IWidgetStatics", "Example.Xaml"))
+        assertTrue(runtimeRegistry.isRuntimeClassHelperInterface("IWidgetFactory2", "Example.Xaml"))
+        assertFalse(runtimeRegistry.isRuntimeClassHelperInterface("IWidgetOverrides2", "Example.Xaml"))
     }
 
     @Test
