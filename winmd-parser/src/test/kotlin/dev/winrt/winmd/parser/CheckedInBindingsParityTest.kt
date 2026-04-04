@@ -314,16 +314,17 @@ class CheckedInBindingsParityTest {
 
         assertTrue(runtimeClass.contains("Microsoft.UI.Xaml.Application"))
         assertTrue(runtimeClass.contains("override val defaultInterfaceName: String? = \"Microsoft.UI.Xaml.IApplication\""))
-        assertTrue(runtimeClass.contains("override val activationKind = WinRtActivationKind.Composable"))
-        assertTrue(runtimeClass.contains("constructor() : this(Companion.activate().pointer)"))
-        assertTrue(runtimeClass.contains("fun activate(): Application = WinRtRuntime.activate(this, ::Application)"))
-        assertTrue(runtimeClass.contains("private fun factoryCreateInstance(): Application ="))
+        assertTrue(runtimeClass.contains("override val activationKind: WinRtActivationKind = WinRtActivationKind.Composable"))
+        assertTrue(runtimeClass.contains("constructor() : this(Companion.factoryCreateInstance().pointer)"))
+        assertFalse(runtimeClass.contains("fun activate(): Application = WinRtRuntime.activate(this, ::Application)"))
+        assertTrue(runtimeClass.contains("private fun factoryCreateInstance(): Application {"))
         assertTrue(runtimeClass.contains("WinRtRuntime.compose("))
         assertTrue(runtimeClass.contains("val current: Application"))
         assertTrue(runtimeClass.contains("private val statics: IApplicationStatics by lazy"))
-        assertTrue(runtimeClass.contains("WinRtRuntime.projectActivationFactory(this, IApplicationStatics"))
+        assertTrue(runtimeClass.contains("WinRtRuntime.projectActivationFactory(this,"))
+        assertTrue(runtimeClass.contains("IApplicationStatics, ::IApplicationStatics)"))
         assertTrue(runtimeClass.contains("fun start(callback: ApplicationInitializationCallback)"))
-        assertTrue(runtimeClass.contains("fun start(callback: (IApplicationInitializationCallbackParams) -> Unit): WinRtDelegateHandle"))
+        assertTrue(runtimeClass.contains("fun start(callback: (ApplicationInitializationCallbackParams) -> Unit):"))
     }
 
     @Test
@@ -346,7 +347,7 @@ class CheckedInBindingsParityTest {
         assertTrue(runtimeClass.contains("override val defaultInterfaceName: String? = \"Microsoft.UI.Xaml.Controls.IXamlControlsResources\""))
         assertTrue(runtimeClass.contains("override val activationKind: WinRtActivationKind = WinRtActivationKind.Factory"))
         assertTrue(runtimeClass.contains("constructor() : this(Companion.activate().pointer)"))
-        assertTrue(runtimeClass.contains("fun activate(): XamlControlsResources = WinRtRuntime.activate(this, ::XamlControlsResources)"))
+        assertTrue(runtimeClass.contains("public fun activate(): XamlControlsResources = WinRtRuntime.activate(this,"))
         assertFalse(runtimeClass.contains("WinRtRuntime.compose("))
     }
 
@@ -737,14 +738,14 @@ class CheckedInBindingsParityTest {
     fun checked_in_window_optional_title_is_nullable_string() {
         val checkedIn = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/microsoft/ui/xaml/Window.kt").readText()
 
-        assertTrue(checkedIn.contains("constructor() : this(Companion.activateInstance().pointer)"))
-        assertTrue(checkedIn.contains("fun activateInstance(): Window = WinRtRuntime.activate(this, ::Window)"))
-        assertTrue(checkedIn.contains("private fun factoryCreateInstance(): Window ="))
+        assertTrue(checkedIn.contains("constructor() : this(Companion.factoryCreateInstance().pointer)"))
+        assertFalse(checkedIn.contains("fun activateInstance(): Window = WinRtRuntime.activate(this, ::Window)"))
+        assertTrue(checkedIn.contains("private fun factoryCreateInstance(): Window {"))
         assertTrue(checkedIn.contains("WinRtRuntime.compose("))
-        assertTrue(checkedIn.contains("private val backingOptionalTitle = RuntimeProperty<String?>(null)"))
+        assertTrue(checkedIn.contains("private val backing_OptionalTitle: RuntimeProperty<String?> = RuntimeProperty<String?>(null)"))
         assertTrue(checkedIn.contains("val optionalTitle: String?"))
-        assertTrue(checkedIn.contains("if (pointer.isNull) return backingOptionalTitle.get()"))
-        assertTrue(checkedIn.contains("if (value.isNull) null else value.toKotlinString()"))
+        assertTrue(checkedIn.contains("return backing_OptionalTitle.get()"))
+        assertTrue(checkedIn.contains("value.takeUnless { it.isNull }?.toKotlinString()"))
     }
 
     @Test

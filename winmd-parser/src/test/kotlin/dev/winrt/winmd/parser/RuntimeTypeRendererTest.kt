@@ -305,7 +305,7 @@ class RuntimeTypeRendererTest {
     }
 
     @Test
-    fun renders_composable_runtime_classes_with_activate_default_constructor_and_composable_helpers() {
+    fun renders_composable_runtime_classes_with_composable_default_constructor_and_helpers() {
         val model = WinMdModel(
             files = emptyList(),
             namespaces = listOf(
@@ -335,6 +335,15 @@ class RuntimeTypeRendererTest {
                                     name = "CreateInstance",
                                     returnType = "Example.Xaml.Widget",
                                     vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter(name = "baseInterface", type = "Object"),
+                                        WinMdParameter(name = "innerInterface", type = "Object", byRef = true, isOut = true),
+                                    ),
+                                ),
+                                WinMdMethod(
+                                    name = "CreateInstance",
+                                    returnType = "Example.Xaml.Widget",
+                                    vtableIndex = 7,
                                     parameters = listOf(
                                         WinMdParameter(name = "label", type = "String"),
                                         WinMdParameter(name = "baseInterface", type = "Object"),
@@ -376,12 +385,13 @@ class RuntimeTypeRendererTest {
 
         val binding = renderer.render(typeRegistry.findType("Widget", "Example.Xaml")!!).toString()
 
-        assertTrue(binding.contains("constructor() : this(Companion.activate().pointer)"))
+        assertTrue(binding.contains("constructor() : this(Companion.factoryCreateInstance().pointer)"))
         assertTrue(binding.contains("factoryCreateInstance(label).pointer"))
         assertFalse(binding.contains("baseInterface"))
         assertFalse(binding.contains("innerInterface"))
         assertTrue(binding.contains("WinRtActivationKind.Composable"))
-        assertTrue(binding.contains("WinRtRuntime.activate(this, ::Widget)"))
+        assertFalse(binding.contains("Companion.activate().pointer"))
+        assertFalse(binding.contains("WinRtRuntime.activate(this, ::Widget)"))
         assertTrue(binding.contains("WinRtRuntime.compose("))
         assertTrue(binding.contains("guidOf(\"22222222-2222-2222-2222-222222222222\")"))
         assertTrue(binding.contains("::Widget"))
@@ -472,9 +482,9 @@ class RuntimeTypeRendererTest {
 
         val binding = renderer.render(typeRegistry.findType("DerivedWidget", "Example.Xaml")!!).toString()
 
-        assertTrue(binding.contains("constructor() : this(Companion.activate().pointer)"))
+        assertTrue(binding.contains("constructor() : this(Companion.factoryCreateInstance().pointer)"))
         assertTrue(binding.contains("WinRtActivationKind.Composable"))
-        assertTrue(binding.contains("WinRtRuntime.activate(this, ::DerivedWidget)"))
+        assertFalse(binding.contains("WinRtRuntime.activate(this, ::DerivedWidget)"))
         assertTrue(binding.contains("WinRtRuntime.compose("))
         assertTrue(binding.contains("BaseWidget.Companion"))
         assertTrue(binding.contains("guidOf(\"33333333-3333-3333-3333-333333333333\")"))

@@ -130,11 +130,7 @@ internal class RuntimeTypeRenderer(
                 builder.addSuperinterface(projection.superinterface, projection.delegateFactory)
             }
         }
-        builder.addFunction(
-            FunSpec.constructorBuilder()
-                .callThisConstructor(CodeBlock.of("Companion.%L().pointer", type.activationFunctionName))
-                .build(),
-        )
+        renderDefaultConstructor(type, activationKind)?.let(builder::addFunction)
         renderFactoryConstructors(type).forEach(builder::addFunction)
 
         runtimeProperties.forEach { property ->
@@ -195,6 +191,36 @@ internal class RuntimeTypeRenderer(
         runtimeCompanionRenderer.renderStaticEventSlotTypes(type).forEach(builder::addType)
         builder.addType(runtimeCompanionRenderer.render(type))
         return builder.build()
+    }
+
+    private fun renderDefaultConstructor(type: WinMdType, activationKind: WinMdActivationKind): FunSpec? {
+        val constructorTarget = when (activationKind) {
+            WinMdActivationKind.Factory -> CodeBlock.of("Companion.%L().pointer", type.activationFunctionName)
+            WinMdActivationKind.Composable -> defaultComposableConstructorHelperName(type)
+                ?.let { helperName -> CodeBlock.of("Companion.%L().pointer", helperName) }
+                ?: return null
+        }
+        return FunSpec.constructorBuilder()
+            .callThisConstructor(constructorTarget)
+            .build()
+    }
+
+    private fun defaultComposableConstructorHelperName(type: WinMdType): String? {
+        val ownFactoryMethods = typeRegistry.findRuntimeClassFactoryMethods(type.name, type.namespace)
+        ownFactoryMethods
+            .firstOrNull { candidate ->
+                typeRegistry.isComposableFactoryMethod(candidate.runtimeClass, candidate.method) &&
+                    candidate.method.parameters.dropLast(2).isEmpty()
+            }
+            ?.let { candidate ->
+                return "${helperAccessorName(candidate.factoryType.name)}${candidate.method.name}"
+            }
+        if (ownFactoryMethods.isNotEmpty()) {
+            return null
+        }
+        return typeRegistry.findInheritedComposableFactoryMethods(type.name, type.namespace)
+            .firstOrNull { candidate -> candidate.method.parameters.dropLast(2).isEmpty() }
+            ?.let { candidate -> "${helperAccessorName(candidate.factoryType.name)}${candidate.method.name}" }
     }
 
     private fun renderFactoryConstructors(type: WinMdType): List<FunSpec> {

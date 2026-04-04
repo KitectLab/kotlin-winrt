@@ -50,12 +50,14 @@ internal class RuntimeCompanionRenderer(
                     .initializer("%T.%L", PoetSymbols.winRtActivationKindClass, activationKindLiteral(activationKind))
                     .build(),
             )
-        builder.addFunction(
-            FunSpec.builder(type.activationFunctionName)
-                .returns(typeClass)
-                .addStatement("return %T.activate(this, ::%L)", PoetSymbols.winRtRuntimeClass, type.name)
-                .build(),
-        )
+        if (activationKind == WinMdActivationKind.Factory) {
+            builder.addFunction(
+                FunSpec.builder(type.activationFunctionName)
+                    .returns(typeClass)
+                    .addStatement("return %T.activate(this, ::%L)", PoetSymbols.winRtRuntimeClass, type.name)
+                    .build(),
+            )
+        }
         renderFactories(type).forEach { member ->
             when (member) {
                 is PropertySpec -> builder.addProperty(member)
@@ -660,7 +662,7 @@ internal class RuntimeCompanionRenderer(
     }
 
     private fun supportsInterfaceObjectType(typeName: String, currentNamespace: String): Boolean {
-        return typeName == "Object" || typeRegistry.findType(typeName, currentNamespace)?.kind == dev.winrt.winmd.plugin.WinMdTypeKind.Interface
+        return supportsProjectedObjectTypeName(typeName)
     }
 
     private fun supportsComposableFactoryObjectType(typeName: String, currentNamespace: String): Boolean {

@@ -36,6 +36,12 @@ class KotlinBindingGeneratorTest {
                         ),
                         WinMdType(
                             namespace = "Microsoft.UI.Xaml",
+                            name = "ApplicationInitializationCallbackParams",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Microsoft.UI.Xaml.IApplicationInitializationCallbackParams",
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
                             name = "IApplicationInitializationCallbackParams",
                             kind = WinMdTypeKind.Interface,
                             guid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
@@ -49,7 +55,7 @@ class KotlinBindingGeneratorTest {
                                 WinMdMethod(
                                     name = "Invoke",
                                     returnType = "Unit",
-                                    parameters = listOf(WinMdParameter("e", "Microsoft.UI.Xaml.IApplicationInitializationCallbackParams")),
+                                    parameters = listOf(WinMdParameter("e", "Microsoft.UI.Xaml.ApplicationInitializationCallbackParams")),
                                 ),
                             ),
                         ),
@@ -81,7 +87,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding, binding.contains("get() = statics.get_Current()"))
         assertTrue(binding, binding.contains("fun start(callback: ApplicationInitializationCallback)"))
         assertTrue(binding, binding.contains("statics.start(callback)"))
-        assertTrue(binding, binding.contains("fun start(callback: (IApplicationInitializationCallbackParams) -> Unit)"))
+        assertTrue(binding, binding.contains("fun start(callback: (ApplicationInitializationCallbackParams) -> Unit)"))
         assertTrue(binding, binding.contains("WinRtDelegateBridge.createUnitDelegate"))
     }
 
@@ -4417,7 +4423,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(normalizedBinding.contains("var payload: Inspectable"))
         assertTrue(normalizedBinding.contains("RuntimeProperty<Inspectable>(Inspectable(ComPtr.NULL))"))
         assertTrue(normalizedBinding.contains("return Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 15).getOrThrow())"))
-        assertTrue(normalizedBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 16, (`value` as Inspectable).pointer).getOrThrow()"))
+        assertTrue(normalizedBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 16, (value as Inspectable).pointer).getOrThrow()"))
     }
 
     @Test
