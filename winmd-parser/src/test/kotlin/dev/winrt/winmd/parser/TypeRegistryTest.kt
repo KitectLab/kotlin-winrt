@@ -200,7 +200,7 @@ class TypeRegistryTest {
     }
 
     @Test
-    fun recognizes_composable_factory_methods_from_out_inner_parameter_shape_without_promoting_activation_kind() {
+    fun recognizes_composable_factory_methods_from_out_inner_parameter_shape_without_overriding_activatable_runtime_classes() {
         val runtimeRegistry = TypeRegistry(
             WinMdModel(
                 files = emptyList(),
@@ -213,6 +213,7 @@ class TypeRegistryTest {
                                 name = "Widget",
                                 kind = WinMdTypeKind.RuntimeClass,
                                 defaultInterface = "Example.Xaml.IWidget",
+                                hasActivatableAttribute = true,
                             ),
                             WinMdType(
                                 namespace = "Example.Xaml",
@@ -252,7 +253,7 @@ class TypeRegistryTest {
     }
 
     @Test
-    fun finds_inherited_composable_factory_methods_without_promoting_activation_kind() {
+    fun finds_inherited_composable_factory_methods_and_promotes_activation_kind() {
         val runtimeRegistry = TypeRegistry(
             WinMdModel(
                 files = emptyList(),
@@ -313,7 +314,7 @@ class TypeRegistryTest {
         assertEquals(1, inheritedComposableMethods.size)
         assertEquals("BaseWidget", inheritedComposableMethods.single().runtimeClass.name)
         assertEquals("CreateInstance", inheritedComposableMethods.single().method.name)
-        assertEquals(WinMdActivationKind.Factory, runtimeRegistry.runtimeClassActivationKind(derivedWidget))
+        assertEquals(WinMdActivationKind.Composable, runtimeRegistry.runtimeClassActivationKind(derivedWidget))
     }
 
     @Test

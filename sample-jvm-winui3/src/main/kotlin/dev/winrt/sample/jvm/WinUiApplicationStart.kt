@@ -7,6 +7,7 @@ import microsoft.ui.xaml.ApplicationInitializationCallback
 import microsoft.ui.xaml.IApplicationInitializationCallbackParams
 import microsoft.ui.xaml.IWindow
 import microsoft.ui.xaml.Window
+import microsoft.ui.xaml.controls.ToggleSwitch
 import microsoft.ui.xaml.media.DesktopAcrylicBackdrop
 import microsoft.ui.xaml.media.MicaBackdrop
 
@@ -66,6 +67,32 @@ object WinUiApplicationStart {
         return callbackInvoked && paramsSupported
     }
 
+    fun probeToggleSwitchConstruction(): Boolean {
+        var constructed = false
+        var failure: Throwable? = null
+        val callback = WinRtDelegateBridge.createUnitDelegate(
+            ApplicationInitializationCallback.iid,
+            listOf(dev.winrt.core.WinRtDelegateValueKind.OBJECT),
+        ) {
+            val uiThreadId = WindowsMessageLoop.currentThreadId()
+            runCatching {
+                ToggleSwitch()
+                constructed = true
+            }.onFailure { error ->
+                failure = error
+            }
+            Thread.ofPlatform().daemon(true).start {
+                Thread.sleep(100L)
+                WindowsMessageLoop.postThreadQuit(uiThreadId)
+            }
+        }
+        activeCallback?.close()
+        activeCallback = callback
+        Application.start(ApplicationInitializationCallback(callback.pointer))
+        failure?.let { throw it }
+        return constructed
+    }
+
     fun shutdown() {
         activeCallback?.close()
         activeCallback = null
@@ -84,6 +111,7 @@ object WinUiApplicationStart {
             listOf(dev.winrt.core.WinRtDelegateValueKind.OBJECT),
         ) {
             val arg = it.single() as dev.winrt.kom.ComPtr
+            val uiThreadId = WindowsMessageLoop.currentThreadId()
             runCatching {
                 println("winui: application callback invoked")
                 var sampleAppRef: SampleWinUiApp? = null
@@ -123,7 +151,6 @@ object WinUiApplicationStart {
                 println("winui: window content set")
                 iWindow.activate()
                 println("winui: window activated")
-                val uiThreadId = WindowsMessageLoop.currentThreadId()
                 val autoQuitVisible = System.getProperty("dev.winrt.autoQuitVisible", "false").equals("true", ignoreCase = true)
                 Thread.ofPlatform().daemon(true).start {
                     val visible = WindowsWindowProbe.waitForWindowByTitle(windowTitle, timeoutMillis = 5_000L)
@@ -143,6 +170,7 @@ object WinUiApplicationStart {
             }.getOrElse { error ->
                 launchFailure = error
                 println("winui: launch failed: ${error::class.simpleName}: ${error.message}")
+                WindowsMessageLoop.postThreadQuit(uiThreadId)
             }
         }
         activeCallback = callback

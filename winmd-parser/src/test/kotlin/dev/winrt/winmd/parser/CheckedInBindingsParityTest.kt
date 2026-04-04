@@ -323,6 +323,18 @@ class CheckedInBindingsParityTest {
     }
 
     @Test
+    fun checked_in_toggle_switch_runtime_class_keeps_verified_factory_activation_surface() {
+        val runtimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/microsoft/ui/xaml/controls/ToggleSwitch.kt").readText()
+
+        assertTrue(runtimeClass.contains("Microsoft.UI.Xaml.Controls.ToggleSwitch"))
+        assertTrue(runtimeClass.contains("override val defaultInterfaceName: String? = \"Microsoft.UI.Xaml.Controls.IToggleSwitch\""))
+        assertTrue(runtimeClass.contains("override val activationKind: WinRtActivationKind = WinRtActivationKind.Factory"))
+        assertTrue(runtimeClass.contains("constructor() : this(Companion.activate().pointer)"))
+        assertTrue(runtimeClass.contains("fun activate(): ToggleSwitch = WinRtRuntime.activate(this, ::ToggleSwitch)"))
+        assertFalse(runtimeClass.contains("WinRtRuntime.compose("))
+    }
+
+    @Test
     fun checked_in_xaml_controls_resources_runtime_class_keeps_verified_activation_surface() {
         val runtimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/microsoft/ui/xaml/controls/XamlControlsResources.kt").readText()
 

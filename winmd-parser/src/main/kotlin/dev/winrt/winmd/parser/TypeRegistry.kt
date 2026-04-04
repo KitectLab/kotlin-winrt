@@ -87,7 +87,19 @@ internal class TypeRegistry(
     }
 
     fun runtimeClassActivationKind(type: WinMdType): WinMdActivationKind {
+        if (type.kind != WinMdTypeKind.RuntimeClass) {
+            return WinMdActivationKind.Factory
+        }
         if (type.activationKind == WinMdActivationKind.Composable) {
+            return WinMdActivationKind.Composable
+        }
+        if (type.hasActivatableAttribute) {
+            return WinMdActivationKind.Factory
+        }
+        if (findComposableFactoryMethods(type.name, type.namespace).isNotEmpty()) {
+            return WinMdActivationKind.Composable
+        }
+        if (findInheritedComposableFactoryMethods(type.name, type.namespace).isNotEmpty()) {
             return WinMdActivationKind.Composable
         }
         return WinMdActivationKind.Factory

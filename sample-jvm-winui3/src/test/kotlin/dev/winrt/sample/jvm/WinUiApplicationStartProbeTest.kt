@@ -32,6 +32,18 @@ class WinUiApplicationStartProbeTest {
     }
 
     @Test
+    fun application_start_can_construct_toggle_switch() {
+        assumeTrue(PlatformRuntime.isWindows)
+
+        SampleBootstrap.configure()
+        try {
+            assertTrue(WinUiApplicationStart.probeToggleSwitchConstruction())
+        } finally {
+            SampleBootstrap.shutdown()
+        }
+    }
+
+    @Test
     fun application_start_launches_visible_window() {
         assumeTrue(PlatformRuntime.isWindows)
 

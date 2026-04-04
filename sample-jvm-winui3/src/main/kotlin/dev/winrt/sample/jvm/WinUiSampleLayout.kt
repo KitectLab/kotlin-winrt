@@ -6,6 +6,7 @@ import microsoft.ui.xaml.controls.Button
 import microsoft.ui.xaml.controls.ContentControl
 import microsoft.ui.xaml.controls.StackPanel
 import microsoft.ui.xaml.controls.TextBlock
+import microsoft.ui.xaml.controls.ToggleSwitch
 
 data class WinUiSampleLayoutDescriptor(
     val sections: List<String>,
@@ -54,6 +55,7 @@ object WinUiSampleLayout {
             card(
                 "Controls",
                 labeled("Button", button("Run diagnostics")),
+                labeled("ToggleSwitch", toggleSwitch("Enable sample mode", isOn = true)),
                 surface("Nested Text", contentHost(text("Composable resource lookup works in nested content"))),
                 labeled("Secondary Action", button("Open details")),
                 labeled("ContentControl", contentHost(button("Nested action"))),
@@ -101,6 +103,12 @@ object WinUiSampleLayout {
             println("winui: create Button label=$label")
             it.content = text(label)
             println("winui: button content set label=$label")
+        }
+
+    private fun toggleSwitch(label: String, isOn: Boolean): ToggleSwitch =
+        ToggleSwitch().also {
+            println("winui: create ToggleSwitch label=$label isOn=$isOn")
+            it.isOn = isOn
         }
 
     private fun contentHost(content: UIElement): ContentControl =
