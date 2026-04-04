@@ -39,7 +39,7 @@ internal object MethodRuleRegistry {
         register(SharedMethodRuleFamily.BOOLEAN, MethodReturnKind.BOOLEAN, emptyShapes + unaryStringLikeShapes + unaryUnitOnlyShapes)
         register(SharedMethodRuleFamily.UNIT, MethodReturnKind.INT32, listOf(MethodSignatureShape.STRING, MethodSignatureShape.INT32, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN, MethodSignatureShape.OBJECT))
         register(SharedMethodRuleFamily.UNIT, MethodReturnKind.UINT32, emptyShapes + listOf(MethodSignatureShape.STRING, MethodSignatureShape.INT32, MethodSignatureShape.UINT32, MethodSignatureShape.BOOLEAN, MethodSignatureShape.OBJECT))
-        register(SharedMethodRuleFamily.EVENT_REGISTRATION_TOKEN, MethodReturnKind.EVENT_REGISTRATION_TOKEN, emptyShapes)
+        register(SharedMethodRuleFamily.EVENT_REGISTRATION_TOKEN, MethodReturnKind.EVENT_REGISTRATION_TOKEN, emptyShapes + unaryStringLikeShapes + unaryUnitOnlyShapes)
         register(SharedMethodRuleFamily.OBJECT, MethodReturnKind.OBJECT, emptyShapes + unaryStringLikeShapes + unaryUnitOnlyShapes)
         register(SharedMethodRuleFamily.UNIT, MethodReturnKind.UNIT, emptyShapes + unaryStringLikeShapes + unaryUnitOnlyShapes)
         register(SharedMethodRuleFamily.OBJECT, MethodReturnKind.INT64, unaryStringLikeShapes + unaryUnitOnlyShapes)

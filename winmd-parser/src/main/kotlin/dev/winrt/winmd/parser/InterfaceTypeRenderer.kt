@@ -527,12 +527,16 @@ internal class InterfaceTypeRenderer(
     ): List<InterfaceEventSlotPlan> {
         val methodsByName = type.methods.associateBy { it.name }
         return type.methods.mapNotNull { addMethod ->
-            if (!addMethod.name.startsWith("add_") || addMethod.parameters.size != 1 || addMethod.returnType != "EventRegistrationToken") {
+            if (!addMethod.name.startsWith("add_") || addMethod.parameters.size != 1 || !isEventRegistrationTokenType(addMethod.returnType)) {
                 return@mapNotNull null
             }
             val eventName = addMethod.name.removePrefix("add_")
             val removeMethod = methodsByName["remove_$eventName"] ?: return@mapNotNull null
-            if (removeMethod.parameters.size != 1 || removeMethod.parameters.single().type != "EventRegistrationToken" || removeMethod.returnType != "Unit") {
+            if (
+                removeMethod.parameters.size != 1 ||
+                !isEventRegistrationTokenType(removeMethod.parameters.single().type) ||
+                removeMethod.returnType != "Unit"
+            ) {
                 return@mapNotNull null
             }
             val delegateTypeName = addMethod.parameters.single().type
@@ -2019,6 +2023,7 @@ internal class InterfaceTypeRenderer(
             MethodReturnKind.STRING,
             MethodReturnKind.FLOAT32,
             MethodReturnKind.FLOAT64,
+            MethodReturnKind.EVENT_REGISTRATION_TOKEN,
             MethodReturnKind.OBJECT,
             MethodReturnKind.UNIT -> plannedUnaryInterfaceMethodForReturnKind(
                 returnKind = signatureKey.returnKind,
@@ -2045,7 +2050,8 @@ internal class InterfaceTypeRenderer(
     private fun unaryInterfaceStatement(returnKind: MethodReturnKind): String = when (returnKind) {
         MethodReturnKind.STRING -> "return %L"
         MethodReturnKind.FLOAT32,
-        MethodReturnKind.FLOAT64 -> "return %T(%L)"
+        MethodReturnKind.FLOAT64,
+        MethodReturnKind.EVENT_REGISTRATION_TOKEN -> "return %T(%L)"
         MethodReturnKind.OBJECT -> "return %L"
         MethodReturnKind.UNIT -> "%L"
         else -> error("Unsupported unary interface return kind: $returnKind")
@@ -2061,6 +2067,7 @@ internal class InterfaceTypeRenderer(
         MethodReturnKind.STRING -> arrayOf(HStringSupport.fromCall(abiCall))
         MethodReturnKind.FLOAT32 -> arrayOf(PoetSymbols.float32Class, abiCall)
         MethodReturnKind.FLOAT64 -> arrayOf(PoetSymbols.float64Class, abiCall)
+        MethodReturnKind.EVENT_REGISTRATION_TOKEN -> arrayOf(PoetSymbols.eventRegistrationTokenClass, abiCall)
         MethodReturnKind.OBJECT -> arrayOf(objectReturnCode(method, namespace, abiCall, genericParameters))
         MethodReturnKind.UNIT -> arrayOf(abiCall)
         else -> error("Unsupported unary interface return kind: $returnKind")
@@ -2077,6 +2084,7 @@ internal class InterfaceTypeRenderer(
                 MethodReturnKind.STRING -> AbiCallCatalog.hstringMethod(vtableIndex)
                 MethodReturnKind.FLOAT32 -> AbiCallCatalog.float32Method(vtableIndex)
                 MethodReturnKind.FLOAT64 -> AbiCallCatalog.float64Method(vtableIndex)
+                MethodReturnKind.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.int64Getter(vtableIndex)
                 MethodReturnKind.OBJECT -> AbiCallCatalog.objectMethod(vtableIndex)
                 MethodReturnKind.UNIT -> AbiCallCatalog.unitMethod(vtableIndex)
                 else -> error("Unsupported unary interface return kind: $returnKind")
@@ -2110,6 +2118,15 @@ internal class InterfaceTypeRenderer(
                 MethodParameterCategory.INT64,
                 MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.float64MethodWithInt64(vtableIndex, loweredArgument)
                 MethodParameterCategory.OBJECT -> AbiCallCatalog.float64MethodWithObject(vtableIndex, loweredArgument)
+            }
+            MethodReturnKind.EVENT_REGISTRATION_TOKEN -> when (parameterCategory) {
+                MethodParameterCategory.STRING -> AbiCallCatalog.int64MethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.INT32 -> AbiCallCatalog.int64MethodWithInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.int64MethodWithUInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.int64MethodWithBoolean(vtableIndex, loweredArgument)
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.int64MethodWithInt64(vtableIndex, loweredArgument)
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.int64MethodWithObject(vtableIndex, loweredArgument)
             }
             MethodReturnKind.OBJECT -> when (parameterCategory) {
                 MethodParameterCategory.STRING -> AbiCallCatalog.objectMethodWithString(vtableIndex, argumentName)
@@ -2186,17 +2203,11 @@ internal class InterfaceTypeRenderer(
     )
 
     private fun supportsInterfaceObjectInput(type: String): Boolean {
-        return (type == "Object" || type.contains('.')) &&
-            !type.contains('`') &&
-            !type.contains('<') &&
-            !type.endsWith("[]")
+        return supportsProjectedObjectTypeName(type)
     }
 
     private fun supportsInterfaceObjectType(type: String): Boolean {
-        return (type == "Object" || type.contains('.')) &&
-            !type.contains('`') &&
-            !type.contains('<') &&
-            !type.endsWith("[]")
+        return supportsProjectedObjectTypeName(type)
     }
 
     private fun supportsInterfaceProperty(

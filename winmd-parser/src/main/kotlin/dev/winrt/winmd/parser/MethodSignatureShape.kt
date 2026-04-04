@@ -259,13 +259,14 @@ internal fun methodParameterCategory(
     type: String,
     supportsObjectType: (String) -> Boolean,
 ): MethodParameterCategory? {
+    val canonicalType = canonicalWinRtSpecialType(type)
     return when {
-        type == "String" -> MethodParameterCategory.STRING
-        type == "Int32" -> MethodParameterCategory.INT32
-        type == "Boolean" -> MethodParameterCategory.BOOLEAN
-        type == "Int64" -> MethodParameterCategory.INT64
-        type == "UInt32" -> MethodParameterCategory.UINT32
-        type == "EventRegistrationToken" -> MethodParameterCategory.EVENT_REGISTRATION_TOKEN
+        canonicalType == "String" -> MethodParameterCategory.STRING
+        canonicalType == "Int32" -> MethodParameterCategory.INT32
+        canonicalType == "Boolean" -> MethodParameterCategory.BOOLEAN
+        canonicalType == "Int64" -> MethodParameterCategory.INT64
+        canonicalType == "UInt32" -> MethodParameterCategory.UINT32
+        canonicalType == "EventRegistrationToken" -> MethodParameterCategory.EVENT_REGISTRATION_TOKEN
         supportsObjectType(type) -> MethodParameterCategory.OBJECT
         else -> null
     }
@@ -295,7 +296,7 @@ internal fun methodSignatureKey(
     supportsObjectType: (String) -> Boolean,
 ): MethodSignatureKey? {
     val shape = methodSignatureShape(parameterTypes, supportsObjectType) ?: return null
-    val returnKind = when (returnType) {
+    val returnKind = when (canonicalWinRtSpecialType(returnType)) {
         "Unit" -> MethodReturnKind.UNIT
         "String" -> MethodReturnKind.STRING
         "Float32" -> MethodReturnKind.FLOAT32
@@ -313,3 +314,28 @@ internal fun methodSignatureKey(
     } ?: return null
     return MethodSignatureKey(returnKind = returnKind, shape = shape)
 }
+
+internal fun isEventRegistrationTokenType(type: String): Boolean =
+    canonicalWinRtSpecialType(type) == "EventRegistrationToken"
+
+internal fun supportsProjectedObjectTypeName(type: String): Boolean =
+    (type == "Object" || (type.contains('.') && canonicalWinRtSpecialType(type) == type)) &&
+        !type.contains('`') &&
+        !type.contains('<') &&
+        !type.endsWith("[]")
+
+internal fun canonicalWinRtSpecialType(type: String): String =
+    when (type) {
+        "Windows.Foundation.WinRtBoolean" -> "Boolean"
+        "Windows.Foundation.Int32" -> "Int32"
+        "Windows.Foundation.UInt32" -> "UInt32"
+        "Windows.Foundation.Int64" -> "Int64"
+        "Windows.Foundation.UInt64" -> "UInt64"
+        "Windows.Foundation.Float32" -> "Float32"
+        "Windows.Foundation.Float64" -> "Float64"
+        "Windows.Foundation.Guid" -> "Guid"
+        "Windows.Foundation.DateTime" -> "DateTime"
+        "Windows.Foundation.TimeSpan" -> "TimeSpan"
+        "Windows.Foundation.EventRegistrationToken" -> "EventRegistrationToken"
+        else -> type
+    }

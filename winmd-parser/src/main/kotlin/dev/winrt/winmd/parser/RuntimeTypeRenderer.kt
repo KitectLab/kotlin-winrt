@@ -286,12 +286,16 @@ internal class RuntimeTypeRenderer(
     private fun renderEventSlotMembers(methods: List<WinMdMethod>, currentNamespace: String): RuntimeEventMembers {
         val methodsByName = methods.associateBy { it.name }
         val plans = methods.mapNotNull { addMethod ->
-            if (!addMethod.name.startsWith("add_") || addMethod.parameters.size != 1 || addMethod.returnType != "EventRegistrationToken") {
+            if (!addMethod.name.startsWith("add_") || addMethod.parameters.size != 1 || !isEventRegistrationTokenType(addMethod.returnType)) {
                 return@mapNotNull null
             }
             val eventName = addMethod.name.removePrefix("add_")
             val removeMethod = methodsByName["remove_$eventName"] ?: return@mapNotNull null
-            if (removeMethod.parameters.size != 1 || removeMethod.parameters.single().type != "EventRegistrationToken" || removeMethod.returnType != "Unit") {
+            if (
+                removeMethod.parameters.size != 1 ||
+                !isEventRegistrationTokenType(removeMethod.parameters.single().type) ||
+                removeMethod.returnType != "Unit"
+            ) {
                 return@mapNotNull null
             }
             val delegateTypeName = addMethod.parameters.single().type

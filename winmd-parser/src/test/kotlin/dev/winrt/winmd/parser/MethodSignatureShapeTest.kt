@@ -14,8 +14,29 @@ class MethodSignatureShapeTest {
         assertEquals(MethodParameterCategory.INT64, methodParameterCategory("Int64", ::supportsObjectType))
         assertEquals(MethodParameterCategory.UINT32, methodParameterCategory("UInt32", ::supportsObjectType))
         assertEquals(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, methodParameterCategory("EventRegistrationToken", ::supportsObjectType))
+        assertEquals(MethodParameterCategory.EVENT_REGISTRATION_TOKEN, methodParameterCategory("Windows.Foundation.EventRegistrationToken", ::supportsObjectType))
         assertEquals(MethodParameterCategory.OBJECT, methodParameterCategory("Windows.Foundation.Uri", ::supportsObjectType))
         assertEquals(MethodParameterCategory.OBJECT, methodParameterCategory("Object", ::supportsObjectType))
+    }
+
+    @Test
+    fun classifies_qualified_event_registration_token_return_kind() {
+        assertEquals(
+            MethodSignatureKey(MethodReturnKind.EVENT_REGISTRATION_TOKEN, MethodSignatureShape.OBJECT),
+            methodSignatureKey(
+                "Windows.Foundation.EventRegistrationToken",
+                listOf("Windows.Foundation.IInspectable"),
+                ::supportsObjectType,
+            ),
+        )
+    }
+
+    @Test
+    fun excludes_qualified_winrt_value_types_from_object_support() {
+        assertFalse(supportsProjectedObjectTypeName("Windows.Foundation.EventRegistrationToken"))
+        assertFalse(supportsProjectedObjectTypeName("Windows.Foundation.Int32"))
+        assertFalse(supportsProjectedObjectTypeName("Windows.Foundation.WinRtBoolean"))
+        assertTrue(supportsProjectedObjectTypeName("Windows.Foundation.Uri"))
     }
 
     @Test
@@ -91,9 +112,6 @@ class MethodSignatureShapeTest {
     }
 
     private fun supportsObjectType(type: String): Boolean {
-        return (type == "Object" || type.contains('.')) &&
-            !type.contains('`') &&
-            !type.contains('<') &&
-            !type.endsWith("[]")
+        return supportsProjectedObjectTypeName(type)
     }
 }

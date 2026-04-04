@@ -8021,16 +8021,81 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val interfaceBinding = files.first { it.relativePath == "Example/Events/IEmitter.kt" }.content
         val runtimeBinding = files.first { it.relativePath == "Example/Events/Emitter.kt" }.content
+        val normalizedInterfaceBinding = interfaceBinding.replace(Regex("\\s+"), "")
+        val normalizedRuntimeBinding = runtimeBinding.replace(Regex("\\s+"), "")
 
         assertTrue(interfaceBinding.contains("fun add_Changed(): EventRegistrationToken"))
-        assertTrue(interfaceBinding.contains("EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer, 6).getOrThrow())"))
+        assertTrue(normalizedInterfaceBinding.contains("EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer,6).getOrThrow())"))
         assertTrue(interfaceBinding.contains("fun remove_Changed(token: EventRegistrationToken)"))
-        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 7, token.value).getOrThrow()"))
+        assertTrue(normalizedInterfaceBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer,7,token.value).getOrThrow()"))
 
         assertTrue(runtimeBinding.contains("fun add_Changed(): EventRegistrationToken"))
-        assertTrue(runtimeBinding.contains("EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer, 6).getOrThrow())"))
+        assertTrue(normalizedRuntimeBinding.contains("EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer,6).getOrThrow())"))
         assertTrue(runtimeBinding.contains("fun remove_Changed(token: EventRegistrationToken)"))
-        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 7, token.value).getOrThrow()"))
+        assertTrue(normalizedRuntimeBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer,7,token.value).getOrThrow()"))
+    }
+
+    @Test
+    fun generates_qualified_event_registration_token_methods() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Events",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IEmitter",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                            methods = listOf(
+                                WinMdMethod(name = "add_Changed", returnType = "Windows.Foundation.EventRegistrationToken", vtableIndex = 6),
+                                WinMdMethod(
+                                    name = "remove_Changed",
+                                    returnType = "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(
+                                        WinMdParameter(name = "token", type = "Windows.Foundation.EventRegistrationToken"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "Emitter",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(name = "add_Changed", returnType = "Windows.Foundation.EventRegistrationToken", vtableIndex = 6),
+                                WinMdMethod(
+                                    name = "remove_Changed",
+                                    returnType = "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(
+                                        WinMdParameter(name = "token", type = "Windows.Foundation.EventRegistrationToken"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Events/IEmitter.kt" }.content
+        val runtimeBinding = files.first { it.relativePath == "Example/Events/Emitter.kt" }.content
+        val normalizedInterfaceBinding = interfaceBinding.replace(Regex("\\s+"), "")
+        val normalizedRuntimeBinding = runtimeBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(interfaceBinding.contains("fun add_Changed(): EventRegistrationToken"))
+        assertTrue(normalizedInterfaceBinding.contains("EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer,6).getOrThrow())"))
+        assertTrue(interfaceBinding.contains("fun remove_Changed(token: EventRegistrationToken)"))
+        assertTrue(normalizedInterfaceBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer,7,token.value).getOrThrow()"))
+
+        assertTrue(runtimeBinding.contains("fun add_Changed(): EventRegistrationToken"))
+        assertTrue(normalizedRuntimeBinding.contains("EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer,6).getOrThrow())"))
+        assertTrue(runtimeBinding.contains("fun remove_Changed(token: EventRegistrationToken)"))
+        assertTrue(normalizedRuntimeBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer,7,token.value).getOrThrow()"))
     }
 
     @Test
@@ -9426,6 +9491,106 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_event_handler_slot_helpers_for_qualified_event_registration_token_metadata() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "EventHandler`1",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "9de1c534-6ae1-11e0-84e1-18a905bcc53f",
+                            genericParameters = listOf("T"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("sender", "Object"),
+                                        WinMdParameter("args", "T"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Events",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetClosedEventArgs",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_Closed",
+                                    returnType = "Windows.Foundation.EventRegistrationToken",
+                                    parameters = listOf(WinMdParameter("handler", "Windows.Foundation.EventHandler<Example.Events.IWidgetClosedEventArgs>")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_Closed",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("token", "Windows.Foundation.EventRegistrationToken")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Events.IWidget",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_Closed",
+                                    returnType = "Windows.Foundation.EventRegistrationToken",
+                                    parameters = listOf(WinMdParameter("handler", "Windows.Foundation.EventHandler<Example.Events.IWidgetClosedEventArgs>")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_Closed",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("token", "Windows.Foundation.EventRegistrationToken")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Events/IWidget.kt" }.content
+        val runtimeBinding = files.first { it.relativePath == "Example/Events/Widget.kt" }.content
+        val normalizedInterfaceBinding = interfaceBinding.replace(Regex("\\s+"), "")
+        val normalizedRuntimeBinding = runtimeBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(interfaceBinding.contains("class ClosedEvent"))
+        assertTrue(interfaceBinding.contains("fun subscribe(handler: EventHandler<IWidgetClosedEventArgs>): EventRegistrationToken"))
+        assertTrue(interfaceBinding.contains("fun unsubscribe(token: EventRegistrationToken)"))
+        assertTrue(normalizedInterfaceBinding.contains("EventRegistrationToken(PlatformComInterop.invokeInt64MethodWithObjectArg(pointer,6,handler.pointer).getOrThrow())"))
+        assertTrue(normalizedInterfaceBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer,7,token.value).getOrThrow()"))
+
+        assertTrue(runtimeBinding.contains("class ClosedEvent"))
+        assertTrue(runtimeBinding.contains("fun subscribe(handler: EventHandler<IWidgetClosedEventArgs>): EventRegistrationToken"))
+        assertTrue(runtimeBinding.contains("fun unsubscribe(token: EventRegistrationToken)"))
+        assertTrue(normalizedRuntimeBinding.contains("EventRegistrationToken(PlatformComInterop.invokeInt64MethodWithObjectArg(pointer,6,handler.pointer).getOrThrow())"))
+        assertTrue(normalizedRuntimeBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer,7,token.value).getOrThrow()"))
+    }
+
+    @Test
     fun generates_event_handler_slot_helpers_for_runtime_companion_statics() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
@@ -9511,6 +9676,83 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("finally"))
         assertTrue(runtimeBinding.contains("unsubscribe(token)"))
         assertTrue(normalizedRuntimeBinding.contains("get()=closedEventSlot"))
+    }
+
+    @Test
+    fun generates_static_event_slot_helpers_for_qualified_event_registration_token_metadata() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "EventHandler`1",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "9de1c534-6ae1-11e0-84e1-18a905bcc53f",
+                            genericParameters = listOf("T"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("sender", "Object"),
+                                        WinMdParameter("args", "T"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Events",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetClosedEventArgs",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Example.Events",
+                            name = "IWidgetStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "33333333-3333-3333-3333-333333333333",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "add_Closed",
+                                    returnType = "Windows.Foundation.EventRegistrationToken",
+                                    parameters = listOf(WinMdParameter("handler", "Windows.Foundation.EventHandler<Example.Events.IWidgetClosedEventArgs>")),
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "remove_Closed",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("token", "Windows.Foundation.EventRegistrationToken")),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Example/Events/Widget.kt" }.content
+        val normalizedRuntimeBinding = runtimeBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("class ClosedStaticEvent"))
+        assertTrue(runtimeBinding.contains("fun subscribe(handler: EventHandler<IWidgetClosedEventArgs>): EventRegistrationToken"))
+        assertTrue(runtimeBinding.contains("fun unsubscribe(token: EventRegistrationToken)"))
+        assertTrue(normalizedRuntimeBinding.contains("EventRegistrationToken(PlatformComInterop.invokeInt64MethodWithObjectArg(staticsProvider().pointer,6,handler.pointer).getOrThrow())"))
+        assertTrue(normalizedRuntimeBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(staticsProvider().pointer,7,token.value).getOrThrow()"))
     }
 
     @Test

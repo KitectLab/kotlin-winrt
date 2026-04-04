@@ -756,6 +756,7 @@ internal class RuntimeMethodRenderer(
             MethodReturnKind.FLOAT64,
             MethodReturnKind.DATE_TIME,
             MethodReturnKind.TIME_SPAN,
+            MethodReturnKind.EVENT_REGISTRATION_TOKEN,
             MethodReturnKind.OBJECT,
             MethodReturnKind.UNIT -> plannedUnaryRuntimeMethodForReturnKind(signatureKey.returnKind, parameterCategory)
             else -> null
@@ -782,6 +783,7 @@ internal class RuntimeMethodRenderer(
         MethodReturnKind.FLOAT64 -> PlannedStatement("return %T(0.0)", arrayOf(PoetSymbols.float64Class))
         MethodReturnKind.DATE_TIME -> PlannedStatement("return %T.fromEpochSeconds(0)", arrayOf(PoetSymbols.dateTimeClass))
         MethodReturnKind.TIME_SPAN -> PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.timeSpanClass, "0s"))
+        MethodReturnKind.EVENT_REGISTRATION_TOKEN -> PlannedStatement("return %T(0)", arrayOf(PoetSymbols.eventRegistrationTokenClass))
         MethodReturnKind.OBJECT -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: $methodName"))
         MethodReturnKind.UNIT -> PlannedStatement("return")
         else -> error("Unsupported unary runtime return kind: $returnKind")
@@ -794,7 +796,8 @@ internal class RuntimeMethodRenderer(
         MethodReturnKind.TIME_SPAN,
         MethodReturnKind.UNIT -> if (returnKind == MethodReturnKind.UNIT) "%L" else "return %L"
         MethodReturnKind.FLOAT32,
-        MethodReturnKind.FLOAT64 -> "return %T(%L)"
+        MethodReturnKind.FLOAT64,
+        MethodReturnKind.EVENT_REGISTRATION_TOKEN -> "return %T(%L)"
         else -> error("Unsupported unary runtime return kind: $returnKind")
     }
 
@@ -809,6 +812,7 @@ internal class RuntimeMethodRenderer(
         MethodReturnKind.FLOAT64 -> arrayOf(PoetSymbols.float64Class, abiCall)
         MethodReturnKind.DATE_TIME -> arrayOf(CodeBlock.of("%T.fromEpochSeconds((%L - %L) / 10000000L, ((%L - %L) %% 10000000L * 100).toInt())", PoetSymbols.dateTimeClass, abiCall, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET, abiCall, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET))
         MethodReturnKind.TIME_SPAN -> arrayOf(CodeBlock.of("%T(%L)", PoetSymbols.timeSpanClass, abiCall))
+        MethodReturnKind.EVENT_REGISTRATION_TOKEN -> arrayOf(PoetSymbols.eventRegistrationTokenClass, abiCall)
         MethodReturnKind.OBJECT -> arrayOf(runtimeObjectReturnCode(method, currentNamespace, abiCall))
         MethodReturnKind.UNIT -> arrayOf(abiCall)
         else -> error("Unsupported unary runtime return kind: $returnKind")
@@ -827,6 +831,7 @@ internal class RuntimeMethodRenderer(
                 MethodReturnKind.FLOAT64 -> AbiCallCatalog.float64Method(vtableIndex)
                 MethodReturnKind.DATE_TIME,
                 MethodReturnKind.TIME_SPAN -> AbiCallCatalog.int64Getter(vtableIndex)
+                MethodReturnKind.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.int64Getter(vtableIndex)
                 MethodReturnKind.OBJECT -> AbiCallCatalog.objectMethod(vtableIndex)
                 MethodReturnKind.UNIT -> AbiCallCatalog.unitMethod(vtableIndex)
                 else -> error("Unsupported unary runtime return kind: $returnKind")
@@ -863,6 +868,15 @@ internal class RuntimeMethodRenderer(
             }
             MethodReturnKind.DATE_TIME,
             MethodReturnKind.TIME_SPAN -> when (parameterCategory) {
+                MethodParameterCategory.STRING -> AbiCallCatalog.int64MethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.INT32 -> AbiCallCatalog.int64MethodWithInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.int64MethodWithUInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.int64MethodWithBoolean(vtableIndex, loweredArgument)
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.int64MethodWithInt64(vtableIndex, loweredArgument)
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.int64MethodWithObject(vtableIndex, loweredArgument)
+            }
+            MethodReturnKind.EVENT_REGISTRATION_TOKEN -> when (parameterCategory) {
                 MethodParameterCategory.STRING -> AbiCallCatalog.int64MethodWithString(vtableIndex, argumentName)
                 MethodParameterCategory.INT32 -> AbiCallCatalog.int64MethodWithInt32(vtableIndex, loweredArgument)
                 MethodParameterCategory.UINT32 -> AbiCallCatalog.int64MethodWithUInt32(vtableIndex, loweredArgument)
@@ -1018,10 +1032,7 @@ internal class RuntimeMethodRenderer(
     }
 
     private fun supportsRuntimeObjectType(type: String): Boolean {
-        return (type == "Object" || type.contains('.')) &&
-            !type.contains('`') &&
-            !type.contains('<') &&
-            !type.endsWith("[]")
+        return supportsProjectedObjectTypeName(type)
     }
 
     private fun runtimeObjectReturnCode(method: WinMdMethod, currentNamespace: String, abiCall: CodeBlock): CodeBlock {
