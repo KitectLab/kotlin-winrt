@@ -59,7 +59,7 @@ internal class TypeFileEmitter(
     fun emit(namespace: WinMdNamespace, type: WinMdType): GeneratedFile? {
         val fileSpec = renderTypeFile(namespace, type) ?: return null
         val content = try {
-            fileSpec.toString()
+            normalizeRenderedIdentifiers(fileSpec.toString())
         } catch (error: IllegalArgumentException) {
             throw IllegalArgumentException("Failed to emit ${namespace.name}.${type.name}: ${error.message}", error)
         }

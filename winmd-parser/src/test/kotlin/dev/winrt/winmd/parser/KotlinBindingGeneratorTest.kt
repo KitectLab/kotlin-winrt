@@ -148,6 +148,49 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun strips_soft_keyword_backticks_but_keeps_hard_keyword_escaping() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Core",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Core",
+                            name = "WidgetMode",
+                            kind = WinMdTypeKind.Enum,
+                            enumMembers = listOf(
+                                dev.winrt.winmd.plugin.WinMdEnumMember("Enabled", 1),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Core",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                            properties = listOf(
+                                WinMdProperty(name = "Header", type = "String", mutable = true, getterVtableIndex = 6, setterVtableIndex = 7),
+                                WinMdProperty(name = "Class", type = "String", mutable = false, getterVtableIndex = 8),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Core/IWidget.kt" }.content
+        val enumBinding = files.first { it.relativePath == "Example/Core/WidgetMode.kt" }.content
+
+        assertTrue(interfaceBinding.contains("var header: String"))
+        assertFalse(interfaceBinding.contains("var `header`: String"))
+        assertTrue(interfaceBinding.contains("val `class`: String"))
+        assertTrue(enumBinding.contains("public val value: Int"))
+        assertTrue(enumBinding.contains("fromValue(value: Int)"))
+        assertFalse(enumBinding.contains("`value`"))
+    }
+
+    @Test
     fun folds_runtime_class_static_properties_into_companion_object() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
