@@ -646,22 +646,34 @@ class CheckedInBindingsParityTest {
     fun checked_in_application_languages_keeps_verified_runtime_surface() {
         val runtimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/ApplicationLanguages.kt").readText()
         val statics = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/IApplicationLanguagesStatics.kt").readText()
+        val statics2 = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/IApplicationLanguagesStatics2.kt").readText()
+        val normalizedStatics = normalizeWhitespace(statics)
+        val normalizedStatics2 = normalizeWhitespace(statics2)
 
         assertTrue(runtimeClass.contains("qualifiedName: String = \"Windows.Globalization.ApplicationLanguages\""))
         assertTrue(runtimeClass.contains("defaultInterfaceName: String? = null"))
         assertTrue(runtimeClass.contains("private val statics: IApplicationLanguagesStatics by lazy"))
+        assertTrue(runtimeClass.contains("private val statics2: IApplicationLanguagesStatics2 by lazy"))
         assertTrue(runtimeClass.contains("WinRtRuntime.projectActivationFactory(this, IApplicationLanguagesStatics"))
         assertTrue(runtimeClass.contains("::IApplicationLanguagesStatics)"))
         assertFalse(runtimeClass.contains("constructor() : this(Companion.activate().pointer)"))
         assertFalse(runtimeClass.contains("fun activate(): ApplicationLanguages = WinRtRuntime.activate(this,"))
         assertTrue(statics.contains("var primaryLanguageOverride: String"))
         assertTrue(statics.contains("invokeHStringMethod(pointer, 6).getOrThrow()"))
+        assertTrue(statics.contains("val languages: IVectorView<String>"))
+        assertTrue(normalizedStatics.contains("IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,8).getOrThrow()),\"string\",\"String\")"))
+        assertTrue(statics.contains("val manifestLanguages: IVectorView<String>"))
+        assertTrue(normalizedStatics.contains("IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,9).getOrThrow()),\"string\",\"String\")"))
         assertTrue(runtimeClass.contains("val languages: IVectorView<String>"))
         assertTrue(runtimeClass.contains("get() = statics.languages"))
         assertTrue(runtimeClass.contains("val manifestLanguages: IVectorView<String>"))
         assertTrue(runtimeClass.contains("get() = statics.manifestLanguages"))
+        assertTrue(runtimeClass.contains("fun getLanguagesForUser(user: User): IVectorView<String>"))
+        assertTrue(runtimeClass.contains("statics2.getLanguagesForUser(user)"))
         assertTrue(statics.contains("qualifiedName: String = \"Windows.Globalization.IApplicationLanguagesStatics\""))
         assertTrue(statics.contains("75b40847-0a4c-4a92-9565-fd63c95f7aed"))
+        assertTrue(statics2.contains("fun getLanguagesForUser(user: User): IVectorView<String>"))
+        assertTrue(normalizedStatics2.contains("IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethodWithObjectArg(pointer,6,user.pointer).getOrThrow()),\"string\",\"String\")"))
         assertFalse(runtimeClass.contains("languageFactory"))
     }
 
@@ -685,6 +697,9 @@ class CheckedInBindingsParityTest {
     fun checked_in_globalization_preferences_keeps_verified_runtime_surface() {
         val runtimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/system/userprofile/GlobalizationPreferences.kt").readText()
         val statics = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/system/userprofile/IGlobalizationPreferencesStatics.kt").readText()
+        val statics2 = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/system/userprofile/IGlobalizationPreferencesStatics2.kt").readText()
+        val normalizedStatics = normalizeWhitespace(statics)
+        val normalizedStatics2 = normalizeWhitespace(statics2)
 
         assertTrue(runtimeClass.contains("qualifiedName: String = \"Windows.System.UserProfile.GlobalizationPreferences\""))
         assertTrue(runtimeClass.contains("defaultInterfaceName: String? = null"))
@@ -709,12 +724,26 @@ class CheckedInBindingsParityTest {
         assertTrue(runtimeClass.contains("statics2.trySetHomeGeographicRegion(region)"))
         assertTrue(runtimeClass.contains("fun trySetLanguages(languageTags: Iterable<String>): WinRtBoolean"))
         assertTrue(runtimeClass.contains("statics2.trySetLanguages(languageTags)"))
+        assertTrue(statics.contains("val calendars: IVectorView<String>"))
+        assertTrue(normalizedStatics.contains("IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow()),\"string\",\"String\")"))
+        assertTrue(statics.contains("val clocks: IVectorView<String>"))
+        assertTrue(normalizedStatics.contains("IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,7).getOrThrow()),\"string\",\"String\")"))
+        assertTrue(statics.contains("val currencies: IVectorView<String>"))
+        assertTrue(normalizedStatics.contains("IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,8).getOrThrow()),\"string\",\"String\")"))
+        assertTrue(statics.contains("val languages: IVectorView<String>"))
+        assertTrue(normalizedStatics.contains("IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,9).getOrThrow()),\"string\",\"String\")"))
         assertTrue(statics.contains("val homeGeographicRegion: String"))
         assertTrue(statics.contains("invokeHStringMethod(pointer, 10).getOrThrow()"))
         assertTrue(statics.contains("val weekStartsOn: DayOfWeek"))
         assertTrue(statics.contains("DayOfWeek(PlatformComInterop.invokeObjectMethod(pointer, 11).getOrThrow())"))
         assertTrue(statics.contains("Windows.System.UserProfile.IGlobalizationPreferencesStatics"))
         assertTrue(statics.contains("01bf4326-ed37-4e96-b0e9-c1340d1ea158"))
+        assertTrue(statics2.contains("fun trySetLanguages(languageTags: Iterable<String>): WinRtBoolean"))
+        assertTrue(
+            normalizedStatics2.contains(
+                "dev.winrt.core.projectedObjectArgumentPointer(languageTags,\"kotlin.collections.Iterable<String>\",\"pinterface({faa585ea-6214-4217-afda-7f46de5869b3};string)\")",
+            ),
+        )
     }
 
     @Test
@@ -788,5 +817,7 @@ class CheckedInBindingsParityTest {
         assertTrue(clockStatics.contains("get_TwentyFourHour(): String = readString(7)"))
         assertTrue(clockStatics.contains("523805bb-12ec-4f83-bc31-b1b4376b0808"))
     }
+
+    private fun normalizeWhitespace(value: String): String = value.replace(Regex("\\s+"), "")
 
 }

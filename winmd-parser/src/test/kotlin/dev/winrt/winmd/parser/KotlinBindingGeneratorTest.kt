@@ -415,6 +415,132 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun renders_helper_interfaces_with_closed_generic_object_properties() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IVectorView`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbe1fa4c-b0e3-4583-baef-1f1b2e483e56",
+                            genericParameters = listOf("T"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Globalization",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Globalization",
+                            name = "ApplicationLanguages",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Globalization",
+                            name = "IApplicationLanguagesStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-dddd-dddd-dddd-dddddddddddd",
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Languages",
+                                    type = "Windows.Foundation.Collections.IVectorView<String>",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                                WinMdProperty(
+                                    name = "ManifestLanguages",
+                                    type = "Windows.Foundation.Collections.IVectorView<String>",
+                                    mutable = false,
+                                    getterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val staticsBinding = files.first { it.relativePath == "Windows/Globalization/IApplicationLanguagesStatics.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(staticsBinding.contains("val languages: IVectorView<String>"))
+        assertTrue(staticsBinding.contains("val manifestLanguages: IVectorView<String>"))
+        assertTrue(normalizedStaticsBinding.contains("IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow()),\"string\",\"String\")"))
+        assertTrue(normalizedStaticsBinding.contains("IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,7).getOrThrow()),\"string\",\"String\")"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_object_parameter_and_closed_generic_object_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IVectorView`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbe1fa4c-b0e3-4583-baef-1f1b2e483e56",
+                            genericParameters = listOf("T"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System",
+                            name = "User",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Globalization",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Globalization",
+                            name = "ApplicationLanguages",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Globalization",
+                            name = "IApplicationLanguagesStatics2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetLanguagesForUser",
+                                    returnType = "Windows.Foundation.Collections.IVectorView<String>",
+                                    parameters = listOf(WinMdParameter("user", "Windows.System.User")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first { it.relativePath == "Windows/Globalization/ApplicationLanguages.kt" }.content
+        val staticsBinding = files.first { it.relativePath == "Windows/Globalization/IApplicationLanguagesStatics2.kt" }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("private val statics2: IApplicationLanguagesStatics2 by lazy"))
+        assertTrue(runtimeBinding.contains("fun getLanguagesForUser(user: User): IVectorView<String>"))
+        assertTrue(runtimeBinding.contains("statics2.getLanguagesForUser(user)"))
+        assertTrue(staticsBinding.contains("fun getLanguagesForUser(user: User): IVectorView<String>"))
+        assertTrue(normalizedStaticsBinding.contains("IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethodWithObjectArg(pointer,6,user.pointer).getOrThrow()),\"string\",\"String\")"))
+    }
+
+    @Test
     fun renders_helper_interfaces_with_object_and_string_parameters_and_object_return() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
@@ -10092,6 +10218,208 @@ class KotlinBindingGeneratorTest {
         assertTrue(normalizedInterfaceBinding.contains("funsubscribe(handler:TypedEventHandler<IWidgetSource,IWidgetClosedEventArgs>):EventRegistrationToken"))
         assertTrue(normalizedInterfaceBinding.contains("funsubscribe(handler:(IWidgetSource,IWidgetClosedEventArgs)->Unit):EventRegistrationToken"))
         assertTrue(normalizedInterfaceBinding.contains("handler(IWidgetSource(args[0]asComPtr),IWidgetClosedEventArgs(args[1]asComPtr))"))
+    }
+
+    @Test
+    fun renders_helper_interfaces_with_closed_generic_input_and_boolean_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IIterable",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "faa585ea-6214-4217-afda-7f46de5869b3",
+                            genericParameters = listOf("T"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.System.UserProfile",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.System.UserProfile",
+                            name = "GlobalizationPreferences",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.System.UserProfile",
+                            name = "IGlobalizationPreferencesStatics2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "fcce85f1-4300-4cd0-9cac-1a8e7b7e18f4",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "TrySetLanguages",
+                                    returnType = "Boolean",
+                                    parameters = listOf(
+                                        WinMdParameter(
+                                            "languageTags",
+                                            "Windows.Foundation.Collections.IIterable<String>",
+                                        ),
+                                    ),
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val runtimeBinding = files.first {
+            it.relativePath == "Windows/System/UserProfile/GlobalizationPreferences.kt"
+        }.content
+        val staticsBinding = files.first {
+            it.relativePath == "Windows/System/UserProfile/IGlobalizationPreferencesStatics2.kt"
+        }.content
+        val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(runtimeBinding.contains("fun trySetLanguages(languageTags: Iterable<String>): WinRtBoolean"))
+        assertTrue(runtimeBinding.contains("statics2.trySetLanguages(languageTags)"))
+        assertTrue(staticsBinding.contains("fun trySetLanguages(languageTags: Iterable<String>): WinRtBoolean"))
+        assertTrue(
+            normalizedStaticsBinding.contains(
+                "dev.winrt.core.projectedObjectArgumentPointer(languageTags,\"kotlin.collections.Iterable<String>\",\"pinterface({faa585ea-6214-4217-afda-7f46de5869b3};string)\")",
+            ),
+        )
+    }
+
+    @Test
+    fun renders_factory_interfaces_with_closed_generic_input_and_object_return() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IIterable",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "faa585ea-6214-4217-afda-7f46de5869b3",
+                            genericParameters = listOf("T"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Globalization.NumberFormatting",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Globalization.NumberFormatting",
+                            name = "DecimalFormatter",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Globalization.NumberFormatting",
+                            name = "IDecimalFormatterFactory",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "0d018c9a-e393-46b8-b830-7a69c8f89fbb",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateDecimalFormatter",
+                                    returnType = "Windows.Globalization.NumberFormatting.DecimalFormatter",
+                                    parameters = listOf(
+                                        WinMdParameter(
+                                            "languages",
+                                            "Windows.Foundation.Collections.IIterable<String>",
+                                        ),
+                                        WinMdParameter("geographicRegion", "String"),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val factoryBinding = files.first {
+            it.relativePath == "Windows/Globalization/NumberFormatting/IDecimalFormatterFactory.kt"
+        }.content
+        val normalizedFactoryBinding = factoryBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(
+            normalizedFactoryBinding.contains(
+                "funcreateDecimalFormatter(languages:Iterable<String>,geographicRegion:String):DecimalFormatter",
+            ),
+        )
+        assertTrue(
+            normalizedFactoryBinding.contains(
+                "dev.winrt.core.projectedObjectArgumentPointer(languages,\"kotlin.collections.Iterable<String>\",\"pinterface({faa585ea-6214-4217-afda-7f46de5869b3};string)\")",
+            ),
+        )
+    }
+
+    @Test
+    fun renders_two_object_unit_methods_with_nested_generic_projection_type_keys() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IMapView",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "e480ce40-a338-4ada-adcf-272272e48cb9",
+                            genericParameters = listOf("K", "V"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "ISettings",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-2222-3333-4444-555555555555",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Split",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter(
+                                            "first",
+                                            "Windows.Foundation.Collections.IMapView<String, Object>",
+                                        ),
+                                        WinMdParameter(
+                                            "second",
+                                            "Windows.Foundation.Collections.IMapView<String, Object>",
+                                        ),
+                                    ),
+                                    vtableIndex = 10,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Example/Runtime/ISettings.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("funsplit(first:Map<String,Inspectable>,second:Map<String,Inspectable>)"))
+        assertTrue(
+            binding.contains(
+                "dev.winrt.core.projectedObjectArgumentPointer(first,\"kotlin.collections.Map<String,Object>\",\"pinterface({e480ce40-a338-4ada-adcf-272272e48cb9};string;cinterface(IInspectable))\")",
+            ),
+        )
+        assertTrue(
+            binding.contains(
+                "dev.winrt.core.projectedObjectArgumentPointer(second,\"kotlin.collections.Map<String,Object>\",\"pinterface({e480ce40-a338-4ada-adcf-272272e48cb9};string;cinterface(IInspectable))\")",
+            ),
+        )
     }
 
     private fun windowsAppSdkWinmd(fileName: String): Path? {

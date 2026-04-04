@@ -26,6 +26,24 @@ class WinRtProjectionTypeMapperTest {
     }
 
     @Test
+    fun maps_generic_collection_projection_keys_without_backtick_raw_names() {
+        assertEquals(
+            "kotlin.collections.Iterable<String>",
+            mapper.projectionTypeKeyFor(
+                "Windows.Foundation.Collections.IIterable<String>",
+                "Windows.Foundation.Collections",
+            ),
+        )
+        assertEquals(
+            "kotlin.collections.List<String>",
+            mapper.projectionTypeKeyFor(
+                "Windows.Foundation.Collections.IVectorView<String>",
+                "Windows.Foundation.Collections",
+            ),
+        )
+    }
+
+    @Test
     fun preserves_scalar_arguments_in_generic_projection_keys() {
         assertEquals(
             "kotlin.collections.List<String>",

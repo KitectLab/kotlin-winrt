@@ -5,6 +5,7 @@ import dev.winrt.kom.Guid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertFailsWith
 import kotlin.test.assertSame
 import kotlin.test.assertNull
 
@@ -941,5 +942,52 @@ class RuntimePropertyTest {
 
         assertEquals(cached, projected)
         assertEquals(1, subject.queryCount)
+    }
+
+    @Test
+    fun projected_object_argument_pointer_uses_abi_helper_lookup_for_projected_values() {
+        WinRtProjectionRegistry.resetForTests()
+
+        val subject = object : Inspectable(ComPtr.NULL) {
+            val requestedKeys = mutableListOf<String>()
+
+            override fun queryInterface(iid: Guid): ComPtr = ComPtr.NULL
+
+            override fun getObjectReferenceForType(typeKey: String, iid: Guid): ComPtr {
+                requestedKeys += typeKey
+                return super.getObjectReferenceForType(typeKey, iid)
+            }
+        }
+
+        val pointer = projectedObjectArgumentPointer(
+            value = subject,
+            projectionTypeKey = "kotlin.collections.Iterable<String>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "faa585ea-6214-4217-afda-7f46de5869b3",
+                WinRtTypeSignature.string(),
+            ),
+        )
+
+        assertEquals(ComPtr.NULL, pointer)
+        assertEquals(listOf("ABI.System.Collections.Generic.IEnumerable<String>"), subject.requestedKeys)
+    }
+
+    @Test
+    fun projected_object_argument_pointer_rejects_plain_kotlin_values() {
+        val error = assertFailsWith<IllegalStateException> {
+            projectedObjectArgumentPointer(
+                value = listOf("en-US"),
+                projectionTypeKey = "kotlin.collections.Iterable<String>",
+                signature = WinRtTypeSignature.parameterizedInterface(
+                    "faa585ea-6214-4217-afda-7f46de5869b3",
+                    WinRtTypeSignature.string(),
+                ),
+            )
+        }
+
+        assertEquals(
+            "Projected WinRT object arguments for kotlin.collections.Iterable<String> require a projected WinRT value; plain Kotlin values are not supported yet",
+            error.message,
+        )
     }
 }

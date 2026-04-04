@@ -14,6 +14,7 @@ import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asTypeName
 import dev.winrt.winmd.plugin.WinMdMethod
+import dev.winrt.winmd.plugin.WinMdParameter
 import dev.winrt.winmd.plugin.WinMdProperty
 import dev.winrt.winmd.plugin.WinMdType
 
@@ -24,6 +25,7 @@ internal class InterfaceTypeRenderer(
     private val typeRegistry: TypeRegistry,
     private val asyncMethodProjectionPlanner: AsyncMethodProjectionPlanner,
     private val asyncMethodRuleRegistry: AsyncMethodRuleRegistry,
+    private val winRtSignatureMapper: WinRtSignatureMapper,
     private val winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     private val kotlinCollectionProjectionMapper: KotlinCollectionProjectionMapper = KotlinCollectionProjectionMapper(),
 ) {
@@ -870,7 +872,7 @@ internal class InterfaceTypeRenderer(
             PropertyRuleRegistry.interfaceGetterRuleFamily(
                 property.type,
                 typeRegistry.isEnumType(property.type, currentNamespace),
-                supportsInterfaceObjectType(property.type),
+                supportsInterfaceObjectReturnType(property.type, currentNamespace),
             )
         ) {
             InterfacePropertyRuleFamily.ENUM ->
@@ -882,9 +884,13 @@ internal class InterfaceTypeRenderer(
                 )
             InterfacePropertyRuleFamily.OBJECT ->
                 getterBuilder.addStatement(
-                    "return %T(%L)",
-                    propertyType,
-                    AbiCallCatalog.objectMethod(getterVtableIndex),
+                    "return %L",
+                    projectedObjectReturnCode(
+                        typeName = property.type,
+                        currentNamespace = currentNamespace,
+                        abiCall = AbiCallCatalog.objectMethod(getterVtableIndex),
+                        genericParameters = genericParameters,
+                    ),
                 )
             InterfacePropertyRuleFamily.STRING ->
                 getterBuilder.addStatement(
@@ -972,8 +978,12 @@ internal class InterfaceTypeRenderer(
         }
         val propertyBuilder = PropertySpec.builder(propertyName, propertyType)
             .getter(getterBuilder.build())
+        val setterRuleFamily = PropertyRuleRegistry.interfaceSetterRuleFamily(
+            property.type,
+            supportsInterfaceObjectType(property.type, currentNamespace),
+        )
         if (property.mutable &&
-            PropertyRuleRegistry.interfaceSetterRuleFamily(property.type, supportsInterfaceObjectType(property.type)) != null &&
+            setterRuleFamily != null &&
             property.setterVtableIndex != null
         ) {
             val setterVtableIndex = property.setterVtableIndex!!
@@ -982,8 +992,23 @@ internal class InterfaceTypeRenderer(
                 FunSpec.setterBuilder()
                     .addParameter("value", propertyType)
                     .apply {
-                        when (PropertyRuleRegistry.interfaceSetterRuleFamily(property.type, supportsInterfaceObjectType(property.type))) {
-                            InterfacePropertyRuleFamily.OBJECT -> addStatement("%L", AbiCallCatalog.objectSetter(setterVtableIndex, "value"))
+                        when (setterRuleFamily) {
+                            InterfacePropertyRuleFamily.OBJECT -> addStatement(
+                                "%L",
+                                if (supportsClosedGenericInterfaceInputType(property.type, currentNamespace)) {
+                                    AbiCallCatalog.objectSetterExpression(
+                                        setterVtableIndex,
+                                        interfaceObjectArgumentExpression(
+                                            argumentName = "value",
+                                            typeName = property.type,
+                                            currentNamespace = currentNamespace,
+                                            castInspectableForProjectedType = true,
+                                        ),
+                                    )
+                                } else {
+                                    AbiCallCatalog.objectSetter(setterVtableIndex, "value")
+                                },
+                            )
                             InterfacePropertyRuleFamily.STRING -> addStatement("%L", AbiCallCatalog.stringSetter(setterVtableIndex))
                             InterfacePropertyRuleFamily.FLOAT32 -> addStatement("%L", AbiCallCatalog.float32Setter(setterVtableIndex))
                             InterfacePropertyRuleFamily.FLOAT64 -> addStatement("%L", AbiCallCatalog.float64Setter(setterVtableIndex))
@@ -1148,17 +1173,18 @@ internal class InterfaceTypeRenderer(
             }
             method.returnType == "Boolean" &&
                 method.parameters.size == 1 &&
-                supportsInterfaceObjectInput(method.parameters[0].type) &&
+                supportsInterfaceObjectInput(method.parameters[0].type, currentNamespace) &&
                 method.vtableIndex != null -> {
                 val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
                 val vtableIndex = method.vtableIndex!!
                 builder
                     .addStatement(
-                        "return %T(%T.invokeBooleanMethodWithObjectArg(pointer, %L, %N.pointer).getOrThrow())",
+                        "return %T(%L)",
                         PoetSymbols.winRtBooleanClass,
-                        PoetSymbols.platformComInteropClass,
-                        vtableIndex,
-                        argumentName,
+                        AbiCallCatalog.booleanMethodWithObject(
+                            vtableIndex,
+                            interfaceObjectArgumentExpression(argumentName, method.parameters[0].type, currentNamespace),
+                        ),
                     )
                     .build()
             }
@@ -1220,7 +1246,7 @@ internal class InterfaceTypeRenderer(
                     )
                     .build()
             }
-            supportsInterfaceObjectType(method.returnType) &&
+            supportsInterfaceObjectReturnType(method.returnType, currentNamespace) &&
                 method.parameters.isEmpty() &&
                 method.vtableIndex != null -> {
                 builder
@@ -1235,7 +1261,7 @@ internal class InterfaceTypeRenderer(
                     )
                     .build()
             }
-            supportsInterfaceObjectType(method.returnType) &&
+            supportsInterfaceObjectReturnType(method.returnType, currentNamespace) &&
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "String" &&
                 method.vtableIndex != null -> {
@@ -1252,7 +1278,7 @@ internal class InterfaceTypeRenderer(
                     )
                     .build()
             }
-            supportsInterfaceObjectType(method.returnType) &&
+            supportsInterfaceObjectReturnType(method.returnType, currentNamespace) &&
                 method.parameters.size == 1 &&
                 method.parameters[0].type == "UInt32" &&
                 method.vtableIndex != null -> {
@@ -1359,7 +1385,7 @@ internal class InterfaceTypeRenderer(
             invokeMethod = invokeMethod,
             currentNamespace = currentNamespace,
             genericParameters = genericParameters,
-            supportsObjectType = ::supportsInterfaceObjectType,
+            supportsObjectType = { typeName -> supportsInterfaceObjectType(typeName, currentNamespace) },
         ) as? DelegateLambdaPlan.PlannedBridge ?: return null
         return FunSpec.builder(functionName)
             .returns(PoetSymbols.winRtDelegateHandleClass)
@@ -1477,7 +1503,7 @@ internal class InterfaceTypeRenderer(
                 method.vtableIndex != null) ||
             (method.returnType == "Unit" &&
                 method.parameters.size == 1 &&
-                supportsInterfaceObjectInput(method.parameters[0].type) &&
+                supportsInterfaceObjectInput(method.parameters[0].type, currentNamespace) &&
                 method.vtableIndex != null)
             || (method.returnType == "Int32" &&
                 method.parameters.size == 1 &&
@@ -1497,7 +1523,7 @@ internal class InterfaceTypeRenderer(
                 method.vtableIndex != null)
             || (method.returnType == "Int32" &&
                 method.parameters.size == 1 &&
-                supportsInterfaceObjectInput(method.parameters[0].type) &&
+                supportsInterfaceObjectInput(method.parameters[0].type, currentNamespace) &&
                 method.vtableIndex != null)
             || (method.returnType == "UInt32" &&
                 method.parameters.size == 1 &&
@@ -1517,7 +1543,7 @@ internal class InterfaceTypeRenderer(
                 method.vtableIndex != null)
             || (method.returnType == "UInt32" &&
                 method.parameters.size == 1 &&
-                supportsInterfaceObjectInput(method.parameters[0].type) &&
+                supportsInterfaceObjectInput(method.parameters[0].type, currentNamespace) &&
                 method.vtableIndex != null)
     }
 
@@ -1535,7 +1561,8 @@ internal class InterfaceTypeRenderer(
         val signatureKey = methodSignatureKey(
             returnType = method.returnType,
             parameterTypes = method.parameters.map { it.type },
-            supportsObjectType = ::supportsInterfaceObjectInput,
+            supportsParameterObjectType = { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) },
+            supportsReturnObjectType = { typeName -> supportsInterfaceObjectReturnType(typeName, currentNamespace) },
         )
         return signatureKey
             ?.takeIf { MethodRuleRegistry.sharedMethodRuleFamily(it) != null }
@@ -1555,31 +1582,13 @@ internal class InterfaceTypeRenderer(
             ?.let {
                 return PlannedInterfaceMethod(
                     statement = "%L",
-                    args = { method, _ ->
-                        val firstArgumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
-                        val secondArgumentName = method.parameters[1].name.replaceFirstChar(Char::lowercase)
+                    args = { method, namespace ->
                         arrayOf(
                             AbiCallCatalog.unitMethodWithTwoArguments(
                                 method.vtableIndex!!,
                                 it,
-                                when (it[0]) {
-                                    MethodParameterCategory.OBJECT -> "$firstArgumentName.pointer"
-                                    MethodParameterCategory.INT32,
-                                    MethodParameterCategory.UINT32,
-                                    MethodParameterCategory.BOOLEAN,
-                                    MethodParameterCategory.INT64,
-                                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$firstArgumentName.value"
-                                    else -> firstArgumentName
-                                },
-                                when (it[1]) {
-                                    MethodParameterCategory.OBJECT -> "$secondArgumentName.pointer"
-                                    MethodParameterCategory.INT32,
-                                    MethodParameterCategory.UINT32,
-                                    MethodParameterCategory.BOOLEAN,
-                                    MethodParameterCategory.INT64,
-                                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$secondArgumentName.value"
-                                    else -> secondArgumentName
-                                },
+                                twoArgumentArgumentExpressions(method.parameters, it, namespace)[0],
+                                twoArgumentArgumentExpressions(method.parameters, it, namespace)[1],
                             ),
                         )
                     },
@@ -1628,10 +1637,16 @@ internal class InterfaceTypeRenderer(
                 },
             )
             MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
-                statement = "return %T(%T.invokeBooleanMethodWithObjectArg(pointer, %L, %N.pointer).getOrThrow())",
-                args = { method, _ ->
+                statement = "return %T(%L)",
+                args = { method, namespace ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.winRtBooleanClass, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                    arrayOf(
+                        PoetSymbols.winRtBooleanClass,
+                        AbiCallCatalog.booleanMethodWithObject(
+                            method.vtableIndex!!,
+                            interfaceObjectArgumentExpression(argumentName, method.parameters.single().type, namespace),
+                        ),
+                    )
                 },
             )
             MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.STRING) -> PlannedInterfaceMethod(
@@ -1670,10 +1685,16 @@ internal class InterfaceTypeRenderer(
                 },
             )
             MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
-                statement = "return %T(%T.invokeInt32MethodWithObjectArg(pointer, %L, %N.pointer).getOrThrow())",
-                args = { method, _ ->
+                statement = "return %T(%L)",
+                args = { method, namespace ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.int32Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                    arrayOf(
+                        PoetSymbols.int32Class,
+                        AbiCallCatalog.int32MethodWithObject(
+                            method.vtableIndex!!,
+                            interfaceObjectArgumentExpression(argumentName, method.parameters.single().type, namespace),
+                        ),
+                    )
                 },
             )
             MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
@@ -1718,17 +1739,29 @@ internal class InterfaceTypeRenderer(
                 },
             )
             MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
-                statement = "return %T(%T.invokeUInt32MethodWithObjectArg(pointer, %L, %N.pointer).getOrThrow())",
-                args = { method, _ ->
+                statement = "return %T(%L)",
+                args = { method, namespace ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.uint32Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                    arrayOf(
+                        PoetSymbols.uint32Class,
+                        AbiCallCatalog.uint32MethodWithObject(
+                            method.vtableIndex!!,
+                            interfaceObjectArgumentExpression(argumentName, method.parameters.single().type, namespace),
+                        ),
+                    )
                 },
             )
             MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
-                statement = "return %T(%T.invokeInt64MethodWithObjectArg(pointer, %L, %N.pointer).getOrThrow())",
-                args = { method, _ ->
+                statement = "return %T(%L)",
+                args = { method, namespace ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.int64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                    arrayOf(
+                        PoetSymbols.int64Class,
+                        AbiCallCatalog.int64MethodWithObject(
+                            method.vtableIndex!!,
+                            interfaceObjectArgumentExpression(argumentName, method.parameters.single().type, namespace),
+                        ),
+                    )
                 },
             )
             MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.STRING) -> PlannedInterfaceMethod(
@@ -1760,10 +1793,16 @@ internal class InterfaceTypeRenderer(
                 },
             )
             MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
-                statement = "return %T(%T.invokeInt64MethodWithObjectArg(pointer, %L, %N.pointer).getOrThrow())",
-                args = { method, _ ->
+                statement = "return %T(%L)",
+                args = { method, namespace ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.int64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                    arrayOf(
+                        PoetSymbols.int64Class,
+                        AbiCallCatalog.int64MethodWithObject(
+                            method.vtableIndex!!,
+                            interfaceObjectArgumentExpression(argumentName, method.parameters.single().type, namespace),
+                        ),
+                    )
                 },
             )
             MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.STRING) -> PlannedInterfaceMethod(
@@ -1795,10 +1834,16 @@ internal class InterfaceTypeRenderer(
                 },
             )
             MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
-                statement = "return %T(%T.invokeUInt64MethodWithObjectArg(pointer, %L, %N.pointer).getOrThrow())",
-                args = { method, _ ->
+                statement = "return %T(%L)",
+                args = { method, namespace ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.uint64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!, argumentName)
+                    arrayOf(
+                        PoetSymbols.uint64Class,
+                        AbiCallCatalog.uint64MethodWithObject(
+                            method.vtableIndex!!,
+                            interfaceObjectArgumentExpression(argumentName, method.parameters.single().type, namespace),
+                        ),
+                    )
                 },
             )
             MethodSignatureKey(MethodReturnKind.EVENT_REGISTRATION_TOKEN, MethodSignatureShape.EMPTY) -> PlannedInterfaceMethod(
@@ -2036,9 +2081,14 @@ internal class InterfaceTypeRenderer(
             )
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
                 statement = "%L",
-                args = { method, _ ->
+                args = { method, namespace ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(AbiCallCatalog.objectSetter(method.vtableIndex!!, argumentName))
+                    arrayOf(
+                        AbiCallCatalog.objectSetterExpression(
+                            method.vtableIndex!!,
+                            interfaceObjectArgumentExpression(argumentName, method.parameters.single().type, namespace),
+                        ),
+                    )
                 },
             )
             else -> null
@@ -2074,8 +2124,16 @@ internal class InterfaceTypeRenderer(
     ): PlannedInterfaceMethod = PlannedInterfaceMethod(
         statement = unaryInterfaceStatement(returnKind),
         args = { method, namespace ->
-            val argumentName = method.parameters.singleOrNull()?.name?.replaceFirstChar(Char::lowercase)
-            val abiCall = unaryInterfaceAbiCall(method.vtableIndex!!, returnKind, parameterCategory, argumentName)
+            val parameter = method.parameters.singleOrNull()
+            val argumentName = parameter?.name?.replaceFirstChar(Char::lowercase)
+            val abiCall = unaryInterfaceAbiCall(
+                vtableIndex = method.vtableIndex!!,
+                returnKind = returnKind,
+                parameterCategory = parameterCategory,
+                parameterType = parameter?.type,
+                currentNamespace = namespace,
+                argumentName = argumentName,
+            )
             unaryInterfaceArgs(method, namespace, returnKind, abiCall, genericParameters)
         },
     )
@@ -2110,6 +2168,8 @@ internal class InterfaceTypeRenderer(
         vtableIndex: Int,
         returnKind: MethodReturnKind,
         parameterCategory: MethodParameterCategory?,
+        parameterType: String?,
+        currentNamespace: String,
         argumentName: String?,
     ): CodeBlock {
         if (parameterCategory == null) {
@@ -2123,7 +2183,12 @@ internal class InterfaceTypeRenderer(
                 else -> error("Unsupported unary interface return kind: $returnKind")
             }
         }
-        val loweredArgument = unaryArgumentExpression(requireNotNull(argumentName), parameterCategory)
+        val loweredArgument = unaryArgumentExpression(
+            argumentName = requireNotNull(argumentName),
+            parameterType = requireNotNull(parameterType),
+            category = parameterCategory,
+            currentNamespace = currentNamespace,
+        )
         return when (returnKind) {
             MethodReturnKind.STRING -> when (parameterCategory) {
                 MethodParameterCategory.STRING -> AbiCallCatalog.hstringMethodWithString(vtableIndex, argumentName)
@@ -2177,14 +2242,19 @@ internal class InterfaceTypeRenderer(
                 MethodParameterCategory.INT64,
                 MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.unitMethodWithInt64(vtableIndex, argumentName)
                 MethodParameterCategory.STRING -> AbiCallCatalog.unitMethodWithString(vtableIndex, argumentName)
-                MethodParameterCategory.OBJECT -> AbiCallCatalog.objectSetter(vtableIndex, argumentName)
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.objectSetterExpression(vtableIndex, loweredArgument)
             }
             else -> error("Unsupported unary interface return kind: $returnKind")
         }
     }
 
-    private fun unaryArgumentExpression(argumentName: String, category: MethodParameterCategory): String = when (category) {
-        MethodParameterCategory.OBJECT -> "$argumentName.pointer"
+    private fun unaryArgumentExpression(
+        argumentName: String,
+        parameterType: String,
+        category: MethodParameterCategory,
+        currentNamespace: String,
+    ): Any = when (category) {
+        MethodParameterCategory.OBJECT -> interfaceObjectArgumentExpression(argumentName, parameterType, currentNamespace)
         MethodParameterCategory.INT32,
         MethodParameterCategory.UINT32,
         MethodParameterCategory.BOOLEAN,
@@ -2201,9 +2271,9 @@ internal class InterfaceTypeRenderer(
         args = { method, namespace ->
             val parameterCategories = methodParameterCategories(
                 method.parameters.map { parameter -> parameter.type },
-                ::supportsInterfaceObjectInput,
+                { typeName -> supportsInterfaceObjectInput(typeName, namespace) },
             ) ?: error("Unsupported two-argument return shape: ${signatureKey.shape}")
-            val argumentExpressions = twoArgumentArgumentExpressions(method.parameters.map { it.name }, parameterCategories)
+            val argumentExpressions = twoArgumentArgumentExpressions(method.parameters, parameterCategories, namespace)
             val abiCall = AbiCallCatalog.resultMethodWithTwoArguments(
                 method.vtableIndex!!,
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) "OBJECT" else resultKindName(method.returnType),
@@ -2223,11 +2293,17 @@ internal class InterfaceTypeRenderer(
     )
 
     private fun twoArgumentArgumentExpressions(
-        argumentNames: List<String>,
+        parameters: List<WinMdParameter>,
         parameterCategories: List<MethodParameterCategory>,
-    ): List<String> =
-        argumentNames.zip(parameterCategories) { argumentName, category ->
-            unaryArgumentExpression(argumentName.replaceFirstChar(Char::lowercase), category)
+        currentNamespace: String,
+    ): List<Any> =
+        parameters.zip(parameterCategories) { parameter, category ->
+            unaryArgumentExpression(
+                argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                parameterType = parameter.type,
+                category = category,
+                currentNamespace = currentNamespace,
+            )
         }
 
     private data class PlannedInterfaceMethod(
@@ -2235,12 +2311,16 @@ internal class InterfaceTypeRenderer(
         val args: (WinMdMethod, String) -> Array<Any>,
     )
 
-    private fun supportsInterfaceObjectInput(type: String): Boolean {
-        return supportsProjectedObjectTypeName(type)
+    private fun supportsInterfaceObjectInput(type: String, currentNamespace: String): Boolean {
+        return supportsProjectedObjectTypeName(type) || supportsClosedGenericInterfaceInputType(type, currentNamespace)
     }
 
-    private fun supportsInterfaceObjectType(type: String): Boolean {
-        return supportsProjectedObjectTypeName(type)
+    private fun supportsInterfaceObjectType(type: String, currentNamespace: String): Boolean {
+        return supportsInterfaceObjectInput(type, currentNamespace)
+    }
+
+    private fun supportsInterfaceObjectReturnType(type: String, currentNamespace: String): Boolean {
+        return supportsProjectedObjectTypeName(type) || supportsClosedGenericInterfaceReturnType(type, currentNamespace)
     }
 
     private fun supportsInterfaceProperty(
@@ -2252,7 +2332,7 @@ internal class InterfaceTypeRenderer(
             PropertyRuleRegistry.interfaceGetterRuleFamily(
                 type = property.type,
                 isEnumType = typeRegistry.isEnumType(property.type, currentNamespace),
-                isObjectType = supportsInterfaceObjectType(property.type),
+                isObjectType = supportsInterfaceObjectReturnType(property.type, currentNamespace),
             ) != null
     }
 
@@ -2272,18 +2352,125 @@ internal class InterfaceTypeRenderer(
         }
     }
 
+    private fun projectedObjectReturnCode(
+        typeName: String,
+        currentNamespace: String,
+        abiCall: CodeBlock,
+        genericParameters: Set<String>,
+    ): CodeBlock {
+        closedGenericInterfaceProjectionCall(typeName, currentNamespace, abiCall)?.let { return it }
+        val mappedType = typeNameMapper.mapTypeName(typeName, currentNamespace, genericParameters)
+        return if (typeRegistry.findType(typeName, currentNamespace)?.kind == dev.winrt.winmd.plugin.WinMdTypeKind.Interface) {
+            CodeBlock.of("%T.from(%T(%L))", mappedType, PoetSymbols.inspectableClass, abiCall)
+        } else {
+            CodeBlock.of("%T(%L)", mappedType, abiCall)
+        }
+    }
+
     private fun objectReturnCode(
         method: WinMdMethod,
         namespace: String,
         abiCall: CodeBlock,
         genericParameters: Set<String>,
-    ): CodeBlock {
-        val mappedType = typeNameMapper.mapTypeName(method.returnType, namespace, genericParameters)
-        return if (typeRegistry.findType(method.returnType, namespace)?.kind == dev.winrt.winmd.plugin.WinMdTypeKind.Interface) {
-            CodeBlock.of("%T.from(%T(%L))", mappedType, PoetSymbols.inspectableClass, abiCall)
-        } else {
-            CodeBlock.of("%T(%L)", mappedType, abiCall)
+    ): CodeBlock = projectedObjectReturnCode(method.returnType, namespace, abiCall, genericParameters)
+
+    private fun supportsClosedGenericInterfaceReturnType(typeName: String, currentNamespace: String): Boolean {
+        val rawTypeName = closedGenericRawTypeName(typeName) ?: return false
+        if (rawTypeName == "Windows.Foundation.IReference") {
+            return false
         }
+        val rawType = typeRegistry.findType(rawTypeName, currentNamespace)
+        return when {
+            rawType != null -> rawType.kind == dev.winrt.winmd.plugin.WinMdTypeKind.Interface
+            '.' in rawTypeName -> true
+            else -> false
+        }
+    }
+
+    private fun supportsClosedGenericInterfaceInputType(typeName: String, currentNamespace: String): Boolean {
+        if (!supportsClosedGenericInterfaceReturnType(typeName, currentNamespace)) {
+            return false
+        }
+        return closedGenericRawProjectionTypeKey(typeName, currentNamespace) != null
+    }
+
+    private fun closedGenericInterfaceProjectionCall(
+        typeName: String,
+        currentNamespace: String,
+        abiCall: CodeBlock,
+    ): CodeBlock? {
+        val rawTypeName = closedGenericRawTypeName(typeName) ?: return null
+        if (!supportsClosedGenericInterfaceReturnType(typeName, currentNamespace)) {
+            return null
+        }
+        val rawTypeClass = typeNameMapper.mapTypeName(rawTypeName, currentNamespace) as? ClassName ?: return null
+        val genericArgumentSource = typeName.substringAfter('<').substringBeforeLast('>')
+        val genericArguments = splitGenericArguments(genericArgumentSource)
+        val builder = CodeBlock.builder()
+            .add("%T.from(%T(%L)", rawTypeClass, PoetSymbols.inspectableClass, abiCall)
+        genericArguments.forEach { argument ->
+            builder.add(", %S", winRtSignatureMapper.signatureFor(argument, currentNamespace))
+        }
+        genericArguments.forEach { argument ->
+            builder.add(", %S", winRtProjectionTypeMapper.projectionTypeKeyFor(argument, currentNamespace))
+        }
+        return builder.add(")").build()
+    }
+
+    private fun closedGenericRawTypeName(typeName: String): String? {
+        return typeName
+            .takeIf { '<' in it && it.endsWith(">") }
+            ?.substringBefore('<')
+    }
+
+    private fun interfaceObjectArgumentExpression(
+        argumentName: String,
+        typeName: String,
+        currentNamespace: String,
+        castInspectableForProjectedType: Boolean = false,
+    ): CodeBlock {
+        if (supportsClosedGenericInterfaceInputType(typeName, currentNamespace)) {
+            val projectionTypeKey = winRtProjectionTypeMapper.projectionTypeKeyFor(typeName, currentNamespace)
+            val signature = winRtSignatureMapper.signatureFor(typeName, currentNamespace)
+            return CodeBlock.of(
+                "dev.winrt.core.projectedObjectArgumentPointer(%N, %S, %S)",
+                argumentName,
+                projectionTypeKey,
+                signature,
+            )
+        }
+        return if (castInspectableForProjectedType) {
+            CodeBlock.of("(%N as %T).pointer", argumentName, PoetSymbols.inspectableClass)
+        } else {
+            CodeBlock.of("%N.pointer", argumentName)
+        }
+    }
+
+    private fun closedGenericRawProjectionTypeKey(typeName: String, currentNamespace: String): String? {
+        return winRtProjectionTypeMapper.projectionTypeKeyFor(typeName, currentNamespace)
+            .takeIf { '<' in it && it.endsWith(">") }
+            ?.substringBefore('<')
+    }
+
+    private fun splitGenericArguments(source: String): List<String> {
+        if (source.isBlank()) {
+            return emptyList()
+        }
+        val arguments = mutableListOf<String>()
+        var depth = 0
+        var start = 0
+        source.forEachIndexed { index, char ->
+            when (char) {
+                '<' -> depth++
+                '>' -> depth--
+                ',' -> if (depth == 0) {
+                    arguments += source.substring(start, index).trim()
+                    start = index + 1
+                }
+            }
+        }
+        arguments += source.substring(start).trim()
+        return arguments
     }
 
     private fun twoArgumentReturnCode(method: WinMdMethod, abiCall: CodeBlock): CodeBlock {
