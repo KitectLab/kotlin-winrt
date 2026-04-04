@@ -7,11 +7,12 @@ import dev.winrt.core.WinRtDelegateHandle
 import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
+import dev.winrt.core.guidOf
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
 
 open class Application(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
-    constructor() : this(Companion.activate().pointer)
+    constructor() : this(Companion.factoryCreateInstance().pointer)
 
     private val backingResources = dev.winrt.core.RuntimeProperty(ResourceDictionary(ComPtr.NULL))
 
@@ -47,12 +48,10 @@ open class Application(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Application"
         override val classId = RuntimeClassId("Microsoft.UI.Xaml", "Application")
         override val defaultInterfaceName: String? = "Microsoft.UI.Xaml.IApplication"
-        override val activationKind = WinRtActivationKind.Factory
+        override val activationKind = WinRtActivationKind.Composable
 
         val current: Application
             get() = statics.get_Current()
-
-        fun activate(): Application = WinRtRuntime.activate(this, ::Application)
 
         fun start(callback: ApplicationInitializationCallback) {
             statics.start(callback)
@@ -78,5 +77,15 @@ open class Application(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
         private val statics: IApplicationStatics by lazy {
             WinRtRuntime.projectActivationFactory(this, IApplicationStatics, ::IApplicationStatics)
         }
+
+        private fun factoryCreateInstance(): Application =
+            WinRtRuntime.compose(
+                this,
+                guidOf("9fd96657-5294-5a65-a1db-4fea143597da"),
+                guidOf("06a8f4e7-1146-55af-820d-ebd55643b021"),
+                ::Application,
+                6,
+                ComPtr.NULL,
+            )
     }
 }

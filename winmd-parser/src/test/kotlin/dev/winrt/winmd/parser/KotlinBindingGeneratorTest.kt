@@ -1,5 +1,6 @@
 package dev.winrt.winmd.parser
 
+import dev.winrt.winmd.plugin.NuGetPackageReferences
 import dev.winrt.winmd.plugin.WinMdModelFactory
 import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdNamespace
@@ -14,8 +15,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
 import java.nio.file.Files
+import java.nio.file.Path
 
 class KotlinBindingGeneratorTest {
+    private val windowsAppSdkVersion = "1.8.260317003"
+
     @Test
     fun folds_runtime_class_statics_into_companion_object() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
@@ -5471,11 +5475,7 @@ class KotlinBindingGeneratorTest {
 
     @Test
     fun expands_winui_ui_element_collection_members_from_real_metadata_model_when_available() {
-        val winUiRoot = java.nio.file.Path.of("F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002")
-        val xamlWinmd = winUiRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd")
-        if (!java.nio.file.Files.isRegularFile(xamlWinmd)) {
-            return
-        }
+        val xamlWinmd = windowsAppSdkWinmd("Microsoft.UI.Xaml.winmd") ?: return
 
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",
@@ -5511,12 +5511,7 @@ class KotlinBindingGeneratorTest {
 
     @Test
     fun generates_dispatcher_queue_try_enqueue_from_real_metadata_model_when_available() {
-        val uiWinmd = java.nio.file.Path.of(
-            "F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002/lib/uap10.0.18362/Microsoft.UI.winmd",
-        )
-        if (!java.nio.file.Files.isRegularFile(uiWinmd)) {
-            return
-        }
+        val uiWinmd = windowsAppSdkWinmd("Microsoft.UI.winmd") ?: return
 
         val model = WinMdModelFactory.metadataModel(listOf(uiWinmd))
         val files = KotlinBindingGenerator().generate(model)
@@ -7284,11 +7279,7 @@ class KotlinBindingGeneratorTest {
 
     @Test
     fun reads_winui_ui_element_collection_runtime_class_when_available() {
-        val winUiRoot = java.nio.file.Path.of("F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002")
-        val xamlWinmd = winUiRoot.resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd")
-        if (!java.nio.file.Files.isRegularFile(xamlWinmd)) {
-            return
-        }
+        val xamlWinmd = windowsAppSdkWinmd("Microsoft.UI.Xaml.winmd") ?: return
 
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",
@@ -9681,5 +9672,20 @@ class KotlinBindingGeneratorTest {
         assertTrue(normalizedInterfaceBinding.contains("funsubscribe(handler:TypedEventHandler<IWidgetSource,IWidgetClosedEventArgs>):EventRegistrationToken"))
         assertTrue(normalizedInterfaceBinding.contains("funsubscribe(handler:(IWidgetSource,IWidgetClosedEventArgs)->Unit):EventRegistrationToken"))
         assertTrue(normalizedInterfaceBinding.contains("handler(IWidgetSource(args[0]asComPtr),IWidgetClosedEventArgs(args[1]asComPtr))"))
+    }
+
+    private fun windowsAppSdkWinmd(fileName: String): Path? {
+        val nugetRoots = buildList {
+            add(Path.of("F:/Dependencies/nuget"))
+            runCatching { NuGetPackageReferences.discoverPackagesRoot() }.getOrNull()?.let(::add)
+        }.distinct()
+
+        return runCatching {
+            NuGetPackageReferences.resolvePackageFromRoots(
+                packageId = "Microsoft.WindowsAppSDK",
+                packageVersion = windowsAppSdkVersion,
+                nugetRoots = nugetRoots,
+            ).winmdFiles.firstOrNull { it.fileName.toString().equals(fileName, ignoreCase = true) }
+        }.getOrNull()
     }
 }

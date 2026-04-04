@@ -2,14 +2,14 @@ package dev.winrt.sample.jvm
 
 fun main() {
     SampleBootstrap.configure()
-    try {
-        val result = SampleBootstrap.launch()
-        println(result.diagnostics)
-        result.winRtSmoke?.let { smoke ->
-            println("WinRT smoke: ${smoke.runtimeClass} parsed name=${smoke.parsedName}")
-        }
-        println(result.launcherSummary)
-    } finally {
-        SampleBootstrap.shutdown()
+    SampleBootstrap.diagnostics()?.let(::println)
+    val result = SampleBootstrap.launch()
+    println(result.diagnostics)
+    result.winRtSmoke?.let { smoke ->
+        println("WinRT smoke: ${smoke.runtimeClass} parsed name=${smoke.parsedName}")
+    }
+    println(result.launcherSummary)
+    if (dev.winrt.kom.PlatformRuntime.isWindows) {
+        Runtime.getRuntime().halt(0)
     }
 }

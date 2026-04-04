@@ -34,6 +34,7 @@ data class WinMdType(
     val implementedInterfaces: List<String> = emptyList(),
     val baseInterfaces: List<String> = emptyList(),
     val activationKind: WinMdActivationKind = WinMdActivationKind.Factory,
+    val hasActivatableAttribute: Boolean = false,
     val activationFunctionName: String = "activate",
     val fields: List<WinMdField> = emptyList(),
     val enumMembers: List<WinMdEnumMember> = emptyList(),

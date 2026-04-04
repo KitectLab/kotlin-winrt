@@ -182,7 +182,7 @@ object WinRtRuntime {
         val composed = PlatformComInterop.invokeComposableMethod(factory, vtableIndex, *arguments)
             .getOrElse { throw it }
         val projectedPointer = defaultInterfaceIid
-            ?.let { iid -> PlatformComInterop.queryInterface(composed.inner, iid).getOrElse { throw it } }
+            ?.let { iid -> queryComposableDefaultInterface(composed.instance, composed.inner, iid) }
             ?: composed.inner
         return try {
             constructor(projectedPointer)
@@ -212,6 +212,12 @@ object WinRtRuntime {
     private fun releaseComposablePointer(pointer: ComPtr, retainedPointer: ComPtr, releasedPointers: MutableSet<ComPtr>) {
         if (!pointer.isNull && pointer != retainedPointer && releasedPointers.add(pointer)) {
             PlatformComInterop.release(pointer)
+        }
+    }
+
+    private fun queryComposableDefaultInterface(instance: ComPtr, inner: ComPtr, iid: Guid): ComPtr {
+        return PlatformComInterop.queryInterface(inner, iid).getOrElse {
+            PlatformComInterop.queryInterface(instance, iid).getOrElse { throw it }
         }
     }
 }

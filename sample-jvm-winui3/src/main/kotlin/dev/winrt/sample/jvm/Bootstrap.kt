@@ -18,28 +18,55 @@ import dev.winrt.kom.PlatformRuntime
 object SampleBootstrap {
     private val iidIActivationFactory: Guid = guidOf("00000035-0000-0000-c000-000000000046")
     private val defaultInterfaceIidCache = mutableMapOf<String, Guid>()
+    private var activationContext: WindowsActivationContext.ActivationContext? = null
     private var bootstrapLibrary: WindowsAppSdkBootstrap.BootstrapLibrary? = null
     private var bootstrapDiagnostics: String? = null
+    private var activationContextDiagnostics: String? = null
     private var comInitialized = false
     private var winRtInitialized = false
     var launcher: WinUiApplicationLauncher = DefaultWinUiApplicationLauncher
 
     fun configure() {
         if (PlatformRuntime.isWindows) {
+            if (activationContext == null && bootstrapLibrary == null) {
+                val runtimeRoot = System.getProperty("dev.winrt.windowsAppSdkRoot")
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let(java.nio.file.Path::of)
+                if (runtimeRoot != null) {
+                    val activationContextResult = WindowsActivationContext.activateConfigured(runtimeRoot)
+                    activationContextResult.onSuccess { context ->
+                        if (context != null) {
+                            activationContext = context
+                            activationContextDiagnostics = "activation-context=self-contained"
+                        }
+                    }.onFailure { error ->
+                        activationContextDiagnostics = "activation-context=${error.message}"
+                    }
+                }
+            }
+
             val comResult = JvmComRuntime.initializeSingleThreaded()
             comResult.requireSuccessUnlessChangedMode("CoInitializeEx")
             comInitialized = comResult.isSuccess
 
-            val bootstrapResult = WindowsAppSdkBootstrap.initialize()
-            bootstrapResult.onSuccess { library ->
-                bootstrapLibrary = library
-                bootstrapDiagnostics = "bootstrap=initialized"
-            }.onFailure { error ->
-                val packageSummary = WindowsAppSdkEnvironment.detect()?.summary()
-                bootstrapDiagnostics = listOfNotNull(
-                    "bootstrap=${error.message}",
-                    packageSummary,
-                ).joinToString(" | ")
+            if (activationContext == null) {
+                val bootstrapResult = WindowsAppSdkBootstrap.initialize()
+                bootstrapResult.onSuccess { library ->
+                    bootstrapLibrary = library
+                    bootstrapDiagnostics = listOfNotNull(
+                        activationContextDiagnostics,
+                        "bootstrap=initialized",
+                    ).joinToString(" | ")
+                }.onFailure { error ->
+                    val packageSummary = WindowsAppSdkEnvironment.detect()?.summary()
+                    bootstrapDiagnostics = listOfNotNull(
+                        activationContextDiagnostics,
+                        "bootstrap=${error.message}",
+                        packageSummary,
+                    ).joinToString(" | ")
+                }
+            } else {
+                bootstrapDiagnostics = activationContextDiagnostics
             }
 
             val winRtResult = JvmWinRtRuntime.initializeSingleThreaded()
@@ -94,6 +121,8 @@ object SampleBootstrap {
             JvmComRuntime.uninitialize()
             comInitialized = false
         }
+        activationContext?.close()
+        activationContext = null
         bootstrapLibrary?.let { library ->
             WindowsAppSdkBootstrap.shutdown(library)
             bootstrapLibrary = null
@@ -110,7 +139,7 @@ object SampleBootstrap {
 
     fun diagnostics(): String? = bootstrapDiagnostics
 
-    fun isWindowsAppSdkReady(): Boolean = bootstrapLibrary != null
+    fun isWindowsAppSdkReady(): Boolean = activationContext != null || bootstrapLibrary != null
 
     private fun defaultInterfaceIidOrNull(qualifiedName: String): Guid? =
         runCatching {

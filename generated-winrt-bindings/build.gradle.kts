@@ -389,15 +389,20 @@ fun collectNuGetRuntimeDlls(packageRoot: File, runtimeRid: String): List<File> {
     val topLevelDlls = packageRoot.listFiles()
         ?.filter { it.isFile && it.extension.equals("dll", ignoreCase = true) }
         .orEmpty()
-    val runtimeNativeDir = packageRoot.resolve("runtimes").resolve(runtimeRid).resolve("native")
-    val runtimeNativeDlls = if (runtimeNativeDir.exists() && runtimeNativeDir.isDirectory) {
-        Files.walk(runtimeNativeDir.toPath()).use { paths ->
-            paths.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".dll", ignoreCase = true) }
-                .map { it.toFile() }
-                .toList()
+    val runtimeNativeDirs = listOf(
+        packageRoot.resolve("runtimes").resolve(runtimeRid).resolve("native"),
+        packageRoot.resolve("runtimes-framework").resolve(runtimeRid).resolve("native"),
+    )
+    val runtimeNativeDlls = runtimeNativeDirs.flatMap { runtimeNativeDir ->
+        if (runtimeNativeDir.exists() && runtimeNativeDir.isDirectory) {
+            Files.walk(runtimeNativeDir.toPath()).use { paths ->
+                paths.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".dll", ignoreCase = true) }
+                    .map { it.toFile() }
+                    .toList()
+            }
+        } else {
+            emptyList()
         }
-    } else {
-        emptyList()
     }
     return (topLevelDlls + runtimeNativeDlls).distinctBy { it.absolutePath }
 }

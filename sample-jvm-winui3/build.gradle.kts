@@ -5,6 +5,7 @@ plugins {
 
 import java.io.File
 import java.nio.file.Files
+import java.util.UUID
 import javax.xml.parsers.DocumentBuilderFactory
 
 fun versionKey(value: String): List<Int> =
@@ -151,17 +152,38 @@ fun collectNuGetRuntimeDlls(packageRoot: File, runtimeRid: String): List<File> {
     val topLevelDlls = packageRoot.listFiles()
         ?.filter { it.isFile && it.extension.equals("dll", ignoreCase = true) }
         .orEmpty()
-    val runtimeNativeDir = packageRoot.resolve("runtimes").resolve(runtimeRid).resolve("native")
-    val runtimeNativeDlls = if (runtimeNativeDir.exists() && runtimeNativeDir.isDirectory) {
-        Files.walk(runtimeNativeDir.toPath()).use { paths ->
-            paths.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".dll", ignoreCase = true) }
-                .map { it.toFile() }
-                .toList()
+    val runtimeNativeDirs = listOf(
+        packageRoot.resolve("runtimes").resolve(runtimeRid).resolve("native"),
+        packageRoot.resolve("runtimes-framework").resolve(runtimeRid).resolve("native"),
+    )
+    val runtimeNativeDlls = runtimeNativeDirs.flatMap { runtimeNativeDir ->
+        if (runtimeNativeDir.exists() && runtimeNativeDir.isDirectory) {
+            Files.walk(runtimeNativeDir.toPath()).use { paths ->
+                paths.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".dll", ignoreCase = true) }
+                    .map { it.toFile() }
+                    .toList()
+            }
+        } else {
+            emptyList()
         }
-    } else {
-        emptyList()
     }
     return (topLevelDlls + runtimeNativeDlls).distinctBy { it.absolutePath }
+}
+
+fun collectNuGetRuntimeFrameworkNativeDirs(packageRoot: File, runtimeRid: String): List<File> {
+    return listOf(
+        packageRoot.resolve("runtimes-framework").resolve(runtimeRid).resolve("native"),
+    ).filter { it.exists() && it.isDirectory }
+}
+
+fun collectNuGetRuntimeFrameworkAppxFragment(packageRoot: File): File? {
+    val fragment = packageRoot.resolve("runtimes-framework").resolve("package.appxfragment")
+    return fragment.takeIf { it.exists() && it.isFile }
+}
+
+fun collectWindowsAppSdkVersionInfoHeaders(packageRoot: File): List<File> {
+    val header = packageRoot.resolve("include").resolve("WindowsAppSDK-VersionInfo.h")
+    return if (header.exists() && header.isFile) listOf(header) else emptyList()
 }
 
 fun currentWindowsRuntimeRid(): String {
@@ -173,8 +195,21 @@ fun currentWindowsRuntimeRid(): String {
     }
 }
 
-val winUiRuntimeAssetsDir = layout.buildDirectory.dir("winui-runtime-assets")
+val defaultWinUiRuntimeAssetsDir = layout.buildDirectory.dir("winui-runtime-assets-${UUID.randomUUID()}")
+val winUiRuntimeAssetsRoot = providers.systemProperty("dev.winrt.windowsAppSdkRoot")
+    .orElse(defaultWinUiRuntimeAssetsDir.map { it.asFile.absolutePath })
 val latestWindowsAppSdkPackageRootProvider = providers.provider { latestWindowsAppSdkPackageRoot() }
+val runtimeRid = currentWindowsRuntimeRid()
+val runtimePackagesProvider = providers.provider {
+    latestWindowsAppSdkPackageRoot()
+        ?: error("Microsoft.WindowsAppSDK is not restored in the NuGet global packages cache.")
+    collectNuGetRuntimePackageClosure("Microsoft.WindowsAppSDK", windowsAppSdkVersion)
+}
+val windowsAppSdkAppxFragments = runtimePackagesProvider.map { runtimePackages ->
+    runtimePackages.mapNotNull { runtimePackage ->
+        collectNuGetRuntimeFrameworkAppxFragment(runtimePackage.packageRoot)?.absolutePath
+    }.distinct().joinToString(File.pathSeparator)
+}
 
 kotlin {
     jvmToolchain(22)
@@ -189,7 +224,11 @@ tasks.withType<Test>().configureEach {
     }
     systemProperty(
         "dev.winrt.windowsAppSdkRoot",
-        winUiRuntimeAssetsDir.get().asFile.absolutePath,
+        winUiRuntimeAssetsRoot.get(),
+    )
+    systemProperty(
+        "dev.winrt.windowsAppSdkAppxFragments",
+        windowsAppSdkAppxFragments.get(),
     )
 }
 
@@ -202,8 +241,11 @@ tasks.withType<JavaExec>().configureEach {
     }
     systemProperty(
         "dev.winrt.windowsAppSdkRoot",
-        providers.systemProperty("dev.winrt.windowsAppSdkRoot").orNull
-            ?: winUiRuntimeAssetsDir.get().asFile.absolutePath,
+        winUiRuntimeAssetsRoot.get(),
+    )
+    systemProperty(
+        "dev.winrt.windowsAppSdkAppxFragments",
+        windowsAppSdkAppxFragments.get(),
     )
     systemProperty(
         "dev.winrt.autoQuitVisible",
@@ -217,14 +259,8 @@ val collectWinUiRuntimeAssets by tasks.registering(Sync::class) {
     notCompatibleWithConfigurationCache("WinUI runtime asset staging depends on resolved package cache contents.")
     dependsOn(project(":generated-winrt-bindings").tasks.named("restoreNuGetWinMdPackages"))
 
-    into(winUiRuntimeAssetsDir)
+    into(winUiRuntimeAssetsRoot.map(::File))
 
-    val runtimeRid = currentWindowsRuntimeRid()
-    val runtimePackagesProvider = providers.provider {
-        latestWindowsAppSdkPackageRoot()
-            ?: error("Microsoft.WindowsAppSDK is not restored in the NuGet global packages cache.")
-        collectNuGetRuntimePackageClosure("Microsoft.WindowsAppSDK", windowsAppSdkVersion)
-    }
     from(runtimePackagesProvider.map { runtimePackages ->
         runtimePackages.flatMap { runtimePackage ->
             collectNuGetRuntimeDlls(runtimePackage.packageRoot, runtimeRid)
@@ -232,6 +268,21 @@ val collectWinUiRuntimeAssets by tasks.registering(Sync::class) {
     }) {
         eachFile { path = name }
         include("**/*.dll")
+    }
+    from(runtimePackagesProvider.map { runtimePackages ->
+        runtimePackages.flatMap { runtimePackage ->
+            collectNuGetRuntimeFrameworkNativeDirs(runtimePackage.packageRoot, runtimeRid)
+        }.distinctBy { it.absolutePath }
+    }) {
+        include("*.pri")
+        include("Microsoft.UI.Xaml/**")
+    }
+    from(runtimePackagesProvider.map { runtimePackages ->
+        runtimePackages.flatMap { runtimePackage ->
+            collectWindowsAppSdkVersionInfoHeaders(runtimePackage.packageRoot)
+        }.distinctBy { it.absolutePath }
+    }) {
+        into("include")
     }
 }
 
@@ -253,7 +304,7 @@ distributions {
     main {
         contents {
             into("winui-runtime-assets") {
-                from(winUiRuntimeAssetsDir)
+                from(defaultWinUiRuntimeAssetsDir)
             }
         }
     }

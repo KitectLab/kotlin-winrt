@@ -314,7 +314,7 @@ class CheckedInBindingsParityTest {
 
         assertTrue(runtimeClass.contains("Microsoft.UI.Xaml.Application"))
         assertTrue(runtimeClass.contains("override val defaultInterfaceName: String? = \"Microsoft.UI.Xaml.IApplication\""))
-        assertTrue(runtimeClass.contains("override val activationKind = WinRtActivationKind.Factory"))
+        assertTrue(runtimeClass.contains("override val activationKind = WinRtActivationKind.Composable"))
         assertTrue(runtimeClass.contains("val current: Application"))
         assertTrue(runtimeClass.contains("private val statics: IApplicationStatics by lazy"))
         assertTrue(runtimeClass.contains("WinRtRuntime.projectActivationFactory(this, IApplicationStatics"))

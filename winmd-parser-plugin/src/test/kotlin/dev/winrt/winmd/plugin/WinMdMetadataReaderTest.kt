@@ -8,6 +8,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 class WinMdMetadataReaderTest {
+    private val windowsAppSdkVersion = "1.8.260317003"
+
     @Test
     fun reads_real_types_from_local_winui_xaml_winmd_when_available() {
         val candidatePaths = localWinUiXamlWinmdCandidates()
@@ -53,9 +55,7 @@ class WinMdMetadataReaderTest {
 
     @Test
     fun reads_real_dispatcher_queue_metadata_from_windows_app_sdk_when_available() {
-        val uiWinmd = Path.of(
-            "F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002/lib/uap10.0.18362/Microsoft.UI.winmd",
-        )
+        val uiWinmd = windowsAppSdkWinmdCandidates("Microsoft.UI.winmd").firstOrNull { Files.isRegularFile(it) } ?: return
         if (!Files.isRegularFile(uiWinmd)) {
             return
         }
@@ -109,6 +109,61 @@ class WinMdMetadataReaderTest {
 
         assertTrue(createInstance.parameters.toString(), innerInterface.byRef)
         assertTrue(createInstance.parameters.toString(), innerInterface.isOut)
+    }
+
+    @Test
+    fun reads_real_winui_activation_kinds_from_metadata_when_available() {
+        val winuiWinmd = localWinUiXamlWinmdCandidates().firstOrNull { Files.isRegularFile(it) } ?: return
+        val model = try {
+            WinMdMetadataReader.readModel(listOf(winuiWinmd))
+        } catch (error: IllegalArgumentException) {
+            if (winuiWinmd.toString().contains("microsoft.windowsappsdk", ignoreCase = true) &&
+                error.message?.startsWith("Metadata index exceeds Int range:") == true
+            ) {
+                return
+            }
+            throw error
+        }
+
+        val xamlNamespace = model.namespaces.firstOrNull { it.name == "Microsoft.UI.Xaml" }
+            ?: error("Missing Microsoft.UI.Xaml namespace. Available: ${model.namespaces.map { it.name }}")
+        val controlsNamespace = model.namespaces.firstOrNull { it.name == "Microsoft.UI.Xaml.Controls" }
+            ?: error("Missing Microsoft.UI.Xaml.Controls namespace. Available: ${model.namespaces.map { it.name }}")
+        val xamlTypes = xamlNamespace.types.associateBy { it.name }
+        val controlTypes = controlsNamespace.types.associateBy { it.name }
+
+        assertEquals(
+            WinMdActivationKind.Composable,
+            requireNotNull(xamlTypes["Application"]) { xamlTypes.keys.sorted().joinToString() }.activationKind,
+        )
+        assertEquals(
+            WinMdActivationKind.Composable,
+            requireNotNull(xamlTypes["Window"]) { xamlTypes.keys.sorted().joinToString() }.activationKind,
+        )
+        assertEquals(
+            WinMdActivationKind.Factory,
+            requireNotNull(controlTypes["TextBlock"]) { controlTypes.keys.sorted().joinToString() }.activationKind,
+        )
+        assertEquals(
+            WinMdActivationKind.Composable,
+            requireNotNull(controlTypes["Button"]) { controlTypes.keys.sorted().joinToString() }.activationKind,
+        )
+        assertEquals(
+            WinMdActivationKind.Factory,
+            requireNotNull(controlTypes["ToggleSwitch"]) { controlTypes.keys.sorted().joinToString() }.activationKind,
+        )
+        assertEquals(
+            WinMdActivationKind.Composable,
+            requireNotNull(controlTypes["StackPanel"]) { controlTypes.keys.sorted().joinToString() }.activationKind,
+        )
+        val xamlControlsResources = requireNotNull(controlTypes["XamlControlsResources"]) {
+            controlTypes.keys.sorted().joinToString()
+        }
+        assertEquals(
+            WinMdActivationKind.Factory,
+            xamlControlsResources.activationKind,
+        )
+        assertTrue(xamlControlsResources.hasActivatableAttribute)
     }
 
     @Test
@@ -431,12 +486,23 @@ class WinMdMetadataReaderTest {
             System.getProperty("dev.winrt.windowsAppSdkRoot")
                 ?.takeIf { it.isNotBlank() }
                 ?.let { add(Path.of(it).resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd")) }
-            add(
-                Path.of(
-                    "F:/Dependencies/nuget/microsoft.windowsappsdk/1.6.240923002/lib/uap10.0/Microsoft.UI.Xaml.winmd",
-                ),
-            )
+            addAll(windowsAppSdkWinmdCandidates("Microsoft.UI.Xaml.winmd"))
             add(Path.of("C:/Program Files (x86)/Mica For Everyone/Microsoft.UI.Xaml.winmd"))
-        }
+        }.distinct()
+    }
+
+    private fun windowsAppSdkWinmdCandidates(fileName: String): List<Path> {
+        val nugetRoots = buildList {
+            add(Path.of("F:/Dependencies/nuget"))
+            runCatching { NuGetPackageReferences.discoverPackagesRoot() }.getOrNull()?.let(::add)
+        }.distinct()
+
+        return runCatching {
+            NuGetPackageReferences.resolvePackageFromRoots(
+                packageId = "Microsoft.WindowsAppSDK",
+                packageVersion = windowsAppSdkVersion,
+                nugetRoots = nugetRoots,
+            ).winmdFiles.filter { it.fileName.toString().equals(fileName, ignoreCase = true) }
+        }.getOrDefault(emptyList())
     }
 }

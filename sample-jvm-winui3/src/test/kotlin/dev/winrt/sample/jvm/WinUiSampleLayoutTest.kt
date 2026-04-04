@@ -16,7 +16,7 @@ class WinUiSampleLayoutTest {
                 "header:kotlin-winrt sample",
                 "status:bootstrap-ready",
                 "summary:Hello from Kotlin/WinUI 3",
-                "cards:projection|runtime",
+                "cards:hero|projection|controls|verification",
                 "footer:winui3-sample",
             ),
             layout.sections,

@@ -69,6 +69,8 @@ object WinMdMetadataReader {
                     defaultInterface = readDefaultInterface(index + 1, tables),
                     implementedInterfaces = readImplementedInterfaces(index + 1, tables),
                     baseInterfaces = readBaseInterfaces(index + 1, tables),
+                    activationKind = readActivationKind(index + 1, tables),
+                    hasActivatableAttribute = hasActivatableAttribute(index + 1, tables),
                     methods = readMethods(index + 1, tables),
                     properties = readProperties(index + 1, tables),
                 )
@@ -85,6 +87,38 @@ object WinMdMetadataReader {
         val guidAttribute = customAttributes.firstOrNull { resolveCustomAttributeTypeName(it.typeCodedIndex, tables)?.endsWith(".GuidAttribute") == true }
             ?: return null
         return parseGuidAttributeValue(guidAttribute.value)
+    }
+
+    private fun readActivationKind(typeDefIndex: Int, tables: MetadataTables): WinMdActivationKind {
+        val typeKind = classifyType(tables.typeDefs[typeDefIndex - 1], tables)
+        if (typeKind != WinMdTypeKind.RuntimeClass) {
+            return WinMdActivationKind.Factory
+        }
+
+        val customAttributeTypeNames = readCustomAttributeTypeNames(typeDefIndex, tables)
+
+        return when {
+            customAttributeTypeNames.any { it.endsWith(".ActivatableAttribute") } -> WinMdActivationKind.Factory
+            customAttributeTypeNames.any { it.endsWith(".ComposableAttribute") } -> WinMdActivationKind.Composable
+            else -> WinMdActivationKind.Factory
+        }
+    }
+
+    private fun hasActivatableAttribute(typeDefIndex: Int, tables: MetadataTables): Boolean {
+        val typeKind = classifyType(tables.typeDefs[typeDefIndex - 1], tables)
+        if (typeKind != WinMdTypeKind.RuntimeClass) {
+            return false
+        }
+        return readCustomAttributeTypeNames(typeDefIndex, tables)
+            .any { it.endsWith(".ActivatableAttribute") }
+    }
+
+    private fun readCustomAttributeTypeNames(typeDefIndex: Int, tables: MetadataTables): List<String> {
+        return tables.customAttributeRows
+            .asSequence()
+            .filter { decodeHasCustomAttributeTypeDefIndex(it.parentCodedIndex) == typeDefIndex }
+            .mapNotNull { resolveCustomAttributeTypeName(it.typeCodedIndex, tables) }
+            .toList()
     }
 
     private fun readDefaultInterface(typeDefIndex: Int, tables: MetadataTables): String? {
@@ -145,12 +179,28 @@ object WinMdMetadataReader {
         val tag = codedIndex and 0x7
         val index = codedIndex ushr 3
         return when (tag) {
-            2 -> null
+            2 -> resolveMethodDefParentTypeName(index, tables)
             3 -> tables.memberRefRows.getOrNull(index - 1)?.let { memberRef ->
                 resolveMemberRefParentTypeName(memberRef.classCodedIndex, tables)
             }
             else -> null
         }
+    }
+
+    private fun resolveMethodDefParentTypeName(methodDefIndex: Int, tables: MetadataTables): String? {
+        val owner = tables.typeDefs.firstOrNull { typeDef ->
+            val methodStart = typeDef.methodListIndex
+            if (methodStart == 0 || methodStart > methodDefIndex) {
+                return@firstOrNull false
+            }
+            val nextMethodStart = tables.typeDefs
+                .firstOrNull { candidate -> candidate.methodListIndex > methodStart }
+                ?.methodListIndex
+                ?: (tables.methodDefs.size + 1)
+            methodDefIndex in methodStart until nextMethodStart
+        } ?: return null
+
+        return qualify(owner.namespace, owner.name)
     }
 
     private fun resolveMemberRefParentTypeName(codedIndex: Int, tables: MetadataTables): String? {

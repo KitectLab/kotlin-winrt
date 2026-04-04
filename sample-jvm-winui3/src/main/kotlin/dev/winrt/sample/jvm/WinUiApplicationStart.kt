@@ -2,17 +2,18 @@ package dev.winrt.sample.jvm
 
 import dev.winrt.core.WinRtDelegateBridge
 import dev.winrt.core.WinRtDelegateHandle
+import dev.winrt.core.guidOf
 import microsoft.ui.xaml.Application
 import microsoft.ui.xaml.ApplicationInitializationCallback
 import microsoft.ui.xaml.IApplicationInitializationCallbackParams
 import microsoft.ui.xaml.IWindow
 import microsoft.ui.xaml.Window
-import microsoft.ui.xaml.controls.XamlControlsResources
 import microsoft.ui.xaml.media.DesktopAcrylicBackdrop
 import microsoft.ui.xaml.media.MicaBackdrop
 
 object WinUiApplicationStart {
-    private var application: Application? = null
+    private val iidIXamlMetadataProvider = guidOf("a96251f0-2214-5d53-8746-ce99a2593cd7")
+    private var application: SampleWinUiApp? = null
     private var window: Window? = null
     private var activeCallback: WinRtDelegateHandle? = null
     @Volatile private var launchFailure: Throwable? = null
@@ -70,6 +71,7 @@ object WinUiApplicationStart {
     fun shutdown() {
         activeCallback?.close()
         activeCallback = null
+        application?.close()
         window = null
         application = null
     }
@@ -86,25 +88,31 @@ object WinUiApplicationStart {
             val arg = it.single() as dev.winrt.kom.ComPtr
             runCatching {
                 println("winui: application callback invoked")
-                application = Application.current
-                println("winui: application.current ready")
+                val sampleApp = SampleWinUiApp.create()
+                application = sampleApp
+                println("winui: application instance created")
                 runCatching {
-                    application!!.resources = XamlControlsResources()
-                    println("winui: application resources set")
-                }.onFailure { error ->
-                    println("winui: application resources skipped: ${error::class.simpleName}: ${error.message}")
+                    val metadataProvider = dev.winrt.kom.PlatformComInterop.queryInterface(
+                        sampleApp.pointer,
+                        iidIXamlMetadataProvider,
+                    ).getOrThrow()
+                    dev.winrt.kom.PlatformComInterop.release(metadataProvider)
+                    println("winui: application supports IXamlMetadataProvider=true")
+                }.onFailure {
+                    println("winui: application supports IXamlMetadataProvider=false")
                 }
                 window = Window()
                 println("winui: window created")
                 val iWindow = IWindow.from(window!!)
                 iWindow.title = windowTitle
                 println("winui: window title set")
+                sampleApp.attachControlResources()
                 runCatching {
-                    window!!.systemBackdrop = DesktopAcrylicBackdrop()
-                    println("winui: window backdrop set=desktop-acrylic")
-                }.recoverCatching {
                     window!!.systemBackdrop = MicaBackdrop()
                     println("winui: window backdrop set=mica")
+                }.recoverCatching {
+                    window!!.systemBackdrop = DesktopAcrylicBackdrop()
+                    println("winui: window backdrop set=desktop-acrylic")
                 }.onFailure { error ->
                     println("winui: window backdrop skipped: ${error::class.simpleName}: ${error.message}")
                 }
@@ -137,6 +145,9 @@ object WinUiApplicationStart {
         }
         activeCallback = callback
         Application.start(ApplicationInitializationCallback(callback.pointer))
+        activeCallback?.close()
+        activeCallback = null
+        application?.releaseControlResources()
         println("winui: Application.start returned")
         launchFailure?.let { throw it }
         return if (windowVisible) {

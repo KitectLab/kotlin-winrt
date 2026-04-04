@@ -292,6 +292,7 @@ internal class RuntimeCompanionRenderer(
 
     private fun renderFactories(type: WinMdType): List<Any> {
         val members = mutableListOf<Any>()
+        val activationKind = typeRegistry.runtimeClassActivationKind(type)
         val ownFactoryMethods = typeRegistry.findRuntimeClassFactoryMethods(type.name, type.namespace)
         typeRegistry.findRuntimeClassFactoryTypes(type.name, type.namespace).forEach { factoryType ->
             val factoryClass = ClassName(factoryType.namespace.lowercase(), factoryType.name)
@@ -330,20 +331,29 @@ internal class RuntimeCompanionRenderer(
                         .build()
                 }
             }
-            runtimeFactoryMethods
-                .filter { method -> typeRegistry.isComposableFactoryMethod(type, method) }
-                .forEach { method ->
-                    members += renderComposableFactoryHelper(type, factoryType, factoryPropertyName, method)
-                }
+            if (activationKind == WinMdActivationKind.Composable) {
+                runtimeFactoryMethods
+                    .filter { method -> typeRegistry.isComposableFactoryMethod(type, method) }
+                    .forEach { method ->
+                        members += renderComposableFactoryHelper(
+                            type = type,
+                            activationRuntimeClass = type,
+                            factoryType = factoryType,
+                            factoryPropertyName = factoryPropertyName,
+                            method = method,
+                        )
+                    }
+            }
         }
-        if (ownFactoryMethods.isEmpty()) {
+        if (activationKind == WinMdActivationKind.Composable && ownFactoryMethods.isEmpty()) {
             typeRegistry.findInheritedComposableFactoryMethods(type.name, type.namespace)
                 .forEach { candidate ->
                     members += renderComposableFactoryHelper(
-                        type,
-                        candidate.factoryType,
-                        helperAccessorName(candidate.factoryType.name),
-                        candidate.method,
+                        type = type,
+                        activationRuntimeClass = candidate.runtimeClass,
+                        factoryType = candidate.factoryType,
+                        factoryPropertyName = helperAccessorName(candidate.factoryType.name),
+                        method = candidate.method,
                     )
                 }
         }
@@ -563,6 +573,7 @@ internal class RuntimeCompanionRenderer(
 
     private fun renderComposableFactoryHelper(
         type: WinMdType,
+        activationRuntimeClass: WinMdType,
         factoryType: WinMdType,
         factoryPropertyName: String,
         method: WinMdMethod,
@@ -572,14 +583,33 @@ internal class RuntimeCompanionRenderer(
         val factoryGuid = requireNotNull(factoryType.guid) {
             "Composable factory ${factoryType.namespace}.${factoryType.name} is missing a GUID"
         }
+        val activationRuntimeMetadataExpression = if (activationRuntimeClass.namespace == type.namespace &&
+            activationRuntimeClass.name == type.name
+        ) {
+            CodeBlock.of("this")
+        } else {
+            CodeBlock.of(
+                "%T.Companion",
+                ClassName(activationRuntimeClass.namespace.lowercase(), activationRuntimeClass.name),
+            )
+        }
+        val defaultInterfaceExpression = if (
+            activationRuntimeClass != type &&
+            typeRegistry.isResourceDictionaryDerivedRuntimeClass(type)
+        ) {
+            CodeBlock.of("null")
+        } else {
+            defaultInterfaceGuidExpression(type)
+        }
         val composeCall = CodeBlock.builder()
             .add(
-                "return %T.compose(this, %M(%S), ",
+                "return %T.compose(%L, %M(%S), ",
                 PoetSymbols.winRtRuntimeClass,
+                activationRuntimeMetadataExpression,
                 PoetSymbols.guidOfMember,
                 factoryGuid,
             )
-            .add("%L, ::%L, %L", defaultInterfaceGuidExpression(type), type.name, method.vtableIndex!!)
+            .add("%L, ::%L, %L", defaultInterfaceExpression, type.name, method.vtableIndex!!)
         constructorParameters.forEach { parameter ->
             composeCall.add(
                 ", %L",

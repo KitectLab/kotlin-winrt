@@ -1,9 +1,11 @@
 package dev.winrt.winmd.parser
 
+import dev.winrt.winmd.plugin.WinMdMetadataReader
 import dev.winrt.winmd.plugin.WinMdField
 import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdModel
 import dev.winrt.winmd.plugin.WinMdNamespace
+import dev.winrt.winmd.plugin.NuGetPackageReferences
 import dev.winrt.winmd.plugin.WinMdParameter
 import dev.winrt.winmd.plugin.WinMdType
 import dev.winrt.winmd.plugin.WinMdActivationKind
@@ -13,8 +15,12 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.nio.file.Files
+import java.nio.file.Path
 
 class TypeRegistryTest {
+    private val windowsAppSdkVersion = "1.8.260317003"
+
     private val registry = TypeRegistry(
         WinMdModel(
             files = emptyList(),
@@ -194,7 +200,7 @@ class TypeRegistryTest {
     }
 
     @Test
-    fun recognizes_composable_factory_methods_from_out_inner_parameter_shape() {
+    fun recognizes_composable_factory_methods_from_out_inner_parameter_shape_without_promoting_activation_kind() {
         val runtimeRegistry = TypeRegistry(
             WinMdModel(
                 files = emptyList(),
@@ -242,11 +248,11 @@ class TypeRegistryTest {
 
         assertEquals(1, composableMethods.size)
         assertEquals("CreateInstance", composableMethods.single().method.name)
-        assertEquals(WinMdActivationKind.Composable, runtimeRegistry.runtimeClassActivationKind(widget))
+        assertEquals(WinMdActivationKind.Factory, runtimeRegistry.runtimeClassActivationKind(widget))
     }
 
     @Test
-    fun derives_composable_activation_from_base_runtime_class_factory() {
+    fun finds_inherited_composable_factory_methods_without_promoting_activation_kind() {
         val runtimeRegistry = TypeRegistry(
             WinMdModel(
                 files = emptyList(),
@@ -307,7 +313,140 @@ class TypeRegistryTest {
         assertEquals(1, inheritedComposableMethods.size)
         assertEquals("BaseWidget", inheritedComposableMethods.single().runtimeClass.name)
         assertEquals("CreateInstance", inheritedComposableMethods.single().method.name)
-        assertEquals(WinMdActivationKind.Composable, runtimeRegistry.runtimeClassActivationKind(derivedWidget))
+        assertEquals(WinMdActivationKind.Factory, runtimeRegistry.runtimeClassActivationKind(derivedWidget))
+    }
+
+    @Test
+    fun resolves_real_winui_runtime_class_activation_kinds_when_available() {
+        val winuiWinmd = localWinUiXamlWinmdCandidates().firstOrNull { Files.isRegularFile(it) } ?: return
+        val model = try {
+            WinMdMetadataReader.readModel(listOf(winuiWinmd))
+        } catch (error: IllegalArgumentException) {
+            if (winuiWinmd.toString().contains("microsoft.windowsappsdk", ignoreCase = true) &&
+                error.message?.startsWith("Metadata index exceeds Int range:") == true
+            ) {
+                return
+            }
+            throw error
+        }
+        val runtimeRegistry = TypeRegistry(model)
+        val xamlNamespace = model.namespaces.firstOrNull { it.name == "Microsoft.UI.Xaml" }
+            ?: error("Missing Microsoft.UI.Xaml namespace. Available: ${model.namespaces.map { it.name }}")
+        val controlsNamespace = model.namespaces.firstOrNull { it.name == "Microsoft.UI.Xaml.Controls" }
+            ?: error("Missing Microsoft.UI.Xaml.Controls namespace. Available: ${model.namespaces.map { it.name }}")
+        val xamlTypes = xamlNamespace.types.associateBy { it.name }
+        val controlTypes = controlsNamespace.types.associateBy { it.name }
+
+        assertEquals(
+            WinMdActivationKind.Composable,
+            runtimeRegistry.runtimeClassActivationKind(
+                requireNotNull(xamlTypes["Application"]) { xamlTypes.keys.sorted().joinToString() },
+            ),
+        )
+        assertEquals(
+            WinMdActivationKind.Composable,
+            runtimeRegistry.runtimeClassActivationKind(
+                requireNotNull(xamlTypes["Window"]) { xamlTypes.keys.sorted().joinToString() },
+            ),
+        )
+        assertEquals(
+            WinMdActivationKind.Factory,
+            runtimeRegistry.runtimeClassActivationKind(
+                requireNotNull(controlTypes["TextBlock"]) { controlTypes.keys.sorted().joinToString() },
+            ),
+        )
+        assertEquals(
+            WinMdActivationKind.Composable,
+            runtimeRegistry.runtimeClassActivationKind(
+                requireNotNull(controlTypes["Button"]) { controlTypes.keys.sorted().joinToString() },
+            ),
+        )
+        assertEquals(
+            WinMdActivationKind.Factory,
+            runtimeRegistry.runtimeClassActivationKind(
+                requireNotNull(controlTypes["ToggleSwitch"]) { controlTypes.keys.sorted().joinToString() },
+            ),
+        )
+        assertEquals(
+            WinMdActivationKind.Composable,
+            runtimeRegistry.runtimeClassActivationKind(
+                requireNotNull(controlTypes["StackPanel"]) { controlTypes.keys.sorted().joinToString() },
+            ),
+        )
+        assertEquals(
+            WinMdActivationKind.Composable,
+            runtimeRegistry.runtimeClassActivationKind(
+                requireNotNull(controlTypes["XamlControlsResources"]) { controlTypes.keys.sorted().joinToString() },
+            ),
+        )
+    }
+
+    @Test
+    fun promotes_resource_dictionary_derived_runtime_classes_with_inherited_composable_factories() {
+        val runtimeRegistry = TypeRegistry(
+            WinMdModel(
+                files = emptyList(),
+                namespaces = listOf(
+                    WinMdNamespace(
+                        name = "Microsoft.UI.Xaml",
+                        types = listOf(
+                            WinMdType(
+                                namespace = "Microsoft.UI.Xaml",
+                                name = "ResourceDictionary",
+                                kind = WinMdTypeKind.RuntimeClass,
+                                defaultInterface = "Microsoft.UI.Xaml.IResourceDictionary",
+                            ),
+                            WinMdType(
+                                namespace = "Microsoft.UI.Xaml",
+                                name = "IResourceDictionary",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "11111111-1111-1111-1111-111111111111",
+                            ),
+                            WinMdType(
+                                namespace = "Microsoft.UI.Xaml",
+                                name = "IResourceDictionaryFactory",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "22222222-2222-2222-2222-222222222222",
+                                methods = listOf(
+                                    WinMdMethod(
+                                        name = "CreateInstance",
+                                        returnType = "Microsoft.UI.Xaml.ResourceDictionary",
+                                        parameters = listOf(
+                                            WinMdParameter(name = "baseInterface", type = "Object"),
+                                            WinMdParameter(name = "innerInterface", type = "Object", byRef = true, isOut = true),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                    WinMdNamespace(
+                        name = "Microsoft.UI.Xaml.Controls",
+                        types = listOf(
+                            WinMdType(
+                                namespace = "Microsoft.UI.Xaml.Controls",
+                                name = "XamlControlsResources",
+                                kind = WinMdTypeKind.RuntimeClass,
+                                baseClass = "Microsoft.UI.Xaml.ResourceDictionary",
+                                defaultInterface = "Microsoft.UI.Xaml.Controls.IXamlControlsResources",
+                                hasActivatableAttribute = true,
+                            ),
+                            WinMdType(
+                                namespace = "Microsoft.UI.Xaml.Controls",
+                                name = "IXamlControlsResources",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "33333333-3333-3333-3333-333333333333",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val xamlControlsResources = runtimeRegistry.findType("XamlControlsResources", "Microsoft.UI.Xaml.Controls")!!
+
+        assertTrue(runtimeRegistry.isResourceDictionaryDerivedRuntimeClass(xamlControlsResources))
+        assertEquals(WinMdActivationKind.Composable, runtimeRegistry.runtimeClassActivationKind(xamlControlsResources))
     }
 
     @Test
@@ -483,5 +622,30 @@ class TypeRegistryTest {
             listOf("IStringable"),
             runtimeRegistry.findImplementedInterfaceTypes("Calendar", "Windows.Globalization").map { it.name },
         )
+    }
+
+    private fun localWinUiXamlWinmdCandidates(): List<Path> {
+        return buildList {
+            System.getProperty("dev.winrt.windowsAppSdkRoot")
+                ?.takeIf { it.isNotBlank() }
+                ?.let { add(Path.of(it).resolve("lib").resolve("uap10.0").resolve("Microsoft.UI.Xaml.winmd")) }
+            addAll(windowsAppSdkWinmdCandidates("Microsoft.UI.Xaml.winmd"))
+            add(Path.of("C:/Program Files (x86)/Mica For Everyone/Microsoft.UI.Xaml.winmd"))
+        }.distinct()
+    }
+
+    private fun windowsAppSdkWinmdCandidates(fileName: String): List<Path> {
+        val nugetRoots = buildList {
+            add(Path.of("F:/Dependencies/nuget"))
+            runCatching { NuGetPackageReferences.discoverPackagesRoot() }.getOrNull()?.let(::add)
+        }.distinct()
+
+        return runCatching {
+            NuGetPackageReferences.resolvePackageFromRoots(
+                packageId = "Microsoft.WindowsAppSDK",
+                packageVersion = windowsAppSdkVersion,
+                nugetRoots = nugetRoots,
+            ).winmdFiles.filter { it.fileName.toString().equals(fileName, ignoreCase = true) }
+        }.getOrDefault(emptyList())
     }
 }

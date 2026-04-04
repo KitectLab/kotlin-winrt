@@ -90,13 +90,23 @@ internal class TypeRegistry(
         if (type.activationKind == WinMdActivationKind.Composable) {
             return WinMdActivationKind.Composable
         }
-        return if (findComposableFactoryMethods(type.name, type.namespace).isNotEmpty()) {
-            WinMdActivationKind.Composable
-        } else if (findInheritedComposableFactoryMethods(type.name, type.namespace).isNotEmpty()) {
-            WinMdActivationKind.Composable
-        } else {
-            type.activationKind
+        if (isResourceDictionaryDerivedRuntimeClass(type) &&
+            findInheritedComposableFactoryMethods(type.name, type.namespace).isNotEmpty()
+        ) {
+            return WinMdActivationKind.Composable
         }
+        return WinMdActivationKind.Factory
+    }
+
+    fun isResourceDictionaryDerivedRuntimeClass(type: WinMdType): Boolean {
+        var current = baseRuntimeClass(type)
+        while (current != null) {
+            if ("${current.namespace}.${current.name}" == "Microsoft.UI.Xaml.ResourceDictionary") {
+                return true
+            }
+            current = baseRuntimeClass(current)
+        }
+        return false
     }
 
     fun isComposableFactoryMethod(runtimeClass: WinMdType, method: WinMdMethod): Boolean {

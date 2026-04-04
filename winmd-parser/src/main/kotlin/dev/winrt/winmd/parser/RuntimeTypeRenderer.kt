@@ -188,7 +188,25 @@ internal class RuntimeTypeRenderer(
     }
 
     private fun renderFactoryConstructors(type: WinMdType): List<FunSpec> {
-        return typeRegistry.findRuntimeClassConstructorFactoryMethods(type.name, type.namespace)
+        val activationKind = typeRegistry.runtimeClassActivationKind(type)
+        val ownFactoryMethods = typeRegistry.findRuntimeClassFactoryMethods(type.name, type.namespace)
+        val constructorFactoryMethods = when (activationKind) {
+            WinMdActivationKind.Factory -> ownFactoryMethods.filterNot { candidate ->
+                typeRegistry.isComposableFactoryMethod(candidate.runtimeClass, candidate.method)
+            }
+            WinMdActivationKind.Composable -> {
+                val ownComposableMethods = ownFactoryMethods.filter { candidate ->
+                    typeRegistry.isComposableFactoryMethod(candidate.runtimeClass, candidate.method)
+                }
+                if (ownComposableMethods.isNotEmpty()) {
+                    ownComposableMethods
+                } else {
+                    typeRegistry.findInheritedComposableFactoryMethods(type.name, type.namespace)
+                }
+            }
+        }
+
+        return constructorFactoryMethods
             .map { candidate ->
                 val factoryPropertyName = helperAccessorName(candidate.factoryType.name)
                 val constructorParameters = if (typeRegistry.isComposableFactoryMethod(candidate.runtimeClass, candidate.method)) {
