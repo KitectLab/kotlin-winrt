@@ -8177,6 +8177,80 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun synthesizes_object_properties_from_accessor_methods_for_runtime_projected_interfaces_and_runtime_classes() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.UI",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.UI",
+                            name = "Brush",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.UI.IBrush",
+                        ),
+                        WinMdType(
+                            namespace = "Example.UI",
+                            name = "IBrush",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "33333333-3333-3333-3333-333333333333",
+                        ),
+                        WinMdType(
+                            namespace = "Example.UI",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.UI.IWidget",
+                            methods = listOf(
+                                WinMdMethod(name = "get_Background", returnType = "Example.UI.Brush", vtableIndex = 6),
+                                WinMdMethod(
+                                    name = "put_Background",
+                                    returnType = "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter("value", "Example.UI.Brush")),
+                                ),
+                                WinMdMethod(name = "get_Template", returnType = "Example.UI.Brush", vtableIndex = 8),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.UI",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "44444444-4444-4444-4444-444444444444",
+                            methods = listOf(
+                                WinMdMethod(name = "get_Background", returnType = "Example.UI.Brush", vtableIndex = 6),
+                                WinMdMethod(
+                                    name = "put_Background",
+                                    returnType = "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter("value", "Example.UI.Brush")),
+                                ),
+                                WinMdMethod(name = "get_Template", returnType = "Example.UI.Brush", vtableIndex = 8),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/UI/IWidget.kt" }.content
+        val runtimeBinding = files.first { it.relativePath == "Example/UI/Widget.kt" }.content
+
+        assertTrue(interfaceBinding.contains("var background: Brush"))
+        assertTrue(interfaceBinding.contains("val template: Brush"))
+        assertFalse(interfaceBinding.contains("fun get_Background("))
+        assertFalse(interfaceBinding.contains("fun put_Background("))
+        assertFalse(interfaceBinding.contains("fun get_Template("))
+
+        assertTrue(runtimeBinding.contains("var background: Brush"))
+        assertTrue(runtimeBinding.contains("val template: Brush"))
+        assertFalse(runtimeBinding.contains("fun get_Background("))
+        assertFalse(runtimeBinding.contains("fun put_Background("))
+        assertFalse(runtimeBinding.contains("fun get_Template("))
+    }
+
+    @Test
     fun folds_versioned_overrides_interfaces_into_runtime_class_hooks() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

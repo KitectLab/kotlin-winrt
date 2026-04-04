@@ -45,8 +45,13 @@ internal class RuntimeTypeRenderer(
         val overrideMethodKeys = exposedRuntimeInterfaceTypes.flatMapTo(linkedSetOf(), ::allInterfaceMethodKeys)
         val inheritedOverridePropertyNames = inheritedOverrideHookPropertyNames(type)
         val inheritedOverrideMethodKeys = inheritedOverrideHookMethodKeys(type)
+        val declaredRuntimePropertyNames = type.properties.mapTo(linkedSetOf()) { it.name }
         val runtimeProperties = dedupeRuntimeProperties(
-            type.properties.filter { runtimePropertyRenderer.canRenderRuntimeProperty(it, type.namespace) },
+            (
+                type.properties +
+                    synthesizePropertiesFromAccessorMethods(type.methods, declaredRuntimePropertyNames)
+                )
+                .filter { runtimePropertyRenderer.canRenderRuntimeProperty(it, type.namespace) },
         )
         val overrideProperties = dedupeRuntimeProperties(
             overrideInterfaceProperties(type, overrideInterfaceTypes)

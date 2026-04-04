@@ -46,12 +46,11 @@ internal class InterfaceTypeRenderer(
         val directBaseInterface = directBaseInterface(type, type.namespace)
         val inheritedSignatureKeys = inheritedSignatureKeys(directBaseInterface)
         val inheritedPropertyNames = inheritedPropertyNames(directBaseInterface)
-        val projectedPropertyNames = type.properties.asSequence()
-            .filterNot { it.name in inheritedPropertyNames }
-            .mapNotNull { property ->
-                property.name.takeIf { renderProperty(property, type.namespace, genericParameters) != null }
-            }
-            .toSet()
+        val projectedProperties = declaredAndSyntheticInterfaceProperties(type, inheritedPropertyNames)
+        val renderedProperties = projectedProperties.mapNotNull { property ->
+            renderProperty(property, type.namespace, genericParameters)?.let { rendered -> property.name to rendered }
+        }
+        val projectedPropertyNames = renderedProperties.mapTo(linkedSetOf()) { it.first }
         return TypeSpec.classBuilder(type.name)
             .addModifiers(KModifier.OPEN)
             .apply {
@@ -141,9 +140,7 @@ internal class InterfaceTypeRenderer(
                 }
             }
             .addProperties(
-                type.properties
-                    .filterNot { it.name in inheritedPropertyNames }
-                    .mapNotNull { renderProperty(it, type.namespace, genericParameters) },
+                renderedProperties.map { it.second },
             )
             .addProperties(renderEventSlotProperties(type, type.namespace, genericParameters))
             .addFunctions(
@@ -219,6 +216,12 @@ internal class InterfaceTypeRenderer(
         val directBaseInterface = directBaseInterface(type, type.namespace)
         val inheritedSignatureKeys = inheritedSignatureKeys(directBaseInterface)
         val inheritedPropertyNames = inheritedPropertyNames(directBaseInterface)
+        val projectedProperties = declaredAndSyntheticInterfaceProperties(type, inheritedPropertyNames)
+        val projectedPropertyNames = projectedProperties.asSequence()
+            .mapNotNull { property ->
+                property.name.takeIf { renderInterfaceContractProperty(property, type.namespace, genericParameters) != null }
+            }
+            .toSet()
         return TypeSpec.interfaceBuilder(type.name)
             .apply {
                 if (typeRegistry.isVersionedRuntimeClassInterface(type.name, type.namespace)) {
@@ -240,13 +243,12 @@ internal class InterfaceTypeRenderer(
                 }
             }
             .addProperties(
-                type.properties
-                    .filterNot { it.name in inheritedPropertyNames }
-                    .mapNotNull { renderInterfaceContractProperty(it, type.namespace, genericParameters) },
+                projectedProperties.mapNotNull { renderInterfaceContractProperty(it, type.namespace, genericParameters) },
             )
             .addFunctions(
                 type.methods
                     .filterNot { interfaceMethodRenderKey(it) in inheritedSignatureKeys }
+                    .filterNot { it.isProjectedPropertyAccessor(projectedPropertyNames) }
                     .mapNotNull { renderInterfaceContractMethod(it, type.namespace, genericParameters) },
             )
             .addType(renderInterfaceCompanion(type, typeVariables))
@@ -256,6 +258,12 @@ internal class InterfaceTypeRenderer(
     private fun renderInterfaceProjection(type: WinMdType): TypeSpec {
         val genericParameters = type.genericParameters.toSet()
         val projectionName = "${type.name}Projection"
+        val projectedProperties = allInterfaceProperties(type)
+        val projectedPropertyNames = projectedProperties.asSequence()
+            .mapNotNull { property ->
+                property.name.takeIf { renderProperty(property, type.namespace, genericParameters) != null }
+            }
+            .toSet()
         return TypeSpec.classBuilder(projectionName)
             .addModifiers(KModifier.PRIVATE)
             .primaryConstructor(pointerConstructor())
@@ -263,7 +271,7 @@ internal class InterfaceTypeRenderer(
             .addSuperinterface(ClassName(type.namespace.lowercase(), type.name))
             .addSuperclassConstructorParameter("pointer")
             .addProperties(
-                allInterfaceProperties(type).mapNotNull {
+                projectedProperties.mapNotNull {
                     renderProperty(it, type.namespace, genericParameters)
                         ?.toBuilder()
                         ?.addModifiers(KModifier.OVERRIDE)
@@ -272,12 +280,18 @@ internal class InterfaceTypeRenderer(
             )
             .addProperties(renderEventSlotProperties(type, type.namespace, genericParameters))
             .addFunctions(
-                allInterfaceMethods(type).flatMap { method ->
+                allInterfaceMethods(type)
+                    .filterNot { it.isProjectedPropertyAccessor(projectedPropertyNames) }
+                    .flatMap { method ->
                     renderMethods(method, type.namespace, genericParameters)
                         .map { it.toBuilder().addModifiers(KModifier.OVERRIDE).build() }
                 },
             )
-            .addFunctions(type.methods.mapNotNull { renderLambdaOverload(it, type.namespace, genericParameters) })
+            .addFunctions(
+                type.methods
+                    .filterNot { it.isProjectedPropertyAccessor(projectedPropertyNames) }
+                    .mapNotNull { renderLambdaOverload(it, type.namespace, genericParameters) },
+            )
             .addTypes(renderEventSlotTypes(type, type.namespace, genericParameters))
             .build()
     }
@@ -390,7 +404,18 @@ internal class InterfaceTypeRenderer(
     private fun allInterfaceProperties(type: WinMdType): List<WinMdProperty> {
         val directBaseInterface = directBaseInterface(type, type.namespace)
         val inherited = directBaseInterface?.let { typeRegistry.findType(it, type.namespace) }?.let(::allInterfaceProperties).orEmpty()
-        return (inherited + type.properties).distinctBy { it.name }
+        return (inherited + declaredAndSyntheticInterfaceProperties(type)).distinctBy { it.name }
+    }
+
+    private fun declaredAndSyntheticInterfaceProperties(
+        type: WinMdType,
+        excludedPropertyNames: Set<String> = emptySet(),
+    ): List<WinMdProperty> {
+        val declaredPropertyNames = type.properties.mapTo(linkedSetOf()) { it.name }
+        return buildList {
+            addAll(type.properties.filterNot { it.name in excludedPropertyNames })
+            addAll(synthesizePropertiesFromAccessorMethods(type.methods, declaredPropertyNames + excludedPropertyNames))
+        }
     }
 
     private fun renderEventSlotProperties(

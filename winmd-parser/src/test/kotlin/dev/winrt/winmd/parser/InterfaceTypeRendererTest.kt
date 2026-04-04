@@ -165,6 +165,54 @@ class InterfaceTypeRendererTest {
     }
 
     @Test
+    fun synthesizes_interface_properties_from_accessor_methods_when_property_metadata_is_missing() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Core",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Core",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod("get_Title", "String", vtableIndex = 6),
+                                WinMdMethod(
+                                    "put_Title",
+                                    "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter("value", "String")),
+                                ),
+                                WinMdMethod("get_Subtitle", "String", vtableIndex = 8),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val typeRegistry = TypeRegistry(model)
+        val renderer = InterfaceTypeRenderer(
+            typeNameMapper = TypeNameMapper(),
+            delegateLambdaPlanResolver = DelegateLambdaPlanResolver(TypeNameMapper()),
+            eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+            typeRegistry = typeRegistry,
+            asyncMethodProjectionPlanner = AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry)),
+            asyncMethodRuleRegistry = AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+            winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
+        )
+
+        val binding = renderer.render(typeRegistry.findType("IWidget", "Example.Core")!!).single().toString()
+
+        assertTrue(binding.contains("var title"))
+        assertTrue(binding.contains("val subtitle"))
+        assertFalse(binding.contains("fun get_Title("))
+        assertFalse(binding.contains("fun put_Title("))
+        assertFalse(binding.contains("fun get_Subtitle("))
+    }
+
+    @Test
     fun unsubscribes_event_slots_with_finally_to_close_delegate_handles() {
         val model = WinMdModel(
             files = emptyList(),

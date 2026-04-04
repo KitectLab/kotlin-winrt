@@ -21,6 +21,8 @@ internal class RuntimePropertyRenderer(
         val defaultValue = when {
             typeRegistry.isEnumType(property.type, currentNamespace) ->
                 CodeBlock.of("%T.fromValue(0)", kotlinType)
+            supportsProjectedObjectTypeName(property.type) ->
+                CodeBlock.of("%T(%T.NULL)", kotlinType, PoetSymbols.comPtrClass)
             else -> typeNameMapper.defaultValueFor(kotlinType)
         }
         return PropertySpec.builder("backing_${property.name}", PoetSymbols.runtimePropertyClass.parameterizedBy(kotlinType))
@@ -179,6 +181,9 @@ internal class RuntimePropertyRenderer(
 
     private fun runtimePropertyPlan(property: WinMdProperty, currentNamespace: String): RuntimePropertyPlan? {
         val iReferenceInnerType = iReferenceInnerType(property.type)
+        val objectPropertyType = supportsProjectedObjectTypeName(property.type)
+            .takeIf { it }
+            ?.let { typeNameMapper.mapTypeName(property.type, currentNamespace) }
         val getterPlan = when {
             property.getterVtableIndex == null -> null
             iReferenceInnerType != null -> RuntimePropertyGetterPlan { getterVtableIndex ->
@@ -199,6 +204,9 @@ internal class RuntimePropertyRenderer(
                 }
                 CodeBlock.of("if (pointer.isNull) null else %L", valueGetter)
             }
+            objectPropertyType != null -> RuntimePropertyGetterPlan { getterVtableIndex ->
+                CodeBlock.of("%T(%L)", objectPropertyType, AbiCallCatalog.objectMethod(getterVtableIndex))
+            }
             else -> when {
                 typeRegistry.isEnumType(property.type, currentNamespace) -> RuntimePropertyGetterPlan { getterVtableIndex ->
                     CodeBlock.of(
@@ -210,47 +218,53 @@ internal class RuntimePropertyRenderer(
                 }
                 else -> scalarRuntimePropertyPlan(property.type)?.let { scalarPlan ->
                 RuntimePropertyGetterPlan { getterVtableIndex -> scalarPlan.renderGetter(getterVtableIndex) }
-            }
+                }
             }
         }
-        val setterPlan = when (PropertyRuleRegistry.setterRuleFamily(property.type)) {
-            null -> null
-            RuntimePropertySetterRuleFamily.OBJECT -> RuntimePropertySetterPlan(
+        val setterPlan = when {
+            objectPropertyType != null -> RuntimePropertySetterPlan(
                 statement = "%L",
                 args = { setterVtableIndex -> arrayOf(AbiCallCatalog.objectSetter(setterVtableIndex, "value")) },
             )
-            RuntimePropertySetterRuleFamily.STRING -> RuntimePropertySetterPlan(
-                statement = "%L",
-                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.stringSetter(setterVtableIndex)) },
-            )
-            RuntimePropertySetterRuleFamily.INT32 -> RuntimePropertySetterPlan(
-                statement = "%L",
-                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.int32Setter(setterVtableIndex)) },
-            )
-            RuntimePropertySetterRuleFamily.UINT32 -> RuntimePropertySetterPlan(
-                statement = "%L",
-                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.uint32Setter(setterVtableIndex)) },
-            )
-            RuntimePropertySetterRuleFamily.FLOAT32 -> RuntimePropertySetterPlan(
-                statement = "%L",
-                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.float32Setter(setterVtableIndex)) },
-            )
-            RuntimePropertySetterRuleFamily.BOOLEAN -> RuntimePropertySetterPlan(
-                statement = "%L",
-                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.booleanSetter(setterVtableIndex)) },
-            )
-            RuntimePropertySetterRuleFamily.FLOAT64 -> RuntimePropertySetterPlan(
-                statement = "%L",
-                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.float64Setter(setterVtableIndex)) },
-            )
-            RuntimePropertySetterRuleFamily.INT64 -> RuntimePropertySetterPlan(
-                statement = "%L",
-                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.int64Setter(setterVtableIndex)) },
-            )
-            RuntimePropertySetterRuleFamily.UINT64 -> RuntimePropertySetterPlan(
-                statement = "%L",
-                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.uint64Setter(setterVtableIndex)) },
-            )
+            else -> when (PropertyRuleRegistry.setterRuleFamily(property.type)) {
+                null -> null
+                RuntimePropertySetterRuleFamily.OBJECT -> RuntimePropertySetterPlan(
+                    statement = "%L",
+                    args = { setterVtableIndex -> arrayOf(AbiCallCatalog.objectSetter(setterVtableIndex, "value")) },
+                )
+                RuntimePropertySetterRuleFamily.STRING -> RuntimePropertySetterPlan(
+                    statement = "%L",
+                    args = { setterVtableIndex -> arrayOf(AbiCallCatalog.stringSetter(setterVtableIndex)) },
+                )
+                RuntimePropertySetterRuleFamily.INT32 -> RuntimePropertySetterPlan(
+                    statement = "%L",
+                    args = { setterVtableIndex -> arrayOf(AbiCallCatalog.int32Setter(setterVtableIndex)) },
+                )
+                RuntimePropertySetterRuleFamily.UINT32 -> RuntimePropertySetterPlan(
+                    statement = "%L",
+                    args = { setterVtableIndex -> arrayOf(AbiCallCatalog.uint32Setter(setterVtableIndex)) },
+                )
+                RuntimePropertySetterRuleFamily.FLOAT32 -> RuntimePropertySetterPlan(
+                    statement = "%L",
+                    args = { setterVtableIndex -> arrayOf(AbiCallCatalog.float32Setter(setterVtableIndex)) },
+                )
+                RuntimePropertySetterRuleFamily.BOOLEAN -> RuntimePropertySetterPlan(
+                    statement = "%L",
+                    args = { setterVtableIndex -> arrayOf(AbiCallCatalog.booleanSetter(setterVtableIndex)) },
+                )
+                RuntimePropertySetterRuleFamily.FLOAT64 -> RuntimePropertySetterPlan(
+                    statement = "%L",
+                    args = { setterVtableIndex -> arrayOf(AbiCallCatalog.float64Setter(setterVtableIndex)) },
+                )
+                RuntimePropertySetterRuleFamily.INT64 -> RuntimePropertySetterPlan(
+                    statement = "%L",
+                    args = { setterVtableIndex -> arrayOf(AbiCallCatalog.int64Setter(setterVtableIndex)) },
+                )
+                RuntimePropertySetterRuleFamily.UINT64 -> RuntimePropertySetterPlan(
+                    statement = "%L",
+                    args = { setterVtableIndex -> arrayOf(AbiCallCatalog.uint64Setter(setterVtableIndex)) },
+                )
+            }
         }
         return if (getterPlan != null || setterPlan != null) {
             RuntimePropertyPlan(getter = getterPlan, setter = setterPlan)
