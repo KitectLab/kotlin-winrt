@@ -12,6 +12,7 @@ import java.lang.foreign.Arena
 import java.lang.foreign.FunctionDescriptor
 import java.lang.foreign.Linker
 import java.lang.foreign.MemorySegment
+import java.lang.foreign.SymbolLookup
 import java.lang.foreign.ValueLayout
 import java.lang.invoke.MethodHandles
 import java.lang.invoke.MethodType
@@ -45,7 +46,19 @@ class JvmWinRtObjectStub private constructor(
         private val linker: Linker = Linker.nativeLinker()
         private val lookup = MethodHandles.lookup()
         private val libraryArena: Arena = Arena.ofAuto()
+        private val iidArena: Arena = Arena.ofShared()
         private val states = ConcurrentHashMap<Long, SharedState>()
+        private val isWindows = System.getProperty("os.name").contains("Windows", ignoreCase = true)
+        private val ole32: SymbolLookup? = if (isWindows) SymbolLookup.libraryLookup("ole32", libraryArena) else null
+        private val coTaskMemAlloc = ole32?.find("CoTaskMemAlloc")?.get()?.let { symbol ->
+            linker.downcallHandle(
+                symbol,
+                FunctionDescriptor.of(
+                    ValueLayout.ADDRESS,
+                    ValueLayout.JAVA_LONG,
+                ),
+            )
+        }
 
         private val queryInterfaceStub = linker.upcallStub(
             lookup.findStatic(
@@ -340,9 +353,29 @@ class JvmWinRtObjectStub private constructor(
         @JvmStatic
         private fun getIids(thisPointer: MemorySegment, iidCount: MemorySegment, iids: MemorySegment): Int {
             val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            iidCount.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-            writeAddress(iids, ComPtr.NULL)
-            return HResult(0).value
+            return runCatching {
+                val interfaceIids = state.interfacesByIid.keys.map(::guidOf)
+                iidCount.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(
+                    ValueLayout.JAVA_INT,
+                    0L,
+                    interfaceIids.size,
+                )
+                if (interfaceIids.isEmpty()) {
+                    writeAddress(iids, ComPtr.NULL)
+                    return@runCatching HResult(0).value
+                }
+
+                val iidArray = allocateIidArray(interfaceIids.size)
+                interfaceIids.forEachIndexed { index, iid ->
+                    writeGuid(iidArray.asSlice(index * 16L, 16L), iid)
+                }
+                writeAddress(iids, ComPtr(AbiIntPtr(iidArray.address())))
+                HResult(0).value
+            }.getOrElse {
+                iidCount.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
+                writeAddress(iids, ComPtr.NULL)
+                HResult(0x8007000E.toInt()).value
+            }
         }
 
         @JvmStatic
@@ -454,6 +487,28 @@ class JvmWinRtObjectStub private constructor(
                 0,
                 if (pointer.isNull) MemorySegment.NULL else MemorySegment.ofAddress(pointer.value.rawValue),
             )
+        }
+
+        private fun allocateIidArray(count: Int): MemorySegment {
+            val size = count * 16L
+            return if (isWindows) {
+                val allocator = requireNotNull(coTaskMemAlloc) { "CoTaskMemAlloc is unavailable on Windows" }
+                val allocated = allocator.invokeWithArguments(size) as MemorySegment
+                require(allocated.address() != 0L) { "CoTaskMemAlloc returned null for $size bytes" }
+                allocated.reinterpret(size)
+            } else {
+                iidArena.allocate(size, ValueLayout.JAVA_INT.byteAlignment())
+            }
+        }
+
+        private fun writeGuid(segment: MemorySegment, value: Guid) {
+            val guidSegment = segment.reinterpret(16L)
+            guidSegment.set(ValueLayout.JAVA_INT, 0L, value.data1)
+            guidSegment.set(ValueLayout.JAVA_SHORT, 4L, value.data2)
+            guidSegment.set(ValueLayout.JAVA_SHORT, 6L, value.data3)
+            value.data4.forEachIndexed { index, byte ->
+                guidSegment.set(ValueLayout.JAVA_BYTE, 8L + index, byte)
+            }
         }
     }
 
