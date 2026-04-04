@@ -278,6 +278,22 @@ val collectWinUiRuntimeAssets by tasks.registering(Sync::class) {
         include("Microsoft.UI.Xaml/**")
     }
     from(runtimePackagesProvider.map { runtimePackages ->
+        runtimePackages.asSequence()
+            .map { runtimePackage ->
+                collectNuGetRuntimeFrameworkNativeDirs(runtimePackage.packageRoot, runtimeRid)
+                    .asSequence()
+                    .map { it.resolve("Microsoft.UI.Xaml.Controls.pri") }
+                    .firstOrNull(File::isFile)
+            }
+            .filterNotNull()
+            .firstOrNull()
+            ?.let(::listOf)
+            ?: emptyList()
+    }) {
+        // The Windows App Runtime MSIX carries the WinUI framework resources under both names.
+        rename { "resources.pri" }
+    }
+    from(runtimePackagesProvider.map { runtimePackages ->
         runtimePackages.flatMap { runtimePackage ->
             collectWindowsAppSdkVersionInfoHeaders(runtimePackage.packageRoot)
         }.distinctBy { it.absolutePath }

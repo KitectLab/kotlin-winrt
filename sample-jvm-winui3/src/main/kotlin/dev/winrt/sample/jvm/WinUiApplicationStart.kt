@@ -2,7 +2,6 @@ package dev.winrt.sample.jvm
 
 import dev.winrt.core.WinRtDelegateBridge
 import dev.winrt.core.WinRtDelegateHandle
-import dev.winrt.core.guidOf
 import microsoft.ui.xaml.Application
 import microsoft.ui.xaml.ApplicationInitializationCallback
 import microsoft.ui.xaml.IApplicationInitializationCallbackParams
@@ -12,7 +11,6 @@ import microsoft.ui.xaml.media.DesktopAcrylicBackdrop
 import microsoft.ui.xaml.media.MicaBackdrop
 
 object WinUiApplicationStart {
-    private val iidIXamlMetadataProvider = guidOf("a96251f0-2214-5d53-8746-ce99a2593cd7")
     private var application: SampleWinUiApp? = null
     private var window: Window? = null
     private var activeCallback: WinRtDelegateHandle? = null
@@ -88,25 +86,29 @@ object WinUiApplicationStart {
             val arg = it.single() as dev.winrt.kom.ComPtr
             runCatching {
                 println("winui: application callback invoked")
-                val sampleApp = SampleWinUiApp.create()
+                var sampleAppRef: SampleWinUiApp? = null
+                var pendingOnLaunched = false
+                val sampleApp = SampleWinUiApp.create(
+                    onLaunched = {
+                        val launchedApp = sampleAppRef
+                        if (launchedApp == null) {
+                            pendingOnLaunched = true
+                        } else {
+                            launchedApp.attachControlResources()
+                        }
+                    },
+                )
+                sampleAppRef = sampleApp
                 application = sampleApp
                 println("winui: application instance created")
-                runCatching {
-                    val metadataProvider = dev.winrt.kom.PlatformComInterop.queryInterface(
-                        sampleApp.pointer,
-                        iidIXamlMetadataProvider,
-                    ).getOrThrow()
-                    dev.winrt.kom.PlatformComInterop.release(metadataProvider)
-                    println("winui: application supports IXamlMetadataProvider=true")
-                }.onFailure {
-                    println("winui: application supports IXamlMetadataProvider=false")
+                if (pendingOnLaunched) {
+                    sampleApp.attachControlResources()
                 }
                 window = Window()
                 println("winui: window created")
                 val iWindow = IWindow.from(window!!)
                 iWindow.title = windowTitle
                 println("winui: window title set")
-                sampleApp.attachControlResources()
                 runCatching {
                     window!!.systemBackdrop = MicaBackdrop()
                     println("winui: window backdrop set=mica")

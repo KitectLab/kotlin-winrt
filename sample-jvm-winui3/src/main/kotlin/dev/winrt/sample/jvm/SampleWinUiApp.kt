@@ -3,11 +3,13 @@ package dev.winrt.sample.jvm
 import dev.winrt.core.JvmWinRtObjectStub
 import dev.winrt.core.guidOf
 import dev.winrt.kom.ComPtr
+import dev.winrt.kom.HResult
 import dev.winrt.kom.JvmWinRtRuntime
 import dev.winrt.kom.PlatformComInterop
-import microsoft.ui.xaml.Application
 import microsoft.ui.xaml.controls.XamlControlsResources
 import java.nio.file.Path
+import microsoft.ui.xaml.Application
+import microsoft.ui.xaml.ResourceDictionary
 
 class SampleWinUiApp private constructor(
     val application: Application,
@@ -18,30 +20,31 @@ class SampleWinUiApp private constructor(
 ) : AutoCloseable {
     private var resourceManagerRegistration: WinUiResourceManagerSupport.Registration? = null
 
-    fun attachControlResources() {
-        resourceManagerRegistration?.close()
-        resourceManagerRegistration = null
+    fun ensureResourceManagerRegistered() {
+        if (resourceManagerRegistration != null) {
+            return
+        }
+        val currentApplication = runCatching { Application.current }.getOrNull()
+        val targetApplication = currentApplication ?: application
         val runtimeRoot = System.getProperty("dev.winrt.windowsAppSdkRoot")
             ?.takeIf { it.isNotBlank() }
             ?.let(Path::of)
         if (runtimeRoot != null) {
-            resourceManagerRegistration = WinUiResourceManagerSupport.register(application, runtimeRoot)
+            resourceManagerRegistration = WinUiResourceManagerSupport.register(targetApplication.pointer, runtimeRoot)
         }
+    }
 
-        val controlResources = runCatching { XamlControlsResources() }
-            .onFailure { error ->
-                println("winui: control resources create failed: ${error::class.simpleName}: ${error.message}")
-            }
-            .onSuccess {
-                println("winui: control resources created")
-            }
+    fun attachControlResources() {
+        ensureResourceManagerRegistered()
+        val targetApplication = runCatching { Application.current }.getOrNull() ?: application
+
+        val controlResources = runCatching { loadControlResourcesFromXaml() }
+            .recoverCatching { XamlControlsResources() }
             .getOrNull()
             ?: return
 
         runCatching {
-            application.resources = controlResources
-        }.onFailure { error ->
-            println("winui: app resources set failed: ${error::class.simpleName}: ${error.message}")
+            targetApplication.resources = controlResources
         }.onSuccess {
             println("winui: app resources set")
         }
@@ -67,11 +70,15 @@ class SampleWinUiApp private constructor(
 
     companion object {
         private val iidIXamlMetadataProvider = guidOf("a96251f0-2214-5d53-8746-ce99a2593cd7")
+        private val iidIApplicationOverrides = guidOf("a33e81ef-c665-503b-8827-d27ef1720a06")
+        private val iidIXamlReaderStatics = guidOf("82a4cd9e-435e-5aeb-8c4f-300cece45cae")
         private val iidApplicationFactory = guidOf("9fd96657-5294-5a65-a1db-4fea143597da")
         private val iidApplicationDefault = guidOf("06a8f4e7-1146-55af-820d-ebd55643b021")
-        private const val applicationClassId = "Microsoft.UI.Xaml.Application"
+        private const val applicationFactoryClassId = "Microsoft.UI.Xaml.Application"
+        private const val applicationRuntimeClassName = "Dev.WinRT.Sample.Jvm.App"
+        private const val xamlReaderClassId = "Microsoft.UI.Xaml.Markup.XamlReader"
 
-        fun create(): SampleWinUiApp {
+        fun create(onLaunched: () -> Unit = {}): SampleWinUiApp {
             val metadataProviderPointer = WinUiXamlMetadataProvider.create()
             var authoringStub: JvmWinRtObjectStub? = null
             var instancePointer = ComPtr.NULL
@@ -80,7 +87,7 @@ class SampleWinUiApp private constructor(
 
             try {
                 authoringStub = JvmWinRtObjectStub.createWithRuntimeClassName(
-                    runtimeClassName = applicationClassId,
+                    runtimeClassName = applicationRuntimeClassName,
                     JvmWinRtObjectStub.InterfaceSpec(
                         iid = iidIXamlMetadataProvider,
                         objectArgObjectMethods = mapOf(
@@ -94,9 +101,18 @@ class SampleWinUiApp private constructor(
                             },
                         ),
                     ),
+                    JvmWinRtObjectStub.InterfaceSpec(
+                        iid = iidIApplicationOverrides,
+                        objectArgUnitMethods = mapOf(
+                            6 to {
+                                onLaunched()
+                                HResult(0)
+                            },
+                        ),
+                    ),
                 )
 
-                val factory = JvmWinRtRuntime.getActivationFactory(applicationClassId, iidApplicationFactory).getOrThrow()
+                val factory = JvmWinRtRuntime.getActivationFactory(applicationFactoryClassId, iidApplicationFactory).getOrThrow()
                 try {
                     val composed = PlatformComInterop.invokeComposableMethod(
                         factory,
@@ -120,7 +136,9 @@ class SampleWinUiApp private constructor(
                     innerPointer = innerPointer,
                     authoringStub = authoringStub,
                     metadataProviderPointer = metadataProviderPointer,
-                )
+                ).also { app ->
+                    app.ensureResourceManagerRegistered()
+                }
             } catch (t: Throwable) {
                 releasePointers(listOf(defaultPointer, innerPointer, instancePointer, metadataProviderPointer))
                 authoringStub?.close()
@@ -134,6 +152,21 @@ class SampleWinUiApp private constructor(
                 if (!pointer.isNull && released.add(pointer.value.rawValue)) {
                     PlatformComInterop.release(pointer)
                 }
+            }
+        }
+
+        private fun loadControlResourcesFromXaml(): ResourceDictionary {
+            val xaml = """
+                <controls:XamlControlsResources
+                    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:controls="using:Microsoft.UI.Xaml.Controls" />
+            """.trimIndent()
+            val statics = JvmWinRtRuntime.getActivationFactory(xamlReaderClassId, iidIXamlReaderStatics).getOrThrow()
+            return try {
+                val loaded = PlatformComInterop.invokeObjectMethodWithStringArg(statics, 6, xaml).getOrThrow()
+                ResourceDictionary(loaded)
+            } finally {
+                PlatformComInterop.release(statics)
             }
         }
     }

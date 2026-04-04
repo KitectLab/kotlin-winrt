@@ -58,11 +58,11 @@ object WindowsActivationContext {
             if (fragmentPaths.isEmpty()) {
                 return@runCatching null
             }
-            val frameworkDllNames = configuredFrameworkDllNames(root)
+            val frameworkFileNames = configuredFrameworkFileNames(root)
 
             val manifestPath = root.resolve("WindowsAppSDK-SelfContained.manifest")
             Files.createDirectories(root)
-            Files.writeString(manifestPath, buildManifest(fragmentPaths, frameworkDllNames))
+            Files.writeString(manifestPath, buildManifest(fragmentPaths, frameworkFileNames))
 
             setEnvironmentVariable(
                 envVarName,
@@ -162,7 +162,7 @@ object WindowsActivationContext {
             .distinct()
     }
 
-    private fun configuredFrameworkDllNames(root: Path): List<String> {
+    private fun configuredFrameworkFileNames(root: Path): List<String> {
         if (!Files.isDirectory(root)) {
             return emptyList()
         }
@@ -170,21 +170,24 @@ object WindowsActivationContext {
             paths
                 .filter(Files::isRegularFile)
                 .map { it.fileName.toString() }
-                .filter { it.endsWith(".dll", ignoreCase = true) }
+                .filter {
+                    it.endsWith(".dll", ignoreCase = true) ||
+                        it.endsWith(".pri", ignoreCase = true)
+                }
                 .distinct()
                 .sorted()
                 .toList()
         }
     }
 
-    private fun buildManifest(fragmentPaths: List<Path>, frameworkDllNames: List<String>): String {
+    private fun buildManifest(fragmentPaths: List<Path>, frameworkFileNames: List<String>): String {
         val documentBuilder = DocumentBuilderFactory.newInstance().apply {
             isNamespaceAware = true
         }.newDocumentBuilder()
-        val entryByDllName = linkedMapOf<String, String>()
-        val remainingDllNames = linkedMapOf<String, String>()
-        frameworkDllNames.forEach { dllName ->
-            remainingDllNames.putIfAbsent(dllName.lowercase(), dllName)
+        val entryByFileName = linkedMapOf<String, String>()
+        val remainingFileNames = linkedMapOf<String, String>()
+        frameworkFileNames.forEach { fileName ->
+            remainingFileNames.putIfAbsent(fileName.lowercase(), fileName)
         }
 
         fragmentPaths.forEach { fragmentPath ->
@@ -206,8 +209,8 @@ object WindowsActivationContext {
                     }
                 }
                 if (body.isNotEmpty()) {
-                    entryByDllName.putIfAbsent(path.lowercase(), manifestFileEntry(path, body))
-                    remainingDllNames.remove(path.lowercase())
+                    entryByFileName.putIfAbsent(path.lowercase(), manifestFileEntry(path, body))
+                    remainingFileNames.remove(path.lowercase())
                 }
             }
 
@@ -239,8 +242,8 @@ object WindowsActivationContext {
                     }
                 }
                 if (body.isNotEmpty()) {
-                    entryByDllName.putIfAbsent(path.lowercase(), manifestFileEntry(path, body))
-                    remainingDllNames.remove(path.lowercase())
+                    entryByFileName.putIfAbsent(path.lowercase(), manifestFileEntry(path, body))
+                    remainingFileNames.remove(path.lowercase())
                 }
             }
         }
@@ -252,9 +255,9 @@ object WindowsActivationContext {
             appendLine("    xmlns:winrtv1='urn:schemas-microsoft-com:winrt.v1'")
             appendLine("    xmlns='urn:schemas-microsoft-com:asm.v1'>")
             appendLine("    <assemblyIdentity type='win32' name='dev.winrt.sample.jvm.windowsappsdk' version='1.0.0.0' processorArchitecture='*'/>")
-            entryByDllName.values.forEach(::append)
-            remainingDllNames.values.forEach { dllName ->
-                append(manifestFileEntry(dllName, ""))
+            entryByFileName.values.forEach(::append)
+            remainingFileNames.values.forEach { fileName ->
+                append(manifestFileEntry(fileName, ""))
             }
             appendLine("</assembly>")
         }

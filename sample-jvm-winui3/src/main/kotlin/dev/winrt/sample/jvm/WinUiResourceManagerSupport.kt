@@ -12,7 +12,6 @@ import dev.winrt.kom.JvmWinRtRuntime
 import dev.winrt.kom.PlatformComInterop
 import java.nio.file.Files
 import java.nio.file.Path
-import microsoft.ui.xaml.Application
 import windows.foundation.EventRegistrationToken
 
 object WinUiResourceManagerSupport {
@@ -22,8 +21,6 @@ object WinUiResourceManagerSupport {
     private val iidIResourceManager: Guid = guidOf("ac2291ef-81be-5c99-a0ae-bcee0180b8a8")
     private const val resourceManagerClassId = "Microsoft.Windows.ApplicationModel.Resources.ResourceManager"
     private const val typedEventHandlerGuid = "9de1c534-6ae1-11e0-84e1-18a905bcc53f"
-    private const val applicationClassId = "Microsoft.UI.Xaml.Application"
-    private const val applicationDefaultInterfaceIid = "06a8f4e7-1146-55af-820d-ebd55643b021"
     private const val resourceManagerRequestedEventArgsClassId = "Microsoft.UI.Xaml.ResourceManagerRequestedEventArgs"
     private const val resourceManagerRequestedEventArgsDefaultInterfaceIid = "c35f4cf1-fcd6-5c6b-9be2-4cfaefb68b2a"
     private const val addResourceManagerRequestedSlot = 6
@@ -55,10 +52,9 @@ object WinUiResourceManagerSupport {
         }
     }
 
-    fun register(application: Application, runtimeRoot: Path): Registration? {
-        val priPath = runtimeRoot.resolve("Microsoft.UI.Xaml.Controls.pri")
-        if (!Files.isRegularFile(priPath)) {
-            println("winui: custom resource manager skipped: missing ${priPath.fileName}")
+    fun register(applicationPointer: ComPtr, runtimeRoot: Path): Registration? {
+        val priPath = preferredPriPath(runtimeRoot) ?: run {
+            println("winui: custom resource manager skipped: missing Microsoft.UI.pri and Microsoft.UI.Xaml.Controls.pri")
             return null
         }
 
@@ -80,13 +76,12 @@ object WinUiResourceManagerSupport {
                         setCustomResourceManagerSlot,
                         resourceManagerPointer,
                     ).getOrThrow()
-                    println("winui: custom resource manager attached=${priPath.fileName}")
                 } finally {
                     PlatformComInterop.release(requestedArgs)
                 }
             }
 
-            val application2 = PlatformComInterop.queryInterface(application.pointer, iidIApplication2).getOrThrow()
+            val application2 = PlatformComInterop.queryInterface(applicationPointer, iidIApplication2).getOrThrow()
             val token = try {
                 EventRegistrationToken(
                     PlatformComInterop.invokeInt64MethodWithObjectArg(
@@ -101,7 +96,7 @@ object WinUiResourceManagerSupport {
 
             println("winui: custom resource manager registered=${priPath.fileName}")
             Registration(
-                applicationPointer = application.pointer,
+                applicationPointer = applicationPointer,
                 token = token,
                 delegateHandle = delegateHandle,
                 resourceManagerPointer = resourceManagerPointer,
@@ -133,18 +128,22 @@ object WinUiResourceManagerSupport {
         }
     }
 
-    private fun resourceManagerRequestedHandlerIid(): Guid {
-        val senderSignature = WinRtTypeSignature.runtimeClass(
-            applicationClassId,
-            WinRtTypeSignature.guid(applicationDefaultInterfaceIid),
+    private fun preferredPriPath(runtimeRoot: Path): Path? {
+        val candidates = listOf(
+            runtimeRoot.resolve("Microsoft.UI.pri"),
+            runtimeRoot.resolve("Microsoft.UI.Xaml.Controls.pri"),
         )
+        return candidates.firstOrNull(Files::isRegularFile)
+    }
+
+    private fun resourceManagerRequestedHandlerIid(): Guid {
         val argsSignature = WinRtTypeSignature.runtimeClass(
             resourceManagerRequestedEventArgsClassId,
             WinRtTypeSignature.guid(resourceManagerRequestedEventArgsDefaultInterfaceIid),
         )
         val signature = WinRtTypeSignature.parameterizedInterface(
             typedEventHandlerGuid,
-            senderSignature,
+            WinRtTypeSignature.object_(),
             argsSignature,
         )
         return ParameterizedInterfaceId.createFromSignature(signature)
