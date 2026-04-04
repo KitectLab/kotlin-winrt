@@ -52,11 +52,17 @@ internal class RuntimeTypeRenderer(
             overrideInterfaceProperties(type, overrideInterfaceTypes)
                 .filter { runtimePropertyRenderer.canRenderRuntimeProperty(it, type.namespace) },
         )
+        val runtimePropertyNames = runtimeProperties.mapTo(linkedSetOf()) { it.name }
+        val overridePropertyNamesToRender = overrideProperties.mapTo(linkedSetOf()) { it.name }
         val runtimeMethods = dedupeRuntimeMethods(
-            type.methods.filter { runtimeMethodRenderer.canRenderRuntimeMethod(it, type.namespace) },
+            type.methods
+                .filter { runtimeMethodRenderer.canRenderRuntimeMethod(it, type.namespace) }
+                .filterNot { it.isProjectedPropertyAccessor(runtimePropertyNames) },
         )
         val runtimeLambdaMethods = dedupeRuntimeMethods(
-            type.methods.filter { runtimeMethodRenderer.renderRuntimeLambdaOverload(it, type.namespace) != null },
+            type.methods
+                .filter { runtimeMethodRenderer.renderRuntimeLambdaOverload(it, type.namespace) != null }
+                .filterNot { it.isProjectedPropertyAccessor(runtimePropertyNames) },
         )
         val superclass = type.baseClass
             ?.takeUnless { it == "System.Object" }
@@ -164,6 +170,7 @@ internal class RuntimeTypeRenderer(
             .mapNotNull { runtimeMethodRenderer.renderRuntimeLambdaOverload(it, type.namespace) }
             .forEach(builder::addFunction)
         overrideInterfaceMethods(type, overrideInterfaceTypes)
+            .filterNot { it.isProjectedPropertyAccessor(overridePropertyNamesToRender) }
             .mapNotNull { method ->
                 runtimeMethodRenderer.renderRuntimeMethod(method, type.namespace)?.let { rendered -> method to rendered }
             }

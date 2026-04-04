@@ -5,6 +5,7 @@ import dev.winrt.winmd.plugin.WinMdActivationKind
 import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdNamespace
 import dev.winrt.winmd.plugin.WinMdParameter
+import dev.winrt.winmd.plugin.WinMdProperty
 import dev.winrt.winmd.plugin.WinMdType
 import dev.winrt.winmd.plugin.WinMdTypeKind
 import org.junit.Assert.assertFalse
@@ -161,6 +162,76 @@ class RuntimeTypeRendererTest {
 
         assertTrue(binding.contains("finally"))
         assertTrue(binding.contains("delegateHandles.remove(token)?.close()"))
+    }
+
+    @Test
+    fun omits_explicit_property_accessor_methods_when_matching_runtime_property_is_projected() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Core",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Core",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Core.IWidget",
+                            properties = listOf(
+                                WinMdProperty("Title", "String", mutable = true, getterVtableIndex = 6, setterVtableIndex = 7),
+                            ),
+                            methods = listOf(
+                                WinMdMethod("get_Title", "String", vtableIndex = 6),
+                                WinMdMethod(
+                                    "put_Title",
+                                    "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter("value", "String")),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Core",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val typeRegistry = TypeRegistry(model)
+        val renderer = RuntimeTypeRenderer(
+            typeNameMapper = TypeNameMapper(),
+            typeRegistry = typeRegistry,
+            delegateLambdaPlanResolver = DelegateLambdaPlanResolver(TypeNameMapper()),
+            eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+            runtimePropertyRenderer = RuntimePropertyRenderer(TypeNameMapper(), typeRegistry),
+            runtimeMethodRenderer = RuntimeMethodRenderer(
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                typeRegistry,
+                AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+            ),
+            runtimeCompanionRenderer = RuntimeCompanionRenderer(
+                typeRegistry,
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+                WinRtSignatureMapper(typeRegistry),
+                AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+                WinRtProjectionTypeMapper(),
+                KotlinCollectionProjectionMapper(),
+            ),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
+            winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
+        )
+
+        val binding = renderer.render(typeRegistry.findType("Widget", "Example.Core")!!).toString()
+
+        assertTrue(binding.contains("var title"))
+        assertFalse(binding.contains("fun get_Title("))
+        assertFalse(binding.contains("fun put_Title("))
     }
 
     @Test

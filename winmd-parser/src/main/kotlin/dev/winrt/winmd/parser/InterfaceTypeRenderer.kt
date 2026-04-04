@@ -46,6 +46,12 @@ internal class InterfaceTypeRenderer(
         val directBaseInterface = directBaseInterface(type, type.namespace)
         val inheritedSignatureKeys = inheritedSignatureKeys(directBaseInterface)
         val inheritedPropertyNames = inheritedPropertyNames(directBaseInterface)
+        val projectedPropertyNames = type.properties.asSequence()
+            .filterNot { it.name in inheritedPropertyNames }
+            .mapNotNull { property ->
+                property.name.takeIf { renderProperty(property, type.namespace, genericParameters) != null }
+            }
+            .toSet()
         return TypeSpec.classBuilder(type.name)
             .addModifiers(KModifier.OPEN)
             .apply {
@@ -143,11 +149,13 @@ internal class InterfaceTypeRenderer(
             .addFunctions(
                 type.methods
                     .filterNot { interfaceMethodRenderKey(it) in inheritedSignatureKeys }
+                    .filterNot { it.isProjectedPropertyAccessor(projectedPropertyNames) }
                     .flatMap { renderMethods(it, type.namespace, genericParameters) },
             )
             .addFunctions(
                 type.methods
                     .filterNot { interfaceMethodRenderKey(it) in inheritedSignatureKeys }
+                    .filterNot { it.isProjectedPropertyAccessor(projectedPropertyNames) }
                     .mapNotNull { renderLambdaOverload(it, type.namespace, genericParameters) },
             )
             .addTypes(renderEventSlotTypes(type, type.namespace, genericParameters))
