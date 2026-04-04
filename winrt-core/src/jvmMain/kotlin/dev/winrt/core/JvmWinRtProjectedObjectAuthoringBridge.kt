@@ -8,6 +8,7 @@ import java.util.IdentityHashMap
 internal actual object WinRtProjectedObjectAuthoringBridge {
     private val iterableIidText = "faa585ea-6214-4217-afda-7f46de5869b3"
     private val iteratorIidText = "6a79e863-4300-459a-9966-cbb660963ee1"
+    private val vectorViewIidText = "bbe1fa4c-b0e3-4583-baef-1f1b2e483e56"
     private val mapViewIidText = "e480ce40-a338-4ada-adcf-272272e48cb9"
     private val keyValuePairIidText = "02b51929-c1c4-4a7e-8940-0312b5c18500"
     private val bindableIterableIidText = "036d2c08-df29-41af-8aa2-d774be62ba6f"
@@ -15,6 +16,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
 
     private val iterableIid = guidOf(iterableIidText)
     private val iteratorIid = guidOf(iteratorIidText)
+    private val vectorViewIid = guidOf(vectorViewIidText)
     private val mapViewIid = guidOf(mapViewIidText)
     private val keyValuePairIid = guidOf(keyValuePairIidText)
     private val bindableIterableIid = guidOf(bindableIterableIidText)
@@ -50,6 +52,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         return when (signature.iid.canonical) {
             iterableIid.canonical -> createIterableHandle(value, projectionTypeKey, signature)
             iteratorIid.canonical -> createIteratorHandle(value, projectionTypeKey, signature)
+            vectorViewIid.canonical -> createVectorViewHandle(value, projectionTypeKey, signature)
             mapViewIid.canonical -> createMapViewHandle(value, projectionTypeKey, signature)
             keyValuePairIid.canonical -> createKeyValuePairHandle(value, projectionTypeKey, signature)
             bindableIterableIid.canonical -> createBindableIterableHandle(value, projectionTypeKey)
@@ -68,28 +71,24 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         val elementProjectionTypeKey = projectionTypeKey.arguments.singleOrNull()
             ?: inferProjectionTypeKey(elementSignature)
         val retainedChildren = mutableListOf<AutoCloseable>()
+        val iteratorSignature = AbiValueSignature.ParameterizedInterface(
+            iid = iteratorIid,
+            arguments = listOf(elementSignature),
+            rawSignature = WinRtTypeSignature.parameterizedInterface(
+                iteratorIidText,
+                elementSignature.rawSignature,
+            ),
+        )
         val stub = JvmWinRtObjectStub.create(
             JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
                 noArgObjectMethods = mapOf(
-                    6 to {
-                        val iteratorHandle = requireNotNull(
-                            createIteratorHandle(
-                                iterable.iterator(),
-                                ProjectionTypeKey("kotlin.collections.Iterator", listOf(elementProjectionTypeKey)),
-                            AbiValueSignature.ParameterizedInterface(
-                                iid = iteratorIid,
-                                arguments = listOf(elementSignature),
-                                rawSignature = WinRtTypeSignature.parameterizedInterface(
-                                        iteratorIidText,
-                                        elementSignature.rawSignature,
-                                    ),
-                                ),
-                            ),
-                        )
-                        retainedChildren += iteratorHandle
-                        iteratorHandle.pointer.withAddRef()
-                    },
+                    6 to iterableFirstMethod(
+                        iterable = iterable,
+                        elementProjectionTypeKey = elementProjectionTypeKey,
+                        iteratorSignature = iteratorSignature,
+                        retainedChildren = retainedChildren,
+                    ),
                 ),
             ),
         )
@@ -145,6 +144,95 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         return ProjectedObjectHandle(stub, retainedChildren)
     }
 
+    private fun createVectorViewHandle(
+        value: Any,
+        projectionTypeKey: ProjectionTypeKey,
+        signature: AbiValueSignature.ParameterizedInterface,
+    ): ProjectedObjectHandle? {
+        val list = value as? List<*> ?: return null
+        val elementSignature = signature.arguments.singleOrNull() ?: return null
+        val elementProjectionTypeKey = projectionTypeKey.arguments.singleOrNull()
+            ?: inferProjectionTypeKey(elementSignature)
+        val retainedChildren = mutableListOf<AutoCloseable>()
+        val iteratorSignature = AbiValueSignature.ParameterizedInterface(
+            iid = iteratorIid,
+            arguments = listOf(elementSignature),
+            rawSignature = WinRtTypeSignature.parameterizedInterface(
+                iteratorIidText,
+                elementSignature.rawSignature,
+            ),
+        )
+        val iterableSignature = AbiValueSignature.ParameterizedInterface(
+            iid = ParameterizedInterfaceId.createFromSignature(
+                WinRtTypeSignature.parameterizedInterface(
+                    iterableIidText,
+                    elementSignature.rawSignature,
+                ),
+            ),
+            arguments = listOf(elementSignature),
+            rawSignature = WinRtTypeSignature.parameterizedInterface(
+                iterableIidText,
+                elementSignature.rawSignature,
+            ),
+        )
+        val derivedSpec = when (elementSignature) {
+            is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgObjectMethods = mapOf(
+                    6 to iterableFirstMethod(
+                        iterable = list,
+                        elementProjectionTypeKey = elementProjectionTypeKey,
+                        iteratorSignature = iteratorSignature,
+                        retainedChildren = retainedChildren,
+                    ),
+                ),
+                uint32ArgHStringMethods = mapOf(
+                    7 to { index ->
+                        val element = list.elementAt(index.toInt())
+                        element as? String
+                            ?: error("Expected list element at $index to be String, got ${element?.let { it::class.qualifiedName }}")
+                    },
+                ),
+                noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
+            )
+            else -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgObjectMethods = mapOf(
+                    6 to iterableFirstMethod(
+                        iterable = list,
+                        elementProjectionTypeKey = elementProjectionTypeKey,
+                        iteratorSignature = iteratorSignature,
+                        retainedChildren = retainedChildren,
+                    ),
+                ),
+                uint32ArgObjectMethods = mapOf(
+                    7 to { index ->
+                        marshalObjectResultPointer(
+                            value = list.elementAt(index.toInt()),
+                            projectionTypeKey = elementProjectionTypeKey,
+                            signature = elementSignature,
+                            retainedChildren = retainedChildren,
+                        )
+                    },
+                ),
+                noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
+            )
+        }
+        val baseIterableSpec = JvmWinRtObjectStub.InterfaceSpec(
+            iid = iterableSignature.iid,
+            noArgObjectMethods = mapOf(
+                6 to iterableFirstMethod(
+                    iterable = list,
+                    elementProjectionTypeKey = elementProjectionTypeKey,
+                    iteratorSignature = iteratorSignature,
+                    retainedChildren = retainedChildren,
+                ),
+            ),
+        )
+        val stub = JvmWinRtObjectStub.create(derivedSpec, baseIterableSpec)
+        return ProjectedObjectHandle(stub, retainedChildren)
+    }
+
     private fun createMapViewHandle(
         value: Any,
         projectionTypeKey: ProjectionTypeKey,
@@ -171,29 +259,35 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             rawType = "kotlin.collections.Map.Entry",
             arguments = listOf(keyProjectionTypeKey, valueProjectionTypeKey),
         )
+        val iterableSignature = AbiValueSignature.ParameterizedInterface(
+            iid = ParameterizedInterfaceId.createFromSignature(
+                WinRtTypeSignature.parameterizedInterface(
+                    iterableIidText,
+                    keyValuePairSignature.rawSignature,
+                ),
+            ),
+            arguments = listOf(keyValuePairSignature),
+            rawSignature = WinRtTypeSignature.parameterizedInterface(
+                iterableIidText,
+                keyValuePairSignature.rawSignature,
+            ),
+        )
         val retainedChildren = mutableListOf<AutoCloseable>()
         val entries = map.entries
-        val firstMethod: () -> ComPtr = {
-            val iteratorHandle = requireNotNull(
-                createIteratorHandle(
-                    entries.iterator(),
-                    ProjectionTypeKey(
-                        rawType = "kotlin.collections.Iterator",
-                        arguments = listOf(keyValuePairProjectionTypeKey.render()),
-                    ),
-                    AbiValueSignature.ParameterizedInterface(
-                        iid = iteratorIid,
-                        arguments = listOf(keyValuePairSignature),
-                        rawSignature = WinRtTypeSignature.parameterizedInterface(
-                            iteratorIidText,
-                            keyValuePairSignature.rawSignature,
-                        ),
-                    ),
-                ),
-            )
-            retainedChildren += iteratorHandle
-            iteratorHandle.pointer.withAddRef()
-        }
+        val iteratorSignature = AbiValueSignature.ParameterizedInterface(
+            iid = iteratorIid,
+            arguments = listOf(keyValuePairSignature),
+            rawSignature = WinRtTypeSignature.parameterizedInterface(
+                iteratorIidText,
+                keyValuePairSignature.rawSignature,
+            ),
+        )
+        val firstMethod: () -> ComPtr = iterableFirstMethod(
+            iterable = entries,
+            elementProjectionTypeKey = keyValuePairProjectionTypeKey.render(),
+            iteratorSignature = iteratorSignature,
+            retainedChildren = retainedChildren,
+        )
         val interfaceSpec = when (valueSignature) {
             is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
@@ -231,7 +325,11 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
             )
         }
-        val stub = JvmWinRtObjectStub.create(interfaceSpec)
+        val baseIterableSpec = JvmWinRtObjectStub.InterfaceSpec(
+            iid = iterableSignature.iid,
+            noArgObjectMethods = mapOf(6 to firstMethod),
+        )
+        val stub = JvmWinRtObjectStub.create(interfaceSpec, baseIterableSpec)
         return ProjectedObjectHandle(stub, retainedChildren)
     }
 
@@ -412,6 +510,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 iteratorIid.canonical,
                 bindableIteratorIid.canonical,
                 -> "kotlin.collections.Iterator<${inferProjectionTypeKey(signature.arguments.single())}>"
+                vectorViewIid.canonical -> "kotlin.collections.List<${inferProjectionTypeKey(signature.arguments.single())}>"
                 mapViewIid.canonical -> "kotlin.collections.Map<${signature.arguments.joinToString(", ") { inferProjectionTypeKey(it) }}>"
                 keyValuePairIid.canonical ->
                     "kotlin.collections.Map.Entry<${signature.arguments.joinToString(", ") { inferProjectionTypeKey(it) }}>"
@@ -479,6 +578,25 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         }
         parts += current.toString()
         return parts
+    }
+
+    private fun iterableFirstMethod(
+        iterable: Iterable<*>,
+        elementProjectionTypeKey: String,
+        iteratorSignature: AbiValueSignature.ParameterizedInterface,
+        retainedChildren: MutableList<AutoCloseable>,
+    ): () -> ComPtr {
+        return {
+            val iteratorHandle = requireNotNull(
+                createIteratorHandle(
+                    iterable.iterator(),
+                    ProjectionTypeKey("kotlin.collections.Iterator", listOf(elementProjectionTypeKey)),
+                    iteratorSignature,
+                ),
+            )
+            retainedChildren += iteratorHandle
+            iteratorHandle.pointer.withAddRef()
+        }
     }
 
     private class IteratorState(

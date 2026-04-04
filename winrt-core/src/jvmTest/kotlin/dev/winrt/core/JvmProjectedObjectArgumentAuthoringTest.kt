@@ -83,6 +83,20 @@ class JvmProjectedObjectArgumentAuthoringTest {
             assertFalse(pointer.isNull)
             assertEquals(1u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
             assertTrue(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 9, "theme").getOrThrow())
+            val iterablePointer = PlatformComInterop.queryInterface(
+                pointer,
+                ParameterizedInterfaceId.createFromSignature(
+                    WinRtTypeSignature.parameterizedInterface(
+                        "faa585ea-6214-4217-afda-7f46de5869b3",
+                        WinRtTypeSignature.parameterizedInterface(
+                            "02b51929-c1c4-4a7e-8940-0312b5c18500",
+                            WinRtTypeSignature.string(),
+                            WinRtTypeSignature.object_(),
+                        ),
+                    ),
+                ),
+            ).getOrThrow()
+            PlatformComInterop.release(iterablePointer)
 
             val lookup = PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 7, "theme").getOrThrow()
             try {
@@ -110,6 +124,44 @@ class JvmProjectedObjectArgumentAuthoringTest {
             } finally {
                 PlatformComInterop.release(iterator)
             }
+        }
+    }
+
+    @Test
+    fun projected_object_argument_pointer_accepts_plain_list_values_for_vector_view_on_jvm() {
+        val pointer = projectedObjectArgumentPointer(
+            value = listOf("en-US", "fr-FR"),
+            projectionTypeKey = "kotlin.collections.List<String>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "bbe1fa4c-b0e3-4583-baef-1f1b2e483e56",
+                WinRtTypeSignature.string(),
+            ),
+        )
+
+        assertFalse(pointer.isNull)
+        assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
+        PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 7, 1u).getOrThrow().use { value ->
+            assertEquals("fr-FR", value.toKotlinString())
+        }
+
+        val iterablePointer = PlatformComInterop.queryInterface(
+            pointer,
+            ParameterizedInterfaceId.createFromSignature(
+                WinRtTypeSignature.parameterizedInterface(
+                    "faa585ea-6214-4217-afda-7f46de5869b3",
+                    WinRtTypeSignature.string(),
+                ),
+            ),
+        ).getOrThrow()
+        PlatformComInterop.release(iterablePointer)
+
+        val iterator = PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()
+        try {
+            PlatformComInterop.invokeHStringMethod(iterator, 6).getOrThrow().use { current ->
+                assertEquals("en-US", current.toKotlinString())
+            }
+        } finally {
+            PlatformComInterop.release(iterator)
         }
     }
 }
