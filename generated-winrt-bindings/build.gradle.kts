@@ -481,6 +481,7 @@ fun JavaExec.configureWinMdParserClasspath() {
         project(":winmd-parser").configurations.getByName("runtimeClasspath"),
     )
     mainClass = "dev.winrt.winmd.parser.MainKt"
+    maxHeapSize = "256m"
 }
 
 fun registerPresetSdkGenerationTask(
