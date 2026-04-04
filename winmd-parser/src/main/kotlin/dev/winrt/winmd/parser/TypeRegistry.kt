@@ -90,11 +90,6 @@ internal class TypeRegistry(
         if (type.activationKind == WinMdActivationKind.Composable) {
             return WinMdActivationKind.Composable
         }
-        if (isResourceDictionaryDerivedRuntimeClass(type) &&
-            findInheritedComposableFactoryMethods(type.name, type.namespace).isNotEmpty()
-        ) {
-            return WinMdActivationKind.Composable
-        }
         return WinMdActivationKind.Factory
     }
 

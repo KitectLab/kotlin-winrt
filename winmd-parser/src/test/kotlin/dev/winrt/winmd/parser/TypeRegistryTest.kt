@@ -374,7 +374,7 @@ class TypeRegistryTest {
             ),
         )
         assertEquals(
-            WinMdActivationKind.Composable,
+            WinMdActivationKind.Factory,
             runtimeRegistry.runtimeClassActivationKind(
                 requireNotNull(controlTypes["XamlControlsResources"]) { controlTypes.keys.sorted().joinToString() },
             ),
@@ -382,7 +382,7 @@ class TypeRegistryTest {
     }
 
     @Test
-    fun promotes_resource_dictionary_derived_runtime_classes_with_inherited_composable_factories() {
+    fun keeps_resource_dictionary_derived_runtime_classes_factory_activated_when_metadata_is_activatable() {
         val runtimeRegistry = TypeRegistry(
             WinMdModel(
                 files = emptyList(),
@@ -446,7 +446,7 @@ class TypeRegistryTest {
         val xamlControlsResources = runtimeRegistry.findType("XamlControlsResources", "Microsoft.UI.Xaml.Controls")!!
 
         assertTrue(runtimeRegistry.isResourceDictionaryDerivedRuntimeClass(xamlControlsResources))
-        assertEquals(WinMdActivationKind.Composable, runtimeRegistry.runtimeClassActivationKind(xamlControlsResources))
+        assertEquals(WinMdActivationKind.Factory, runtimeRegistry.runtimeClassActivationKind(xamlControlsResources))
     }
 
     @Test

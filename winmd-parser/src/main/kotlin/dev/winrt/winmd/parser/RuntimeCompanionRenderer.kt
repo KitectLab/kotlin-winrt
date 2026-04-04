@@ -593,14 +593,7 @@ internal class RuntimeCompanionRenderer(
                 ClassName(activationRuntimeClass.namespace.lowercase(), activationRuntimeClass.name),
             )
         }
-        val defaultInterfaceExpression = if (
-            activationRuntimeClass != type &&
-            typeRegistry.isResourceDictionaryDerivedRuntimeClass(type)
-        ) {
-            CodeBlock.of("null")
-        } else {
-            defaultInterfaceGuidExpression(type)
-        }
+        val defaultInterfaceExpression = defaultInterfaceGuidExpression(type)
         val composeCall = CodeBlock.builder()
             .add(
                 "return %T.compose(%L, %M(%S), ",

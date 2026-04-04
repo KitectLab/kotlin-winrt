@@ -323,6 +323,18 @@ class CheckedInBindingsParityTest {
     }
 
     @Test
+    fun checked_in_xaml_controls_resources_runtime_class_keeps_verified_activation_surface() {
+        val runtimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/microsoft/ui/xaml/controls/XamlControlsResources.kt").readText()
+
+        assertTrue(runtimeClass.contains("Microsoft.UI.Xaml.Controls.XamlControlsResources"))
+        assertTrue(runtimeClass.contains("override val defaultInterfaceName: String? = \"Microsoft.UI.Xaml.Controls.IXamlControlsResources\""))
+        assertTrue(runtimeClass.contains("override val activationKind: WinRtActivationKind = WinRtActivationKind.Factory"))
+        assertTrue(runtimeClass.contains("constructor() : this(Companion.activate().pointer)"))
+        assertTrue(runtimeClass.contains("fun activate(): XamlControlsResources = WinRtRuntime.activate(this, ::XamlControlsResources)"))
+        assertFalse(runtimeClass.contains("WinRtRuntime.compose("))
+    }
+
+    @Test
     fun checked_in_globalization_preferences_runtime_class_keeps_verified_activation_surface() {
         val runtimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/system/userprofile/GlobalizationPreferences.kt").readText()
 

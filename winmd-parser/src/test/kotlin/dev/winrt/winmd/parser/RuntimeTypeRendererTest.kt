@@ -344,7 +344,7 @@ class RuntimeTypeRendererTest {
     }
 
     @Test
-    fun renders_resource_dictionary_derived_runtime_classes_with_inherited_composable_constructor_without_default_interface_projection() {
+    fun renders_activatable_resource_dictionary_derived_runtime_classes_with_activate_constructor() {
         val model = WinMdModel(
             files = emptyList(),
             namespaces = listOf(
@@ -432,11 +432,11 @@ class RuntimeTypeRendererTest {
 
         val binding = renderer.render(typeRegistry.findType("XamlControlsResources", "Microsoft.UI.Xaml.Controls")!!).toString()
 
-        assertTrue(binding.contains("constructor() : this(Companion.factoryCreateInstance().pointer)"))
-        assertTrue(binding.contains("WinRtActivationKind.Composable"))
-        assertTrue(binding.contains("ResourceDictionary.Companion"))
-        assertTrue(binding.contains("guidOf(\"22222222-2222-2222-2222-222222222222\")"))
-        assertTrue(binding.contains("null, ::XamlControlsResources"))
-        assertFalse(binding.contains("guidOf(\"33333333-3333-3333-3333-333333333333\")"))
+        assertTrue(binding.contains("constructor() : this(Companion.activate().pointer)"))
+        assertTrue(binding.contains("WinRtActivationKind.Factory"))
+        assertTrue(binding.contains("fun activate(): XamlControlsResources = WinRtRuntime.activate(this, ::XamlControlsResources)"))
+        assertFalse(binding.contains("ResourceDictionary.Companion"))
+        assertFalse(binding.contains("WinRtRuntime.compose("))
+        assertFalse(binding.contains("guidOf(\"22222222-2222-2222-2222-222222222222\")"))
     }
 }
