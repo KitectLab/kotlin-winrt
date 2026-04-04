@@ -14,10 +14,12 @@ Use these checklists before finalizing a `kotlin-winrt` change guided by `CsWinR
 ## Generator Changes
 
 - Did the metadata model change, the emitted Kotlin change, or both?
+- Did the bug originate in input expansion, metadata loading, filtering, mapped-type handling, public projection emission, ABI emission, or helper/init file emission?
 - Does generated output now route through the correct runtime helper?
 - Did a generated runtime class companion get the correct activation kind?
 - Did delegate/event emission preserve token handling and handle lifetime?
 - Did generic interface emission preserve signature and IID semantics?
+- If `CsWinRT` would emit support/bootstrap code for this scenario, does Kotlin now emit the equivalent support/bootstrap code?
 
 ## Runtime Helper Changes
 

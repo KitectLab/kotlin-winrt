@@ -2,6 +2,8 @@
 
 Use this file when you know the task area but need to decide where upstream evidence should come from.
 
+If the current repository does not contain `CsWinRT` source, read `references/cswinrt-pipeline.md` first and treat this file as secondary navigation.
+
 ## Start With Docs
 
 - `README.md`
@@ -36,6 +38,9 @@ The exact folder names can evolve, so use the repo map plus code search, but the
   Useful when a behavior comes from configuration rather than projection logic.
 
 ## Task To Upstream Area
+
+- WinMD input expansion, metadata loading, or generator pipeline shape
+  Start in `references/cswinrt-pipeline.md`, then inspect generator source and `docs/usage.md` if a live checkout is available.
 
 - Runtime object semantics
   Start in runtime support code plus `docs/interop.md`.

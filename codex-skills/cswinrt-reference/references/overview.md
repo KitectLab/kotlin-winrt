@@ -14,11 +14,26 @@ Use it to answer questions such as:
 ## What Matters For kotlin-winrt
 
 - Runtime/object identity semantics
+- WinMD input expansion and metadata ingestion behavior
+- Projection generation boundaries, including mapped types, additions, ABI output, and helper/init file emission
 - Interface projection and casting rules
 - Generic WinRT interface identity and parameterized IID behavior
 - Delegate marshaling and event registration lifetime
 - Activation, factory, and static member access patterns
 - Projection-time code generation boundaries versus runtime support boundaries
+
+## Bundled Behavior Reference
+
+Start with `references/cswinrt-pipeline.md` when the question is about WinMD reading or projection generation and the current repository does not contain a `CsWinRT` checkout.
+
+That file is the portable behavior summary for:
+
+- CLI input expansion
+- metadata cache/model expectations
+- filtering and mapped-type behavior
+- projected versus ABI emission
+- helper/init file generation
+- target-mode and component-mode differences
 
 ## Official Upstream Entry Points
 
