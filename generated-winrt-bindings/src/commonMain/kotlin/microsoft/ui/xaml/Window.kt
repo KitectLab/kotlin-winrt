@@ -15,7 +15,7 @@ import dev.winrt.kom.ComPtr
 import microsoft.ui.xaml.media.SystemBackdrop
 
 open class Window(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
-    constructor() : this(Companion.factoryCreateInstance().pointer)
+    constructor() : this(Companion.activateInstance().pointer)
 
     private val backingIsVisible = RuntimeProperty(WinRtBoolean.FALSE)
     private val backingCreatedAt = RuntimeProperty(Instant.fromEpochSeconds(0))
@@ -77,6 +77,8 @@ open class Window(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
         override val classId = RuntimeClassId("Microsoft.UI.Xaml", "Window")
         override val defaultInterfaceName: String? = "Microsoft.UI.Xaml.IWindow"
         override val activationKind = WinRtActivationKind.Composable
+
+        fun activateInstance(): Window = WinRtRuntime.activate(this, ::Window)
 
         private fun factoryCreateInstance(): Window =
             WinRtRuntime.compose(

@@ -315,6 +315,10 @@ class CheckedInBindingsParityTest {
         assertTrue(runtimeClass.contains("Microsoft.UI.Xaml.Application"))
         assertTrue(runtimeClass.contains("override val defaultInterfaceName: String? = \"Microsoft.UI.Xaml.IApplication\""))
         assertTrue(runtimeClass.contains("override val activationKind = WinRtActivationKind.Composable"))
+        assertTrue(runtimeClass.contains("constructor() : this(Companion.activate().pointer)"))
+        assertTrue(runtimeClass.contains("fun activate(): Application = WinRtRuntime.activate(this, ::Application)"))
+        assertTrue(runtimeClass.contains("private fun factoryCreateInstance(): Application ="))
+        assertTrue(runtimeClass.contains("WinRtRuntime.compose("))
         assertTrue(runtimeClass.contains("val current: Application"))
         assertTrue(runtimeClass.contains("private val statics: IApplicationStatics by lazy"))
         assertTrue(runtimeClass.contains("WinRtRuntime.projectActivationFactory(this, IApplicationStatics"))
@@ -733,6 +737,10 @@ class CheckedInBindingsParityTest {
     fun checked_in_window_optional_title_is_nullable_string() {
         val checkedIn = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/microsoft/ui/xaml/Window.kt").readText()
 
+        assertTrue(checkedIn.contains("constructor() : this(Companion.activateInstance().pointer)"))
+        assertTrue(checkedIn.contains("fun activateInstance(): Window = WinRtRuntime.activate(this, ::Window)"))
+        assertTrue(checkedIn.contains("private fun factoryCreateInstance(): Window ="))
+        assertTrue(checkedIn.contains("WinRtRuntime.compose("))
         assertTrue(checkedIn.contains("private val backingOptionalTitle = RuntimeProperty<String?>(null)"))
         assertTrue(checkedIn.contains("val optionalTitle: String?"))
         assertTrue(checkedIn.contains("if (pointer.isNull) return backingOptionalTitle.get()"))

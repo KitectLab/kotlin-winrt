@@ -50,14 +50,12 @@ internal class RuntimeCompanionRenderer(
                     .initializer("%T.%L", PoetSymbols.winRtActivationKindClass, activationKindLiteral(activationKind))
                     .build(),
             )
-        if (activationKind == WinMdActivationKind.Factory) {
-            builder.addFunction(
-                FunSpec.builder(type.activationFunctionName)
-                    .returns(typeClass)
-                    .addStatement("return %T.activate(this, ::%L)", PoetSymbols.winRtRuntimeClass, type.name)
-                    .build(),
-            )
-        }
+        builder.addFunction(
+            FunSpec.builder(type.activationFunctionName)
+                .returns(typeClass)
+                .addStatement("return %T.activate(this, ::%L)", PoetSymbols.winRtRuntimeClass, type.name)
+                .build(),
+        )
         renderFactories(type).forEach { member ->
             when (member) {
                 is PropertySpec -> builder.addProperty(member)

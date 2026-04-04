@@ -164,7 +164,7 @@ class RuntimeTypeRendererTest {
     }
 
     @Test
-    fun renders_composable_runtime_classes_without_activate_instance_constructor() {
+    fun renders_composable_runtime_classes_with_activate_default_constructor_and_composable_helpers() {
         val model = WinMdModel(
             files = emptyList(),
             namespaces = listOf(
@@ -235,12 +235,12 @@ class RuntimeTypeRendererTest {
 
         val binding = renderer.render(typeRegistry.findType("Widget", "Example.Xaml")!!).toString()
 
-        assertFalse(binding.contains("Companion.activate().pointer"))
+        assertTrue(binding.contains("constructor() : this(Companion.activate().pointer)"))
         assertTrue(binding.contains("factoryCreateInstance(label).pointer"))
         assertFalse(binding.contains("baseInterface"))
         assertFalse(binding.contains("innerInterface"))
         assertTrue(binding.contains("WinRtActivationKind.Composable"))
-        assertFalse(binding.contains("fun activate(): Widget"))
+        assertTrue(binding.contains("WinRtRuntime.activate(this, ::Widget)"))
         assertTrue(binding.contains("WinRtRuntime.compose("))
         assertTrue(binding.contains("guidOf(\"22222222-2222-2222-2222-222222222222\")"))
         assertTrue(binding.contains("::Widget"))
@@ -331,10 +331,9 @@ class RuntimeTypeRendererTest {
 
         val binding = renderer.render(typeRegistry.findType("DerivedWidget", "Example.Xaml")!!).toString()
 
-        assertFalse(binding.contains("Companion.activate().pointer"))
-        assertTrue(binding.contains("constructor() : this(Companion.factoryCreateInstance().pointer)"))
+        assertTrue(binding.contains("constructor() : this(Companion.activate().pointer)"))
         assertTrue(binding.contains("WinRtActivationKind.Composable"))
-        assertFalse(binding.contains("fun activate(): DerivedWidget"))
+        assertTrue(binding.contains("WinRtRuntime.activate(this, ::DerivedWidget)"))
         assertTrue(binding.contains("WinRtRuntime.compose("))
         assertTrue(binding.contains("BaseWidget.Companion"))
         assertTrue(binding.contains("guidOf(\"33333333-3333-3333-3333-333333333333\")"))
@@ -434,7 +433,7 @@ class RuntimeTypeRendererTest {
 
         assertTrue(binding.contains("constructor() : this(Companion.activate().pointer)"))
         assertTrue(binding.contains("WinRtActivationKind.Factory"))
-        assertTrue(binding.contains("fun activate(): XamlControlsResources = WinRtRuntime.activate(this, ::XamlControlsResources)"))
+        assertTrue(binding.contains("WinRtRuntime.activate(this, ::XamlControlsResources)"))
         assertFalse(binding.contains("ResourceDictionary.Companion"))
         assertFalse(binding.contains("WinRtRuntime.compose("))
         assertFalse(binding.contains("guidOf(\"22222222-2222-2222-2222-222222222222\")"))

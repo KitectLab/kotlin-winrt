@@ -119,13 +119,11 @@ internal class RuntimeTypeRenderer(
                 builder.addSuperinterface(projection.superinterface, projection.delegateFactory)
             }
         }
-        if (activationKind == WinMdActivationKind.Factory) {
-            builder.addFunction(
-                FunSpec.constructorBuilder()
-                    .callThisConstructor(CodeBlock.of("Companion.%L().pointer", type.activationFunctionName))
-                    .build(),
-            )
-        }
+        builder.addFunction(
+            FunSpec.constructorBuilder()
+                .callThisConstructor(CodeBlock.of("Companion.%L().pointer", type.activationFunctionName))
+                .build(),
+        )
         renderFactoryConstructors(type).forEach(builder::addFunction)
 
         runtimeProperties.forEach { property ->
@@ -196,12 +194,14 @@ internal class RuntimeTypeRenderer(
             }
             WinMdActivationKind.Composable -> {
                 val ownComposableMethods = ownFactoryMethods.filter { candidate ->
-                    typeRegistry.isComposableFactoryMethod(candidate.runtimeClass, candidate.method)
+                    typeRegistry.isComposableFactoryMethod(candidate.runtimeClass, candidate.method) &&
+                        candidate.method.parameters.dropLast(2).isNotEmpty()
                 }
                 if (ownComposableMethods.isNotEmpty()) {
                     ownComposableMethods
                 } else {
                     typeRegistry.findInheritedComposableFactoryMethods(type.name, type.namespace)
+                        .filter { candidate -> candidate.method.parameters.dropLast(2).isNotEmpty() }
                 }
             }
         }

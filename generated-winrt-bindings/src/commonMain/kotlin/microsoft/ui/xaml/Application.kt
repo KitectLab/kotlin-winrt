@@ -12,7 +12,7 @@ import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
 
 open class Application(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
-    constructor() : this(Companion.factoryCreateInstance().pointer)
+    constructor() : this(Companion.activate().pointer)
 
     private val backingResources = dev.winrt.core.RuntimeProperty(ResourceDictionary(ComPtr.NULL))
 
@@ -73,6 +73,8 @@ open class Application(pointer: ComPtr) : dev.winrt.core.Inspectable(pointer) {
             }
             return delegateHandle
         }
+
+        fun activate(): Application = WinRtRuntime.activate(this, ::Application)
 
         private val statics: IApplicationStatics by lazy {
             WinRtRuntime.projectActivationFactory(this, IApplicationStatics, ::IApplicationStatics)

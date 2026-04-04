@@ -11,13 +11,15 @@ import microsoft.ui.xaml.DependencyObject
 open class SystemBackdrop(
     pointer: ComPtr,
 ) : DependencyObject(pointer) {
-    constructor() : this(Companion.factoryCreateInstance().pointer)
+    constructor() : this(Companion.activate().pointer)
 
     companion object : WinRtRuntimeClassMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Media.SystemBackdrop"
         override val classId: RuntimeClassId = RuntimeClassId("Microsoft.UI.Xaml.Media", "SystemBackdrop")
         override val defaultInterfaceName: String? = "Microsoft.UI.Xaml.Media.ISystemBackdrop"
         override val activationKind: WinRtActivationKind = WinRtActivationKind.Composable
+
+        fun activate(): SystemBackdrop = WinRtRuntime.activate(this, ::SystemBackdrop)
 
         private fun factoryCreateInstance(): SystemBackdrop =
             WinRtRuntime.compose(

@@ -247,10 +247,18 @@ tasks.withType<JavaExec>().configureEach {
         "dev.winrt.windowsAppSdkAppxFragments",
         windowsAppSdkAppxFragments.get(),
     )
-    systemProperty(
-        "dev.winrt.autoQuitVisible",
-        providers.systemProperty("dev.winrt.autoQuitVisible").orNull ?: "",
-    )
+    providers.systemProperty("dev.winrt.forceBootstrap").orNull?.let { value ->
+        systemProperty("dev.winrt.forceBootstrap", value)
+    }
+    providers.systemProperty("dev.winrt.autoQuitVisible").orNull?.let { value ->
+        systemProperty("dev.winrt.autoQuitVisible", value)
+    }
+    providers.systemProperty("dev.winrt.enableCustomResourceManager").orNull?.let { value ->
+        systemProperty("dev.winrt.enableCustomResourceManager", value)
+    }
+    providers.systemProperty("dev.winrt.autoQuitMode").orNull?.let { value ->
+        systemProperty("dev.winrt.autoQuitMode", value)
+    }
 }
 
 val collectWinUiRuntimeAssets by tasks.registering(Sync::class) {

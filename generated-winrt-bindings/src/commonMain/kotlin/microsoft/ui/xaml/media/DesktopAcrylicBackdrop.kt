@@ -10,13 +10,15 @@ import dev.winrt.kom.ComPtr
 open class DesktopAcrylicBackdrop(
     pointer: ComPtr,
 ) : SystemBackdrop(pointer) {
-    constructor() : this(Companion.factoryCreateInstance().pointer)
+    constructor() : this(Companion.activate().pointer)
 
     companion object : WinRtRuntimeClassMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Media.DesktopAcrylicBackdrop"
         override val classId: RuntimeClassId = RuntimeClassId("Microsoft.UI.Xaml.Media", "DesktopAcrylicBackdrop")
         override val defaultInterfaceName: String? = "Microsoft.UI.Xaml.Media.IDesktopAcrylicBackdrop"
         override val activationKind: WinRtActivationKind = WinRtActivationKind.Composable
+
+        fun activate(): DesktopAcrylicBackdrop = WinRtRuntime.activate(this, ::DesktopAcrylicBackdrop)
 
         private fun factoryCreateInstance(): DesktopAcrylicBackdrop =
             WinRtRuntime.compose(

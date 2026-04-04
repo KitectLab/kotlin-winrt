@@ -10,13 +10,15 @@ import dev.winrt.kom.ComPtr
 open class MicaBackdrop(
     pointer: ComPtr,
 ) : SystemBackdrop(pointer) {
-    constructor() : this(Companion.factoryCreateInstance().pointer)
+    constructor() : this(Companion.activate().pointer)
 
     companion object : WinRtRuntimeClassMetadata {
         override val qualifiedName: String = "Microsoft.UI.Xaml.Media.MicaBackdrop"
         override val classId: RuntimeClassId = RuntimeClassId("Microsoft.UI.Xaml.Media", "MicaBackdrop")
         override val defaultInterfaceName: String? = "Microsoft.UI.Xaml.Media.IMicaBackdrop"
         override val activationKind: WinRtActivationKind = WinRtActivationKind.Composable
+
+        fun activate(): MicaBackdrop = WinRtRuntime.activate(this, ::MicaBackdrop)
 
         private fun factoryCreateInstance(): MicaBackdrop =
             WinRtRuntime.compose(
