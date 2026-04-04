@@ -151,7 +151,13 @@ object WinRtRuntime {
         constructor: (ComPtr) -> T,
     ): T {
         val projectionTypeCacheKey = "${runtimeClass.classId.qualifiedName}:projection-type:${interfaceMetadata.projectionTypeKey}:${interfaceMetadata.iid}"
+        val sharedIidCacheKey = "${runtimeClass.classId.qualifiedName}:projection-iid:${interfaceMetadata.iid}"
         activationFactoryProjectionCache[projectionTypeCacheKey]?.let { cached ->
+            @Suppress("UNCHECKED_CAST")
+            return cached as T
+        }
+        activationFactoryProjectionCache[sharedIidCacheKey]?.let { cached ->
+            activationFactoryProjectionCache.putIfAbsent(projectionTypeCacheKey, cached)
             @Suppress("UNCHECKED_CAST")
             return cached as T
         }
@@ -166,6 +172,7 @@ object WinRtRuntime {
             }
             interfaceMetadata.project(factory, constructor).also { wrapper ->
                 activationFactoryProjectionCache.putIfAbsent(projectionTypeCacheKey, wrapper)
+                activationFactoryProjectionCache.putIfAbsent(sharedIidCacheKey, wrapper)
             }
         } as T
     }

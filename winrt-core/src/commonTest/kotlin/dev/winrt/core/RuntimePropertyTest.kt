@@ -973,10 +973,10 @@ class RuntimePropertyTest {
     }
 
     @Test
-    fun projected_object_argument_pointer_rejects_plain_kotlin_values() {
+    fun projected_object_argument_pointer_rejects_unsupported_plain_kotlin_values() {
         val error = assertFailsWith<IllegalStateException> {
             projectedObjectArgumentPointer(
-                value = listOf("en-US"),
+                value = "en-US",
                 projectionTypeKey = "kotlin.collections.Iterable<String>",
                 signature = WinRtTypeSignature.parameterizedInterface(
                     "faa585ea-6214-4217-afda-7f46de5869b3",
@@ -986,7 +986,7 @@ class RuntimePropertyTest {
         }
 
         assertEquals(
-            "Projected WinRT object arguments for kotlin.collections.Iterable<String> require a projected WinRT value; plain Kotlin values are not supported yet",
+            "Projected WinRT object arguments for kotlin.collections.Iterable<String> require a projected WinRT value or a supported plain Kotlin collection/map value",
             error.message,
         )
     }

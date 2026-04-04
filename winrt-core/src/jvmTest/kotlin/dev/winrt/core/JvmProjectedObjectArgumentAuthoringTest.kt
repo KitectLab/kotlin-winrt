@@ -1,0 +1,115 @@
+package dev.winrt.core
+
+import dev.winrt.kom.ComPtr
+import dev.winrt.kom.PlatformComInterop
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+
+class JvmProjectedObjectArgumentAuthoringTest {
+    @Test
+    fun projected_object_argument_pointer_accepts_plain_iterable_string_values_on_jvm() {
+        val pointer = projectedObjectArgumentPointer(
+            value = listOf("en-US", "fr-FR"),
+            projectionTypeKey = "kotlin.collections.Iterable<String>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "faa585ea-6214-4217-afda-7f46de5869b3",
+                WinRtTypeSignature.string(),
+            ),
+        )
+
+        assertFalse(pointer.isNull)
+
+        val iterator = PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()
+        try {
+            PlatformComInterop.invokeHStringMethod(iterator, 6).getOrThrow().use { current ->
+                assertEquals("en-US", current.toKotlinString())
+            }
+            assertTrue(PlatformComInterop.invokeBooleanGetter(iterator, 7).getOrThrow())
+            assertTrue(PlatformComInterop.invokeBooleanGetter(iterator, 8).getOrThrow())
+            PlatformComInterop.invokeHStringMethod(iterator, 6).getOrThrow().use { current ->
+                assertEquals("fr-FR", current.toKotlinString())
+            }
+            assertFalse(PlatformComInterop.invokeBooleanGetter(iterator, 8).getOrThrow())
+            assertFalse(PlatformComInterop.invokeBooleanGetter(iterator, 7).getOrThrow())
+        } finally {
+            PlatformComInterop.release(iterator)
+        }
+    }
+
+    @Test
+    fun projected_object_argument_pointer_reuses_plain_iterable_stub_for_same_object() {
+        val languages = listOf("en-US", "fr-FR")
+
+        val first = projectedObjectArgumentPointer(
+            value = languages,
+            projectionTypeKey = "kotlin.collections.Iterable<String>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "faa585ea-6214-4217-afda-7f46de5869b3",
+                WinRtTypeSignature.string(),
+            ),
+        )
+        val second = projectedObjectArgumentPointer(
+            value = languages,
+            projectionTypeKey = "kotlin.collections.Iterable<String>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "faa585ea-6214-4217-afda-7f46de5869b3",
+                WinRtTypeSignature.string(),
+            ),
+        )
+
+        assertEquals(first, second)
+    }
+
+    @Test
+    fun projected_object_argument_pointer_accepts_plain_map_values_on_jvm() {
+        val forwardedIid = guidOf("12345678-1111-2222-3333-444444444444")
+
+        JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(iid = forwardedIid),
+        ).use { valueStub ->
+            val value = Inspectable(valueStub.primaryPointer)
+            val pointer = projectedObjectArgumentPointer(
+                value = linkedMapOf("theme" to value),
+                projectionTypeKey = "kotlin.collections.Map<String, Object>",
+                signature = WinRtTypeSignature.parameterizedInterface(
+                    "e480ce40-a338-4ada-adcf-272272e48cb9",
+                    WinRtTypeSignature.string(),
+                    WinRtTypeSignature.object_(),
+                ),
+            )
+
+            assertFalse(pointer.isNull)
+            assertEquals(1u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
+            assertTrue(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 9, "theme").getOrThrow())
+
+            val lookup = PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 7, "theme").getOrThrow()
+            try {
+                assertEquals(valueStub.primaryPointer.value.rawValue, lookup.value.rawValue)
+            } finally {
+                PlatformComInterop.release(lookup)
+            }
+
+            val iterator = PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()
+            try {
+                val current = PlatformComInterop.invokeObjectMethod(iterator, 6).getOrThrow()
+                try {
+                    PlatformComInterop.invokeHStringMethod(current, 6).getOrThrow().use { key ->
+                        assertEquals("theme", key.toKotlinString())
+                    }
+                    val currentValue = PlatformComInterop.invokeObjectMethod(current, 7).getOrThrow()
+                    try {
+                        assertEquals(valueStub.primaryPointer.value.rawValue, currentValue.value.rawValue)
+                    } finally {
+                        PlatformComInterop.release(currentValue)
+                    }
+                } finally {
+                    PlatformComInterop.release(current)
+                }
+            } finally {
+                PlatformComInterop.release(iterator)
+            }
+        }
+    }
+}

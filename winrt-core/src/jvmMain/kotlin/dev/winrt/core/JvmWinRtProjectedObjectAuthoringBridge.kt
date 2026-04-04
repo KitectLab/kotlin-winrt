@@ -1,0 +1,571 @@
+package dev.winrt.core
+
+import dev.winrt.kom.ComPtr
+import dev.winrt.kom.Guid
+import dev.winrt.kom.PlatformComInterop
+import java.util.IdentityHashMap
+
+internal actual object WinRtProjectedObjectAuthoringBridge {
+    private val iterableIidText = "faa585ea-6214-4217-afda-7f46de5869b3"
+    private val iteratorIidText = "6a79e863-4300-459a-9966-cbb660963ee1"
+    private val mapViewIidText = "e480ce40-a338-4ada-adcf-272272e48cb9"
+    private val keyValuePairIidText = "02b51929-c1c4-4a7e-8940-0312b5c18500"
+    private val bindableIterableIidText = "036d2c08-df29-41af-8aa2-d774be62ba6f"
+    private val bindableIteratorIidText = "6a1d6c07-076d-49f2-8314-f52c9c9a8331"
+
+    private val iterableIid = guidOf(iterableIidText)
+    private val iteratorIid = guidOf(iteratorIidText)
+    private val mapViewIid = guidOf(mapViewIidText)
+    private val keyValuePairIid = guidOf(keyValuePairIidText)
+    private val bindableIterableIid = guidOf(bindableIterableIidText)
+    private val bindableIteratorIid = guidOf(bindableIteratorIidText)
+
+    private val cache = IdentityHashMap<Any, MutableMap<String, ProjectedObjectHandle>>()
+
+    actual fun createPointerOrNull(
+        value: Any,
+        projectionTypeKey: String,
+        signature: String,
+    ): ComPtr? {
+        val parsedSignature = parseParameterizedInterfaceSignature(signature) ?: return null
+        val parsedProjectionTypeKey = parseProjectionTypeKey(projectionTypeKey)
+        val cacheKey = "$projectionTypeKey::$signature"
+        return synchronized(cache) {
+            val handles = cache.getOrPut(value) { linkedMapOf() }
+            val cached = handles[cacheKey]
+            if (cached != null) {
+                return@synchronized cached.pointer
+            }
+            val created = createProjectedHandle(value, parsedProjectionTypeKey, parsedSignature) ?: return@synchronized null
+            handles[cacheKey] = created
+            created.pointer
+        }
+    }
+
+    private fun createProjectedHandle(
+        value: Any,
+        projectionTypeKey: ProjectionTypeKey,
+        signature: AbiValueSignature.ParameterizedInterface,
+    ): ProjectedObjectHandle? {
+        return when (signature.iid.canonical) {
+            iterableIid.canonical -> createIterableHandle(value, projectionTypeKey, signature)
+            iteratorIid.canonical -> createIteratorHandle(value, projectionTypeKey, signature)
+            mapViewIid.canonical -> createMapViewHandle(value, projectionTypeKey, signature)
+            keyValuePairIid.canonical -> createKeyValuePairHandle(value, projectionTypeKey, signature)
+            bindableIterableIid.canonical -> createBindableIterableHandle(value, projectionTypeKey)
+            bindableIteratorIid.canonical -> createBindableIteratorHandle(value, projectionTypeKey)
+            else -> null
+        }
+    }
+
+    private fun createIterableHandle(
+        value: Any,
+        projectionTypeKey: ProjectionTypeKey,
+        signature: AbiValueSignature.ParameterizedInterface,
+    ): ProjectedObjectHandle? {
+        val iterable = value as? Iterable<*> ?: return null
+        val elementSignature = signature.arguments.singleOrNull() ?: return null
+        val elementProjectionTypeKey = projectionTypeKey.arguments.singleOrNull()
+            ?: inferProjectionTypeKey(elementSignature)
+        val retainedChildren = mutableListOf<AutoCloseable>()
+        val stub = JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgObjectMethods = mapOf(
+                    6 to {
+                        val iteratorHandle = requireNotNull(
+                            createIteratorHandle(
+                                iterable.iterator(),
+                                ProjectionTypeKey("kotlin.collections.Iterator", listOf(elementProjectionTypeKey)),
+                            AbiValueSignature.ParameterizedInterface(
+                                iid = iteratorIid,
+                                arguments = listOf(elementSignature),
+                                rawSignature = WinRtTypeSignature.parameterizedInterface(
+                                        iteratorIidText,
+                                        elementSignature.rawSignature,
+                                    ),
+                                ),
+                            ),
+                        )
+                        retainedChildren += iteratorHandle
+                        iteratorHandle.pointer.withAddRef()
+                    },
+                ),
+            ),
+        )
+        return ProjectedObjectHandle(stub, retainedChildren)
+    }
+
+    private fun createIteratorHandle(
+        value: Any,
+        projectionTypeKey: ProjectionTypeKey,
+        signature: AbiValueSignature.ParameterizedInterface,
+    ): ProjectedObjectHandle? {
+        val iterator = value as? Iterator<*> ?: return null
+        val elementSignature = signature.arguments.singleOrNull() ?: return null
+        val elementProjectionTypeKey = projectionTypeKey.arguments.singleOrNull()
+            ?: inferProjectionTypeKey(elementSignature)
+        val retainedChildren = mutableListOf<AutoCloseable>()
+        val state = IteratorState(iterator)
+        val interfaceSpec = when (elementSignature) {
+            is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgHStringMethods = mapOf(
+                    6 to {
+                        val current = state.currentValue ?: error("IIterator.Current was requested without a current value")
+                        current as? String
+                            ?: error("Expected iterator element to be String, got ${current::class.qualifiedName}")
+                    },
+                ),
+                noArgBooleanMethods = mapOf(
+                    7 to { state.hasCurrent },
+                    8 to { state.moveNext() },
+                ),
+            )
+            else -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgObjectMethods = mapOf(
+                    6 to {
+                        val current = state.currentValue ?: error("IIterator.Current was requested without a current value")
+                        marshalObjectResultPointer(
+                            value = current,
+                            projectionTypeKey = elementProjectionTypeKey,
+                            signature = elementSignature,
+                            retainedChildren = retainedChildren,
+                        )
+                    },
+                ),
+                noArgBooleanMethods = mapOf(
+                    7 to { state.hasCurrent },
+                    8 to { state.moveNext() },
+                ),
+            )
+        }
+        val stub = JvmWinRtObjectStub.create(interfaceSpec)
+        return ProjectedObjectHandle(stub, retainedChildren)
+    }
+
+    private fun createMapViewHandle(
+        value: Any,
+        projectionTypeKey: ProjectionTypeKey,
+        signature: AbiValueSignature.ParameterizedInterface,
+    ): ProjectedObjectHandle? {
+        val map = value as? Map<*, *> ?: return null
+        val keySignature = signature.arguments.getOrNull(0) ?: return null
+        val valueSignature = signature.arguments.getOrNull(1) ?: return null
+        if (keySignature !is AbiValueSignature.StringType) {
+            return null
+        }
+        val keyProjectionTypeKey = projectionTypeKey.arguments.getOrNull(0) ?: inferProjectionTypeKey(keySignature)
+        val valueProjectionTypeKey = projectionTypeKey.arguments.getOrNull(1) ?: inferProjectionTypeKey(valueSignature)
+        val keyValuePairSignature = AbiValueSignature.ParameterizedInterface(
+            iid = keyValuePairIid,
+            arguments = listOf(keySignature, valueSignature),
+            rawSignature = WinRtTypeSignature.parameterizedInterface(
+                keyValuePairIidText,
+                keySignature.rawSignature,
+                valueSignature.rawSignature,
+            ),
+        )
+        val keyValuePairProjectionTypeKey = ProjectionTypeKey(
+            rawType = "kotlin.collections.Map.Entry",
+            arguments = listOf(keyProjectionTypeKey, valueProjectionTypeKey),
+        )
+        val retainedChildren = mutableListOf<AutoCloseable>()
+        val entries = map.entries
+        val firstMethod: () -> ComPtr = {
+            val iteratorHandle = requireNotNull(
+                createIteratorHandle(
+                    entries.iterator(),
+                    ProjectionTypeKey(
+                        rawType = "kotlin.collections.Iterator",
+                        arguments = listOf(keyValuePairProjectionTypeKey.render()),
+                    ),
+                    AbiValueSignature.ParameterizedInterface(
+                        iid = iteratorIid,
+                        arguments = listOf(keyValuePairSignature),
+                        rawSignature = WinRtTypeSignature.parameterizedInterface(
+                            iteratorIidText,
+                            keyValuePairSignature.rawSignature,
+                        ),
+                    ),
+                ),
+            )
+            retainedChildren += iteratorHandle
+            iteratorHandle.pointer.withAddRef()
+        }
+        val interfaceSpec = when (valueSignature) {
+            is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                stringArgHStringMethods = mapOf(
+                    7 to { key ->
+                        if (!map.containsKey(key)) {
+                            error("Map does not contain key '$key'")
+                        }
+                        val result = map[key]
+                        result as? String
+                            ?: error("Expected map value for '$key' to be String, got ${result?.let { it::class.qualifiedName }}")
+                    },
+                ),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+            )
+            else -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                stringArgObjectMethods = mapOf(
+                    7 to { key ->
+                        if (!map.containsKey(key)) {
+                            error("Map does not contain key '$key'")
+                        }
+                        marshalObjectResultPointer(
+                            value = map[key],
+                            projectionTypeKey = valueProjectionTypeKey,
+                            signature = valueSignature,
+                            retainedChildren = retainedChildren,
+                        )
+                    },
+                ),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+            )
+        }
+        val stub = JvmWinRtObjectStub.create(interfaceSpec)
+        return ProjectedObjectHandle(stub, retainedChildren)
+    }
+
+    private fun createKeyValuePairHandle(
+        value: Any,
+        projectionTypeKey: ProjectionTypeKey,
+        signature: AbiValueSignature.ParameterizedInterface,
+    ): ProjectedObjectHandle? {
+        val entry = value as? Map.Entry<*, *> ?: return null
+        val keySignature = signature.arguments.getOrNull(0) ?: return null
+        val valueSignature = signature.arguments.getOrNull(1) ?: return null
+        val keyProjectionTypeKey = projectionTypeKey.arguments.getOrNull(0) ?: inferProjectionTypeKey(keySignature)
+        val valueProjectionTypeKey = projectionTypeKey.arguments.getOrNull(1) ?: inferProjectionTypeKey(valueSignature)
+        val retainedChildren = mutableListOf<AutoCloseable>()
+        val interfaceSpec = JvmWinRtObjectStub.InterfaceSpec(
+            iid = signature.iid,
+            noArgObjectMethods = buildMap {
+                if (keySignature !is AbiValueSignature.StringType) {
+                    put(
+                        6,
+                        {
+                            marshalObjectResultPointer(
+                                value = entry.key,
+                                projectionTypeKey = keyProjectionTypeKey,
+                                signature = keySignature,
+                                retainedChildren = retainedChildren,
+                            )
+                        },
+                    )
+                }
+                if (valueSignature !is AbiValueSignature.StringType) {
+                    put(
+                        7,
+                        {
+                            marshalObjectResultPointer(
+                                value = entry.value,
+                                projectionTypeKey = valueProjectionTypeKey,
+                                signature = valueSignature,
+                                retainedChildren = retainedChildren,
+                            )
+                        },
+                    )
+                }
+            },
+            noArgHStringMethods = buildMap {
+                if (keySignature is AbiValueSignature.StringType) {
+                    put(
+                        6,
+                        {
+                            entry.key as? String
+                                ?: error("Expected key to be String, got ${entry.key?.let { it::class.qualifiedName }}")
+                        },
+                    )
+                }
+                if (valueSignature is AbiValueSignature.StringType) {
+                    put(
+                        7,
+                        {
+                            entry.value as? String
+                                ?: error("Expected value to be String, got ${entry.value?.let { it::class.qualifiedName }}")
+                        },
+                    )
+                }
+            },
+        )
+        val stub = JvmWinRtObjectStub.create(interfaceSpec)
+        return ProjectedObjectHandle(stub, retainedChildren)
+    }
+
+    private fun createBindableIterableHandle(
+        value: Any,
+        projectionTypeKey: ProjectionTypeKey,
+    ): ProjectedObjectHandle? {
+        val iterable = value as? Iterable<*> ?: return null
+        val elementProjectionTypeKey = projectionTypeKey.arguments.singleOrNull() ?: "Object"
+        val retainedChildren = mutableListOf<AutoCloseable>()
+        val stub = JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(
+                iid = bindableIterableIid,
+                noArgObjectMethods = mapOf(
+                    6 to {
+                        val iteratorHandle = requireNotNull(
+                            createBindableIteratorHandle(
+                                iterable.iterator(),
+                                ProjectionTypeKey("kotlin.collections.Iterator", listOf(elementProjectionTypeKey)),
+                            ),
+                        )
+                        retainedChildren += iteratorHandle
+                        iteratorHandle.pointer.withAddRef()
+                    },
+                ),
+            ),
+        )
+        return ProjectedObjectHandle(stub, retainedChildren)
+    }
+
+    private fun createBindableIteratorHandle(
+        value: Any,
+        projectionTypeKey: ProjectionTypeKey,
+    ): ProjectedObjectHandle? {
+        val iterator = value as? Iterator<*> ?: return null
+        val elementProjectionTypeKey = projectionTypeKey.arguments.singleOrNull() ?: "Object"
+        val retainedChildren = mutableListOf<AutoCloseable>()
+        val state = IteratorState(iterator)
+        val stub = JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(
+                iid = bindableIteratorIid,
+                noArgObjectMethods = mapOf(
+                    6 to {
+                        val current = state.currentValue ?: error("IBindableIterator.Current was requested without a current value")
+                        marshalObjectResultPointer(
+                            value = current,
+                            projectionTypeKey = elementProjectionTypeKey,
+                            signature = AbiValueSignature.ObjectType(WinRtTypeSignature.object_()),
+                            retainedChildren = retainedChildren,
+                        )
+                    },
+                ),
+                noArgBooleanMethods = mapOf(
+                    7 to { state.hasCurrent },
+                    8 to { state.moveNext() },
+                ),
+            ),
+        )
+        return ProjectedObjectHandle(stub, retainedChildren)
+    }
+
+    private fun marshalObjectResultPointer(
+        value: Any?,
+        projectionTypeKey: String,
+        signature: AbiValueSignature,
+        retainedChildren: MutableList<AutoCloseable>,
+    ): ComPtr {
+        val pointer = when (signature) {
+            is AbiValueSignature.ParameterizedInterface -> {
+                if (value == null) {
+                    ComPtr.NULL
+                } else if (value is Inspectable) {
+                    value.getObjectReferenceForProjectedType(
+                        projectionTypeKey,
+                        ParameterizedInterfaceId.createFromSignature(signature.rawSignature),
+                    )
+                } else {
+                    val child = requireNotNull(
+                        createProjectedHandle(
+                            value,
+                            parseProjectionTypeKey(projectionTypeKey),
+                            signature,
+                        ),
+                    ) {
+                        "Unsupported plain Kotlin value ${value::class.qualifiedName} for projected signature ${signature.rawSignature}"
+                    }
+                    retainedChildren += child
+                    child.pointer
+                }
+            }
+            is AbiValueSignature.ObjectType -> when (value) {
+                null -> ComPtr.NULL
+                is Inspectable -> value.getInspectableArgumentPointer()
+                else -> error(
+                    "Projected object values for $projectionTypeKey require an Inspectable value; " +
+                        "got ${value::class.qualifiedName}",
+                )
+            }
+            is AbiValueSignature.StringType -> error("String values must use the HSTRING result path")
+        }
+        return pointer.withAddRef()
+    }
+
+    private fun inferProjectionTypeKey(signature: AbiValueSignature): String {
+        return when (signature) {
+            is AbiValueSignature.StringType -> "String"
+            is AbiValueSignature.ObjectType -> "Object"
+            is AbiValueSignature.ParameterizedInterface -> when (signature.iid.canonical) {
+                iterableIid.canonical,
+                bindableIterableIid.canonical,
+                -> "kotlin.collections.Iterable<${inferProjectionTypeKey(signature.arguments.single())}>"
+                iteratorIid.canonical,
+                bindableIteratorIid.canonical,
+                -> "kotlin.collections.Iterator<${inferProjectionTypeKey(signature.arguments.single())}>"
+                mapViewIid.canonical -> "kotlin.collections.Map<${signature.arguments.joinToString(", ") { inferProjectionTypeKey(it) }}>"
+                keyValuePairIid.canonical ->
+                    "kotlin.collections.Map.Entry<${signature.arguments.joinToString(", ") { inferProjectionTypeKey(it) }}>"
+                else -> "Object"
+            }
+        }
+    }
+
+    private fun parseParameterizedInterfaceSignature(signature: String): AbiValueSignature.ParameterizedInterface? {
+        if (!signature.startsWith("pinterface(") || !signature.endsWith(")")) {
+            return null
+        }
+        val content = signature.removePrefix("pinterface(").removeSuffix(")")
+        val parts = splitTopLevel(content, ';')
+        if (parts.isEmpty()) {
+            return null
+        }
+        val iid = guidOf(parts.first().removePrefix("{").removeSuffix("}"))
+        return AbiValueSignature.ParameterizedInterface(
+            iid = iid,
+            arguments = parts.drop(1).map(::parseAbiValueSignature),
+            rawSignature = signature,
+        )
+    }
+
+    private fun parseAbiValueSignature(signature: String): AbiValueSignature {
+        return when {
+            signature == "string" -> AbiValueSignature.StringType(signature)
+            signature.startsWith("pinterface(") -> parseParameterizedInterfaceSignature(signature)
+                ?: AbiValueSignature.ObjectType(signature)
+            else -> AbiValueSignature.ObjectType(signature)
+        }
+    }
+
+    private fun parseProjectionTypeKey(projectionTypeKey: String): ProjectionTypeKey {
+        val rawType = projectionTypeKey.substringBefore('<').trim()
+        val argumentSource = projectionTypeKey.substringAfter('<', "").substringBeforeLast('>', "")
+        if (argumentSource.isBlank()) {
+            return ProjectionTypeKey(rawType, emptyList())
+        }
+        return ProjectionTypeKey(rawType, splitTopLevel(argumentSource, ',').map(String::trim))
+    }
+
+    private fun splitTopLevel(source: String, separator: Char): List<String> {
+        if (source.isBlank()) {
+            return emptyList()
+        }
+        val parts = mutableListOf<String>()
+        val current = StringBuilder()
+        var parenthesisDepth = 0
+        var angleDepth = 0
+        source.forEach { character ->
+            when (character) {
+                '(' -> parenthesisDepth += 1
+                ')' -> parenthesisDepth -= 1
+                '<' -> angleDepth += 1
+                '>' -> angleDepth -= 1
+            }
+            if (character == separator && parenthesisDepth == 0 && angleDepth == 0) {
+                parts += current.toString()
+                current.setLength(0)
+            } else {
+                current.append(character)
+            }
+        }
+        parts += current.toString()
+        return parts
+    }
+
+    private class IteratorState(
+        private val iterator: Iterator<*>,
+    ) {
+        var currentValue: Any? = null
+            private set
+
+        var hasCurrent: Boolean = false
+            private set
+
+        init {
+            advanceInitial()
+        }
+
+        fun moveNext(): Boolean {
+            if (iterator.hasNext()) {
+                currentValue = iterator.next()
+                hasCurrent = true
+                return true
+            }
+            currentValue = null
+            hasCurrent = false
+            return false
+        }
+
+        private fun advanceInitial() {
+            if (iterator.hasNext()) {
+                currentValue = iterator.next()
+                hasCurrent = true
+            }
+        }
+    }
+
+    private data class ProjectionTypeKey(
+        val rawType: String,
+        val arguments: List<String>,
+    ) {
+        fun render(): String {
+            return if (arguments.isEmpty()) {
+                rawType
+            } else {
+                "$rawType<${arguments.joinToString(", ")}>"
+            }
+        }
+    }
+
+    private sealed class AbiValueSignature(
+        open val rawSignature: String,
+    ) {
+        data class StringType(
+            override val rawSignature: String,
+        ) : AbiValueSignature(rawSignature)
+
+        data class ObjectType(
+            override val rawSignature: String,
+        ) : AbiValueSignature(rawSignature)
+
+        data class ParameterizedInterface(
+            val iid: Guid,
+            val arguments: List<AbiValueSignature>,
+            override val rawSignature: String,
+        ) : AbiValueSignature(rawSignature)
+    }
+    private class ProjectedObjectHandle(
+        private val stub: JvmWinRtObjectStub,
+        retainedChildren: List<AutoCloseable>,
+    ) : AutoCloseable {
+        private val retainedChildren: MutableList<AutoCloseable> = retainedChildren.toMutableList()
+
+        val pointer: ComPtr
+            get() = stub.primaryPointer
+
+        override fun close() {
+            retainedChildren.asReversed().forEach(AutoCloseable::close)
+            retainedChildren.clear()
+            stub.close()
+        }
+    }
+
+    private fun ComPtr.withAddRef(): ComPtr {
+        if (!isNull) {
+            PlatformComInterop.addRef(this)
+        }
+        return this
+    }
+}
+
+private val Guid.canonical: String
+    get() = toString()

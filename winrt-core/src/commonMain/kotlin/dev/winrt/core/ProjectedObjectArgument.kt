@@ -10,9 +10,10 @@ fun projectedObjectArgumentPointer(
     val iid = ParameterizedInterfaceId.createFromSignature(signature)
     return when (value) {
         is Inspectable -> value.getObjectReferenceForProjectedType(projectionTypeKey, iid)
-        else -> error(
-            "Projected WinRT object arguments for $projectionTypeKey require a projected WinRT value; " +
-                "plain Kotlin values are not supported yet",
-        )
+        else -> WinRtProjectedObjectAuthoringBridge.createPointerOrNull(value, projectionTypeKey, signature)
+            ?: error(
+                "Projected WinRT object arguments for $projectionTypeKey require a projected WinRT value " +
+                    "or a supported plain Kotlin collection/map value",
+            )
     }
 }

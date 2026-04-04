@@ -179,6 +179,54 @@ class JvmWinRtObjectStub private constructor(
             ),
         )
 
+        private val noArgObjectInvokeHandle = lookup.findStatic(
+            JvmWinRtObjectStub::class.java,
+            "invokeNoArgObject",
+            MethodType.methodType(
+                Int::class.javaPrimitiveType,
+                Long::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                MemorySegment::class.java,
+                MemorySegment::class.java,
+            ),
+        )
+
+        private val noArgBooleanInvokeHandle = lookup.findStatic(
+            JvmWinRtObjectStub::class.java,
+            "invokeNoArgBoolean",
+            MethodType.methodType(
+                Int::class.javaPrimitiveType,
+                Long::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                MemorySegment::class.java,
+                MemorySegment::class.java,
+            ),
+        )
+
+        private val noArgUInt32InvokeHandle = lookup.findStatic(
+            JvmWinRtObjectStub::class.java,
+            "invokeNoArgUInt32",
+            MethodType.methodType(
+                Int::class.javaPrimitiveType,
+                Long::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                MemorySegment::class.java,
+                MemorySegment::class.java,
+            ),
+        )
+
+        private val noArgHStringInvokeHandle = lookup.findStatic(
+            JvmWinRtObjectStub::class.java,
+            "invokeNoArgHString",
+            MethodType.methodType(
+                Int::class.javaPrimitiveType,
+                Long::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                MemorySegment::class.java,
+                MemorySegment::class.java,
+            ),
+        )
+
         private val objectArgInvokeHandle = lookup.findStatic(
             JvmWinRtObjectStub::class.java,
             "invokeObjectArg",
@@ -217,6 +265,32 @@ class JvmWinRtObjectStub private constructor(
             ),
         )
 
+        private val stringArgBooleanInvokeHandle = lookup.findStatic(
+            JvmWinRtObjectStub::class.java,
+            "invokeStringArgBoolean",
+            MethodType.methodType(
+                Int::class.javaPrimitiveType,
+                Long::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                MemorySegment::class.java,
+                MemorySegment::class.java,
+                MemorySegment::class.java,
+            ),
+        )
+
+        private val stringArgHStringInvokeHandle = lookup.findStatic(
+            JvmWinRtObjectStub::class.java,
+            "invokeStringArgHString",
+            MethodType.methodType(
+                Int::class.javaPrimitiveType,
+                Long::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                MemorySegment::class.java,
+                MemorySegment::class.java,
+                MemorySegment::class.java,
+            ),
+        )
+
         fun create(vararg interfaces: InterfaceSpec): JvmWinRtObjectStub {
             return createWithRuntimeClassName(null, *interfaces)
         }
@@ -231,9 +305,15 @@ class JvmWinRtObjectStub private constructor(
                 val maxSlot = maxOf(
                     5,
                     spec.noArgUnitMethods.keys.maxOrNull() ?: 2,
+                    spec.noArgObjectMethods.keys.maxOrNull() ?: 2,
+                    spec.noArgBooleanMethods.keys.maxOrNull() ?: 2,
+                    spec.noArgUInt32Methods.keys.maxOrNull() ?: 2,
+                    spec.noArgHStringMethods.keys.maxOrNull() ?: 2,
                     spec.objectArgUnitMethods.keys.maxOrNull() ?: 2,
                     spec.objectArgObjectMethods.keys.maxOrNull() ?: 2,
                     spec.stringArgObjectMethods.keys.maxOrNull() ?: 2,
+                    spec.stringArgBooleanMethods.keys.maxOrNull() ?: 2,
+                    spec.stringArgHStringMethods.keys.maxOrNull() ?: 2,
                 )
                 val vtable = arena.allocate(ValueLayout.ADDRESS.byteSize() * (maxSlot + 1), ValueLayout.ADDRESS.byteAlignment())
                 val instance = arena.allocate(ValueLayout.ADDRESS)
@@ -256,6 +336,58 @@ class JvmWinRtObjectStub private constructor(
                     )
                     vtable.setAtIndex(ValueLayout.ADDRESS, slot.toLong(), stub)
                     sharedState.noArgUnitMethods[interfaceAddress to slot] = method
+                }
+                spec.noArgObjectMethods.forEach { (slot, method) ->
+                    val stub = linker.upcallStub(
+                        MethodHandles.insertArguments(noArgObjectInvokeHandle, 0, interfaceAddress, slot),
+                        FunctionDescriptor.of(
+                            ValueLayout.JAVA_INT,
+                            ValueLayout.ADDRESS,
+                            ValueLayout.ADDRESS,
+                        ),
+                        arena,
+                    )
+                    vtable.setAtIndex(ValueLayout.ADDRESS, slot.toLong(), stub)
+                    sharedState.noArgObjectMethods[interfaceAddress to slot] = method
+                }
+                spec.noArgBooleanMethods.forEach { (slot, method) ->
+                    val stub = linker.upcallStub(
+                        MethodHandles.insertArguments(noArgBooleanInvokeHandle, 0, interfaceAddress, slot),
+                        FunctionDescriptor.of(
+                            ValueLayout.JAVA_INT,
+                            ValueLayout.ADDRESS,
+                            ValueLayout.ADDRESS,
+                        ),
+                        arena,
+                    )
+                    vtable.setAtIndex(ValueLayout.ADDRESS, slot.toLong(), stub)
+                    sharedState.noArgBooleanMethods[interfaceAddress to slot] = method
+                }
+                spec.noArgUInt32Methods.forEach { (slot, method) ->
+                    val stub = linker.upcallStub(
+                        MethodHandles.insertArguments(noArgUInt32InvokeHandle, 0, interfaceAddress, slot),
+                        FunctionDescriptor.of(
+                            ValueLayout.JAVA_INT,
+                            ValueLayout.ADDRESS,
+                            ValueLayout.ADDRESS,
+                        ),
+                        arena,
+                    )
+                    vtable.setAtIndex(ValueLayout.ADDRESS, slot.toLong(), stub)
+                    sharedState.noArgUInt32Methods[interfaceAddress to slot] = method
+                }
+                spec.noArgHStringMethods.forEach { (slot, method) ->
+                    val stub = linker.upcallStub(
+                        MethodHandles.insertArguments(noArgHStringInvokeHandle, 0, interfaceAddress, slot),
+                        FunctionDescriptor.of(
+                            ValueLayout.JAVA_INT,
+                            ValueLayout.ADDRESS,
+                            ValueLayout.ADDRESS,
+                        ),
+                        arena,
+                    )
+                    vtable.setAtIndex(ValueLayout.ADDRESS, slot.toLong(), stub)
+                    sharedState.noArgHStringMethods[interfaceAddress to slot] = method
                 }
                 spec.objectArgUnitMethods.forEach { (slot, method) ->
                     val stub = linker.upcallStub(
@@ -297,6 +429,34 @@ class JvmWinRtObjectStub private constructor(
                     )
                     vtable.setAtIndex(ValueLayout.ADDRESS, slot.toLong(), stub)
                     sharedState.stringArgObjectMethods[interfaceAddress to slot] = method
+                }
+                spec.stringArgBooleanMethods.forEach { (slot, method) ->
+                    val stub = linker.upcallStub(
+                        MethodHandles.insertArguments(stringArgBooleanInvokeHandle, 0, interfaceAddress, slot),
+                        FunctionDescriptor.of(
+                            ValueLayout.JAVA_INT,
+                            ValueLayout.ADDRESS,
+                            ValueLayout.ADDRESS,
+                            ValueLayout.ADDRESS,
+                        ),
+                        arena,
+                    )
+                    vtable.setAtIndex(ValueLayout.ADDRESS, slot.toLong(), stub)
+                    sharedState.stringArgBooleanMethods[interfaceAddress to slot] = method
+                }
+                spec.stringArgHStringMethods.forEach { (slot, method) ->
+                    val stub = linker.upcallStub(
+                        MethodHandles.insertArguments(stringArgHStringInvokeHandle, 0, interfaceAddress, slot),
+                        FunctionDescriptor.of(
+                            ValueLayout.JAVA_INT,
+                            ValueLayout.ADDRESS,
+                            ValueLayout.ADDRESS,
+                            ValueLayout.ADDRESS,
+                        ),
+                        arena,
+                    )
+                    vtable.setAtIndex(ValueLayout.ADDRESS, slot.toLong(), stub)
+                    sharedState.stringArgHStringMethods[interfaceAddress to slot] = method
                 }
 
                 instance.set(ValueLayout.ADDRESS, 0, vtable)
@@ -405,6 +565,95 @@ class JvmWinRtObjectStub private constructor(
         }
 
         @JvmStatic
+        private fun invokeNoArgObject(
+            interfaceAddress: Long,
+            slot: Int,
+            thisPointer: MemorySegment,
+            result: MemorySegment,
+        ): Int {
+            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
+            return runCatching {
+                val value = state.noArgObjectMethods[interfaceAddress to slot]
+                    ?.invoke()
+                    ?: return KnownHResults.E_NOTIMPL.value
+                writeAddress(result, value)
+                HResult(0).value
+            }.getOrElse {
+                writeAddress(result, ComPtr.NULL)
+                HResult(0x80004005.toInt()).value
+            }
+        }
+
+        @JvmStatic
+        private fun invokeNoArgBoolean(
+            interfaceAddress: Long,
+            slot: Int,
+            thisPointer: MemorySegment,
+            result: MemorySegment,
+        ): Int {
+            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
+            return runCatching {
+                val value = state.noArgBooleanMethods[interfaceAddress to slot]
+                    ?.invoke()
+                    ?: return KnownHResults.E_NOTIMPL.value
+                result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(
+                    ValueLayout.JAVA_INT,
+                    0L,
+                    if (value) 1 else 0,
+                )
+                HResult(0).value
+            }.getOrElse {
+                result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
+                HResult(0x80004005.toInt()).value
+            }
+        }
+
+        @JvmStatic
+        private fun invokeNoArgUInt32(
+            interfaceAddress: Long,
+            slot: Int,
+            thisPointer: MemorySegment,
+            result: MemorySegment,
+        ): Int {
+            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
+            return runCatching {
+                val value = state.noArgUInt32Methods[interfaceAddress to slot]
+                    ?.invoke()
+                    ?: return KnownHResults.E_NOTIMPL.value
+                result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(
+                    ValueLayout.JAVA_INT,
+                    0L,
+                    value.toInt(),
+                )
+                HResult(0).value
+            }.getOrElse {
+                result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
+                HResult(0x80004005.toInt()).value
+            }
+        }
+
+        @JvmStatic
+        private fun invokeNoArgHString(
+            interfaceAddress: Long,
+            slot: Int,
+            thisPointer: MemorySegment,
+            result: MemorySegment,
+        ): Int {
+            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
+            return runCatching {
+                val value = state.noArgHStringMethods[interfaceAddress to slot]
+                    ?.invoke()
+                    ?: return KnownHResults.E_NOTIMPL.value
+                val hString = JvmWinRtRuntime.createHString(value)
+                writeAddress(result, ComPtr(AbiIntPtr(hString.raw)))
+                HResult(0).value
+            }.getOrElse {
+                writeAddress(result, ComPtr.NULL)
+                HResult(0x80004005.toInt()).value
+            }
+        }
+
+        @JvmStatic
         private fun invokeObjectArg(interfaceAddress: Long, slot: Int, thisPointer: MemorySegment, arg: MemorySegment): Int {
             val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
             return state.objectArgUnitMethods[interfaceAddress to slot]
@@ -448,6 +697,53 @@ class JvmWinRtObjectStub private constructor(
                     ?.invoke(PlatformHStringBridge.toKotlinString(HString(arg.address())))
                     ?: return KnownHResults.E_NOTIMPL.value
                 writeAddress(result, value)
+                HResult(0).value
+            }.getOrElse {
+                writeAddress(result, ComPtr.NULL)
+                HResult(0x80004005.toInt()).value
+            }
+        }
+
+        @JvmStatic
+        private fun invokeStringArgBoolean(
+            interfaceAddress: Long,
+            slot: Int,
+            thisPointer: MemorySegment,
+            arg: MemorySegment,
+            result: MemorySegment,
+        ): Int {
+            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
+            return runCatching {
+                val value = state.stringArgBooleanMethods[interfaceAddress to slot]
+                    ?.invoke(PlatformHStringBridge.toKotlinString(HString(arg.address())))
+                    ?: return KnownHResults.E_NOTIMPL.value
+                result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(
+                    ValueLayout.JAVA_INT,
+                    0L,
+                    if (value) 1 else 0,
+                )
+                HResult(0).value
+            }.getOrElse {
+                result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
+                HResult(0x80004005.toInt()).value
+            }
+        }
+
+        @JvmStatic
+        private fun invokeStringArgHString(
+            interfaceAddress: Long,
+            slot: Int,
+            thisPointer: MemorySegment,
+            arg: MemorySegment,
+            result: MemorySegment,
+        ): Int {
+            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
+            return runCatching {
+                val value = state.stringArgHStringMethods[interfaceAddress to slot]
+                    ?.invoke(PlatformHStringBridge.toKotlinString(HString(arg.address())))
+                    ?: return KnownHResults.E_NOTIMPL.value
+                val hString = JvmWinRtRuntime.createHString(value)
+                writeAddress(result, ComPtr(AbiIntPtr(hString.raw)))
                 HResult(0).value
             }.getOrElse {
                 writeAddress(result, ComPtr.NULL)
@@ -515,9 +811,15 @@ class JvmWinRtObjectStub private constructor(
     data class InterfaceSpec(
         val iid: Guid,
         val noArgUnitMethods: Map<Int, () -> HResult> = emptyMap(),
+        val noArgObjectMethods: Map<Int, () -> ComPtr> = emptyMap(),
+        val noArgBooleanMethods: Map<Int, () -> Boolean> = emptyMap(),
+        val noArgUInt32Methods: Map<Int, () -> UInt> = emptyMap(),
+        val noArgHStringMethods: Map<Int, () -> String> = emptyMap(),
         val objectArgUnitMethods: Map<Int, (ComPtr) -> HResult> = emptyMap(),
         val objectArgObjectMethods: Map<Int, (ComPtr) -> ComPtr> = emptyMap(),
         val stringArgObjectMethods: Map<Int, (String) -> ComPtr> = emptyMap(),
+        val stringArgBooleanMethods: Map<Int, (String) -> Boolean> = emptyMap(),
+        val stringArgHStringMethods: Map<Int, (String) -> String> = emptyMap(),
     )
 
     private class SharedState(
@@ -526,9 +828,15 @@ class JvmWinRtObjectStub private constructor(
         val refCount = AtomicInteger(1)
         val interfacesByIid = linkedMapOf<String, ComPtr>()
         val noArgUnitMethods = mutableMapOf<Pair<Long, Int>, () -> HResult>()
+        val noArgObjectMethods = mutableMapOf<Pair<Long, Int>, () -> ComPtr>()
+        val noArgBooleanMethods = mutableMapOf<Pair<Long, Int>, () -> Boolean>()
+        val noArgUInt32Methods = mutableMapOf<Pair<Long, Int>, () -> UInt>()
+        val noArgHStringMethods = mutableMapOf<Pair<Long, Int>, () -> String>()
         val objectArgUnitMethods = mutableMapOf<Pair<Long, Int>, (ComPtr) -> HResult>()
         val objectArgObjectMethods = mutableMapOf<Pair<Long, Int>, (ComPtr) -> ComPtr>()
         val stringArgObjectMethods = mutableMapOf<Pair<Long, Int>, (String) -> ComPtr>()
+        val stringArgBooleanMethods = mutableMapOf<Pair<Long, Int>, (String) -> Boolean>()
+        val stringArgHStringMethods = mutableMapOf<Pair<Long, Int>, (String) -> String>()
         val queryInterfaceFallback = AtomicReference<((Guid) -> ComPtr?)?>(null)
 
         fun ownsPointer(pointer: ComPtr): Boolean {
