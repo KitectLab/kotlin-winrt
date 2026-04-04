@@ -195,7 +195,11 @@ internal class RuntimeTypeRenderer(
 
     private fun renderDefaultConstructor(type: WinMdType, activationKind: WinMdActivationKind): FunSpec? {
         val constructorTarget = when (activationKind) {
-            WinMdActivationKind.Factory -> CodeBlock.of("Companion.%L().pointer", type.activationFunctionName)
+            WinMdActivationKind.Factory -> if (shouldRenderFactoryActivationHelper(type)) {
+                CodeBlock.of("Companion.%L().pointer", type.activationFunctionName)
+            } else {
+                return null
+            }
             WinMdActivationKind.Composable -> defaultComposableConstructorHelperName(type)
                 ?.let { helperName -> CodeBlock.of("Companion.%L().pointer", helperName) }
                 ?: return null
@@ -206,20 +210,11 @@ internal class RuntimeTypeRenderer(
     }
 
     private fun defaultComposableConstructorHelperName(type: WinMdType): String? {
-        val ownFactoryMethods = typeRegistry.findRuntimeClassFactoryMethods(type.name, type.namespace)
-        ownFactoryMethods
+        return typeRegistry.findRuntimeClassFactoryMethods(type.name, type.namespace)
             .firstOrNull { candidate ->
                 typeRegistry.isComposableFactoryMethod(candidate.runtimeClass, candidate.method) &&
                     candidate.method.parameters.dropLast(2).isEmpty()
             }
-            ?.let { candidate ->
-                return "${helperAccessorName(candidate.factoryType.name)}${candidate.method.name}"
-            }
-        if (ownFactoryMethods.isNotEmpty()) {
-            return null
-        }
-        return typeRegistry.findInheritedComposableFactoryMethods(type.name, type.namespace)
-            .firstOrNull { candidate -> candidate.method.parameters.dropLast(2).isEmpty() }
             ?.let { candidate -> "${helperAccessorName(candidate.factoryType.name)}${candidate.method.name}" }
     }
 
@@ -231,15 +226,9 @@ internal class RuntimeTypeRenderer(
                 typeRegistry.isComposableFactoryMethod(candidate.runtimeClass, candidate.method)
             }
             WinMdActivationKind.Composable -> {
-                val ownComposableMethods = ownFactoryMethods.filter { candidate ->
+                ownFactoryMethods.filter { candidate ->
                     typeRegistry.isComposableFactoryMethod(candidate.runtimeClass, candidate.method) &&
                         candidate.method.parameters.dropLast(2).isNotEmpty()
-                }
-                if (ownComposableMethods.isNotEmpty()) {
-                    ownComposableMethods
-                } else {
-                    typeRegistry.findInheritedComposableFactoryMethods(type.name, type.namespace)
-                        .filter { candidate -> candidate.method.parameters.dropLast(2).isNotEmpty() }
                 }
             }
         }
@@ -271,6 +260,11 @@ internal class RuntimeTypeRenderer(
                     )
                     .build()
             }
+    }
+
+    private fun shouldRenderFactoryActivationHelper(type: WinMdType): Boolean {
+        return type.hasActivatableAttribute &&
+            typeRegistry.findRuntimeClassFactoryMethods(type.name, type.namespace).isEmpty()
     }
 
     private fun overrideInterfaceMethods(type: WinMdType, overrideInterfaceTypes: List<WinMdType>): List<WinMdMethod> {

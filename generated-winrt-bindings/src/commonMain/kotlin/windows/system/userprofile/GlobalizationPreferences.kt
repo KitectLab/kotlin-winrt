@@ -10,7 +10,9 @@ import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.kom.ComPtr
 import kotlin.String
 import kotlin.collections.Iterable
+import windows.foundation.collections.IVectorView
 import windows.globalization.DayOfWeek
+import windows.system.User
 
 public open class GlobalizationPreferences(
   pointer: ComPtr,
@@ -20,7 +22,11 @@ public open class GlobalizationPreferences(
   public val homeGeographicRegion: String
     get() = backing_HomeGeographicRegion.get()
 
-  public constructor() : this(Companion.activate().pointer)
+  private val backing_WeekStartsOn: RuntimeProperty<DayOfWeek> =
+      RuntimeProperty<DayOfWeek>(DayOfWeek(ComPtr.NULL))
+
+  public val weekStartsOn: DayOfWeek
+    get() = backing_WeekStartsOn.get()
 
   public companion object : WinRtRuntimeClassMetadata {
     override val qualifiedName: String = "Windows.System.UserProfile.GlobalizationPreferences"
@@ -36,19 +42,19 @@ public open class GlobalizationPreferences(
         WinRtRuntime.projectActivationFactory(this, IGlobalizationPreferencesStatics,
         ::IGlobalizationPreferencesStatics) }
 
-    public val calendars: List<String>
+    public val calendars: IVectorView<String>
       get() = statics.calendars
 
-    public val clocks: List<String>
+    public val clocks: IVectorView<String>
       get() = statics.clocks
 
-    public val currencies: List<String>
+    public val currencies: IVectorView<String>
       get() = statics.currencies
 
     public val homeGeographicRegion: String
       get() = statics.homeGeographicRegion
 
-    public val languages: List<String>
+    public val languages: IVectorView<String>
       get() = statics.languages
 
     public val weekStartsOn: DayOfWeek
@@ -58,13 +64,16 @@ public open class GlobalizationPreferences(
         WinRtRuntime.projectActivationFactory(this, IGlobalizationPreferencesStatics2,
         ::IGlobalizationPreferencesStatics2) }
 
-    public fun activate(): GlobalizationPreferences = WinRtRuntime.activate(this,
-        ::GlobalizationPreferences)
+    private val statics3: IGlobalizationPreferencesStatics3 by lazy {
+        WinRtRuntime.projectActivationFactory(this, IGlobalizationPreferencesStatics3,
+        ::IGlobalizationPreferencesStatics3) }
 
     public fun trySetHomeGeographicRegion(region: String): WinRtBoolean =
         statics2.trySetHomeGeographicRegion(region)
 
     public fun trySetLanguages(languageTags: Iterable<String>): WinRtBoolean =
         statics2.trySetLanguages(languageTags)
+
+    public fun getForUser(user: User): GlobalizationPreferencesForUser = statics3.getForUser(user)
   }
 }

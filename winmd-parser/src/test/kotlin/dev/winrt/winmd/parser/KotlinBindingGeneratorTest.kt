@@ -237,6 +237,61 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding, binding.contains("get() = statics.languages"))
         assertTrue(binding, binding.contains("val manifestLanguages: List<String>"))
         assertTrue(binding, binding.contains("get() = statics.manifestLanguages"))
+        assertFalse(binding, binding.contains("constructor() : this(Companion.activate().pointer)"))
+        assertFalse(binding, binding.contains("fun activate(): ApplicationLanguages = WinRtRuntime.activate"))
+    }
+
+    @Test
+    fun uses_explicit_activatable_factory_interfaces_from_metadata() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Foundation.IUriRuntimeClass",
+                            hasActivatableAttribute = true,
+                            activatableFactoryInterfaces = listOf("Windows.Foundation.IUriRuntimeClassFactory"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IUriRuntimeClass",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "9e365e57-48b2-4160-956f-c7385120bbfc",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IUriRuntimeClassFactory",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "44a9796f-723e-4fdf-a218-033e75b0c084",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateUri",
+                                    returnType = "Windows.Foundation.Uri",
+                                    parameters = listOf(WinMdParameter("uri", "String")),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/Uri.kt" }
+            .content
+        val normalizedBinding = binding.replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("private val factory: IUriRuntimeClassFactory by lazy"))
+        assertTrue(binding.contains("private fun factoryCreateUri(uri: String): Uri"))
+        assertTrue(normalizedBinding.contains("constructor(uri:String):this(Companion.factoryCreateUri(uri).pointer)"))
+        assertFalse(binding.contains("constructor() : this(Companion.activate().pointer)"))
+        assertFalse(binding.contains("fun activate(): Uri = WinRtRuntime.activate(this, ::Uri)"))
     }
 
     @Test

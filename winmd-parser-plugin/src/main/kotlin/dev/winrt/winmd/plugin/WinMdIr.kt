@@ -35,11 +35,20 @@ data class WinMdType(
     val baseInterfaces: List<String> = emptyList(),
     val activationKind: WinMdActivationKind = WinMdActivationKind.Factory,
     val hasActivatableAttribute: Boolean = false,
+    val activatableFactoryInterfaces: List<String> = emptyList(),
+    val staticInterfaces: List<String> = emptyList(),
+    val composableInterfaces: List<WinMdComposableInterface> = emptyList(),
     val activationFunctionName: String = "activate",
     val fields: List<WinMdField> = emptyList(),
     val enumMembers: List<WinMdEnumMember> = emptyList(),
     val methods: List<WinMdMethod> = emptyList(),
     val properties: List<WinMdProperty> = emptyList(),
+)
+
+@Serializable
+data class WinMdComposableInterface(
+    val type: String,
+    val visible: Boolean = false,
 )
 
 @Serializable
@@ -606,6 +615,18 @@ object WinMdModelFactory {
             implementedInterfaces = if (primary.implementedInterfaces.isNotEmpty()) primary.implementedInterfaces else supplemental.implementedInterfaces,
             baseInterfaces = if (primary.baseInterfaces.isNotEmpty()) primary.baseInterfaces else supplemental.baseInterfaces,
             activationKind = primary.activationKind,
+            hasActivatableAttribute = primary.hasActivatableAttribute || supplemental.hasActivatableAttribute,
+            activatableFactoryInterfaces = if (primary.activatableFactoryInterfaces.isNotEmpty()) {
+                primary.activatableFactoryInterfaces
+            } else {
+                supplemental.activatableFactoryInterfaces
+            },
+            staticInterfaces = if (primary.staticInterfaces.isNotEmpty()) primary.staticInterfaces else supplemental.staticInterfaces,
+            composableInterfaces = if (primary.composableInterfaces.isNotEmpty()) {
+                primary.composableInterfaces
+            } else {
+                supplemental.composableInterfaces
+            },
             activationFunctionName = primary.activationFunctionName.takeIf { it != "activate" } ?: supplemental.activationFunctionName,
             fields = if (primary.fields.isNotEmpty()) primary.fields else supplemental.fields,
             enumMembers = if (primary.enumMembers.isNotEmpty()) primary.enumMembers else supplemental.enumMembers,

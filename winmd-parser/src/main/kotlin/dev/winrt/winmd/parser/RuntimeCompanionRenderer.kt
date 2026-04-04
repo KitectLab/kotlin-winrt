@@ -50,7 +50,7 @@ internal class RuntimeCompanionRenderer(
                     .initializer("%T.%L", PoetSymbols.winRtActivationKindClass, activationKindLiteral(activationKind))
                     .build(),
             )
-        if (activationKind == WinMdActivationKind.Factory) {
+        if (shouldRenderFactoryActivationHelper(type, activationKind)) {
             builder.addFunction(
                 FunSpec.builder(type.activationFunctionName)
                     .returns(typeClass)
@@ -348,18 +348,6 @@ internal class RuntimeCompanionRenderer(
                         )
                     }
             }
-        }
-        if (activationKind == WinMdActivationKind.Composable && ownFactoryMethods.isEmpty()) {
-            typeRegistry.findInheritedComposableFactoryMethods(type.name, type.namespace)
-                .forEach { candidate ->
-                    members += renderComposableFactoryHelper(
-                        type = type,
-                        activationRuntimeClass = candidate.runtimeClass,
-                        factoryType = candidate.factoryType,
-                        factoryPropertyName = helperAccessorName(candidate.factoryType.name),
-                        method = candidate.method,
-                    )
-                }
         }
         return members
     }
@@ -663,6 +651,12 @@ internal class RuntimeCompanionRenderer(
 
     private fun supportsInterfaceObjectType(typeName: String, currentNamespace: String): Boolean {
         return supportsProjectedObjectTypeName(typeName)
+    }
+
+    private fun shouldRenderFactoryActivationHelper(type: WinMdType, activationKind: WinMdActivationKind): Boolean {
+        return activationKind == WinMdActivationKind.Factory &&
+            type.hasActivatableAttribute &&
+            typeRegistry.findRuntimeClassFactoryMethods(type.name, type.namespace).isEmpty()
     }
 
     private fun supportsComposableFactoryObjectType(typeName: String, currentNamespace: String): Boolean {

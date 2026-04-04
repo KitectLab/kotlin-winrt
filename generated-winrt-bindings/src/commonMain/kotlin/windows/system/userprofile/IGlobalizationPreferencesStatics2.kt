@@ -10,7 +10,6 @@ import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
-import kotlin.collections.Iterable
 
 internal open class IGlobalizationPreferencesStatics2(
   pointer: ComPtr,
@@ -18,10 +17,6 @@ internal open class IGlobalizationPreferencesStatics2(
   public fun trySetHomeGeographicRegion(region: String): WinRtBoolean =
       WinRtBoolean(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 6,
       region).getOrThrow())
-
-  public fun trySetLanguages(languageTags: Iterable<String>): WinRtBoolean =
-      WinRtBoolean(PlatformComInterop.invokeBooleanMethodWithObjectArg(pointer, 7,
-      (languageTags as Inspectable).pointer).getOrThrow())
 
   public companion object : WinRtInterfaceMetadata {
     override val qualifiedName: String =

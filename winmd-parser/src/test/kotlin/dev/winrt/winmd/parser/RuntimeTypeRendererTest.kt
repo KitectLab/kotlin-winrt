@@ -399,7 +399,7 @@ class RuntimeTypeRendererTest {
     }
 
     @Test
-    fun renders_derived_runtime_classes_with_inherited_composable_constructor() {
+    fun does_not_render_derived_runtime_classes_with_inherited_composable_constructor() {
         val model = WinMdModel(
             files = emptyList(),
             namespaces = listOf(
@@ -417,7 +417,6 @@ class RuntimeTypeRendererTest {
                             name = "DerivedWidget",
                             kind = WinMdTypeKind.RuntimeClass,
                             baseClass = "Example.Xaml.BaseWidget",
-                            activationKind = WinMdActivationKind.Composable,
                             defaultInterface = "Example.Xaml.IDerivedWidget",
                         ),
                         WinMdType(
@@ -482,15 +481,14 @@ class RuntimeTypeRendererTest {
 
         val binding = renderer.render(typeRegistry.findType("DerivedWidget", "Example.Xaml")!!).toString()
 
-        assertTrue(binding.contains("constructor() : this(Companion.factoryCreateInstance().pointer)"))
-        assertTrue(binding.contains("WinRtActivationKind.Composable"))
+        assertFalse(binding.contains("constructor() : this("))
+        assertTrue(binding.contains("WinRtActivationKind.Factory"))
         assertFalse(binding.contains("WinRtRuntime.activate(this, ::DerivedWidget)"))
-        assertTrue(binding.contains("WinRtRuntime.compose("))
-        assertTrue(binding.contains("BaseWidget.Companion"))
-        assertTrue(binding.contains("guidOf(\"33333333-3333-3333-3333-333333333333\")"))
-        assertTrue(binding.contains("guidOf(\"22222222-2222-2222-2222-222222222222\")"))
-        assertTrue(binding.contains("::DerivedWidget"))
-        assertTrue(binding.contains("ComPtr.NULL"))
+        assertFalse(binding.contains("WinRtRuntime.compose("))
+        assertFalse(binding.contains("BaseWidget.Companion"))
+        assertFalse(binding.contains("guidOf(\"33333333-3333-3333-3333-333333333333\")"))
+        assertFalse(binding.contains("::DerivedWidget"))
+        assertFalse(binding.contains("ComPtr.NULL"))
     }
 
     @Test

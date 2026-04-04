@@ -309,12 +309,8 @@ class TypeRegistryTest {
         )
 
         val derivedWidget = runtimeRegistry.findType("DerivedWidget", "Example.Xaml")!!
-        val inheritedComposableMethods = runtimeRegistry.findInheritedComposableFactoryMethods("DerivedWidget", "Example.Xaml")
 
-        assertEquals(1, inheritedComposableMethods.size)
-        assertEquals("BaseWidget", inheritedComposableMethods.single().runtimeClass.name)
-        assertEquals("CreateInstance", inheritedComposableMethods.single().method.name)
-        assertEquals(WinMdActivationKind.Composable, runtimeRegistry.runtimeClassActivationKind(derivedWidget))
+        assertEquals(WinMdActivationKind.Factory, runtimeRegistry.runtimeClassActivationKind(derivedWidget))
     }
 
     @Test

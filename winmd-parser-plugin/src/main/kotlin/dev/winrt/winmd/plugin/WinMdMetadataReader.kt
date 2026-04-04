@@ -59,6 +59,7 @@ object WinMdMetadataReader {
                 if (typeDef.name == "<Module>") {
                     return@mapIndexedNotNull null
                 }
+                val attributedInterfaces = readAttributedInterfaces(index + 1, tables)
                 WinMdType(
                     namespace = typeDef.namespace,
                     name = typeDef.name,
@@ -69,8 +70,21 @@ object WinMdMetadataReader {
                     defaultInterface = readDefaultInterface(index + 1, tables),
                     implementedInterfaces = readImplementedInterfaces(index + 1, tables),
                     baseInterfaces = readBaseInterfaces(index + 1, tables),
-                    activationKind = readActivationKind(index + 1, tables),
-                    hasActivatableAttribute = hasActivatableAttribute(index + 1, tables),
+                    activationKind = readActivationKind(index + 1, tables, attributedInterfaces),
+                    hasActivatableAttribute = attributedInterfaces.any { it.kind == AttributedInterfaceKind.Activatable },
+                    activatableFactoryInterfaces = attributedInterfaces
+                        .filter { it.kind == AttributedInterfaceKind.Activatable }
+                        .mapNotNull(ParsedAttributedInterface::type),
+                    staticInterfaces = attributedInterfaces
+                        .filter { it.kind == AttributedInterfaceKind.Static }
+                        .mapNotNull(ParsedAttributedInterface::type),
+                    composableInterfaces = attributedInterfaces
+                        .filter { it.kind == AttributedInterfaceKind.Composable }
+                        .mapNotNull { attributed ->
+                            attributed.type?.let { typeName ->
+                                WinMdComposableInterface(type = typeName, visible = attributed.visible)
+                            }
+                        },
                     methods = readMethods(index + 1, tables),
                     properties = readProperties(index + 1, tables),
                 )
@@ -89,28 +103,32 @@ object WinMdMetadataReader {
         return parseGuidAttributeValue(guidAttribute.value)
     }
 
-    private fun readActivationKind(typeDefIndex: Int, tables: MetadataTables): WinMdActivationKind {
+    private fun readActivationKind(
+        typeDefIndex: Int,
+        tables: MetadataTables,
+        attributedInterfaces: List<ParsedAttributedInterface>,
+    ): WinMdActivationKind {
         val typeKind = classifyType(tables.typeDefs[typeDefIndex - 1], tables)
         if (typeKind != WinMdTypeKind.RuntimeClass) {
             return WinMdActivationKind.Factory
         }
 
-        val customAttributeTypeNames = readCustomAttributeTypeNames(typeDefIndex, tables)
-
         return when {
-            customAttributeTypeNames.any { it.endsWith(".ActivatableAttribute") } -> WinMdActivationKind.Factory
-            customAttributeTypeNames.any { it.endsWith(".ComposableAttribute") } -> WinMdActivationKind.Composable
+            attributedInterfaces.any { it.kind == AttributedInterfaceKind.Composable } -> WinMdActivationKind.Composable
             else -> WinMdActivationKind.Factory
         }
     }
 
-    private fun hasActivatableAttribute(typeDefIndex: Int, tables: MetadataTables): Boolean {
-        val typeKind = classifyType(tables.typeDefs[typeDefIndex - 1], tables)
-        if (typeKind != WinMdTypeKind.RuntimeClass) {
-            return false
+    private fun readAttributedInterfaces(typeDefIndex: Int, tables: MetadataTables): List<ParsedAttributedInterface> {
+        val typeDef = tables.typeDefs[typeDefIndex - 1]
+        if (classifyType(typeDef, tables) != WinMdTypeKind.RuntimeClass) {
+            return emptyList()
         }
-        return readCustomAttributeTypeNames(typeDefIndex, tables)
-            .any { it.endsWith(".ActivatableAttribute") }
+        return tables.customAttributeRows
+            .asSequence()
+            .filter { decodeHasCustomAttributeTypeDefIndex(it.parentCodedIndex) == typeDefIndex }
+            .mapNotNull { parseAttributedInterface(it, tables) }
+            .toList()
     }
 
     private fun readCustomAttributeTypeNames(typeDefIndex: Int, tables: MetadataTables): List<String> {
@@ -119,6 +137,85 @@ object WinMdMetadataReader {
             .filter { decodeHasCustomAttributeTypeDefIndex(it.parentCodedIndex) == typeDefIndex }
             .mapNotNull { resolveCustomAttributeTypeName(it.typeCodedIndex, tables) }
             .toList()
+    }
+
+    private fun parseAttributedInterface(attribute: CustomAttributeRow, tables: MetadataTables): ParsedAttributedInterface? {
+        val attributeName = resolveCustomAttributeTypeName(attribute.typeCodedIndex, tables) ?: return null
+        if (!attributeName.startsWith("Windows.Foundation.Metadata.")) {
+            return null
+        }
+        val ctorParameterTypes = resolveCustomAttributeFixedArgTypes(attribute.typeCodedIndex, tables) ?: emptyList()
+        val fixedArgs = parseCustomAttributeFixedArgs(attribute.value, ctorParameterTypes)
+        return when (attributeName.substringAfterLast('.')) {
+            "ActivatableAttribute" -> ParsedAttributedInterface(
+                kind = AttributedInterfaceKind.Activatable,
+                type = fixedArgs.systemTypeNames.firstOrNull(),
+            )
+            "StaticAttribute" -> ParsedAttributedInterface(
+                kind = AttributedInterfaceKind.Static,
+                type = fixedArgs.systemTypeNames.firstOrNull(),
+            )
+            "ComposableAttribute" -> ParsedAttributedInterface(
+                kind = AttributedInterfaceKind.Composable,
+                type = fixedArgs.systemTypeNames.firstOrNull(),
+                visible = fixedArgs.enumValues.firstOrNull() == 2,
+            )
+            else -> null
+        }
+    }
+
+    private fun resolveCustomAttributeFixedArgTypes(typeCodedIndex: Int, tables: MetadataTables): List<String>? {
+        val tag = typeCodedIndex and 0x7
+        val index = typeCodedIndex ushr 3
+        return when (tag) {
+            2 -> tables.methodDefs.getOrNull(index - 1)?.let { methodDef ->
+                parseMethodSignature(methodDef.signature, tables).parameters.map(ParsedMethodParameter::type)
+            }
+            3 -> tables.memberRefRows.getOrNull(index - 1)?.let { memberRef ->
+                parseMethodSignature(memberRef.signature, tables).parameters.map(ParsedMethodParameter::type)
+            }
+            else -> null
+        }
+    }
+
+    private fun parseCustomAttributeFixedArgs(
+        blob: ByteArray,
+        parameterTypes: List<String>,
+    ): ParsedCustomAttributeFixedArgs {
+        if (blob.size < 2) {
+            return ParsedCustomAttributeFixedArgs()
+        }
+        val reader = BlobReader(blob)
+        if (reader.readUInt16() != 0x0001) {
+            return ParsedCustomAttributeFixedArgs()
+        }
+        val systemTypeNames = mutableListOf<String>()
+        val enumValues = mutableListOf<Int>()
+        parameterTypes.forEach { parameterType ->
+            when (parameterType) {
+                "System.Type" -> reader.readSerializedString()
+                    ?.substringBefore(',')
+                    ?.trim()
+                    ?.takeIf(String::isNotBlank)
+                    ?.let(systemTypeNames::add)
+                "String" -> reader.readSerializedString()
+                "Boolean", "Int8", "UInt8" -> reader.readByte()
+                "Int16", "UInt16", "Char16" -> reader.readUInt16()
+                "Int32", "UInt32" -> enumValues += reader.readInt32()
+                "Int64", "UInt64" -> {
+                    reader.readInt32()
+                    reader.readInt32()
+                }
+                "Float32" -> repeat(4) { reader.readByte() }
+                "Float64" -> repeat(8) { reader.readByte() }
+                else -> if (parameterType.contains('.')) {
+                    enumValues += reader.readInt32()
+                } else {
+                    return ParsedCustomAttributeFixedArgs(systemTypeNames, enumValues)
+                }
+            }
+        }
+        return ParsedCustomAttributeFixedArgs(systemTypeNames, enumValues)
     }
 
     private fun readDefaultInterface(typeDefIndex: Int, tables: MetadataTables): String? {
@@ -781,10 +878,12 @@ object WinMdMetadataReader {
                             cursor += memberRefParentSize
                             val name = readStringIndex(tablesHeap, stringHeap, cursor, stringIndexSize)
                             cursor += stringIndexSize
+                            val signature = readBlobIndex(tablesHeap, blobHeap, cursor, blobIndexSize)
                             cursor += blobIndexSize
                             memberRefRows += MemberRefRow(
                                 classCodedIndex = classCodedIndex,
                                 name = name,
+                                signature = signature,
                             )
                         }
                     }
@@ -1142,12 +1241,29 @@ object WinMdMetadataReader {
         private fun readUInt16(buffer: ByteBuffer, offset: Int): Int = buffer.getShort(offset).toInt() and 0xFFFF
 
         private fun align4(value: Int): Int = (value + 3) and -4
+    }
 
-        private data class MetadataStreams(
-            val tablesHeap: ByteBuffer?,
-            val stringHeap: ByteBuffer?,
-            val blobHeap: ByteBuffer?,
-        )
+    private data class MetadataStreams(
+        val tablesHeap: ByteBuffer?,
+        val stringHeap: ByteBuffer?,
+        val blobHeap: ByteBuffer?,
+    )
+
+    private data class ParsedCustomAttributeFixedArgs(
+        val systemTypeNames: List<String> = emptyList(),
+        val enumValues: List<Int> = emptyList(),
+    )
+
+    private data class ParsedAttributedInterface(
+        val kind: AttributedInterfaceKind,
+        val type: String? = null,
+        val visible: Boolean = false,
+    )
+
+    private enum class AttributedInterfaceKind {
+        Activatable,
+        Static,
+        Composable,
     }
 }
 
