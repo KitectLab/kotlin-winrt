@@ -16,6 +16,7 @@ object WinMdMetadataReader {
     private const val tableMethodDef = 6
     private const val tableParam = 8
     private const val tableMemberRef = 10
+    private const val tableConstant = 11
     private const val tableCustomAttribute = 12
     private const val tablePropertyMap = 21
     private const val tableProperty = 23
@@ -85,6 +86,8 @@ object WinMdMetadataReader {
                                 WinMdComposableInterface(type = typeName, visible = attributed.visible)
                             }
                         },
+                    fields = readFields(index + 1, tables),
+                    enumMembers = readEnumMembers(index + 1, tables),
                     methods = readMethods(index + 1, tables),
                     properties = readProperties(index + 1, tables),
                 )
@@ -365,6 +368,56 @@ object WinMdMetadataReader {
         }
     }
 
+    private fun readFields(typeDefIndex: Int, tables: MetadataTables): List<WinMdField> {
+        val typeDef = tables.typeDefs[typeDefIndex - 1]
+        if (classifyType(typeDef, tables) != WinMdTypeKind.Struct) {
+            return emptyList()
+        }
+        val fieldStart = typeDef.fieldListIndex
+        if (fieldStart == 0) {
+            return emptyList()
+        }
+        val fieldEnd = tables.typeDefs.getOrNull(typeDefIndex)?.fieldListIndex ?: (tables.fieldRows.size + 1)
+        val typeGenericParameterNames = readTypeGenericParameterNames(typeDefIndex, tables)
+        return (fieldStart until fieldEnd).mapNotNull { fieldIndex ->
+            val field = tables.fieldRows.getOrNull(fieldIndex - 1) ?: return@mapNotNull null
+            if (field.name == "value__" || isStaticField(field.flags) || isLiteralField(field.flags)) {
+                return@mapNotNull null
+            }
+            WinMdField(
+                name = field.name,
+                type = parseFieldSignature(field.signature, tables, typeGenericParameterNames),
+            )
+        }
+    }
+
+    private fun readEnumMembers(typeDefIndex: Int, tables: MetadataTables): List<WinMdEnumMember> {
+        val typeDef = tables.typeDefs[typeDefIndex - 1]
+        if (classifyType(typeDef, tables) != WinMdTypeKind.Enum) {
+            return emptyList()
+        }
+        val fieldStart = typeDef.fieldListIndex
+        if (fieldStart == 0) {
+            return emptyList()
+        }
+        val fieldEnd = tables.typeDefs.getOrNull(typeDefIndex)?.fieldListIndex ?: (tables.fieldRows.size + 1)
+        val constantsByFieldIndex = tables.constantRows
+            .mapNotNull { constant -> decodeHasConstantFieldIndex(constant.parentCodedIndex)?.let { it to constant } }
+            .toMap()
+        return (fieldStart until fieldEnd).mapNotNull { fieldIndex ->
+            val field = tables.fieldRows.getOrNull(fieldIndex - 1) ?: return@mapNotNull null
+            if (field.name == "value__" || !isLiteralField(field.flags)) {
+                return@mapNotNull null
+            }
+            val constant = constantsByFieldIndex[fieldIndex] ?: return@mapNotNull null
+            val value = parseConstantIntValue(constant) ?: return@mapNotNull null
+            WinMdEnumMember(
+                name = field.name,
+                value = value,
+            )
+        }
+    }
+
     private fun readMethodParameters(
         methodIndex: Int,
         method: MethodDefRow,
@@ -499,6 +552,23 @@ object WinMdMetadataReader {
         reader.readByte()
         reader.readCompressedUInt()
         return parseElementType(reader, tables, typeGenericParameters)
+    }
+
+    private fun parseFieldSignature(
+        signature: ByteArray,
+        tables: MetadataTables,
+        typeGenericParameters: List<String> = emptyList(),
+    ): String {
+        if (signature.isEmpty()) {
+            return "UnknownType"
+        }
+        return try {
+            val reader = BlobReader(signature)
+            reader.readByte()
+            parseElementType(reader, tables, typeGenericParameters)
+        } catch (_: IndexOutOfBoundsException) {
+            "UnknownType"
+        }
     }
 
     private fun parseElementType(
@@ -642,6 +712,33 @@ object WinMdMetadataReader {
         return "$genericType<${arguments.joinToString(", ")}>"
     }
 
+    private fun decodeHasConstantFieldIndex(codedIndex: Int): Int? {
+        val tag = codedIndex and 0x3
+        val index = codedIndex ushr 2
+        return if (tag == 0) index else null
+    }
+
+    private fun parseConstantIntValue(constant: ConstantRow): Int? {
+        val value = ByteBuffer.wrap(constant.value).order(ByteOrder.LITTLE_ENDIAN)
+        return when (constant.type) {
+            0x02 -> if (value.hasRemaining()) value.get().toInt() and 0xFF else null
+            0x03 -> if (value.remaining() >= 2) value.short.toInt() and 0xFFFF else null
+            0x04 -> if (value.hasRemaining()) value.get().toInt() else null
+            0x05 -> if (value.hasRemaining()) value.get().toInt() and 0xFF else null
+            0x06 -> if (value.remaining() >= 2) value.short.toInt() else null
+            0x07 -> if (value.remaining() >= 2) value.short.toInt() and 0xFFFF else null
+            0x08 -> if (value.remaining() >= 4) value.int else null
+            0x09 -> if (value.remaining() >= 4) value.int else null
+            0x0A -> if (value.remaining() >= 8) value.long.toInt() else null
+            0x0B -> if (value.remaining() >= 8) value.long.toInt() else null
+            else -> null
+        }
+    }
+
+    private fun isStaticField(flags: Int): Boolean = (flags and 0x0010) != 0
+
+    private fun isLiteralField(flags: Int): Boolean = (flags and 0x0040) != 0
+
     private fun qualify(namespace: String, name: String): String {
         return if (namespace.isBlank()) name else "$namespace.$name"
     }
@@ -774,9 +871,11 @@ object WinMdMetadataReader {
 
             val typeRefRows = mutableListOf<TypeReferenceRow>()
             val typeDefRows = mutableListOf<TypeDefRow>()
+            val fieldRows = mutableListOf<FieldRow>()
             val typeSpecRows = mutableListOf<TypeSpecRow>()
             val interfaceImplRows = mutableListOf<InterfaceImplRow>()
             val memberRefRows = mutableListOf<MemberRefRow>()
+            val constantRows = mutableListOf<ConstantRow>()
             val customAttributeRows = mutableListOf<CustomAttributeRow>()
             val methodDefRows = mutableListOf<MethodDefRow>()
             val paramRows = mutableListOf<ParamRow>()
@@ -841,6 +940,21 @@ object WinMdMetadataReader {
                             )
                         }
                     }
+                    tableField -> {
+                        repeat(rowCount) {
+                            val flags = readUInt16(tablesHeap, cursor)
+                            cursor += 2
+                            val name = readStringIndex(tablesHeap, stringHeap, cursor, stringIndexSize)
+                            cursor += stringIndexSize
+                            val signature = readBlobIndex(tablesHeap, blobHeap, cursor, blobIndexSize)
+                            cursor += blobIndexSize
+                            fieldRows += FieldRow(
+                                flags = flags,
+                                name = name,
+                                signature = signature,
+                            )
+                        }
+                    }
                     tableTypeSpec -> {
                         repeat(rowCount) {
                             val signature = readBlobIndex(tablesHeap, blobHeap, cursor, blobIndexSize)
@@ -884,6 +998,22 @@ object WinMdMetadataReader {
                                 classCodedIndex = classCodedIndex,
                                 name = name,
                                 signature = signature,
+                            )
+                        }
+                    }
+                    tableConstant -> {
+                        val parentSize = codedIndexSize(rowCounts[tableField], rowCounts[tableParam], rowCounts[tableProperty])
+                        repeat(rowCount) {
+                            val type = tablesHeap.get(cursor).toInt() and 0xFF
+                            cursor += 2
+                            val parentCodedIndex = readIndex(tablesHeap, cursor, parentSize)
+                            cursor += parentSize
+                            val value = readBlobIndex(tablesHeap, blobHeap, cursor, blobIndexSize)
+                            cursor += blobIndexSize
+                            constantRows += ConstantRow(
+                                type = type,
+                                parentCodedIndex = parentCodedIndex,
+                                value = value,
                             )
                         }
                     }
@@ -1020,9 +1150,11 @@ object WinMdMetadataReader {
             return MetadataTables(
                 typeRefs = typeRefRows,
                 typeDefs = typeDefRows,
+                fieldRows = fieldRows,
                 typeSpecRows = typeSpecRows,
                 interfaceImplRows = interfaceImplRows,
                 memberRefRows = memberRefRows,
+                constantRows = constantRows,
                 customAttributeRows = customAttributeRows,
                 methodDefs = methodDefRows,
                 paramRows = paramRows,
