@@ -226,11 +226,12 @@ object WinMdMetadataReader {
         if (typeKind != WinMdTypeKind.RuntimeClass) {
             return null
         }
+        val typeGenericParameterNames = readTypeGenericParameterNames(typeDefIndex, tables)
 
         return tables.interfaceImplRows
             .asSequence()
             .filter { it.classTypeDefIndex == typeDefIndex }
-            .map { resolveTypeDefOrRefOrSpecName(it.interfaceCodedIndex, tables) }
+            .map { resolveTypeDefOrRefOrSpecName(it.interfaceCodedIndex, tables, typeGenericParameterNames) }
             .firstOrNull { it != "UnknownType" }
     }
 
@@ -239,7 +240,9 @@ object WinMdMetadataReader {
         if (typeKind != WinMdTypeKind.RuntimeClass) {
             return null
         }
-        return resolveTypeDefOrRefOrSpecName(typeDef.extendsCodedIndex, tables)
+        val typeDefIndex = tables.typeDefs.indexOf(typeDef) + 1
+        val typeGenericParameterNames = readTypeGenericParameterNames(typeDefIndex, tables)
+        return resolveTypeDefOrRefOrSpecName(typeDef.extendsCodedIndex, tables, typeGenericParameterNames)
             .takeUnless { it == "UnknownType" }
     }
 
@@ -248,10 +251,11 @@ object WinMdMetadataReader {
         if (typeKind != WinMdTypeKind.Interface && typeKind != WinMdTypeKind.RuntimeClass) {
             return emptyList()
         }
+        val typeGenericParameterNames = readTypeGenericParameterNames(typeDefIndex, tables)
         return tables.interfaceImplRows
             .asSequence()
             .filter { it.classTypeDefIndex == typeDefIndex }
-            .mapNotNull { resolveTypeDefOrRefOrSpecName(it.interfaceCodedIndex, tables) }
+            .mapNotNull { resolveTypeDefOrRefOrSpecName(it.interfaceCodedIndex, tables, typeGenericParameterNames) }
             .filter { it != "UnknownType" }
             .toList()
     }
@@ -261,10 +265,11 @@ object WinMdMetadataReader {
         if (typeKind != WinMdTypeKind.RuntimeClass) {
             return emptyList()
         }
+        val typeGenericParameterNames = readTypeGenericParameterNames(typeDefIndex, tables)
         return tables.interfaceImplRows
             .asSequence()
             .filter { it.classTypeDefIndex == typeDefIndex }
-            .mapNotNull { resolveTypeDefOrRefOrSpecName(it.interfaceCodedIndex, tables) }
+            .mapNotNull { resolveTypeDefOrRefOrSpecName(it.interfaceCodedIndex, tables, typeGenericParameterNames) }
             .filter { it != "UnknownType" }
             .toList()
     }

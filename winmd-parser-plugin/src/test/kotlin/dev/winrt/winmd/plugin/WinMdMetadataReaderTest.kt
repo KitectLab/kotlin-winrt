@@ -302,6 +302,18 @@ class WinMdMetadataReaderTest {
             .types.first { it.name == "JsonArray" }
         assertEquals("Windows.Data.Json.IJsonArray", jsonArray.defaultInterface)
 
+        val vector = model.namespaces
+            .first { it.name == "Windows.Foundation.Collections" }
+            .types.first { it.name == "IVector`1" }
+        assertTrue(
+            vector.baseInterfaces.toString(),
+            vector.baseInterfaces.contains("Windows.Foundation.Collections.IIterable`1<T>"),
+        )
+        assertTrue(
+            vector.baseInterfaces.toString(),
+            vector.baseInterfaces.none { it.contains("ElementType0x13") },
+        )
+
         val jsonValueType = model.namespaces
             .first { it.name == "Windows.Data.Json" }
             .types.first { it.name == "JsonValueType" }
