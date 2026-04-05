@@ -15,7 +15,13 @@ actual object PlatformRuntime {
 private fun methodArgumentLayout(argument: Any): MemoryLayout {
     return when (argument) {
         is ComPtr,
-        is String -> ValueLayout.ADDRESS
+        is String,
+        is IntArray -> ValueLayout.ADDRESS
+        is Byte,
+        is UByte -> ValueLayout.JAVA_BYTE
+        is Short,
+        is UShort -> ValueLayout.JAVA_SHORT
+        is Char -> ValueLayout.JAVA_CHAR
         is Int,
         is UInt,
         is Boolean -> ValueLayout.JAVA_INT
@@ -43,16 +49,23 @@ private fun prepareAbiArguments(arguments: Array<out Any>): PreparedAbiArguments
                 releasers += { JvmWinRtRuntime.releaseHString(hString) }
                 MemorySegment.ofAddress(hString.raw)
             }
+            is IntArray -> MemorySegment.ofArray(argument)
+            is UByte -> argument.toByte()
+            is UShort -> argument.toShort()
             is UInt -> argument.toInt()
             is Boolean -> if (argument) 1 else 0
             is ULong -> argument.toLong()
             is ComStructValue -> {
                 val arena = Arena.ofConfined()
                 releasers += { arena.close() }
+                releasers += { argument.close() }
                 val segment = arena.allocate(Jdk22Foreign.structLayout(argument.layout))
                 segment.copyFrom(MemorySegment.ofArray(argument.bytes))
                 segment
             }
+            is Byte,
+            is Short,
+            is Char,
             is Int,
             is Long,
             is Float,
@@ -1148,6 +1161,9 @@ private object JvmComMethodExecutor {
     private fun allocateResultSegment(arena: Arena, resultKind: ComMethodResultKind): MemorySegment {
         return when (resultKind) {
             ComMethodResultKind.HSTRING, ComMethodResultKind.OBJECT -> arena.allocate(ValueLayout.ADDRESS)
+            ComMethodResultKind.UINT8 -> arena.allocate(ValueLayout.JAVA_BYTE)
+            ComMethodResultKind.INT16, ComMethodResultKind.UINT16 -> arena.allocate(ValueLayout.JAVA_SHORT)
+            ComMethodResultKind.CHAR16 -> arena.allocate(ValueLayout.JAVA_CHAR)
             ComMethodResultKind.INT32, ComMethodResultKind.UINT32, ComMethodResultKind.BOOLEAN -> arena.allocate(ValueLayout.JAVA_INT)
             ComMethodResultKind.INT64, ComMethodResultKind.UINT64 -> arena.allocate(ValueLayout.JAVA_LONG)
             ComMethodResultKind.FLOAT32 -> arena.allocate(ValueLayout.JAVA_FLOAT)
@@ -1160,6 +1176,10 @@ private object JvmComMethodExecutor {
         return when (resultKind) {
             ComMethodResultKind.HSTRING -> ComMethodResult.HStringValue(HString(segment.get(ValueLayout.ADDRESS, 0L).address()))
             ComMethodResultKind.OBJECT -> ComMethodResult.ObjectValue(Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)))
+            ComMethodResultKind.UINT8 -> ComMethodResult.UInt8Value(segment.get(ValueLayout.JAVA_BYTE, 0L).toUByte())
+            ComMethodResultKind.INT16 -> ComMethodResult.Int16Value(segment.get(ValueLayout.JAVA_SHORT, 0L))
+            ComMethodResultKind.UINT16 -> ComMethodResult.UInt16Value(segment.get(ValueLayout.JAVA_SHORT, 0L).toUShort())
+            ComMethodResultKind.CHAR16 -> ComMethodResult.Char16Value(segment.get(ValueLayout.JAVA_CHAR, 0L))
             ComMethodResultKind.INT32 -> ComMethodResult.Int32Value(segment.get(ValueLayout.JAVA_INT, 0L))
             ComMethodResultKind.UINT32 -> ComMethodResult.UInt32Value(segment.get(ValueLayout.JAVA_INT, 0L).toUInt())
             ComMethodResultKind.BOOLEAN -> ComMethodResult.BooleanValue(segment.get(ValueLayout.JAVA_INT, 0L) != 0)

@@ -270,7 +270,11 @@ internal class RuntimeTypeRenderer(
         } else {
             candidate.method.parameters
         }
-        return !constructorParameters.requiresArrayMarshaling()
+        return !constructorParameters.requiresArrayMarshaling() ||
+            (
+                constructorParameters.size == 1 &&
+                    constructorParameters.single().isInt32PassArrayParameter()
+            )
     }
 
     private fun shouldRenderFactoryActivationHelper(type: WinMdType): Boolean {

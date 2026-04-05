@@ -276,6 +276,42 @@ class InterfaceTypeRendererTest {
     }
 
     @Test
+    fun renders_int32_pass_array_interface_methods_with_count_and_buffer_arguments() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IPropertyValueStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateInt32Array",
+                                    returnType = "Object",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter("value", "Int32[]", isIn = true)),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/IPropertyValueStatics.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("funcreateInt32Array(value:Array<Int32>):Inspectable"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethodWithArgs(pointer,6,value.size,IntArray(value.size){index->value[index].value}).getOrThrow()"))
+    }
+
+    @Test
     fun unsubscribes_event_slots_with_finally_to_close_delegate_handles() {
         val model = WinMdModel(
             files = emptyList(),

@@ -173,7 +173,72 @@ class RuntimeTypeRendererTest {
     }
 
     @Test
-    fun does_not_forward_unsupported_static_array_methods_from_companion() {
+    fun does_not_forward_unsupported_string_array_methods_from_companion() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "PropertyValue",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            staticInterfaces = listOf("Windows.Foundation.IPropertyValueStatics"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IPropertyValueStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateStringArray",
+                                    returnType = "Object",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter("value", "String[]", isIn = true)),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val typeRegistry = TypeRegistry(model)
+        val renderer = RuntimeTypeRenderer(
+            typeNameMapper = TypeNameMapper(),
+            typeRegistry = typeRegistry,
+            delegateLambdaPlanResolver = DelegateLambdaPlanResolver(TypeNameMapper()),
+            eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+            runtimePropertyRenderer = RuntimePropertyRenderer(TypeNameMapper(), typeRegistry),
+            runtimeMethodRenderer = RuntimeMethodRenderer(
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                typeRegistry,
+                asyncRegistry(typeRegistry),
+            ),
+            runtimeCompanionRenderer = RuntimeCompanionRenderer(
+                typeRegistry,
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+                WinRtSignatureMapper(typeRegistry),
+                AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+                WinRtProjectionTypeMapper(),
+                KotlinCollectionProjectionMapper(),
+            ),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
+            winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
+        )
+
+        val binding = renderer.render(typeRegistry.findType("PropertyValue", "Windows.Foundation")!!).toString()
+
+        assertFalse(binding.contains("fun createStringArray("))
+        assertFalse(binding.contains("statics.createStringArray"))
+    }
+
+    @Test
+    fun forwards_supported_int32_pass_array_methods_from_companion() {
         val model = WinMdModel(
             files = emptyList(),
             namespaces = listOf(
@@ -233,8 +298,8 @@ class RuntimeTypeRendererTest {
 
         val binding = renderer.render(typeRegistry.findType("PropertyValue", "Windows.Foundation")!!).toString()
 
-        assertFalse(binding.contains("fun createInt32Array("))
-        assertFalse(binding.contains("statics.createInt32Array"))
+        assertTrue(binding.contains("fun createInt32Array("))
+        assertTrue(binding.contains("statics.createInt32Array(value)"))
     }
 
     @Test

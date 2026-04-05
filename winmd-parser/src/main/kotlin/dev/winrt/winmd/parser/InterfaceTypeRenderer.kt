@@ -1677,6 +1677,7 @@ internal class InterfaceTypeRenderer(
         if (method.vtableIndex == null) {
             return null
         }
+        plannedInt32PassArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
         plannedValueTypeAwareInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
         if (typeRegistry.isEnumType(method.returnType, currentNamespace)) {
             return null
@@ -1690,6 +1691,54 @@ internal class InterfaceTypeRenderer(
         return signatureKey
             ?.takeIf { MethodRuleRegistry.sharedMethodRuleFamily(it) != null }
             ?.let { plannedInterfaceMethodForKey(it, genericParameters) }
+    }
+
+    private fun plannedInt32PassArrayInterfaceMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): PlannedInterfaceMethod? {
+        if (!method.isSingleInt32PassArrayMethod { typeName -> supportsInterfaceObjectReturnType(typeName, currentNamespace) }) {
+            return null
+        }
+        val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
+        val abiArguments = int32PassArrayAbiArguments(argumentName)
+        return if (method.returnType == "Unit") {
+            PlannedInterfaceMethod(
+                statement = "%L",
+                args = { method, _ ->
+                    arrayOf(
+                        CodeBlock.of(
+                            "%T.invokeUnitMethodWithArgs(pointer, %L, %L, %L).getOrThrow()",
+                            PoetSymbols.platformComInteropClass,
+                            method.vtableIndex!!,
+                            abiArguments[0],
+                            abiArguments[1],
+                        ),
+                    )
+                },
+            )
+        } else {
+            PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ ->
+                    arrayOf(
+                        objectReturnCode(
+                            method = method,
+                            namespace = currentNamespace,
+                            abiCall = CodeBlock.of(
+                                "%T.invokeObjectMethodWithArgs(pointer, %L, %L, %L).getOrThrow()",
+                                PoetSymbols.platformComInteropClass,
+                                method.vtableIndex!!,
+                                abiArguments[0],
+                                abiArguments[1],
+                            ),
+                            genericParameters = genericParameters,
+                        ),
+                    )
+                },
+            )
+        }
     }
 
     private fun plannedValueTypeAwareInterfaceMethod(

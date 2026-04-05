@@ -157,6 +157,7 @@ internal class RuntimeMethodRenderer(
         if (!isKotlinIdentifier(method.name) || method.vtableIndex == null) {
             return null
         }
+        plannedInt32PassArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         valueAwareRuntimeMethodPlan(method, currentNamespace)?.let { return it }
         val parameterTypes = method.parameters.map { it.type }
         val signatureKey = methodSignatureKey(
@@ -173,6 +174,52 @@ internal class RuntimeMethodRenderer(
             signatureKey == MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.EMPTY) -> runtimeMethodPlanForKey(signatureKey)
             else -> null
         }
+    }
+
+    private fun plannedInt32PassArrayRuntimeMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+    ): RuntimeMethodPlan? {
+        if (!method.isSingleInt32PassArrayMethod { typeName -> supportsRuntimeObjectReturnType(typeName, currentNamespace) }) {
+            return null
+        }
+        return RuntimeMethodPlan(
+            nullPointerReturn = { method ->
+                if (method.returnType == "Unit") {
+                    PlannedStatement("return")
+                } else {
+                    PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}"))
+                }
+            },
+            returnStatement = if (method.returnType == "Unit") "%L" else "return %L",
+            statementArgs = { method, _, parameterBindings ->
+                val argumentName = parameterBindings.single().name
+                val abiArguments = int32PassArrayAbiArguments(argumentName)
+                arrayOf(
+                    if (method.returnType == "Unit") {
+                        CodeBlock.of(
+                            "%T.invokeUnitMethodWithArgs(pointer, %L, %L, %L).getOrThrow()",
+                            PoetSymbols.platformComInteropClass,
+                            method.vtableIndex!!,
+                            abiArguments[0],
+                            abiArguments[1],
+                        )
+                    } else {
+                        runtimeObjectReturnCode(
+                            method = method,
+                            currentNamespace = currentNamespace,
+                            abiCall = CodeBlock.of(
+                                "%T.invokeObjectMethodWithArgs(pointer, %L, %L, %L).getOrThrow()",
+                                PoetSymbols.platformComInteropClass,
+                                method.vtableIndex!!,
+                                abiArguments[0],
+                                abiArguments[1],
+                            ),
+                        )
+                    },
+                )
+            },
+        )
     }
 
     private fun valueAwareRuntimeMethodPlan(method: WinMdMethod, currentNamespace: String): RuntimeMethodPlan? {

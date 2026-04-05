@@ -102,7 +102,7 @@ internal class RuntimeCompanionRenderer(
             staticsType.methods
                 .filterNot { method -> isGetterLike(method) || isSetterLike(method) }
                 .filterNot(::isTemporarilyUnsupportedJsonStaticMethod)
-                .filter(::canForwardStaticMethod)
+                .filter { method -> canForwardStaticMethod(method, type.namespace) }
                 .forEach { method ->
                     members += renderForwardingMethod(method, type.namespace, staticsPropertyName)
                     renderForwardingAsyncAwaitMethod(method, type.namespace, staticsPropertyName)?.let(members::add)
@@ -367,12 +367,19 @@ internal class RuntimeCompanionRenderer(
         return !property.type.isWinRtArrayType()
     }
 
-    private fun canForwardStaticMethod(method: WinMdMethod): Boolean {
-        return !method.requiresArrayMarshaling()
+    private fun canForwardStaticMethod(method: WinMdMethod, currentNamespace: String): Boolean {
+        return !method.requiresArrayMarshaling() ||
+            method.isSingleInt32PassArrayMethod { typeName ->
+                !typeRegistry.isStructType(typeName, currentNamespace) && supportsProjectedObjectTypeName(typeName)
+            }
     }
 
     private fun canForwardFactoryMethod(method: WinMdMethod): Boolean {
-        return !method.parameters.requiresArrayMarshaling()
+        return !method.parameters.requiresArrayMarshaling() ||
+            (
+                method.parameters.size == 1 &&
+                    method.parameters.single().isInt32PassArrayParameter()
+            )
     }
 
     private fun renderForwardingProperty(
@@ -533,7 +540,7 @@ internal class RuntimeCompanionRenderer(
     ): List<PropertySpec> {
         return methods.asSequence()
             .filter { it.name.startsWith("get_") && it.parameters.isEmpty() }
-            .filter(::canForwardStaticMethod)
+            .filter { method -> canForwardStaticMethod(method, currentNamespace) }
             .map { method ->
                 val propertyName = method.name.removePrefix("get_")
                 propertyName to method
