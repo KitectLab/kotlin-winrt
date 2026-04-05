@@ -155,6 +155,48 @@ class RuntimePropertyRendererTest {
     }
 
     @Test
+    fun renders_qualified_enum_properties_as_uint32_backed_accessors() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "QualifiedEnumCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Mode",
+                                    type = "Example.Contracts.Mode",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "Mode",
+                            kind = WinMdTypeKind.Enum,
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Example/Contracts/QualifiedEnumCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("varmode:Mode"))
+        assertTrue(binding.contains("Mode.fromValue(PlatformComInterop.invokeUInt32Method(pointer,6).getOrThrow().toInt())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUInt32Setter(pointer,7,value.value).getOrThrow()"))
+    }
+
+    @Test
     fun renders_ireference_scalar_properties_as_nullable_scalar_accessors() {
         val model = WinMdModel(
             files = emptyList(),
