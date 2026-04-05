@@ -453,26 +453,43 @@ class CheckedInBindingsParityTest {
     @Test
     fun checked_in_calendar_keeps_verified_runtime_surface() {
         val checkedIn = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/ICalendar.kt").readText()
+        val runtimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/Calendar.kt").readText()
+        val normalizedCheckedIn = normalizeWhitespace(checkedIn)
+        val normalizedRuntimeClass = normalizeWhitespace(runtimeClass)
 
         assertTrue(checkedIn.contains("fun clone(): Calendar"))
-        assertTrue(checkedIn.contains("invokeObjectMethod(pointer, 6).getOrThrow()"))
-        assertTrue(checkedIn.contains("val languages: StringVectorView"))
-        assertTrue(checkedIn.contains("fun get_Languages(): StringVectorView"))
-        assertTrue(checkedIn.contains("invokeObjectMethod(pointer, 9).getOrThrow()"))
-        assertTrue(checkedIn.contains("val dateTime: Instant"))
-        assertTrue(checkedIn.contains("invokeInt64Getter(pointer, 16).getOrThrow()"))
-        assertTrue(checkedIn.contains("invokeUnitMethodWithInt64Arg("))
-        assertTrue(checkedIn.contains("17"))
-        assertTrue(checkedIn.contains("Instant.fromEpochSeconds((PlatformComInterop.invokeInt64Getter(pointer, 16).getOrThrow() - 116444736000000000) / 10000000L, ((PlatformComInterop.invokeInt64Getter(pointer, 16).getOrThrow() - 116444736000000000) % 10000000L * 100).toInt())"))
+        assertTrue(
+            normalizedCheckedIn.contains(
+                "PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow()",
+            ),
+        )
+        assertTrue(checkedIn.contains("val languages: IVectorView<String>"))
+        assertTrue(
+            normalizedCheckedIn.contains(
+                "IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,9).getOrThrow()),\"string\",\"String\")",
+            ),
+        )
+        assertTrue(checkedIn.contains("fun getCalendarSystem(): String"))
+        assertTrue(checkedIn.contains("fun changeCalendarSystem(value: String)"))
+        assertTrue(checkedIn.contains("fun getClock(): String"))
+        assertTrue(checkedIn.contains("fun changeClock(value: String)"))
+        assertTrue(checkedIn.contains("fun getDateTime(): Instant"))
+        assertTrue(checkedIn.contains("fun setDateTime(value: Instant)"))
+        assertTrue(
+            normalizedCheckedIn.contains(
+                "Instant.fromEpochSeconds((PlatformComInterop.invokeInt64Getter(pointer,16).getOrThrow()-116_444_736_000_000_000)/10000000L,((PlatformComInterop.invokeInt64Getter(pointer,16).getOrThrow()-116_444_736_000_000_000)%10000000L*100).toInt())",
+            ),
+        )
+        assertTrue(
+            normalizedCheckedIn.contains(
+                "PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer,17,(((value.epochSeconds*10000000L)+(value.nanosecondsOfSecond/100))+116444736000000000)).getOrThrow()",
+            ),
+        )
         assertTrue(checkedIn.contains("var numeralSystem: String"))
         assertTrue(checkedIn.contains("invokeHStringMethod(pointer, 10).getOrThrow()"))
         assertTrue(checkedIn.contains("invokeStringSetter(pointer, 11, value).getOrThrow()"))
-        assertTrue(checkedIn.contains("var calendarSystem: String"))
-        assertTrue(checkedIn.contains("invokeHStringMethod(pointer, 12).getOrThrow()"))
-        assertTrue(checkedIn.contains("invokeStringSetter(pointer, 13, value).getOrThrow()"))
-        assertTrue(checkedIn.contains("var clock: String"))
-        assertTrue(checkedIn.contains("invokeHStringMethod(pointer, 14).getOrThrow()"))
-        assertTrue(checkedIn.contains("invokeStringSetter(pointer, 15, value).getOrThrow()"))
+        assertTrue(checkedIn.contains("var year: Int32"))
+        assertTrue(checkedIn.contains("invokeInt32Setter(pointer, 31, value.value).getOrThrow()"))
         assertTrue(checkedIn.contains("var month: Int32"))
         assertTrue(checkedIn.contains("invokeInt32Setter(pointer, 40, value.value).getOrThrow()"))
         assertTrue(checkedIn.contains("var day: Int32"))
@@ -485,32 +502,24 @@ class CheckedInBindingsParityTest {
         assertTrue(checkedIn.contains("invokeInt32Setter(pointer, 84, value.value).getOrThrow()"))
         assertTrue(checkedIn.contains("var nanosecond: Int32"))
         assertTrue(checkedIn.contains("invokeInt32Setter(pointer, 89, value.value).getOrThrow()"))
-        assertTrue(checkedIn.contains("fun get_Year(): Int32"))
-        assertTrue(checkedIn.contains("invokeInt32Method(pointer, 30).getOrThrow()"))
         assertTrue(checkedIn.contains("fun addYears(years: Int32)"))
         assertTrue(checkedIn.contains("invokeUnitMethodWithInt32Arg(pointer, 32, years.value).getOrThrow()"))
-        assertTrue(checkedIn.contains("invokeInt32Method(pointer, 73).getOrThrow()"))
-        assertTrue(checkedIn.contains("fun addHours(hours: Int32)"))
-        assertTrue(checkedIn.contains("invokeUnitMethodWithInt32Arg(pointer, 75, hours.value).getOrThrow()"))
         assertTrue(checkedIn.contains("fun hourAsString(): String"))
         assertTrue(checkedIn.contains("invokeHStringMethod(pointer, 76).getOrThrow()"))
         assertTrue(checkedIn.contains("fun hourAsPaddedString(minDigits: Int32): String"))
         assertTrue(checkedIn.contains("invokeHStringMethodWithInt32Arg(pointer, 77,"))
-        assertTrue(checkedIn.contains("invokeInt32Method(pointer, 78).getOrThrow()"))
         assertTrue(checkedIn.contains("fun addMinutes(minutes: Int32)"))
         assertTrue(checkedIn.contains("invokeUnitMethodWithInt32Arg(pointer, 80, minutes.value).getOrThrow()"))
         assertTrue(checkedIn.contains("fun minuteAsString(): String"))
         assertTrue(checkedIn.contains("invokeHStringMethod(pointer, 81).getOrThrow()"))
         assertTrue(checkedIn.contains("fun minuteAsPaddedString(minDigits: Int32): String"))
         assertTrue(checkedIn.contains("invokeHStringMethodWithInt32Arg(pointer, 82,"))
-        assertTrue(checkedIn.contains("invokeInt32Method(pointer, 83).getOrThrow()"))
         assertTrue(checkedIn.contains("fun addSeconds(seconds: Int32)"))
         assertTrue(checkedIn.contains("invokeUnitMethodWithInt32Arg(pointer, 85, seconds.value).getOrThrow()"))
         assertTrue(checkedIn.contains("fun secondAsString(): String"))
         assertTrue(checkedIn.contains("invokeHStringMethod(pointer, 86).getOrThrow()"))
         assertTrue(checkedIn.contains("fun secondAsPaddedString(minDigits: Int32): String"))
         assertTrue(checkedIn.contains("invokeHStringMethodWithInt32Arg(pointer, 87,"))
-        assertTrue(checkedIn.contains("invokeInt32Method(pointer, 88).getOrThrow()"))
         assertTrue(checkedIn.contains("fun addNanoseconds(nanoseconds: Int32)"))
         assertTrue(checkedIn.contains("invokeUnitMethodWithInt32Arg(pointer, 90, nanoseconds.value).getOrThrow()"))
         assertTrue(checkedIn.contains("fun nanosecondAsString(): String"))
@@ -521,6 +530,8 @@ class CheckedInBindingsParityTest {
         assertTrue(checkedIn.contains("invokeHStringMethod(pointer, 33).getOrThrow()"))
         assertTrue(checkedIn.contains("fun yearAsTruncatedString(remainingDigits: Int32): String"))
         assertTrue(checkedIn.contains("invokeHStringMethodWithInt32Arg(pointer, 34,"))
+        assertTrue(checkedIn.contains("fun yearAsPaddedString(minDigits: Int32): String"))
+        assertTrue(checkedIn.contains("invokeHStringMethodWithInt32Arg(pointer, 35,"))
         assertTrue(checkedIn.contains("fun monthAsString(): String"))
         assertTrue(checkedIn.contains("invokeHStringMethod(pointer, 42).getOrThrow()"))
         assertTrue(checkedIn.contains("fun monthAsString(idealLength: Int32): String"))
@@ -551,26 +562,26 @@ class CheckedInBindingsParityTest {
         assertTrue(checkedIn.contains("invokeHStringMethod(pointer, 60).getOrThrow()"))
         assertTrue(checkedIn.contains("fun dayOfWeekAsSoloString(idealLength: Int32): String"))
         assertTrue(checkedIn.contains("invokeHStringMethodWithInt32Arg(pointer, 61,"))
-        assertTrue(checkedIn.contains("fun yearAsPaddedString(minDigits: Int32): String"))
-        assertTrue(checkedIn.contains("invokeHStringMethodWithInt32Arg(pointer, 35,"))
         assertTrue(checkedIn.contains("fun setToNow()"))
         assertTrue(checkedIn.contains("invokeUnitMethod(pointer, 18).getOrThrow()"))
-        assertTrue(checkedIn.contains("fun get_DayOfWeek(): DayOfWeek"))
-        assertTrue(checkedIn.contains("invokeUInt32Method(pointer, 57).getOrThrow().toInt()"))
+        assertTrue(checkedIn.contains("val dayOfWeek: DayOfWeek"))
+        assertTrue(
+            normalizedCheckedIn.contains(
+                "invokeUInt32Method(pointer,57).getOrThrow().toInt()",
+            ),
+        )
         assertTrue(checkedIn.contains("val resolvedLanguage: String"))
         assertTrue(checkedIn.contains("invokeHStringMethod(pointer, 102).getOrThrow()"))
-        assertTrue(checkedIn.contains("fun get_IsDaylightSavingTime(): WinRtBoolean"))
+        assertTrue(checkedIn.contains("val isDaylightSavingTime: WinRtBoolean"))
         assertTrue(checkedIn.contains("invokeBooleanGetter(pointer, 103).getOrThrow()"))
         assertTrue(checkedIn.contains("var era: Int32"))
         assertTrue(checkedIn.contains("invokeInt32Setter(pointer, 23, value.value).getOrThrow()"))
-        assertTrue(checkedIn.contains("fun get_FirstEra(): Int32"))
+        assertTrue(checkedIn.contains("val firstEra: Int32"))
         assertTrue(checkedIn.contains("invokeInt32Method(pointer, 19).getOrThrow()"))
-        assertTrue(checkedIn.contains("fun get_LastEra(): Int32"))
+        assertTrue(checkedIn.contains("val lastEra: Int32"))
         assertTrue(checkedIn.contains("invokeInt32Method(pointer, 20).getOrThrow()"))
-        assertTrue(checkedIn.contains("fun get_NumberOfEras(): Int32"))
+        assertTrue(checkedIn.contains("val numberOfEras: Int32"))
         assertTrue(checkedIn.contains("invokeInt32Method(pointer, 21).getOrThrow()"))
-        assertTrue(checkedIn.contains("fun get_Era(): Int32"))
-        assertTrue(checkedIn.contains("invokeInt32Method(pointer, 22).getOrThrow()"))
         assertTrue(checkedIn.contains("fun addEras(eras: Int32)"))
         assertTrue(checkedIn.contains("invokeUnitMethodWithInt32Arg(pointer, 24, eras.value).getOrThrow()"))
         assertTrue(checkedIn.contains("fun eraAsString(): String"))
@@ -603,10 +614,6 @@ class CheckedInBindingsParityTest {
         assertTrue(checkedIn.contains("invokeInt32Method(pointer, 63).getOrThrow()"))
         assertTrue(checkedIn.contains("val numberOfPeriodsInThisDay: Int32"))
         assertTrue(checkedIn.contains("invokeInt32Method(pointer, 64).getOrThrow()"))
-        assertTrue(checkedIn.contains("fun get_Period(): Int32"))
-        assertTrue(checkedIn.contains("invokeInt32Method(pointer, 65).getOrThrow()"))
-        assertTrue(checkedIn.contains("fun addPeriods(periods: Int32)"))
-        assertTrue(checkedIn.contains("invokeUnitMethodWithInt32Arg(pointer, 67, periods.value).getOrThrow()"))
         assertTrue(checkedIn.contains("fun periodAsString(): String"))
         assertTrue(checkedIn.contains("invokeHStringMethod(pointer, 68).getOrThrow()"))
         assertTrue(checkedIn.contains("fun periodAsString(idealLength: Int32): String"))
@@ -629,6 +636,14 @@ class CheckedInBindingsParityTest {
         assertTrue(checkedIn.contains("invokeInt32Method(pointer, 100).getOrThrow()"))
         assertTrue(checkedIn.contains("val numberOfSecondsInThisMinute: Int32"))
         assertTrue(checkedIn.contains("invokeInt32Method(pointer, 101).getOrThrow()"))
+        assertTrue(runtimeClass.contains("fun get_Languages(): IVectorView<String>"))
+        assertTrue(runtimeClass.contains("fun getDateTime(): Instant"))
+        assertTrue(runtimeClass.contains("fun setDateTime(value: Instant)"))
+        assertTrue(
+            normalizedRuntimeClass.contains(
+                "projectedObjectArgumentPointer(other,\"Windows.Globalization.Calendar\",\"rc(Windows.Globalization.Calendar;{ca30221d-86d9-40fb-a26b-d44eb7cf08ea})\")",
+            ),
+        )
     }
 
     @Test
@@ -750,18 +765,30 @@ class CheckedInBindingsParityTest {
     fun checked_in_numeral_system_translator_keeps_verified_runtime_surface() {
         val runtimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/numberformatting/NumeralSystemTranslator.kt").readText()
         val translator = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/numberformatting/INumeralSystemTranslator.kt").readText()
+        val normalizedRuntimeClass = normalizeWhitespace(runtimeClass)
+        val normalizedTranslator = normalizeWhitespace(translator)
 
         assertTrue(runtimeClass.contains("Windows.Globalization.NumberFormatting.NumeralSystemTranslator"))
         assertTrue(runtimeClass.contains("defaultInterfaceName: String? ="))
         assertTrue(runtimeClass.contains("Windows.Globalization.NumberFormatting.INumeralSystemTranslator"))
-        assertTrue(translator.contains("val languages: StringVectorView"))
-        assertTrue(translator.contains("invokeObjectMethod(pointer, 6).getOrThrow()"))
+        assertTrue(translator.contains("val languages: IVectorView<String>"))
+        assertTrue(
+            normalizedTranslator.contains(
+                "IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow()),\"string\",\"String\")",
+            ),
+        )
         assertTrue(translator.contains("val resolvedLanguage: String"))
         assertTrue(translator.contains("invokeHStringMethod(pointer, 7).getOrThrow()"))
-        assertTrue(translator.contains("val numeralSystem: String"))
+        assertTrue(translator.contains("var numeralSystem: String"))
         assertTrue(translator.contains("invokeHStringMethod(pointer, 8).getOrThrow()"))
         assertTrue(translator.contains("fun translateNumerals(value: String): String"))
         assertTrue(translator.contains("invokeHStringMethodWithStringArg(pointer, 10,"))
+        assertTrue(runtimeClass.contains("fun get_Languages(): IVectorView<String>"))
+        assertTrue(
+            normalizedRuntimeClass.contains(
+                "IVectorView<String>(PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow())",
+            ),
+        )
         assertTrue(translator.contains("28f5bc2c-8c23-4234-ad2e-fa5a3a426e9b"))
     }
 
@@ -797,24 +824,44 @@ class CheckedInBindingsParityTest {
         val calendarStatics = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/ICalendarIdentifiersStatics.kt").readText()
         val clockRuntimeClass = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/ClockIdentifiers.kt").readText()
         val clockStatics = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/globalization/IClockIdentifiersStatics.kt").readText()
+        val normalizedCalendarStatics = normalizeWhitespace(calendarStatics)
+        val normalizedClockStatics = normalizeWhitespace(clockStatics)
 
         assertTrue(calendarRuntimeClass.contains("Windows.Globalization.CalendarIdentifiers"))
         assertTrue(calendarRuntimeClass.contains("defaultInterfaceName: String? = null"))
         assertTrue(calendarRuntimeClass.contains("private val statics: ICalendarIdentifiersStatics by lazy"))
         assertTrue(calendarRuntimeClass.contains("WinRtRuntime.projectActivationFactory(this, ICalendarIdentifiersStatics"))
         assertTrue(calendarStatics.contains("val gregorian: String"))
-        assertTrue(calendarStatics.contains("get_Gregorian(): String = readString(6)"))
+        assertTrue(
+            normalizedCalendarStatics.contains(
+                "get()=PlatformComInterop.invokeHStringMethod(pointer,6).getOrThrow().use{it.toKotlinString()}",
+            ),
+        )
         assertTrue(calendarStatics.contains("val umAlQura: String"))
-        assertTrue(calendarStatics.contains("get_UmAlQura(): String = readString(14)"))
+        assertTrue(
+            normalizedCalendarStatics.contains(
+                "get()=PlatformComInterop.invokeHStringMethod(pointer,14).getOrThrow().use{it.toKotlinString()}",
+            ),
+        )
+        assertFalse(calendarStatics.contains("readString("))
         assertTrue(calendarStatics.contains("80653f68-2cb2-4c1f-b590-f0f52bf4fd1a"))
         assertTrue(clockRuntimeClass.contains("Windows.Globalization.ClockIdentifiers"))
         assertTrue(clockRuntimeClass.contains("defaultInterfaceName: String? = null"))
         assertTrue(clockRuntimeClass.contains("private val statics: IClockIdentifiersStatics by lazy"))
         assertTrue(clockRuntimeClass.contains("WinRtRuntime.projectActivationFactory(this, IClockIdentifiersStatics"))
         assertTrue(clockStatics.contains("val twelveHour: String"))
-        assertTrue(clockStatics.contains("get_TwelveHour(): String = readString(6)"))
+        assertTrue(
+            normalizedClockStatics.contains(
+                "get()=PlatformComInterop.invokeHStringMethod(pointer,6).getOrThrow().use{it.toKotlinString()}",
+            ),
+        )
         assertTrue(clockStatics.contains("val twentyFourHour: String"))
-        assertTrue(clockStatics.contains("get_TwentyFourHour(): String = readString(7)"))
+        assertTrue(
+            normalizedClockStatics.contains(
+                "get()=PlatformComInterop.invokeHStringMethod(pointer,7).getOrThrow().use{it.toKotlinString()}",
+            ),
+        )
+        assertFalse(clockStatics.contains("readString("))
         assertTrue(clockStatics.contains("523805bb-12ec-4f83-bc31-b1b4376b0808"))
     }
 
