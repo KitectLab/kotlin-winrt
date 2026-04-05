@@ -7,6 +7,14 @@ import dev.winrt.winmd.plugin.WinMdParameter
 internal fun WinMdParameter.isTimeSpanPassArrayParameter(): Boolean =
     type == "TimeSpan[]" && arrayParameterCategory() == WinRtArrayParameterCategory.PASS_ARRAY
 
+internal fun WinMdMethod.isTimeSpanPassArrayMethod(
+    supportsObjectReturn: (String) -> Boolean,
+): Boolean =
+    arrayReturnCategory() == null &&
+        parameters.count { parameter -> parameter.isTimeSpanPassArrayParameter() } == 1 &&
+        parameters.all { parameter -> !parameter.type.isWinRtArrayType() || parameter.isTimeSpanPassArrayParameter() } &&
+        (returnType == "Unit" || supportsObjectReturn(returnType))
+
 internal fun WinMdMethod.isTimeSpanReceiveArrayReturnMethod(): Boolean =
     returnType == "TimeSpan[]" &&
         arrayReturnCategory() == WinRtArrayParameterCategory.RECEIVE_ARRAY &&
@@ -33,6 +41,11 @@ internal fun timeSpanReceiveArrayAbiArguments(
         }
     }
 }
+
+internal fun timeSpanPassArrayAbiArguments(
+    parameters: List<WinMdParameter>,
+    lowerArgument: (WinMdParameter) -> CodeBlock?,
+): List<CodeBlock>? = timeSpanReceiveArrayAbiArguments(parameters, lowerArgument)
 
 internal fun timeSpanReceiveArrayReturnExpression(
     vtableIndex: Int,

@@ -7,6 +7,14 @@ import dev.winrt.winmd.plugin.WinMdParameter
 internal fun WinMdParameter.isDateTimePassArrayParameter(): Boolean =
     type == "DateTime[]" && arrayParameterCategory() == WinRtArrayParameterCategory.PASS_ARRAY
 
+internal fun WinMdMethod.isDateTimePassArrayMethod(
+    supportsObjectReturn: (String) -> Boolean,
+): Boolean =
+    arrayReturnCategory() == null &&
+        parameters.count { parameter -> parameter.isDateTimePassArrayParameter() } == 1 &&
+        parameters.all { parameter -> !parameter.type.isWinRtArrayType() || parameter.isDateTimePassArrayParameter() } &&
+        (returnType == "Unit" || supportsObjectReturn(returnType))
+
 internal fun WinMdMethod.isDateTimeReceiveArrayReturnMethod(): Boolean =
     returnType == "DateTime[]" &&
         arrayReturnCategory() == WinRtArrayParameterCategory.RECEIVE_ARRAY &&
@@ -35,6 +43,11 @@ internal fun dateTimeReceiveArrayAbiArguments(
         }
     }
 }
+
+internal fun dateTimePassArrayAbiArguments(
+    parameters: List<WinMdParameter>,
+    lowerArgument: (WinMdParameter) -> CodeBlock?,
+): List<CodeBlock>? = dateTimeReceiveArrayAbiArguments(parameters, lowerArgument)
 
 internal fun dateTimeReceiveArrayReturnExpression(
     vtableIndex: Int,

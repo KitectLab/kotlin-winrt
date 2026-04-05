@@ -357,6 +357,79 @@ class RuntimeMethodRendererTest {
     }
 
     @Test
+    fun renders_runtime_datetime_pass_array_methods_with_count_and_buffer_arguments() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    "CreateDateTimeArray",
+                                    "Object",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter("value", "DateTime[]", isIn = true)),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/Widget.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("funcreateDateTimeArray(value:Array<Instant>):Inspectable"))
+        assertTrue(binding.contains("Inspectable(PlatformComInterop.invokeObjectMethodWithArgs(pointer,6,value.size,LongArray(value.size){index->(((value[index].epochSeconds*10000000L)+(value[index].nanosecondsOfSecond/100))+116_444_736_000_000_000)}).getOrThrow())"))
+    }
+
+    @Test
+    fun renders_runtime_timespan_pass_array_methods_with_scalar_inputs() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    "CreateRange",
+                                    "Object",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter("startIndex", "UInt32"),
+                                        WinMdParameter("value", "TimeSpan[]", isIn = true),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/Widget.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("funcreateRange(startIndex:UInt32,value:Array<Duration>):Inspectable"))
+        assertTrue(binding.contains("Inspectable(PlatformComInterop.invokeObjectMethodWithArgs(pointer,6,startIndex.value,value.size,LongArray(value.size){index->(value[index].inWholeNanoseconds/100)}).getOrThrow())"))
+    }
+
+    @Test
     fun renders_runtime_int32_receive_array_methods_with_scalar_inputs() {
         val model = WinMdModel(
             files = emptyList(),

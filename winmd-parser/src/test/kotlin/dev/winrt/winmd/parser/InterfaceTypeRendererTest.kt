@@ -503,6 +503,81 @@ class InterfaceTypeRendererTest {
     }
 
     @Test
+    fun renders_datetime_pass_array_interface_methods_with_count_and_buffer_arguments() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IPropertyValueStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "14141414-1414-1414-1414-141414141414",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateDateTimeArray",
+                                    returnType = "Object",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter("value", "DateTime[]", isIn = true)),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/IPropertyValueStatics.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("funcreateDateTimeArray(value:Array<Instant>):Inspectable"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethodWithArgs(pointer,6,value.size,LongArray(value.size){index->(((value[index].epochSeconds*10000000L)+(value[index].nanosecondsOfSecond/100))+116_444_736_000_000_000)}).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_timespan_pass_array_interface_methods_with_scalar_inputs() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IPropertyValueStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "15151515-1515-1515-1515-151515151515",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateRange",
+                                    returnType = "Object",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter("startIndex", "UInt32"),
+                                        WinMdParameter("value", "TimeSpan[]", isIn = true),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/IPropertyValueStatics.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("funcreateRange(startIndex:UInt32,value:Array<Duration>):Inspectable"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethodWithArgs(pointer,6,startIndex.value,value.size,LongArray(value.size){index->(value[index].inWholeNanoseconds/100)}).getOrThrow()"))
+    }
+
+    @Test
     fun renders_int32_receive_array_interface_methods_with_scalar_inputs() {
         val model = WinMdModel(
             files = emptyList(),

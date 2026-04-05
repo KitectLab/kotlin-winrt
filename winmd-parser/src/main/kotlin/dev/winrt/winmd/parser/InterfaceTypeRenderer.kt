@@ -1698,6 +1698,8 @@ internal class InterfaceTypeRenderer(
         plannedUInt64ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedInt32PassArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
         plannedStringPassArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
+        plannedDateTimePassArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
+        plannedTimeSpanPassArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
         plannedValueTypeAwareInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
         if (typeRegistry.isEnumType(method.returnType, currentNamespace)) {
             return null
@@ -2351,6 +2353,108 @@ internal class InterfaceTypeRenderer(
                 val parameterCategory = methodParameterCategory(
                     signatureParameterType(parameter.type, currentNamespace),
                 ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@stringPassArrayAbiArguments null
+                CodeBlock.of(
+                    "%L",
+                    unaryArgumentExpression(
+                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                        parameterType = parameter.type,
+                        category = parameterCategory,
+                        currentNamespace = currentNamespace,
+                    ),
+                )
+            },
+        ) ?: return null
+        return if (method.returnType == "Unit") {
+            PlannedInterfaceMethod(
+                statement = "%L",
+                args = { method, _ ->
+                    arrayOf(
+                        interfaceVarargAbiCall("invokeUnitMethodWithArgs", method.vtableIndex!!, abiArguments),
+                    )
+                },
+            )
+        } else {
+            PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ ->
+                    arrayOf(
+                        objectReturnCode(
+                            method = method,
+                            namespace = currentNamespace,
+                            abiCall = interfaceVarargAbiCall("invokeObjectMethodWithArgs", method.vtableIndex!!, abiArguments),
+                            genericParameters = genericParameters,
+                        ),
+                    )
+                },
+            )
+        }
+    }
+
+    private fun plannedDateTimePassArrayInterfaceMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): PlannedInterfaceMethod? {
+        if (!method.isDateTimePassArrayMethod { typeName -> supportsInterfaceObjectReturnType(typeName, currentNamespace) }) {
+            return null
+        }
+        val abiArguments = dateTimePassArrayAbiArguments(
+            parameters = method.parameters,
+            lowerArgument = { parameter ->
+                val parameterCategory = methodParameterCategory(
+                    signatureParameterType(parameter.type, currentNamespace),
+                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@dateTimePassArrayAbiArguments null
+                CodeBlock.of(
+                    "%L",
+                    unaryArgumentExpression(
+                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                        parameterType = parameter.type,
+                        category = parameterCategory,
+                        currentNamespace = currentNamespace,
+                    ),
+                )
+            },
+        ) ?: return null
+        return if (method.returnType == "Unit") {
+            PlannedInterfaceMethod(
+                statement = "%L",
+                args = { method, _ ->
+                    arrayOf(
+                        interfaceVarargAbiCall("invokeUnitMethodWithArgs", method.vtableIndex!!, abiArguments),
+                    )
+                },
+            )
+        } else {
+            PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ ->
+                    arrayOf(
+                        objectReturnCode(
+                            method = method,
+                            namespace = currentNamespace,
+                            abiCall = interfaceVarargAbiCall("invokeObjectMethodWithArgs", method.vtableIndex!!, abiArguments),
+                            genericParameters = genericParameters,
+                        ),
+                    )
+                },
+            )
+        }
+    }
+
+    private fun plannedTimeSpanPassArrayInterfaceMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): PlannedInterfaceMethod? {
+        if (!method.isTimeSpanPassArrayMethod { typeName -> supportsInterfaceObjectReturnType(typeName, currentNamespace) }) {
+            return null
+        }
+        val abiArguments = timeSpanPassArrayAbiArguments(
+            parameters = method.parameters,
+            lowerArgument = { parameter ->
+                val parameterCategory = methodParameterCategory(
+                    signatureParameterType(parameter.type, currentNamespace),
+                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@timeSpanPassArrayAbiArguments null
                 CodeBlock.of(
                     "%L",
                     unaryArgumentExpression(
