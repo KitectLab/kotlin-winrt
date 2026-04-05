@@ -1,7 +1,9 @@
 package dev.winrt.winmd.parser
 
 import dev.winrt.winmd.plugin.WinMdModelFactory
+import dev.winrt.winmd.plugin.WinMdTypeKind
 import dev.winrt.winmd.plugin.NuGetPackageReferences
+import dev.winrt.winmd.plugin.WindowsSdkReferences
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -14,11 +16,11 @@ class WinUiNuGetGenerationSmokeTest {
 
     @Test
     fun generates_application_and_window_from_local_windows_app_sdk_winmd_when_available() {
-        val winuiWinmd = localWinUiXamlWinmd() ?: return
+        val sourceFiles = localWindowsAppSdkSourceFiles() ?: return
 
         val model = WinMdModelFilters.filterNamespaces(
             model = WinMdModelFactory.merge(
-                primary = WinMdModelFactory.metadataModel(listOf(winuiWinmd)),
+                primary = WinMdModelFactory.metadataModel(sourceFiles),
                 supplemental = WinMdModelFactory.sampleSupplementalModel(),
             ),
             namespaceFilters = listOf("Microsoft.UI.Xaml"),
@@ -33,11 +35,11 @@ class WinUiNuGetGenerationSmokeTest {
 
     @Test
     fun generates_additional_application_surface_from_local_windows_app_sdk_winmd_when_available() {
-        val winuiWinmd = localWinUiXamlWinmd() ?: return
+        val sourceFiles = localWindowsAppSdkSourceFiles() ?: return
 
         val model = WinMdModelFilters.filterNamespaces(
             model = WinMdModelFactory.merge(
-                primary = WinMdModelFactory.metadataModel(listOf(winuiWinmd)),
+                primary = WinMdModelFactory.metadataModel(sourceFiles),
                 supplemental = WinMdModelFactory.sampleSupplementalModel(),
             ),
             namespaceFilters = listOf("Microsoft.UI.Xaml"),
@@ -52,11 +54,11 @@ class WinUiNuGetGenerationSmokeTest {
 
     @Test
     fun generates_toggle_switch_surface_from_local_windows_app_sdk_winmd_when_available() {
-        val winuiWinmd = localWinUiXamlWinmd() ?: return
+        val sourceFiles = localWindowsAppSdkSourceFiles() ?: return
 
         val model = WinMdModelFilters.filterNamespaces(
             model = WinMdModelFactory.merge(
-                primary = WinMdModelFactory.metadataModel(listOf(winuiWinmd)),
+                primary = WinMdModelFactory.metadataModel(sourceFiles),
                 supplemental = WinMdModelFactory.sampleSupplementalModel(),
             ),
             namespaceFilters = listOf(
@@ -115,11 +117,11 @@ class WinUiNuGetGenerationSmokeTest {
 
     @Test
     fun generates_external_struct_members_from_local_windows_app_sdk_winmd_when_available() {
-        val winuiWinmd = localWinUiXamlWinmd() ?: return
+        val sourceFiles = localWindowsAppSdkSourceFiles() ?: return
 
         val model = WinMdModelFilters.filterNamespaces(
             model = WinMdModelFactory.merge(
-                primary = WinMdModelFactory.metadataModel(listOf(winuiWinmd)),
+                primary = WinMdModelFactory.metadataModel(sourceFiles),
                 supplemental = WinMdModelFactory.sampleSupplementalModel(),
             ),
             namespaceFilters = listOf(
@@ -153,6 +155,45 @@ class WinUiNuGetGenerationSmokeTest {
         assertTrue(tearOutContent.contains("WindowId.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer,8,WindowId.ABI_LAYOUT).getOrThrow())"))
     }
 
+    @Test
+    fun reads_external_struct_type_definitions_from_full_windows_app_sdk_source_set_when_available() {
+        val sourceFiles = fullWindowsAppSdkSourceFiles() ?: return
+
+        val model = WinMdModelFactory.metadataModel(sourceFiles)
+        val microsoftUi = model.namespaces.firstOrNull { it.name == "Microsoft.UI" }
+        val windowsUiCore = model.namespaces.firstOrNull { it.name == "Windows.UI.Core" }
+        val windowId = microsoftUi?.types?.firstOrNull { it.name == "WindowId" }
+        val keyStatus = windowsUiCore?.types?.firstOrNull { it.name == "CorePhysicalKeyStatus" }
+
+        assertNotNull(windowId)
+        assertNotNull(keyStatus)
+        assertTrue(windowId!!.toString(), windowId.kind == WinMdTypeKind.Struct)
+        assertTrue(keyStatus!!.toString(), keyStatus.kind == WinMdTypeKind.Struct)
+    }
+
+    private fun localWindowsAppSdkSourceFiles(): List<Path>? {
+        fullWindowsAppSdkSourceFiles()?.let { return it }
+
+        val xamlWinmd = localWinUiXamlWinmd() ?: return null
+        return buildList {
+            add(xamlWinmd)
+            addAll(windowsSdkContractSourceFiles())
+        }
+    }
+
+    private fun fullWindowsAppSdkSourceFiles(): List<Path>? {
+        val packageSources = windowsAppSdkSourceFiles()
+            ?.takeIf { sources ->
+                sources.any { it.fileName.toString().equals("Microsoft.UI.Xaml.winmd", ignoreCase = true) }
+            }
+            ?: return null
+
+        return buildList {
+            addAll(packageSources)
+            addAll(windowsSdkContractSourceFiles())
+        }.distinct()
+    }
+
     private fun localWinUiXamlWinmd(): Path? {
         val candidatePaths = buildList {
             System.getProperty("dev.winrt.windowsAppSdkRoot")
@@ -163,7 +204,7 @@ class WinUiNuGetGenerationSmokeTest {
         return candidatePaths.firstOrNull { Files.isRegularFile(it) }
     }
 
-    private fun windowsAppSdkWinmdCandidates(fileName: String): List<Path> {
+    private fun windowsAppSdkSourceFiles(): List<Path>? {
         val nugetRoots = buildList {
             add(Path.of("F:/Dependencies/nuget"))
             runCatching { NuGetPackageReferences.discoverPackagesRoot() }.getOrNull()?.let(::add)
@@ -174,7 +215,22 @@ class WinUiNuGetGenerationSmokeTest {
                 packageId = "Microsoft.WindowsAppSDK",
                 packageVersion = windowsAppSdkVersion,
                 nugetRoots = nugetRoots,
-            ).winmdFiles.filter { it.fileName.toString().equals(fileName, ignoreCase = true) }
+            ).winmdFiles
+        }.getOrNull()
+    }
+
+    private fun windowsSdkContractSourceFiles(): List<Path> {
+        return runCatching {
+            listOf(
+                WindowsSdkReferences.findContract("Windows.Foundation.UniversalApiContract").winmdPath,
+                WindowsSdkReferences.findContract("Windows.Foundation.FoundationContract").winmdPath,
+            )
         }.getOrDefault(emptyList())
+    }
+
+    private fun windowsAppSdkWinmdCandidates(fileName: String): List<Path> {
+        return windowsAppSdkSourceFiles()
+            ?.filter { it.fileName.toString().equals(fileName, ignoreCase = true) }
+            ?: emptyList()
     }
 }
