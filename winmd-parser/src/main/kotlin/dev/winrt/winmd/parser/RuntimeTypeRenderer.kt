@@ -336,6 +336,86 @@ internal class RuntimeTypeRenderer(
                         }
             ) ||
             (
+                candidate.method.copy(parameters = constructorParameters).isBooleanPassArrayMethod { _ -> true } &&
+                    constructorParameters
+                        .filterNot { parameter -> parameter.isBooleanPassArrayParameter() }
+                        .all { parameter ->
+                            methodParameterCategory(
+                                if (typeRegistry.isEnumType(parameter.type, candidate.runtimeClass.namespace)) {
+                                    enumSignatureType(typeRegistry, parameter.type, candidate.runtimeClass.namespace)
+                                } else {
+                                    parameter.type
+                                },
+                            ) { typeName ->
+                                supportsProjectedObjectTypeName(typeName)
+                            } != null
+                        }
+            ) ||
+            (
+                candidate.method.copy(parameters = constructorParameters).isUInt8PassArrayMethod { _ -> true } &&
+                    constructorParameters
+                        .filterNot { parameter -> parameter.isUInt8PassArrayParameter() }
+                        .all { parameter ->
+                            methodParameterCategory(
+                                if (typeRegistry.isEnumType(parameter.type, candidate.runtimeClass.namespace)) {
+                                    enumSignatureType(typeRegistry, parameter.type, candidate.runtimeClass.namespace)
+                                } else {
+                                    parameter.type
+                                },
+                            ) { typeName ->
+                                supportsProjectedObjectTypeName(typeName)
+                            } != null
+                        }
+            ) ||
+            (
+                candidate.method.copy(parameters = constructorParameters).isInt16PassArrayMethod { _ -> true } &&
+                    constructorParameters
+                        .filterNot { parameter -> parameter.isInt16PassArrayParameter() }
+                        .all { parameter ->
+                            methodParameterCategory(
+                                if (typeRegistry.isEnumType(parameter.type, candidate.runtimeClass.namespace)) {
+                                    enumSignatureType(typeRegistry, parameter.type, candidate.runtimeClass.namespace)
+                                } else {
+                                    parameter.type
+                                },
+                            ) { typeName ->
+                                supportsProjectedObjectTypeName(typeName)
+                            } != null
+                        }
+            ) ||
+            (
+                candidate.method.copy(parameters = constructorParameters).isUInt16PassArrayMethod { _ -> true } &&
+                    constructorParameters
+                        .filterNot { parameter -> parameter.isUInt16PassArrayParameter() }
+                        .all { parameter ->
+                            methodParameterCategory(
+                                if (typeRegistry.isEnumType(parameter.type, candidate.runtimeClass.namespace)) {
+                                    enumSignatureType(typeRegistry, parameter.type, candidate.runtimeClass.namespace)
+                                } else {
+                                    parameter.type
+                                },
+                            ) { typeName ->
+                                supportsProjectedObjectTypeName(typeName)
+                            } != null
+                        }
+            ) ||
+            (
+                candidate.method.copy(parameters = constructorParameters).isChar16PassArrayMethod { _ -> true } &&
+                    constructorParameters
+                        .filterNot { parameter -> parameter.isChar16PassArrayParameter() }
+                        .all { parameter ->
+                            methodParameterCategory(
+                                if (typeRegistry.isEnumType(parameter.type, candidate.runtimeClass.namespace)) {
+                                    enumSignatureType(typeRegistry, parameter.type, candidate.runtimeClass.namespace)
+                                } else {
+                                    parameter.type
+                                },
+                            ) { typeName ->
+                                supportsProjectedObjectTypeName(typeName)
+                            } != null
+                        }
+            ) ||
+            (
                 candidate.method.copy(parameters = constructorParameters).isFloat32PassArrayMethod { _ -> true } &&
                     constructorParameters
                         .filterNot { parameter -> parameter.isFloat32PassArrayParameter() }

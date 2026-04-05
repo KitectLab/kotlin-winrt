@@ -452,6 +452,46 @@ internal class RuntimeCompanionRenderer(
                         .all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
                 ) ||
             (
+                method.isBooleanPassArrayMethod { typeName ->
+                    !typeRegistry.isStructType(typeName, currentNamespace) && supportsProjectedObjectTypeName(typeName)
+                } &&
+                    method.parameters
+                        .filterNot { parameter -> parameter.isBooleanPassArrayParameter() }
+                        .all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                ) ||
+            (
+                method.isUInt8PassArrayMethod { typeName ->
+                    !typeRegistry.isStructType(typeName, currentNamespace) && supportsProjectedObjectTypeName(typeName)
+                } &&
+                    method.parameters
+                        .filterNot { parameter -> parameter.isUInt8PassArrayParameter() }
+                        .all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                ) ||
+            (
+                method.isInt16PassArrayMethod { typeName ->
+                    !typeRegistry.isStructType(typeName, currentNamespace) && supportsProjectedObjectTypeName(typeName)
+                } &&
+                    method.parameters
+                        .filterNot { parameter -> parameter.isInt16PassArrayParameter() }
+                        .all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                ) ||
+            (
+                method.isUInt16PassArrayMethod { typeName ->
+                    !typeRegistry.isStructType(typeName, currentNamespace) && supportsProjectedObjectTypeName(typeName)
+                } &&
+                    method.parameters
+                        .filterNot { parameter -> parameter.isUInt16PassArrayParameter() }
+                        .all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                ) ||
+            (
+                method.isChar16PassArrayMethod { typeName ->
+                    !typeRegistry.isStructType(typeName, currentNamespace) && supportsProjectedObjectTypeName(typeName)
+                } &&
+                    method.parameters
+                        .filterNot { parameter -> parameter.isChar16PassArrayParameter() }
+                        .all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                ) ||
+            (
                 method.isFloat32PassArrayMethod { typeName ->
                     !typeRegistry.isStructType(typeName, currentNamespace) && supportsProjectedObjectTypeName(typeName)
                 } &&

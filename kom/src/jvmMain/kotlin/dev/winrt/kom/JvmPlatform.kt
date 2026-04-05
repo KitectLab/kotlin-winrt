@@ -33,6 +33,9 @@ internal fun methodArgumentLayout(argument: Any): MemoryLayout {
     return when (argument) {
         is ComPtr,
         is String,
+        is ByteArray,
+        is ShortArray,
+        is CharArray,
         is IntArray,
         is LongArray,
         is FloatArray,
@@ -75,6 +78,9 @@ internal fun prepareAbiArguments(arguments: Array<out Any>): PreparedAbiArgument
                 releasers += { JvmWinRtRuntime.releaseHString(hString) }
                 MemorySegment.ofAddress(hString.raw)
             }
+            is ByteArray -> MemorySegment.ofArray(argument)
+            is ShortArray -> MemorySegment.ofArray(argument)
+            is CharArray -> MemorySegment.ofArray(argument)
             is IntArray -> MemorySegment.ofArray(argument)
             is LongArray -> MemorySegment.ofArray(argument)
             is FloatArray -> MemorySegment.ofArray(argument)

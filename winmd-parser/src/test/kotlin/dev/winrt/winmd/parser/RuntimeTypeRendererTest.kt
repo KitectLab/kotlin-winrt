@@ -304,6 +304,78 @@ class RuntimeTypeRendererTest {
     }
 
     @Test
+    fun forwards_supported_small_primitive_pass_array_methods_from_companion() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "PropertyValue",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            staticInterfaces = listOf("Windows.Foundation.IPropertyValueStatics"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IPropertyValueStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "14141414-1414-1414-1414-141414141414",
+                            methods = listOf(
+                                WinMdMethod("CreateBooleanArray", "Object", vtableIndex = 6, parameters = listOf(WinMdParameter("value", "Boolean[]", isIn = true))),
+                                WinMdMethod("CreateUInt8Array", "Object", vtableIndex = 7, parameters = listOf(WinMdParameter("value", "UInt8[]", isIn = true))),
+                                WinMdMethod("CreateInt16Array", "Object", vtableIndex = 8, parameters = listOf(WinMdParameter("value", "Int16[]", isIn = true))),
+                                WinMdMethod("CreateUInt16Array", "Object", vtableIndex = 9, parameters = listOf(WinMdParameter("value", "UInt16[]", isIn = true))),
+                                WinMdMethod("CreateChar16Array", "Object", vtableIndex = 10, parameters = listOf(WinMdParameter("value", "Char16[]", isIn = true))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val typeRegistry = TypeRegistry(model)
+        val renderer = RuntimeTypeRenderer(
+            typeNameMapper = TypeNameMapper(),
+            typeRegistry = typeRegistry,
+            delegateLambdaPlanResolver = DelegateLambdaPlanResolver(TypeNameMapper()),
+            eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+            runtimePropertyRenderer = RuntimePropertyRenderer(TypeNameMapper(), typeRegistry),
+            runtimeMethodRenderer = RuntimeMethodRenderer(
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                typeRegistry,
+                asyncRegistry(typeRegistry),
+            ),
+            runtimeCompanionRenderer = RuntimeCompanionRenderer(
+                typeRegistry,
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+                WinRtSignatureMapper(typeRegistry),
+                AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+                WinRtProjectionTypeMapper(),
+                KotlinCollectionProjectionMapper(),
+            ),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
+            winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
+        )
+
+        val binding = renderer.render(typeRegistry.findType("PropertyValue", "Windows.Foundation")!!).toString()
+
+        assertTrue(binding.contains("fun createBooleanArray("))
+        assertTrue(binding.contains("statics.createBooleanArray(value)"))
+        assertTrue(binding.contains("fun createUInt8Array("))
+        assertTrue(binding.contains("statics.createUInt8Array(value)"))
+        assertTrue(binding.contains("fun createInt16Array("))
+        assertTrue(binding.contains("statics.createInt16Array(value)"))
+        assertTrue(binding.contains("fun createUInt16Array("))
+        assertTrue(binding.contains("statics.createUInt16Array(value)"))
+        assertTrue(binding.contains("fun createChar16Array("))
+        assertTrue(binding.contains("statics.createChar16Array(value)"))
+    }
+
+    @Test
     fun forwards_supported_float32_pass_array_methods_from_companion() {
         val model = WinMdModel(
             files = emptyList(),
@@ -2646,6 +2718,85 @@ class RuntimeTypeRendererTest {
             normalizedBinding,
             normalizedBinding.contains("factoryCreateWithInspectables(values).pointer"),
         )
+    }
+
+    @Test
+    fun renders_runtime_factory_constructors_for_supported_small_primitive_array_parameters() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Xaml.IWidget",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidgetFactory",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod("CreateWithFlags", "Example.Xaml.Widget", vtableIndex = 6, parameters = listOf(WinMdParameter(name = "flags", type = "Boolean[]", isIn = true))),
+                                WinMdMethod("CreateWithBytes", "Example.Xaml.Widget", vtableIndex = 7, parameters = listOf(WinMdParameter(name = "bytes", type = "UInt8[]", isIn = true))),
+                                WinMdMethod("CreateWithShorts", "Example.Xaml.Widget", vtableIndex = 8, parameters = listOf(WinMdParameter(name = "shorts", type = "Int16[]", isIn = true))),
+                                WinMdMethod("CreateWithUShorts", "Example.Xaml.Widget", vtableIndex = 9, parameters = listOf(WinMdParameter(name = "uShorts", type = "UInt16[]", isIn = true))),
+                                WinMdMethod("CreateWithChars", "Example.Xaml.Widget", vtableIndex = 10, parameters = listOf(WinMdParameter(name = "chars", type = "Char16[]", isIn = true))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val typeRegistry = TypeRegistry(model)
+        val renderer = RuntimeTypeRenderer(
+            typeNameMapper = TypeNameMapper(),
+            typeRegistry = typeRegistry,
+            delegateLambdaPlanResolver = DelegateLambdaPlanResolver(TypeNameMapper()),
+            eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+            runtimePropertyRenderer = RuntimePropertyRenderer(TypeNameMapper(), typeRegistry),
+            runtimeMethodRenderer = RuntimeMethodRenderer(
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                typeRegistry,
+                asyncRegistry(typeRegistry),
+            ),
+            runtimeCompanionRenderer = RuntimeCompanionRenderer(
+                typeRegistry,
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+                WinRtSignatureMapper(typeRegistry),
+                AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+                WinRtProjectionTypeMapper(),
+                KotlinCollectionProjectionMapper(),
+            ),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
+            winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
+        )
+
+        val binding = renderer.render(typeRegistry.findType("Widget", "Example.Xaml")!!).toString()
+        val normalizedBinding = binding.replace(Regex("\\s+"), " ")
+
+        assertTrue(normalizedBinding.contains("constructor(flags: kotlin.Array<dev.winrt.core.WinRtBoolean>)"))
+        assertTrue(normalizedBinding.contains("factoryCreateWithFlags(flags).pointer"))
+        assertTrue(normalizedBinding.contains("constructor(bytes: kotlin.Array<kotlin.UByte>)"))
+        assertTrue(normalizedBinding.contains("factoryCreateWithBytes(bytes).pointer"))
+        assertTrue(normalizedBinding.contains("constructor(shorts: kotlin.Array<kotlin.Short>)"))
+        assertTrue(normalizedBinding.contains("factoryCreateWithShorts(shorts).pointer"))
+        assertTrue(normalizedBinding.contains("constructor(uShorts: kotlin.Array<kotlin.UShort>)"))
+        assertTrue(normalizedBinding.contains("factoryCreateWithUShorts(uShorts).pointer"))
+        assertTrue(normalizedBinding.contains("constructor(chars: kotlin.Array<kotlin.Char>)"))
+        assertTrue(normalizedBinding.contains("factoryCreateWithChars(chars).pointer"))
     }
 
     @Test

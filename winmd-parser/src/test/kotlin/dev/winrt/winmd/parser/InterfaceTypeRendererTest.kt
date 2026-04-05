@@ -539,6 +539,49 @@ class InterfaceTypeRendererTest {
     }
 
     @Test
+    fun renders_small_primitive_pass_array_interface_methods_with_count_and_buffer_arguments() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IPropertyValueStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "16161616-1616-1616-1616-161616161616",
+                            methods = listOf(
+                                WinMdMethod("CreateBooleanArray", "Object", vtableIndex = 6, parameters = listOf(WinMdParameter("value", "Boolean[]", isIn = true))),
+                                WinMdMethod("CreateUInt8Array", "Object", vtableIndex = 7, parameters = listOf(WinMdParameter("value", "UInt8[]", isIn = true))),
+                                WinMdMethod("CreateInt16Array", "Object", vtableIndex = 8, parameters = listOf(WinMdParameter("value", "Int16[]", isIn = true))),
+                                WinMdMethod("CreateUInt16Array", "Object", vtableIndex = 9, parameters = listOf(WinMdParameter("value", "UInt16[]", isIn = true))),
+                                WinMdMethod("CreateChar16Array", "Object", vtableIndex = 10, parameters = listOf(WinMdParameter("value", "Char16[]", isIn = true))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/IPropertyValueStatics.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("funcreateBooleanArray(value:Array<WinRtBoolean>):Inspectable"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethodWithArgs(pointer,6,value.size,ByteArray(value.size){index->if(value[index].value)1.toByte()else0.toByte()}).getOrThrow()"))
+        assertTrue(binding.contains("funcreateUInt8Array(value:Array<UByte>):Inspectable"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethodWithArgs(pointer,7,value.size,ByteArray(value.size){index->value[index].toByte()}).getOrThrow()"))
+        assertTrue(binding.contains("funcreateInt16Array(value:Array<Short>):Inspectable"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethodWithArgs(pointer,8,value.size,ShortArray(value.size){index->value[index]}).getOrThrow()"))
+        assertTrue(binding.contains("funcreateUInt16Array(value:Array<UShort>):Inspectable"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethodWithArgs(pointer,9,value.size,ShortArray(value.size){index->value[index].toShort()}).getOrThrow()"))
+        assertTrue(binding.contains("funcreateChar16Array(value:Array<Char>):Inspectable"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethodWithArgs(pointer,10,value.size,CharArray(value.size){index->value[index]}).getOrThrow()"))
+    }
+
+    @Test
     fun renders_float32_pass_array_interface_methods_with_count_and_buffer_arguments() {
         val model = WinMdModel(
             files = emptyList(),
