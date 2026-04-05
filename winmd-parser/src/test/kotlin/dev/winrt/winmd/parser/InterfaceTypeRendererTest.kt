@@ -720,6 +720,43 @@ class InterfaceTypeRendererTest {
     }
 
     @Test
+    fun renders_value_conversion_receive_array_interface_methods_with_scalar_inputs() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IVectorViewConverted",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "99999999-9999-9999-9999-999999999999",
+                            methods = listOf(
+                                WinMdMethod("GetGuids", "Guid[]", vtableIndex = 18, parameters = listOf(WinMdParameter("startIndex", "UInt32"))),
+                                WinMdMethod("GetDates", "DateTime[]", vtableIndex = 19, parameters = listOf(WinMdParameter("startIndex", "UInt32"))),
+                                WinMdMethod("GetDurations", "TimeSpan[]", vtableIndex = 20, parameters = listOf(WinMdParameter("startIndex", "UInt32"))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/Collections/IVectorViewConverted.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fungetGuids(startIndex:UInt32):Array<Uuid>"))
+        assertTrue(binding.contains("invokeGuidReceiveArrayMethod(pointer,18,startIndex.value).getOrThrow().map{Uuid.parse(it.toString())}.toTypedArray()"))
+        assertTrue(binding.contains("fungetDates(startIndex:UInt32):Array<Instant>"))
+        assertTrue(binding.contains("invokeDateTimeReceiveArrayMethod(pointer,19,startIndex.value).getOrThrow().map{Instant.fromEpochSeconds((it-116_444_736_000_000_000)/10000000L,((it-116_444_736_000_000_000)%10000000L*100).toInt())}.toTypedArray()"))
+        assertTrue(binding.contains("fungetDurations(startIndex:UInt32):Array<Duration>"))
+        assertTrue(binding.contains("invokeTimeSpanReceiveArrayMethod(pointer,20,startIndex.value).getOrThrow().map{Duration(it)}.toTypedArray()"))
+    }
+
+    @Test
     fun unsubscribes_event_slots_with_finally_to_close_delegate_handles() {
         val model = WinMdModel(
             files = emptyList(),

@@ -1686,8 +1686,11 @@ internal class InterfaceTypeRenderer(
         plannedBooleanReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedFloat32ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedFloat64ReceiveArrayInterfaceMethod(method)?.let { return it }
+        plannedGuidReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedInt64ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedStringReceiveArrayInterfaceMethod(method)?.let { return it }
+        plannedDateTimeReceiveArrayInterfaceMethod(method)?.let { return it }
+        plannedTimeSpanReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedUInt32ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedUInt64ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedInt32PassArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
@@ -1923,6 +1926,84 @@ internal class InterfaceTypeRenderer(
                     )
                 } ?: error("Unsupported Boolean receive-array interface method: ${method.name}")
                 arrayOf(booleanReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
+            },
+        )
+    }
+
+    private fun plannedGuidReceiveArrayInterfaceMethod(method: WinMdMethod): PlannedInterfaceMethod? {
+        if (!method.isGuidReceiveArrayReturnMethod()) {
+            return null
+        }
+        return PlannedInterfaceMethod(
+            statement = "return %L",
+            args = { method, currentNamespace ->
+                val abiArguments = guidReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@guidReceiveArrayAbiArguments null
+                    CodeBlock.of(
+                        "%L",
+                        unaryArgumentExpression(
+                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                            parameterType = parameter.type,
+                            category = parameterCategory,
+                            currentNamespace = currentNamespace,
+                        ),
+                    )
+                } ?: error("Unsupported Guid receive-array interface method: ${method.name}")
+                arrayOf(guidReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
+            },
+        )
+    }
+
+    private fun plannedDateTimeReceiveArrayInterfaceMethod(method: WinMdMethod): PlannedInterfaceMethod? {
+        if (!method.isDateTimeReceiveArrayReturnMethod()) {
+            return null
+        }
+        return PlannedInterfaceMethod(
+            statement = "return %L",
+            args = { method, currentNamespace ->
+                val abiArguments = dateTimeReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@dateTimeReceiveArrayAbiArguments null
+                    CodeBlock.of(
+                        "%L",
+                        unaryArgumentExpression(
+                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                            parameterType = parameter.type,
+                            category = parameterCategory,
+                            currentNamespace = currentNamespace,
+                        ),
+                    )
+                } ?: error("Unsupported DateTime receive-array interface method: ${method.name}")
+                arrayOf(dateTimeReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
+            },
+        )
+    }
+
+    private fun plannedTimeSpanReceiveArrayInterfaceMethod(method: WinMdMethod): PlannedInterfaceMethod? {
+        if (!method.isTimeSpanReceiveArrayReturnMethod()) {
+            return null
+        }
+        return PlannedInterfaceMethod(
+            statement = "return %L",
+            args = { method, currentNamespace ->
+                val abiArguments = timeSpanReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@timeSpanReceiveArrayAbiArguments null
+                    CodeBlock.of(
+                        "%L",
+                        unaryArgumentExpression(
+                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                            parameterType = parameter.type,
+                            category = parameterCategory,
+                            currentNamespace = currentNamespace,
+                        ),
+                    )
+                } ?: error("Unsupported TimeSpan receive-array interface method: ${method.name}")
+                arrayOf(timeSpanReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
             },
         )
     }
