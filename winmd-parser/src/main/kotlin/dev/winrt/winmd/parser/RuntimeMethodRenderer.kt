@@ -159,6 +159,8 @@ internal class RuntimeMethodRenderer(
         }
         plannedInt32FillArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         plannedInt32ReceiveArrayRuntimeMethod(method)?.let { return it }
+        plannedFloat32ReceiveArrayRuntimeMethod(method)?.let { return it }
+        plannedFloat64ReceiveArrayRuntimeMethod(method)?.let { return it }
         plannedInt64ReceiveArrayRuntimeMethod(method)?.let { return it }
         plannedStringReceiveArrayRuntimeMethod(method)?.let { return it }
         plannedUInt32ReceiveArrayRuntimeMethod(method)?.let { return it }
@@ -335,6 +337,56 @@ internal class RuntimeMethodRenderer(
                 } ?: error("Unsupported UInt64 receive-array runtime method: ${method.name}")
                 arrayOf(
                     uint64ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
+                )
+            },
+        )
+    }
+
+    private fun plannedFloat32ReceiveArrayRuntimeMethod(method: WinMdMethod): RuntimeMethodPlan? {
+        if (!method.isFloat32ReceiveArrayReturnMethod()) {
+            return null
+        }
+        return RuntimeMethodPlan(
+            nullPointerReturn = { method ->
+                PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}"))
+            },
+            returnStatement = "return %L",
+            statementArgs = { method, currentNamespace, parameterBindings ->
+                val abiArguments = float32ReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterIndex = method.parameters.indexOf(parameter)
+                    val binding = parameterBindings[parameterIndex]
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsRuntimeObjectType(typeName, currentNamespace) } ?: return@float32ReceiveArrayAbiArguments null
+                    CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, currentNamespace))
+                } ?: error("Unsupported Float32 receive-array runtime method: ${method.name}")
+                arrayOf(
+                    float32ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
+                )
+            },
+        )
+    }
+
+    private fun plannedFloat64ReceiveArrayRuntimeMethod(method: WinMdMethod): RuntimeMethodPlan? {
+        if (!method.isFloat64ReceiveArrayReturnMethod()) {
+            return null
+        }
+        return RuntimeMethodPlan(
+            nullPointerReturn = { method ->
+                PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}"))
+            },
+            returnStatement = "return %L",
+            statementArgs = { method, currentNamespace, parameterBindings ->
+                val abiArguments = float64ReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterIndex = method.parameters.indexOf(parameter)
+                    val binding = parameterBindings[parameterIndex]
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsRuntimeObjectType(typeName, currentNamespace) } ?: return@float64ReceiveArrayAbiArguments null
+                    CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, currentNamespace))
+                } ?: error("Unsupported Float64 receive-array runtime method: ${method.name}")
+                arrayOf(
+                    float64ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
                 )
             },
         )

@@ -1679,6 +1679,8 @@ internal class InterfaceTypeRenderer(
         }
         plannedInt32FillArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
         plannedInt32ReceiveArrayInterfaceMethod(method)?.let { return it }
+        plannedFloat32ReceiveArrayInterfaceMethod(method)?.let { return it }
+        plannedFloat64ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedInt64ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedStringReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedUInt32ReceiveArrayInterfaceMethod(method)?.let { return it }
@@ -1869,6 +1871,62 @@ internal class InterfaceTypeRenderer(
                 } ?: error("Unsupported UInt64 receive-array interface method: ${method.name}")
                 arrayOf(
                     uint64ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
+                )
+            },
+        )
+    }
+
+    private fun plannedFloat32ReceiveArrayInterfaceMethod(method: WinMdMethod): PlannedInterfaceMethod? {
+        if (!method.isFloat32ReceiveArrayReturnMethod()) {
+            return null
+        }
+        return PlannedInterfaceMethod(
+            statement = "return %L",
+            args = { method, currentNamespace ->
+                val abiArguments = float32ReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@float32ReceiveArrayAbiArguments null
+                    CodeBlock.of(
+                        "%L",
+                        unaryArgumentExpression(
+                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                            parameterType = parameter.type,
+                            category = parameterCategory,
+                            currentNamespace = currentNamespace,
+                        ),
+                    )
+                } ?: error("Unsupported Float32 receive-array interface method: ${method.name}")
+                arrayOf(
+                    float32ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
+                )
+            },
+        )
+    }
+
+    private fun plannedFloat64ReceiveArrayInterfaceMethod(method: WinMdMethod): PlannedInterfaceMethod? {
+        if (!method.isFloat64ReceiveArrayReturnMethod()) {
+            return null
+        }
+        return PlannedInterfaceMethod(
+            statement = "return %L",
+            args = { method, currentNamespace ->
+                val abiArguments = float64ReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@float64ReceiveArrayAbiArguments null
+                    CodeBlock.of(
+                        "%L",
+                        unaryArgumentExpression(
+                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                            parameterType = parameter.type,
+                            category = parameterCategory,
+                            currentNamespace = currentNamespace,
+                        ),
+                    )
+                } ?: error("Unsupported Float64 receive-array interface method: ${method.name}")
+                arrayOf(
+                    float64ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
                 )
             },
         )

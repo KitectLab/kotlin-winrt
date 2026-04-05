@@ -605,6 +605,78 @@ class InterfaceTypeRendererTest {
     }
 
     @Test
+    fun renders_float32_receive_array_interface_methods_with_scalar_inputs() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IVectorViewFloat32",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "66666666-6666-6666-6666-666666666666",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetRange",
+                                    returnType = "Float32[]",
+                                    vtableIndex = 11,
+                                    parameters = listOf(WinMdParameter("startIndex", "UInt32")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/Collections/IVectorViewFloat32.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fungetRange(startIndex:UInt32):Array<Float32>"))
+        assertTrue(binding.contains("invokeFloat32ReceiveArrayMethod(pointer,11,startIndex.value).getOrThrow().map{Float32(it)}.toTypedArray()"))
+    }
+
+    @Test
+    fun renders_float64_receive_array_interface_methods_with_scalar_inputs() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IVectorViewFloat64",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "77777777-7777-7777-7777-777777777777",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetRange",
+                                    returnType = "Float64[]",
+                                    vtableIndex = 12,
+                                    parameters = listOf(WinMdParameter("startIndex", "UInt32")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/Collections/IVectorViewFloat64.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fungetRange(startIndex:UInt32):Array<Float64>"))
+        assertTrue(binding.contains("invokeFloat64ReceiveArrayMethod(pointer,12,startIndex.value).getOrThrow().map{Float64(it)}.toTypedArray()"))
+    }
+
+    @Test
     fun unsubscribes_event_slots_with_finally_to_close_delegate_handles() {
         val model = WinMdModel(
             files = emptyList(),

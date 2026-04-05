@@ -60,6 +60,8 @@ internal object PoetSymbols {
     val platformComInteropClass = ClassName("dev.winrt.kom", "PlatformComInterop")
     val invokeInt32ReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeInt32ReceiveArrayMethod")
     val invokeInt64ReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeInt64ReceiveArrayMethod")
+    val invokeFloat32ReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeFloat32ReceiveArrayMethod")
+    val invokeFloat64ReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeFloat64ReceiveArrayMethod")
     val invokeStringReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeStringReceiveArrayMethod")
     val invokeUInt32ReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeUInt32ReceiveArrayMethod")
     val invokeUInt64ReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeUInt64ReceiveArrayMethod")
