@@ -496,11 +496,15 @@ internal class RuntimeCompanionRenderer(
                 ) ||
             (
                 method.isDateTimeReceiveArrayReturnMethod() &&
-                    method.parameters.all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                    method.parameters
+                        .filterNot { parameter -> parameter.isDateTimePassArrayParameter() }
+                        .all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
                 ) ||
             (
                 method.isTimeSpanReceiveArrayReturnMethod() &&
-                    method.parameters.all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                    method.parameters
+                        .filterNot { parameter -> parameter.isTimeSpanPassArrayParameter() }
+                        .all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
                 ) ||
             (
                 method.isUInt32ReceiveArrayReturnMethod() &&

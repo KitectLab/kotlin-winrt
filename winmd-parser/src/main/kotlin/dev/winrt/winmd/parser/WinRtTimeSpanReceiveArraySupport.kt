@@ -4,15 +4,35 @@ import com.squareup.kotlinpoet.CodeBlock
 import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdParameter
 
+internal fun WinMdParameter.isTimeSpanPassArrayParameter(): Boolean =
+    type == "TimeSpan[]" && arrayParameterCategory() == WinRtArrayParameterCategory.PASS_ARRAY
+
 internal fun WinMdMethod.isTimeSpanReceiveArrayReturnMethod(): Boolean =
     returnType == "TimeSpan[]" &&
         arrayReturnCategory() == WinRtArrayParameterCategory.RECEIVE_ARRAY &&
-        parameters.none { parameter -> parameter.type.isWinRtArrayType() }
+        parameters.count { parameter -> parameter.isTimeSpanPassArrayParameter() } <= 1 &&
+        parameters.all { parameter -> !parameter.type.isWinRtArrayType() || parameter.isTimeSpanPassArrayParameter() }
 
 internal fun timeSpanReceiveArrayAbiArguments(
     parameters: List<WinMdParameter>,
     lowerArgument: (WinMdParameter) -> CodeBlock?,
-): List<CodeBlock>? = parameters.map { parameter -> lowerArgument(parameter) ?: return null }
+): List<CodeBlock>? = buildList {
+    parameters.forEach { parameter ->
+        val parameterName = parameter.name.replaceFirstChar(Char::lowercase)
+        if (parameter.isTimeSpanPassArrayParameter()) {
+            add(CodeBlock.of("%N.size", parameterName))
+            add(
+                CodeBlock.of(
+                    "LongArray(%N.size) { index -> (%N[index].inWholeNanoseconds / 100) }",
+                    parameterName,
+                    parameterName,
+                ),
+            )
+        } else {
+            add(lowerArgument(parameter) ?: return null)
+        }
+    }
+}
 
 internal fun timeSpanReceiveArrayReturnExpression(
     vtableIndex: Int,

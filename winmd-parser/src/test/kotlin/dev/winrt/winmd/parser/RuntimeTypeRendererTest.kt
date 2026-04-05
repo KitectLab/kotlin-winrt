@@ -1052,6 +1052,69 @@ class RuntimeTypeRendererTest {
     }
 
     @Test
+    fun forwards_supported_temporal_receive_array_static_methods_with_temporal_array_inputs_from_companion() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "TemporalPropertyValue",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            staticInterfaces = listOf("Windows.Foundation.ITemporalArrayStatics"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "ITemporalArrayStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "ffffffff-ffff-ffff-ffff-ffffffffffff",
+                            methods = listOf(
+                                WinMdMethod("GetAndSetDateTimes", "DateTime[]", vtableIndex = 6, parameters = listOf(WinMdParameter("dateTimes", "DateTime[]", isIn = true))),
+                                WinMdMethod("GetAndSetDurations", "TimeSpan[]", vtableIndex = 7, parameters = listOf(WinMdParameter("durations", "TimeSpan[]", isIn = true))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val typeRegistry = TypeRegistry(model)
+        val renderer = RuntimeTypeRenderer(
+            typeNameMapper = TypeNameMapper(),
+            typeRegistry = typeRegistry,
+            delegateLambdaPlanResolver = DelegateLambdaPlanResolver(TypeNameMapper()),
+            eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+            runtimePropertyRenderer = RuntimePropertyRenderer(TypeNameMapper(), typeRegistry),
+            runtimeMethodRenderer = RuntimeMethodRenderer(
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                typeRegistry,
+                asyncRegistry(typeRegistry),
+            ),
+            runtimeCompanionRenderer = RuntimeCompanionRenderer(
+                typeRegistry,
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+                WinRtSignatureMapper(typeRegistry),
+                AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+                WinRtProjectionTypeMapper(),
+                KotlinCollectionProjectionMapper(),
+            ),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
+            winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
+        )
+
+        val binding = renderer.render(typeRegistry.findType("TemporalPropertyValue", "Windows.Foundation")!!).toString()
+
+        assertTrue(binding.contains("fun getAndSetDateTimes("))
+        assertTrue(binding.contains("statics.getAndSetDateTimes(dateTimes)"))
+        assertTrue(binding.contains("fun getAndSetDurations("))
+        assertTrue(binding.contains("statics.getAndSetDurations(durations)"))
+    }
+
+    @Test
     fun forwards_supported_int32_fill_array_static_methods_from_companion() {
         val model = WinMdModel(
             files = emptyList(),

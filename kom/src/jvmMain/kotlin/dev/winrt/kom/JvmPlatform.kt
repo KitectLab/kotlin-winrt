@@ -16,7 +16,8 @@ internal fun methodArgumentLayout(argument: Any): MemoryLayout {
     return when (argument) {
         is ComPtr,
         is String,
-        is IntArray -> ValueLayout.ADDRESS
+        is IntArray,
+        is LongArray -> ValueLayout.ADDRESS
         is Byte,
         is UByte -> ValueLayout.JAVA_BYTE
         is Short,
@@ -50,6 +51,7 @@ internal fun prepareAbiArguments(arguments: Array<out Any>): PreparedAbiArgument
                 MemorySegment.ofAddress(hString.raw)
             }
             is IntArray -> MemorySegment.ofArray(argument)
+            is LongArray -> MemorySegment.ofArray(argument)
             is UByte -> argument.toByte()
             is UShort -> argument.toShort()
             is UInt -> argument.toInt()

@@ -694,6 +694,39 @@ class RuntimeMethodRendererTest {
     }
 
     @Test
+    fun renders_runtime_temporal_receive_array_methods_with_temporal_array_inputs() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "TemporalArrayTransformer",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod("GetAndSetDateTimes", "DateTime[]", vtableIndex = 25, parameters = listOf(WinMdParameter("dateTimes", "DateTime[]", isIn = true))),
+                                WinMdMethod("GetAndSetDurations", "TimeSpan[]", vtableIndex = 26, parameters = listOf(WinMdParameter("durations", "TimeSpan[]", isIn = true))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/TemporalArrayTransformer.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fungetAndSetDateTimes(dateTimes:Array<Instant>):Array<Instant>"))
+        assertTrue(binding.contains("invokeDateTimeReceiveArrayMethod(pointer,25,dateTimes.size,LongArray(dateTimes.size){index->(((dateTimes[index].epochSeconds*10000000L)+(dateTimes[index].nanosecondsOfSecond/100))+116_444_736_000_000_000)}).getOrThrow().map{Instant.fromEpochSeconds((it-116_444_736_000_000_000)/10000000L,((it-116_444_736_000_000_000)%10000000L*100).toInt())}.toTypedArray()"))
+        assertTrue(binding.contains("fungetAndSetDurations(durations:Array<Duration>):Array<Duration>"))
+        assertTrue(binding.contains("invokeTimeSpanReceiveArrayMethod(pointer,26,durations.size,LongArray(durations.size){index->(durations[index].inWholeNanoseconds/100)}).getOrThrow().map{Duration(it)}.toTypedArray()"))
+    }
+
+    @Test
     fun renders_runtime_nullable_enum_methods_via_generic_ireference_projection() {
         val model = WinMdModel(
             files = emptyList(),
