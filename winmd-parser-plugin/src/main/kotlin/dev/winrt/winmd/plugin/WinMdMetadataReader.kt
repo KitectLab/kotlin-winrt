@@ -87,6 +87,7 @@ object WinMdMetadataReader {
                             }
                         },
                     fields = readFields(index + 1, tables),
+                    enumUnderlyingType = readEnumUnderlyingType(index + 1, tables),
                     enumMembers = readEnumMembers(index + 1, tables),
                     methods = readMethods(index + 1, tables),
                     properties = readProperties(index + 1, tables),
@@ -421,6 +422,24 @@ object WinMdMetadataReader {
                 value = value,
             )
         }
+    }
+
+    private fun readEnumUnderlyingType(typeDefIndex: Int, tables: MetadataTables): String? {
+        val typeDef = tables.typeDefs[typeDefIndex - 1]
+        if (classifyType(typeDef, tables) != WinMdTypeKind.Enum) {
+            return null
+        }
+        val fieldStart = typeDef.fieldListIndex
+        if (fieldStart == 0) {
+            return null
+        }
+        val fieldEnd = tables.typeDefs.getOrNull(typeDefIndex)?.fieldListIndex ?: (tables.fieldRows.size + 1)
+        return (fieldStart until fieldEnd)
+            .asSequence()
+            .mapNotNull { fieldIndex -> tables.fieldRows.getOrNull(fieldIndex - 1) }
+            .firstOrNull { field -> field.name == "value__" }
+            ?.let { field -> parseFieldSignature(field.signature, tables) }
+            ?.takeUnless { it == "UnknownType" }
     }
 
     private fun readMethodParameters(

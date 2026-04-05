@@ -48,6 +48,17 @@ class WinMdMetadataReaderTest {
         println("ApplicationInitializationCallback guid=${applicationInitializationCallback.guid}")
         assertTrue(applicationInitializationCallback.guid.orEmpty().isNotBlank())
 
+        val highContrastAdjustment = xamlNamespace.types.firstOrNull { it.name == "ApplicationHighContrastAdjustment" }
+        if (highContrastAdjustment != null) {
+            assertEquals("UInt32", highContrastAdjustment.enumUnderlyingType)
+            assertTrue(
+                highContrastAdjustment.enumMembers.toString(),
+                highContrastAdjustment.enumMembers.any { member ->
+                    member.name == "Auto" && member.value == -1
+                },
+            )
+        }
+
         val window = xamlNamespace.types.first { it.name == "Window" }
         println("Window methods=${window.methods}")
         println("Window properties=${window.properties}")
@@ -318,6 +329,7 @@ class WinMdMetadataReaderTest {
         val jsonValueType = model.namespaces
             .first { it.name == "Windows.Data.Json" }
             .types.first { it.name == "JsonValueType" }
+        assertEquals("Int32", jsonValueType.enumUnderlyingType)
         assertEquals(
             listOf("Null", "Boolean", "Number", "String", "Array", "Object"),
             jsonValueType.enumMembers.map { it.name },
