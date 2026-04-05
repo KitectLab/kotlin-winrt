@@ -1214,16 +1214,24 @@ object WinMdMetadataReader {
                 29 -> 4 + tableIndexSize(rowCounts[4])
                 30 -> 4 + 4
                 31 -> 4
-                32 -> 4 + 4 + stringIndexSize + blobIndexSize + tableIndexSize(rowCounts[8])
+                32 -> 4 + 2 + 2 + 2 + 2 + 4 + blobIndexSize + stringIndexSize + stringIndexSize
                 33 -> 4
                 34 -> 4 + 4 + 4
                 35 -> 2 + 2 + 2 + 2 + 4 + blobIndexSize + stringIndexSize + stringIndexSize + blobIndexSize
                 36 -> 4 + tableIndexSize(rowCounts[35])
                 37 -> 4 + 4 + 4 + tableIndexSize(rowCounts[35])
                 38 -> 4 + stringIndexSize + blobIndexSize
-                39 -> 4 + tableIndexSize(rowCounts[2]) + stringIndexSize + blobIndexSize
-                40 -> 2 + 2 + stringIndexSize + tableIndexSize(rowCounts[23])
-                41 -> tableIndexSize(rowCounts[2]) + codedIndexSize(rowCounts[4], rowCounts[6])
+                39 -> 4 + 4 + stringIndexSize + stringIndexSize + codedIndexSize(
+                    rowCounts[38],
+                    rowCounts[35],
+                    rowCounts[39],
+                )
+                40 -> 4 + 4 + stringIndexSize + codedIndexSize(
+                    rowCounts[38],
+                    rowCounts[35],
+                    rowCounts[39],
+                )
+                41 -> tableIndexSize(rowCounts[2]) + tableIndexSize(rowCounts[2])
                 42 -> 2 + 2 + codedIndexSize(rowCounts[2], rowCounts[6]) + stringIndexSize
                 43 -> codedIndexSize(rowCounts[6], rowCounts[10]) + blobIndexSize
                 44 -> tableIndexSize(rowCounts[42]) + codedIndexSize(rowCounts[2], rowCounts[1], rowCounts[27])

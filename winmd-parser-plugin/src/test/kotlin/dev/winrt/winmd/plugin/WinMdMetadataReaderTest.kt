@@ -305,6 +305,7 @@ class WinMdMetadataReaderTest {
         val vector = model.namespaces
             .first { it.name == "Windows.Foundation.Collections" }
             .types.first { it.name == "IVector`1" }
+        println("IVector genericParameters=${vector.genericParameters}")
         assertTrue(
             vector.baseInterfaces.toString(),
             vector.baseInterfaces.contains("Windows.Foundation.Collections.IIterable`1<T>"),
@@ -328,6 +329,22 @@ class WinMdMetadataReaderTest {
         assertEquals(
             listOf("X", "Y"),
             point.fields.map { it.name },
+        )
+
+        val typedEventHandler = model.namespaces
+            .first { it.name == "Windows.Foundation" }
+            .types.first { it.name == "TypedEventHandler`2" }
+        assertEquals(
+            listOf("TSender", "TResult"),
+            typedEventHandler.genericParameters,
+        )
+        assertTrue(
+            typedEventHandler.methods.toString(),
+            typedEventHandler.methods.any { method ->
+                method.name == "Invoke" &&
+                    method.returnType == "Unit" &&
+                    method.parameters.map { it.type } == listOf("TSender", "TResult")
+            },
         )
 
         val jsonArrayInterface = model.namespaces
