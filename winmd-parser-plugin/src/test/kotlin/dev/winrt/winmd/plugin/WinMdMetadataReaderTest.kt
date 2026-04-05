@@ -1,6 +1,7 @@
 package dev.winrt.winmd.plugin
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assume
 import org.junit.Test
@@ -9,6 +10,23 @@ import java.nio.file.Path
 
 class WinMdMetadataReaderTest {
     private val windowsAppSdkVersion = "1.8.260317003"
+
+    @Test
+    fun includes_input_parameter_direction_in_signature_keys() {
+        val method = WinMdMethod(
+            name = "CreateInt32Array",
+            returnType = "Object",
+            parameters = listOf(
+                WinMdParameter(
+                    name = "value",
+                    type = "Int32[]",
+                    isIn = true,
+                ),
+            ),
+        )
+
+        assertEquals("CreateInt32Array(Int32[]:in):Object", method.signatureKey)
+    }
 
     @Test
     fun reads_real_types_from_local_winui_xaml_winmd_when_available() {
@@ -583,6 +601,35 @@ class WinMdMetadataReaderTest {
         assertTrue(iNumeralSystemTranslator.methods.any { it.name == "get_ResolvedLanguage" && it.returnType == "String" && it.vtableIndex == 7 })
         assertTrue(iNumeralSystemTranslator.methods.any { it.name == "get_NumeralSystem" && it.returnType == "String" && it.vtableIndex == 8 })
         assertTrue(iNumeralSystemTranslator.methods.any { it.name == "TranslateNumerals" && it.returnType == "String" && it.vtableIndex == 10 })
+    }
+
+    @Test
+    fun reads_input_array_parameter_flags_from_windows_sdk_property_value_metadata() {
+        val universalContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.UniversalApiContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val foundationContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.FoundationContract",
+            sdkVersion = "10.0.22621.0",
+        )
+
+        val model = WinMdMetadataReader.readModel(
+            listOf(
+                universalContract.winmdPath,
+                foundationContract.winmdPath,
+            ),
+        )
+        val propertyValueStatics = model.namespaces
+            .first { it.name == "Windows.Foundation" }
+            .types.first { it.name == "IPropertyValueStatics" }
+        val createInt32Array = propertyValueStatics.methods.first { it.name == "CreateInt32Array" }
+        val value = createInt32Array.parameters.single()
+
+        assertEquals("Int32[]", value.type)
+        assertTrue(createInt32Array.parameters.toString(), value.isIn)
+        assertFalse(createInt32Array.parameters.toString(), value.isOut)
+        assertFalse(createInt32Array.parameters.toString(), value.byRef)
     }
 
     @Test

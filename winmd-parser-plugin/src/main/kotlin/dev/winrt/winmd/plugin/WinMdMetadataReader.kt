@@ -471,6 +471,7 @@ object WinMdMetadataReader {
                 type = parameterType.type,
                 byRef = parameterType.byRef,
                 isOut = (paramRow?.flags ?: 0) and 0x0002 != 0,
+                isIn = (paramRow?.flags ?: 0) and 0x0001 != 0,
             )
         }
     }

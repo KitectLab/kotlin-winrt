@@ -86,6 +86,9 @@ data class WinMdMethod(
                         if (parameter.byRef) {
                             append('&')
                         }
+                        if (parameter.isIn) {
+                            append(":in")
+                        }
                         if (parameter.isOut) {
                             append(":out")
                         }
@@ -103,6 +106,7 @@ data class WinMdParameter(
     val type: String,
     val byRef: Boolean = false,
     val isOut: Boolean = false,
+    val isIn: Boolean = false,
 )
 
 @Serializable
