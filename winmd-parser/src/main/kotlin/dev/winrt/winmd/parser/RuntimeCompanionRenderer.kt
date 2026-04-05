@@ -309,7 +309,7 @@ internal class RuntimeCompanionRenderer(
             val factoryPropertyName = helperAccessorName(factoryType.name)
             val runtimeFactoryMethods = factoryType.methods
                 .filter { method -> method.returnType == "${type.namespace}.${type.name}" }
-                .filter(::canForwardFactoryMethod)
+                .filter { method -> canForwardFactoryMethod(method, type.namespace) }
             val projectedFactoryMethods = runtimeFactoryMethods
                 .filterNot { method -> typeRegistry.isComposableFactoryMethod(type, method) }
             if (projectedFactoryMethods.isNotEmpty()) {
@@ -369,17 +369,12 @@ internal class RuntimeCompanionRenderer(
 
     private fun canForwardStaticMethod(method: WinMdMethod, currentNamespace: String): Boolean {
         return !method.requiresArrayMarshaling() ||
-            method.isSingleInt32PassArrayMethod { typeName ->
-                !typeRegistry.isStructType(typeName, currentNamespace) && supportsProjectedObjectTypeName(typeName)
-            }
+            canForwardInt32ArrayMethod(method, currentNamespace)
     }
 
-    private fun canForwardFactoryMethod(method: WinMdMethod): Boolean {
+    private fun canForwardFactoryMethod(method: WinMdMethod, currentNamespace: String): Boolean {
         return !method.parameters.requiresArrayMarshaling() ||
-            (
-                method.parameters.size == 1 &&
-                    method.parameters.single().isInt32PassArrayParameter()
-            )
+            canForwardInt32ArrayMethod(method, currentNamespace)
     }
 
     private fun renderForwardingProperty(
@@ -431,6 +426,58 @@ internal class RuntimeCompanionRenderer(
             )
         }
         return builder.build()
+    }
+
+    private fun canForwardInt32ArrayMethod(method: WinMdMethod, currentNamespace: String): Boolean {
+        return method.isSingleInt32PassArrayMethod { typeName ->
+            !typeRegistry.isStructType(typeName, currentNamespace) && supportsProjectedObjectTypeName(typeName)
+        } ||
+            (
+                method.isInt32FillArrayMethod() &&
+                    supportsForwardableInt32FillArrayReturn(method.returnType, currentNamespace) &&
+                    method.parameters
+                        .filterNot { parameter -> parameter.isInt32FillArrayParameter() }
+                        .all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                ) ||
+            (
+                method.isInt32ReceiveArrayReturnMethod() &&
+                    method.parameters.all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                )
+    }
+
+    private fun supportsForwardableInt32FillArrayReturn(returnType: String, currentNamespace: String): Boolean {
+        return returnType == "Unit" ||
+            (
+                !typeRegistry.isStructType(returnType, currentNamespace) &&
+                    supportsProjectedObjectTypeName(returnType)
+                ) ||
+            when (returnType) {
+                "String",
+                "Float32",
+                "Float64",
+                "DateTime",
+                "TimeSpan",
+                "Boolean",
+                "Int32",
+                "UInt32",
+                "Int64",
+                "UInt64",
+                "Guid",
+                -> true
+                else -> false
+            }
+    }
+
+    private fun supportsForwardableCompanionArrayParameter(type: String, currentNamespace: String): Boolean {
+        return methodParameterCategory(
+            if (typeRegistry.isEnumType(type, currentNamespace)) {
+                enumSignatureType(typeRegistry, type, currentNamespace)
+            } else {
+                type
+            },
+        ) { typeName ->
+            projectedObjectArgumentLowering.supportsInputType(typeName, currentNamespace)
+        } != null
     }
 
     private fun renderForwardingAsyncAwaitMethod(
