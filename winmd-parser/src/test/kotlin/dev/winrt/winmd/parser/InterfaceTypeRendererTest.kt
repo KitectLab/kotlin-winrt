@@ -312,6 +312,41 @@ class InterfaceTypeRendererTest {
     }
 
     @Test
+    fun renders_int32_receive_array_interface_methods_via_receive_array_helper() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IPropertyValue",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetInt32Array",
+                                    returnType = "Int32[]",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/IPropertyValue.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fungetInt32Array():Array<Int32>"))
+        assertTrue(binding.contains("invokeInt32ReceiveArrayMethod(pointer,6).getOrThrow().map{Int32(it)}.toTypedArray()"))
+    }
+
+    @Test
     fun unsubscribes_event_slots_with_finally_to_close_delegate_handles() {
         val model = WinMdModel(
             files = emptyList(),

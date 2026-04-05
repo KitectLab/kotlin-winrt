@@ -1677,6 +1677,7 @@ internal class InterfaceTypeRenderer(
         if (method.vtableIndex == null) {
             return null
         }
+        plannedInt32ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedInt32PassArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
         plannedValueTypeAwareInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
         if (typeRegistry.isEnumType(method.returnType, currentNamespace)) {
@@ -1691,6 +1692,20 @@ internal class InterfaceTypeRenderer(
         return signatureKey
             ?.takeIf { MethodRuleRegistry.sharedMethodRuleFamily(it) != null }
             ?.let { plannedInterfaceMethodForKey(it, genericParameters) }
+    }
+
+    private fun plannedInt32ReceiveArrayInterfaceMethod(method: WinMdMethod): PlannedInterfaceMethod? {
+        if (!method.isInt32ReceiveArrayReturnMethod()) {
+            return null
+        }
+        return PlannedInterfaceMethod(
+            statement = "return %L",
+            args = { method, _ ->
+                arrayOf(
+                    int32ReceiveArrayReturnExpression(method.vtableIndex!!),
+                )
+            },
+        )
     }
 
     private fun plannedInt32PassArrayInterfaceMethod(

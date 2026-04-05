@@ -157,6 +157,7 @@ internal class RuntimeMethodRenderer(
         if (!isKotlinIdentifier(method.name) || method.vtableIndex == null) {
             return null
         }
+        plannedInt32ReceiveArrayRuntimeMethod(method)?.let { return it }
         plannedInt32PassArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         valueAwareRuntimeMethodPlan(method, currentNamespace)?.let { return it }
         val parameterTypes = method.parameters.map { it.type }
@@ -174,6 +175,23 @@ internal class RuntimeMethodRenderer(
             signatureKey == MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.EMPTY) -> runtimeMethodPlanForKey(signatureKey)
             else -> null
         }
+    }
+
+    private fun plannedInt32ReceiveArrayRuntimeMethod(method: WinMdMethod): RuntimeMethodPlan? {
+        if (!method.isInt32ReceiveArrayReturnMethod()) {
+            return null
+        }
+        return RuntimeMethodPlan(
+            nullPointerReturn = { method ->
+                PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}"))
+            },
+            returnStatement = "return %L",
+            statementArgs = { method, _, _ ->
+                arrayOf(
+                    int32ReceiveArrayReturnExpression(method.vtableIndex!!),
+                )
+            },
+        )
     }
 
     private fun plannedInt32PassArrayRuntimeMethod(

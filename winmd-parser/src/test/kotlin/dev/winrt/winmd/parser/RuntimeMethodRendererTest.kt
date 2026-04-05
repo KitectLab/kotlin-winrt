@@ -165,6 +165,40 @@ class RuntimeMethodRendererTest {
     }
 
     @Test
+    fun renders_runtime_int32_receive_array_methods_via_receive_array_helper() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    "GetValues",
+                                    "Int32[]",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/Widget.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fungetValues():Array<Int32>"))
+        assertTrue(binding.contains("invokeInt32ReceiveArrayMethod(pointer,6).getOrThrow().map{Int32(it)}.toTypedArray()"))
+    }
+
+    @Test
     fun renders_runtime_nullable_enum_methods_via_generic_ireference_projection() {
         val model = WinMdModel(
             files = emptyList(),
