@@ -429,9 +429,12 @@ internal class RuntimeCompanionRenderer(
     }
 
     private fun canForwardInt32ArrayMethod(method: WinMdMethod, currentNamespace: String): Boolean {
-        return method.isSingleInt32PassArrayMethod { typeName ->
+        return method.isInt32PassArrayMethod { typeName ->
             !typeRegistry.isStructType(typeName, currentNamespace) && supportsProjectedObjectTypeName(typeName)
-        } ||
+        } &&
+            method.parameters
+                .filterNot { parameter -> parameter.isInt32PassArrayParameter() }
+                .all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) } ||
             (
                 method.isInt32FillArrayMethod() &&
                     supportsForwardableInt32FillArrayReturn(method.returnType, currentNamespace) &&

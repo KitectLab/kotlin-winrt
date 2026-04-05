@@ -265,7 +265,7 @@ internal class RuntimeMethodRenderer(
         method: WinMdMethod,
         currentNamespace: String,
     ): RuntimeMethodPlan? {
-        if (!method.isSingleInt32PassArrayMethod { typeName -> supportsRuntimeObjectReturnType(typeName, currentNamespace) }) {
+        if (!method.isInt32PassArrayMethod { typeName -> supportsRuntimeObjectReturnType(typeName, currentNamespace) }) {
             return null
         }
         return RuntimeMethodPlan(
@@ -278,28 +278,22 @@ internal class RuntimeMethodRenderer(
             },
             returnStatement = if (method.returnType == "Unit") "%L" else "return %L",
             statementArgs = { method, _, parameterBindings ->
-                val argumentName = parameterBindings.single().name
-                val abiArguments = int32PassArrayAbiArguments(argumentName)
+                val abiArguments = int32PassArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterIndex = method.parameters.indexOf(parameter)
+                    val binding = parameterBindings[parameterIndex]
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsRuntimeObjectType(typeName, currentNamespace) } ?: return@int32PassArrayAbiArguments null
+                    CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, currentNamespace))
+                } ?: error("Unsupported Int32 pass-array runtime method: ${method.name}")
                 arrayOf(
                     if (method.returnType == "Unit") {
-                        CodeBlock.of(
-                            "%T.invokeUnitMethodWithArgs(pointer, %L, %L, %L).getOrThrow()",
-                            PoetSymbols.platformComInteropClass,
-                            method.vtableIndex!!,
-                            abiArguments[0],
-                            abiArguments[1],
-                        )
+                        runtimeVarargAbiCall("invokeUnitMethodWithArgs", method.vtableIndex!!, abiArguments)
                     } else {
                         runtimeObjectReturnCode(
                             method = method,
                             currentNamespace = currentNamespace,
-                            abiCall = CodeBlock.of(
-                                "%T.invokeObjectMethodWithArgs(pointer, %L, %L, %L).getOrThrow()",
-                                PoetSymbols.platformComInteropClass,
-                                method.vtableIndex!!,
-                                abiArguments[0],
-                                abiArguments[1],
-                            ),
+                            abiCall = runtimeVarargAbiCall("invokeObjectMethodWithArgs", method.vtableIndex!!, abiArguments),
                         )
                     },
                 )

@@ -1791,23 +1791,29 @@ internal class InterfaceTypeRenderer(
         currentNamespace: String,
         genericParameters: Set<String>,
     ): PlannedInterfaceMethod? {
-        if (!method.isSingleInt32PassArrayMethod { typeName -> supportsInterfaceObjectReturnType(typeName, currentNamespace) }) {
+        if (!method.isInt32PassArrayMethod { typeName -> supportsInterfaceObjectReturnType(typeName, currentNamespace) }) {
             return null
         }
-        val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-        val abiArguments = int32PassArrayAbiArguments(argumentName)
+        val abiArguments = int32PassArrayAbiArguments(method.parameters) { parameter ->
+            val parameterCategory = methodParameterCategory(
+                signatureParameterType(parameter.type, currentNamespace),
+            ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@int32PassArrayAbiArguments null
+            CodeBlock.of(
+                "%L",
+                unaryArgumentExpression(
+                    argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                    parameterType = parameter.type,
+                    category = parameterCategory,
+                    currentNamespace = currentNamespace,
+                ),
+            )
+        } ?: return null
         return if (method.returnType == "Unit") {
             PlannedInterfaceMethod(
                 statement = "%L",
                 args = { method, _ ->
                     arrayOf(
-                        CodeBlock.of(
-                            "%T.invokeUnitMethodWithArgs(pointer, %L, %L, %L).getOrThrow()",
-                            PoetSymbols.platformComInteropClass,
-                            method.vtableIndex!!,
-                            abiArguments[0],
-                            abiArguments[1],
-                        ),
+                        interfaceVarargAbiCall("invokeUnitMethodWithArgs", method.vtableIndex!!, abiArguments),
                     )
                 },
             )
@@ -1819,13 +1825,7 @@ internal class InterfaceTypeRenderer(
                         objectReturnCode(
                             method = method,
                             namespace = currentNamespace,
-                            abiCall = CodeBlock.of(
-                                "%T.invokeObjectMethodWithArgs(pointer, %L, %L, %L).getOrThrow()",
-                                PoetSymbols.platformComInteropClass,
-                                method.vtableIndex!!,
-                                abiArguments[0],
-                                abiArguments[1],
-                            ),
+                            abiCall = interfaceVarargAbiCall("invokeObjectMethodWithArgs", method.vtableIndex!!, abiArguments),
                             genericParameters = genericParameters,
                         ),
                     )
