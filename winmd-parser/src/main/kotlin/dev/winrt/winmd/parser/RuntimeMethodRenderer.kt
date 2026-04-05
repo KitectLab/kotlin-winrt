@@ -12,7 +12,21 @@ internal class RuntimeMethodRenderer(
     private val delegateLambdaPlanResolver: DelegateLambdaPlanResolver,
     private val typeRegistry: TypeRegistry,
     private val asyncMethodRuleRegistry: AsyncMethodRuleRegistry,
+    private val projectedObjectArgumentLowering: ProjectedObjectArgumentLowering,
 ) {
+    constructor(
+        typeNameMapper: TypeNameMapper,
+        delegateLambdaPlanResolver: DelegateLambdaPlanResolver,
+        typeRegistry: TypeRegistry,
+        asyncMethodRuleRegistry: AsyncMethodRuleRegistry,
+    ) : this(
+        typeNameMapper,
+        delegateLambdaPlanResolver,
+        typeRegistry,
+        asyncMethodRuleRegistry,
+        ProjectedObjectArgumentLowering(typeRegistry, WinRtSignatureMapper(typeRegistry), WinRtProjectionTypeMapper()),
+    )
+
     fun renderRuntimeMethods(method: WinMdMethod, currentNamespace: String): List<FunSpec> {
         return listOfNotNull(
             renderRuntimeMethod(method, currentNamespace),
@@ -25,7 +39,7 @@ internal class RuntimeMethodRenderer(
             (typeRegistry.isEnumType(method.returnType, currentNamespace) &&
                 method.parameters.isEmpty() &&
                 method.vtableIndex != null) ||
-            runtimeMethodPlan(method) != null
+            runtimeMethodPlan(method, currentNamespace) != null
     }
 
     fun renderRuntimeMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
@@ -50,7 +64,7 @@ internal class RuntimeMethodRenderer(
                 )
                 .build()
         }
-        val plan = runtimeMethodPlan(method) ?: return null
+        val plan = runtimeMethodPlan(method, currentNamespace) ?: return null
         val functionName = if (method.name == "ToString" && method.returnType == "String" && method.parameters.isEmpty()) {
             "toString"
         } else {
@@ -138,12 +152,16 @@ internal class RuntimeMethodRenderer(
         }
     }
 
-    private fun runtimeMethodPlan(method: WinMdMethod): RuntimeMethodPlan? {
+    private fun runtimeMethodPlan(method: WinMdMethod, currentNamespace: String): RuntimeMethodPlan? {
         if (!isKotlinIdentifier(method.name) || method.vtableIndex == null) {
             return null
         }
         val parameterTypes = method.parameters.map { it.type }
-        val signatureKey = methodSignatureKey(method.returnType, parameterTypes, ::supportsRuntimeObjectType)
+        val signatureKey = methodSignatureKey(
+            returnType = method.returnType,
+            parameterTypes = parameterTypes.map { signatureParameterType(it, currentNamespace) },
+            supportsParameterObjectType = { type -> supportsRuntimeObjectType(type, currentNamespace) },
+        )
         return when {
             signatureKey != null && MethodRuleRegistry.sharedMethodRuleFamily(signatureKey) != null -> runtimeMethodPlanForKey(signatureKey)
             signatureKey == MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.EMPTY) -> runtimeMethodPlanForKey(signatureKey)
@@ -166,13 +184,14 @@ internal class RuntimeMethodRenderer(
                 return RuntimeMethodPlan(
                     nullPointerReturn = { PlannedStatement("return") },
                     returnStatement = "%L",
-                    statementArgs = { method, _, parameterBindings ->
+                    statementArgs = { method, currentNamespace, parameterBindings ->
                         arrayOf(
                             AbiCallCatalog.unitMethodWithTwoArguments(
                                 method.vtableIndex!!,
                                 it,
                                 when (it[0]) {
-                                    MethodParameterCategory.OBJECT -> "${parameterBindings[0].name}.pointer"
+                                    MethodParameterCategory.OBJECT ->
+                                        runtimeObjectArgumentExpression(parameterBindings[0], currentNamespace)
                                     MethodParameterCategory.INT32,
                                     MethodParameterCategory.UINT32,
                                     MethodParameterCategory.BOOLEAN,
@@ -181,7 +200,8 @@ internal class RuntimeMethodRenderer(
                                     else -> parameterBindings[0].name
                                 },
                                 when (it[1]) {
-                                    MethodParameterCategory.OBJECT -> "${parameterBindings[1].name}.pointer"
+                                    MethodParameterCategory.OBJECT ->
+                                        runtimeObjectArgumentExpression(parameterBindings[1], currentNamespace)
                                     MethodParameterCategory.INT32,
                                     MethodParameterCategory.UINT32,
                                     MethodParameterCategory.BOOLEAN,
@@ -241,8 +261,14 @@ internal class RuntimeMethodRenderer(
             MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %T.FALSE", arrayOf(PoetSymbols.winRtBooleanClass)) },
                 returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.winRtBooleanClass, AbiCallCatalog.booleanMethodWithObject(method.vtableIndex!!, "${parameterBindings.single().name}.pointer"))
+                statementArgs = { method, currentNamespace, parameterBindings ->
+                    arrayOf(
+                        PoetSymbols.winRtBooleanClass,
+                        AbiCallCatalog.booleanMethodWithObject(
+                            method.vtableIndex!!,
+                            runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
+                        ),
+                    )
                 },
             )
             MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
@@ -284,10 +310,13 @@ internal class RuntimeMethodRenderer(
             MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %T(0)", arrayOf(PoetSymbols.int32Class)) },
                 returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
+                statementArgs = { method, currentNamespace, parameterBindings ->
                     arrayOf(
                         PoetSymbols.int32Class,
-                        AbiCallCatalog.int32MethodWithObject(method.vtableIndex!!, "${parameterBindings.single().name}.pointer"),
+                        AbiCallCatalog.int32MethodWithObject(
+                            method.vtableIndex!!,
+                            runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
+                        ),
                     )
                 },
             )
@@ -323,10 +352,13 @@ internal class RuntimeMethodRenderer(
             MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %T(0L)", arrayOf(PoetSymbols.int64Class)) },
                 returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
+                statementArgs = { method, currentNamespace, parameterBindings ->
                     arrayOf(
                         PoetSymbols.int64Class,
-                        AbiCallCatalog.int64MethodWithObject(method.vtableIndex!!, "${parameterBindings.single().name}.pointer"),
+                        AbiCallCatalog.int64MethodWithObject(
+                            method.vtableIndex!!,
+                            runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
+                        ),
                     )
                 },
             )
@@ -362,10 +394,13 @@ internal class RuntimeMethodRenderer(
             MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %T(0uL)", arrayOf(PoetSymbols.uint64Class)) },
                 returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
+                statementArgs = { method, currentNamespace, parameterBindings ->
                     arrayOf(
                         PoetSymbols.uint64Class,
-                        AbiCallCatalog.uint64MethodWithObject(method.vtableIndex!!, "${parameterBindings.single().name}.pointer"),
+                        AbiCallCatalog.uint64MethodWithObject(
+                            method.vtableIndex!!,
+                            runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
+                        ),
                     )
                 },
             )
@@ -408,20 +443,26 @@ internal class RuntimeMethodRenderer(
             MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %T(0u)", arrayOf(PoetSymbols.uint32Class)) },
                 returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
+                statementArgs = { method, currentNamespace, parameterBindings ->
                     arrayOf(
                         PoetSymbols.uint32Class,
-                        AbiCallCatalog.uint32MethodWithObject(method.vtableIndex!!, "${parameterBindings.single().name}.pointer"),
+                        AbiCallCatalog.uint32MethodWithObject(
+                            method.vtableIndex!!,
+                            runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
+                        ),
                     )
                 },
             )
             MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %T(0L)", arrayOf(PoetSymbols.int64Class)) },
                 returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
+                statementArgs = { method, currentNamespace, parameterBindings ->
                     arrayOf(
                         PoetSymbols.int64Class,
-                        AbiCallCatalog.int64MethodWithObject(method.vtableIndex!!, "${parameterBindings.single().name}.pointer"),
+                        AbiCallCatalog.int64MethodWithObject(
+                            method.vtableIndex!!,
+                            runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
+                        ),
                     )
                 },
             )
@@ -457,10 +498,13 @@ internal class RuntimeMethodRenderer(
             MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %T(0uL)", arrayOf(PoetSymbols.uint64Class)) },
                 returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
+                statementArgs = { method, currentNamespace, parameterBindings ->
                     arrayOf(
                         PoetSymbols.uint64Class,
-                        AbiCallCatalog.uint64MethodWithObject(method.vtableIndex!!, "${parameterBindings.single().name}.pointer"),
+                        AbiCallCatalog.uint64MethodWithObject(
+                            method.vtableIndex!!,
+                            runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
+                        ),
                     )
                 },
             )
@@ -544,8 +588,14 @@ internal class RuntimeMethodRenderer(
             MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
                 returnStatement = "return %T.parse(%L.toString())",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.guidValueClass, AbiCallCatalog.guidMethodWithObject(method.vtableIndex!!, "${parameterBindings.single().name}.pointer"))
+                statementArgs = { method, currentNamespace, parameterBindings ->
+                    arrayOf(
+                        PoetSymbols.guidValueClass,
+                        AbiCallCatalog.guidMethodWithObject(
+                            method.vtableIndex!!,
+                            runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
+                        ),
+                    )
                 },
             )
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
@@ -601,8 +651,13 @@ internal class RuntimeMethodRenderer(
             MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return") },
                 returnStatement = "%L",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(AbiCallCatalog.objectSetter(method.vtableIndex!!, parameterBindings.single().name))
+                statementArgs = { method, currentNamespace, parameterBindings ->
+                    arrayOf(
+                        AbiCallCatalog.objectSetterExpression(
+                            method.vtableIndex!!,
+                            runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
+                        ),
+                    )
                 },
             )
             else -> when (signatureKey) {
@@ -683,7 +738,10 @@ internal class RuntimeMethodRenderer(
                         runtimeObjectReturnCode(
                             method,
                             currentNamespace,
-                            AbiCallCatalog.objectMethodWithObject(method.vtableIndex!!, "${parameterBindings.single().name}.pointer"),
+                            AbiCallCatalog.objectMethodWithObject(
+                                method.vtableIndex!!,
+                                runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
+                            ),
                         ),
                     )
                 },
@@ -698,7 +756,7 @@ internal class RuntimeMethodRenderer(
                             currentNamespace,
                             AbiCallCatalog.objectMethodWithObjectAndString(
                                 method.vtableIndex!!,
-                                "${parameterBindings[0].name}.pointer",
+                                runtimeObjectArgumentExpression(parameterBindings[0], currentNamespace),
                                 parameterBindings[1].name,
                             ),
                         ),
@@ -716,7 +774,7 @@ internal class RuntimeMethodRenderer(
                             AbiCallCatalog.objectMethodWithStringAndObject(
                                 method.vtableIndex!!,
                                 parameterBindings[0].name,
-                                "${parameterBindings[1].name}.pointer",
+                                runtimeObjectArgumentExpression(parameterBindings[1], currentNamespace),
                             ),
                         ),
                     )
@@ -734,8 +792,8 @@ internal class RuntimeMethodRenderer(
                                 method.vtableIndex!!,
                                 "OBJECT",
                                 PoetSymbols.requireObjectMember,
-                                "${parameterBindings[0].name}.pointer",
-                                "${parameterBindings[1].name}.pointer",
+                                runtimeObjectArgumentExpression(parameterBindings[0], currentNamespace),
+                                runtimeObjectArgumentExpression(parameterBindings[1], currentNamespace),
                             ),
                         ),
                     )
@@ -771,8 +829,13 @@ internal class RuntimeMethodRenderer(
             nullPointerReturn = { method -> unaryRuntimeNullReturn(returnKind, method.name) },
             returnStatement = unaryRuntimeStatement(returnKind),
             statementArgs = { method, currentNamespace, parameterBindings ->
-                val argumentName = parameterBindings.singleOrNull()?.name
-                val abiCall = unaryRuntimeAbiCall(method.vtableIndex!!, returnKind, parameterCategory, argumentName)
+                val abiCall = unaryRuntimeAbiCall(
+                    method.vtableIndex!!,
+                    returnKind,
+                    parameterCategory,
+                    parameterBindings.singleOrNull(),
+                    currentNamespace,
+                )
                 unaryRuntimeArgs(method, currentNamespace, returnKind, abiCall)
             },
         )
@@ -822,7 +885,8 @@ internal class RuntimeMethodRenderer(
         vtableIndex: Int,
         returnKind: MethodReturnKind,
         parameterCategory: MethodParameterCategory?,
-        argumentName: String?,
+        parameterBinding: RuntimeMethodParameterBinding?,
+        currentNamespace: String,
     ): CodeBlock {
         if (parameterCategory == null) {
             return when (returnKind) {
@@ -837,7 +901,9 @@ internal class RuntimeMethodRenderer(
                 else -> error("Unsupported unary runtime return kind: $returnKind")
             }
         }
-        val loweredArgument = runtimeUnaryArgumentExpression(requireNotNull(argumentName), parameterCategory)
+        val binding = requireNotNull(parameterBinding)
+        val argumentName = binding.name
+        val loweredArgument = runtimeUnaryArgumentExpression(binding, parameterCategory, currentNamespace)
         return when (returnKind) {
             MethodReturnKind.STRING -> when (parameterCategory) {
                 MethodParameterCategory.STRING -> AbiCallCatalog.hstringMethodWithString(vtableIndex, argumentName)
@@ -901,20 +967,24 @@ internal class RuntimeMethodRenderer(
                 MethodParameterCategory.INT64,
                 MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.unitMethodWithInt64(vtableIndex, argumentName)
                 MethodParameterCategory.STRING -> AbiCallCatalog.unitMethodWithString(vtableIndex, argumentName)
-                MethodParameterCategory.OBJECT -> AbiCallCatalog.objectSetter(vtableIndex, argumentName)
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.objectSetterExpression(vtableIndex, loweredArgument)
             }
             else -> error("Unsupported unary runtime return kind: $returnKind")
         }
     }
 
-    private fun runtimeUnaryArgumentExpression(argumentName: String, category: MethodParameterCategory): String = when (category) {
-        MethodParameterCategory.OBJECT -> "$argumentName.pointer"
+    private fun runtimeUnaryArgumentExpression(
+        binding: RuntimeMethodParameterBinding,
+        category: MethodParameterCategory,
+        currentNamespace: String,
+    ): Any = when (category) {
+        MethodParameterCategory.OBJECT -> runtimeObjectArgumentExpression(binding, currentNamespace)
         MethodParameterCategory.INT32,
         MethodParameterCategory.UINT32,
         MethodParameterCategory.BOOLEAN,
         MethodParameterCategory.INT64,
-        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$argumentName.value"
-        MethodParameterCategory.STRING -> argumentName
+        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "${binding.name}.value"
+        MethodParameterCategory.STRING -> binding.name
     }
 
     private fun plannedTwoArgumentRuntimeMethod(signatureKey: MethodSignatureKey): RuntimeMethodPlan = RuntimeMethodPlan(
@@ -928,10 +998,10 @@ internal class RuntimeMethodRenderer(
         returnStatement = "return %L",
         statementArgs = { method, currentNamespace, parameterBindings ->
             val parameterCategories = methodParameterCategories(
-                method.parameters.map { parameter -> parameter.type },
-                ::supportsRuntimeObjectType,
+                method.parameters.map { parameter -> signatureParameterType(parameter.type, currentNamespace) },
+                { typeName -> supportsRuntimeObjectType(typeName, currentNamespace) },
             ) ?: error("Unsupported two-argument return shape: ${signatureKey.shape}")
-            val argumentExpressions = twoArgumentArgumentExpressions(parameterBindings, parameterCategories)
+            val argumentExpressions = twoArgumentArgumentExpressions(parameterBindings, parameterCategories, currentNamespace)
             val abiCall = AbiCallCatalog.resultMethodWithTwoArguments(
                 method.vtableIndex!!,
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) "OBJECT" else resultKindName(method.returnType),
@@ -953,9 +1023,10 @@ internal class RuntimeMethodRenderer(
     private fun twoArgumentArgumentExpressions(
         parameterBindings: List<RuntimeMethodParameterBinding>,
         parameterCategories: List<MethodParameterCategory>,
-    ): List<String> =
+        currentNamespace: String,
+    ): List<Any> =
         parameterBindings.zip(parameterCategories) { binding, category ->
-            runtimeUnaryArgumentExpression(binding.name, category)
+            runtimeUnaryArgumentExpression(binding, category, currentNamespace)
         }
 
     fun renderRuntimeLambdaOverload(method: WinMdMethod, currentNamespace: String): FunSpec? {
@@ -976,7 +1047,7 @@ internal class RuntimeMethodRenderer(
         val plan = delegateLambdaPlanResolver.resolve(
             invokeMethod = invokeMethod,
             currentNamespace = currentNamespace,
-            supportsObjectType = ::supportsRuntimeObjectType,
+            supportsObjectType = { typeName -> supportsRuntimeObjectType(typeName, currentNamespace) },
         ) as? DelegateLambdaPlan.PlannedBridge ?: return null
         return FunSpec.builder(functionName)
             .returns(PoetSymbols.winRtDelegateHandleClass)
@@ -1031,8 +1102,23 @@ internal class RuntimeMethodRenderer(
         return builder.add(")").build()
     }
 
-    private fun supportsRuntimeObjectType(type: String): Boolean {
-        return supportsProjectedObjectTypeName(type)
+    private fun supportsRuntimeObjectType(type: String, currentNamespace: String): Boolean {
+        return projectedObjectArgumentLowering.supportsInputType(type, currentNamespace)
+    }
+
+    private fun signatureParameterType(type: String, currentNamespace: String): String {
+        return if (typeRegistry.isEnumType(type, currentNamespace)) {
+            "Int32"
+        } else {
+            type
+        }
+    }
+
+    private fun runtimeObjectArgumentExpression(
+        binding: RuntimeMethodParameterBinding,
+        currentNamespace: String,
+    ): CodeBlock {
+        return projectedObjectArgumentLowering.expression(binding.name, binding.type, currentNamespace)
     }
 
     private fun runtimeObjectReturnCode(method: WinMdMethod, currentNamespace: String, abiCall: CodeBlock): CodeBlock {

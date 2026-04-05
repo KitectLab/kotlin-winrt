@@ -293,9 +293,10 @@ internal fun methodSignatureShape(
 internal fun methodSignatureKey(
     returnType: String,
     parameterTypes: List<String>,
-    supportsObjectType: (String) -> Boolean,
+    supportsParameterObjectType: (String) -> Boolean,
+    supportsReturnObjectType: (String) -> Boolean = supportsParameterObjectType,
 ): MethodSignatureKey? {
-    val shape = methodSignatureShape(parameterTypes, supportsObjectType) ?: return null
+    val shape = methodSignatureShape(parameterTypes, supportsParameterObjectType) ?: return null
     val returnKind = when (canonicalWinRtSpecialType(returnType)) {
         "Unit" -> MethodReturnKind.UNIT
         "String" -> MethodReturnKind.STRING
@@ -310,7 +311,7 @@ internal fun methodSignatureKey(
         "UInt64" -> MethodReturnKind.UINT64
         "Guid" -> MethodReturnKind.GUID
         "EventRegistrationToken" -> MethodReturnKind.EVENT_REGISTRATION_TOKEN
-        else -> if (supportsObjectType(returnType)) MethodReturnKind.OBJECT else null
+        else -> if (supportsReturnObjectType(returnType)) MethodReturnKind.OBJECT else null
     } ?: return null
     return MethodSignatureKey(returnKind = returnKind, shape = shape)
 }
@@ -319,13 +320,23 @@ internal fun isEventRegistrationTokenType(type: String): Boolean =
     canonicalWinRtSpecialType(type) == "EventRegistrationToken"
 
 internal fun supportsProjectedObjectTypeName(type: String): Boolean =
-    (type == "Object" || (type.contains('.') && canonicalWinRtSpecialType(type) == type)) &&
+    (canonicalWinRtSpecialType(type) == "Object" || (type.contains('.') && canonicalWinRtSpecialType(type) == type)) &&
         !type.contains('`') &&
         !type.contains('<') &&
         !type.endsWith("[]")
 
 internal fun canonicalWinRtSpecialType(type: String): String =
     when (type) {
+        "System.String" -> "String"
+        "System.Object" -> "Object"
+        "System.Boolean" -> "Boolean"
+        "System.Int32" -> "Int32"
+        "System.UInt32" -> "UInt32"
+        "System.Int64" -> "Int64"
+        "System.UInt64" -> "UInt64"
+        "System.Single" -> "Float32"
+        "System.Double" -> "Float64"
+        "System.Guid" -> "Guid"
         "Windows.Foundation.WinRtBoolean" -> "Boolean"
         "Windows.Foundation.Int32" -> "Int32"
         "Windows.Foundation.UInt32" -> "UInt32"

@@ -18,18 +18,18 @@ internal class TypeNameMapper {
     ): TypeName {
         return when {
             typeName in genericParameters -> TypeVariableName(typeName)
-            typeName == "String" -> String::class.asTypeName()
+            typeName == "String" || typeName == "System.String" -> String::class.asTypeName()
             typeName == "Unit" -> Unit::class.asTypeName()
-            typeName == "Object" -> PoetSymbols.inspectableClass
-            typeName == "Boolean" || typeName == "Windows.Foundation.WinRtBoolean" -> PoetSymbols.winRtBooleanClass
+            typeName == "Object" || typeName == "System.Object" -> PoetSymbols.inspectableClass
+            typeName == "Boolean" || typeName == "System.Boolean" || typeName == "Windows.Foundation.WinRtBoolean" -> PoetSymbols.winRtBooleanClass
             typeName == "Int" -> Int::class.asTypeName()
-            typeName == "Int32" || typeName == "Windows.Foundation.Int32" -> PoetSymbols.int32Class
-            typeName == "UInt32" || typeName == "Windows.Foundation.UInt32" -> PoetSymbols.uint32Class
-            typeName == "Int64" || typeName == "Windows.Foundation.Int64" -> PoetSymbols.int64Class
-            typeName == "UInt64" || typeName == "Windows.Foundation.UInt64" -> PoetSymbols.uint64Class
-            typeName == "Float32" || typeName == "Windows.Foundation.Float32" -> PoetSymbols.float32Class
-            typeName == "Float64" || typeName == "Windows.Foundation.Float64" -> PoetSymbols.float64Class
-            typeName == "Guid" || typeName == "Windows.Foundation.Guid" -> PoetSymbols.guidValueClass
+            typeName == "Int32" || typeName == "System.Int32" || typeName == "Windows.Foundation.Int32" -> PoetSymbols.int32Class
+            typeName == "UInt32" || typeName == "System.UInt32" || typeName == "Windows.Foundation.UInt32" -> PoetSymbols.uint32Class
+            typeName == "Int64" || typeName == "System.Int64" || typeName == "Windows.Foundation.Int64" -> PoetSymbols.int64Class
+            typeName == "UInt64" || typeName == "System.UInt64" || typeName == "Windows.Foundation.UInt64" -> PoetSymbols.uint64Class
+            typeName == "Float32" || typeName == "System.Single" || typeName == "Windows.Foundation.Float32" -> PoetSymbols.float32Class
+            typeName == "Float64" || typeName == "System.Double" || typeName == "Windows.Foundation.Float64" -> PoetSymbols.float64Class
+            typeName == "Guid" || typeName == "System.Guid" || typeName == "Windows.Foundation.Guid" -> PoetSymbols.guidValueClass
             typeName == "DateTime" || typeName == "Windows.Foundation.DateTime" -> PoetSymbols.dateTimeClass
             typeName == "TimeSpan" || typeName == "Windows.Foundation.TimeSpan" -> PoetSymbols.timeSpanClass
             typeName == "EventRegistrationToken" || typeName == "Windows.Foundation.EventRegistrationToken" -> PoetSymbols.eventRegistrationTokenClass

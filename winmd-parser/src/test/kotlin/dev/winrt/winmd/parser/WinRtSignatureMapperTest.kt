@@ -160,6 +160,33 @@ class WinRtSignatureMapperTest {
     }
 
     @Test
+    fun maps_well_known_struct_signatures_without_metadata() {
+        assertEquals(
+            "struct(Windows.Foundation.Rect;f8;f8;f8;f8)",
+            mapper.signatureFor("Windows.Foundation.Rect", "Microsoft.UI.Xaml"),
+        )
+        assertEquals(
+            "struct(Windows.Foundation.Size;f8;f8)",
+            mapper.signatureFor("Size", "Windows.Foundation"),
+        )
+        assertEquals(
+            "struct(Windows.Foundation.EventRegistrationToken;i8)",
+            mapper.signatureFor("Windows.Foundation.EventRegistrationToken", "Windows.Foundation"),
+        )
+    }
+
+    @Test
+    fun maps_well_known_struct_arguments_inside_parameterized_interfaces_without_metadata() {
+        assertEquals(
+            "pinterface({bbe1fa4c-b0e3-4583-baef-1f1b2e483e56};struct(Windows.Foundation.Rect;f8;f8;f8;f8))",
+            mapper.signatureFor(
+                "Windows.Foundation.Collections.IVectorView`1<Windows.Foundation.Rect>",
+                "Microsoft.UI.Xaml",
+            ),
+        )
+    }
+
+    @Test
     fun maps_bindable_vector_to_cswinrt_projection_type_key() {
         assertEquals(
             "kotlin.collections.MutableList",

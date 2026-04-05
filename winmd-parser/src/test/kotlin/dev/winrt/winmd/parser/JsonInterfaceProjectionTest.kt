@@ -85,7 +85,7 @@ class JsonInterfaceProjectionTest {
         assertTrue(generatedJsonArrayClass.contains("fun getObjectAt(index: UInt32): JsonObject"))
         assertTrue(generatedJsonArrayClass.contains("invokeObjectMethodWithUInt32Arg(pointer, 6,"))
         assertTrue(generatedJsonArrayClass.contains("JsonValueType.fromValue("))
-        assertTrue(!generatedJsonArrayClass.contains("windows.foundation.collections.IVector"))
+        assertTrue(!generatedJsonArrayClass.contains("import windows.foundation.collections.IVector\n"))
         assertTrue(!generatedJsonArrayClass.contains("windows.foundation.collections.IIterable"))
         assertEquals(1, generatedJsonArrayClass.lineSequence().count { it.contains("fun get_ValueType(): JsonValueType") })
 

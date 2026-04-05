@@ -1,6 +1,6 @@
 package dev.winrt.winmd.parser
 
-private val renderedEscapedIdentifierPattern = Regex("`([A-Za-z_][A-Za-z0-9_]*)`")
+private val renderedEscapedIdentifierPattern = Regex("`([A-Za-z_][A-Za-z0-9_]*)`(?!\\d+`)")
 
 private val kotlinHardKeywords = setOf(
     "as",

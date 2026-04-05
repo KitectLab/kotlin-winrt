@@ -32,16 +32,16 @@ internal class WinRtProjectionTypeMapper {
     }
 
     private fun scalarProjectionTypeKey(typeName: String): String? = when (typeName) {
-        "String" -> "String"
-        "Object" -> "Object"
-        "Boolean" -> "Boolean"
-        "Int32" -> "Int32"
-        "UInt32" -> "UInt32"
-        "Int64" -> "Int64"
-        "UInt64" -> "UInt64"
-        "Float32" -> "Float32"
-        "Float64" -> "Float64"
-        "Guid" -> "Guid"
+        "String", "System.String" -> "String"
+        "Object", "System.Object" -> "Object"
+        "Boolean", "System.Boolean" -> "Boolean"
+        "Int32", "System.Int32" -> "Int32"
+        "UInt32", "System.UInt32" -> "UInt32"
+        "Int64", "System.Int64" -> "Int64"
+        "UInt64", "System.UInt64" -> "UInt64"
+        "Float32", "System.Single" -> "Float32"
+        "Float64", "System.Double" -> "Float64"
+        "Guid", "System.Guid" -> "Guid"
         "DateTime" -> "DateTime"
         "TimeSpan" -> "TimeSpan"
         else -> null
