@@ -453,6 +453,10 @@ internal class RuntimeCompanionRenderer(
             (
                 method.isUInt32ReceiveArrayReturnMethod() &&
                     method.parameters.all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                ) ||
+            (
+                method.isUInt64ReceiveArrayReturnMethod() &&
+                    method.parameters.all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
                 )
     }
 

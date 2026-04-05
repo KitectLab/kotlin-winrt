@@ -61,6 +61,7 @@ internal object PoetSymbols {
     val invokeInt32ReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeInt32ReceiveArrayMethod")
     val invokeInt64ReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeInt64ReceiveArrayMethod")
     val invokeUInt32ReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeUInt32ReceiveArrayMethod")
+    val invokeUInt64ReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeUInt64ReceiveArrayMethod")
     val requireHStringMember = MemberName("dev.winrt.kom", "requireHString")
     val requireObjectMember = MemberName("dev.winrt.kom", "requireObject")
     val requireUInt8Member = MemberName("dev.winrt.kom", "requireUInt8")

@@ -380,6 +380,41 @@ class RuntimeMethodRendererTest {
     }
 
     @Test
+    fun renders_runtime_uint64_receive_array_methods_with_scalar_inputs() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "UInt64Vector",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    "GetRange",
+                                    "UInt64[]",
+                                    vtableIndex = 9,
+                                    parameters = listOf(WinMdParameter("startIndex", "UInt32")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/Collections/UInt64Vector.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fungetRange(startIndex:UInt32):Array<UInt64>"))
+        assertTrue(binding.contains("invokeUInt64ReceiveArrayMethod(pointer,9,startIndex.value).getOrThrow().map{UInt64(it.toULong())}.toTypedArray()"))
+    }
+
+    @Test
     fun renders_runtime_nullable_enum_methods_via_generic_ireference_projection() {
         val model = WinMdModel(
             files = emptyList(),
