@@ -18,6 +18,7 @@ internal fun methodArgumentLayout(argument: Any): MemoryLayout {
         is String,
         is IntArray,
         is LongArray -> ValueLayout.ADDRESS
+        is Array<*> -> if (argument.all { it is ComPtr }) ValueLayout.ADDRESS else throw IllegalArgumentException("Unsupported COM argument type: ${argument::class.qualifiedName}")
         is Byte,
         is UByte -> ValueLayout.JAVA_BYTE
         is Short,
@@ -52,6 +53,23 @@ internal fun prepareAbiArguments(arguments: Array<out Any>): PreparedAbiArgument
             }
             is IntArray -> MemorySegment.ofArray(argument)
             is LongArray -> MemorySegment.ofArray(argument)
+            is Array<*> -> {
+                if (!argument.all { it is ComPtr }) {
+                    throw IllegalArgumentException("Unsupported COM argument type: ${argument::class.qualifiedName}")
+                }
+                val arena = Arena.ofConfined()
+                releasers += { arena.close() }
+                val segment = arena.allocate(MemoryLayout.sequenceLayout(argument.size.toLong(), ValueLayout.ADDRESS))
+                argument.forEachIndexed { index, value ->
+                    val pointer = value as ComPtr
+                    segment.setAtIndex(
+                        ValueLayout.ADDRESS,
+                        index.toLong(),
+                        if (pointer.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(pointer),
+                    )
+                }
+                segment
+            }
             is UByte -> argument.toByte()
             is UShort -> argument.toShort()
             is UInt -> argument.toInt()

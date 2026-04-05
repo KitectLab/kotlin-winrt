@@ -889,6 +889,42 @@ class InterfaceTypeRendererTest {
     }
 
     @Test
+    fun renders_runtime_class_receive_array_interface_methods_with_runtime_class_array_inputs() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IUriArrayTransformer",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "12121212-1212-1212-1212-121212121212",
+                            methods = listOf(
+                                WinMdMethod("GetAndSetUris", "Uri[]", vtableIndex = 27, parameters = listOf(WinMdParameter("uris", "Uri[]", isIn = true))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/IUriArrayTransformer.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fungetAndSetUris(uris:Array<Uri>):Array<Uri>"))
+        assertTrue(binding.contains("invokeObjectReceiveArrayMethod(pointer,27,uris.size,Array(uris.size){index->uris[index].pointer}).getOrThrow().map{Uri(it)}.toTypedArray()"))
+    }
+
+    @Test
     fun unsubscribes_event_slots_with_finally_to_close_delegate_handles() {
         val model = WinMdModel(
             files = emptyList(),

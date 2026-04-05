@@ -160,6 +160,7 @@ internal class RuntimeMethodRenderer(
         plannedInt32FillArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         plannedUInt8ReceiveArrayRuntimeMethod(method)?.let { return it }
         plannedStructReceiveArrayRuntimeMethod(method, currentNamespace)?.let { return it }
+        plannedRuntimeClassReceiveArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         plannedObjectReceiveArrayRuntimeMethod(method)?.let { return it }
         plannedInt16ReceiveArrayRuntimeMethod(method)?.let { return it }
         plannedUInt16ReceiveArrayRuntimeMethod(method)?.let { return it }
@@ -420,6 +421,34 @@ internal class RuntimeMethodRenderer(
                     CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, currentNamespace))
                 } ?: error("Unsupported Object receive-array runtime method: ${method.name}")
                 arrayOf(objectReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
+            },
+        )
+    }
+
+    private fun plannedRuntimeClassReceiveArrayRuntimeMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+    ): RuntimeMethodPlan? {
+        val elementType = method.runtimeClassReceiveArrayElementType(currentNamespace, typeRegistry) ?: return null
+        return RuntimeMethodPlan(
+            nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
+            returnStatement = "return %L",
+            statementArgs = { method, namespace, parameterBindings ->
+                val abiArguments = runtimeClassReceiveArrayAbiArguments(
+                    parameters = method.parameters,
+                    currentNamespace = namespace,
+                    typeRegistry = typeRegistry,
+                    expectedElementType = elementType,
+                ) { parameter ->
+                    val parameterIndex = method.parameters.indexOf(parameter)
+                    val binding = parameterBindings[parameterIndex]
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, namespace),
+                    ) { typeName -> supportsRuntimeObjectType(typeName, namespace) } ?: return@runtimeClassReceiveArrayAbiArguments null
+                    CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, namespace))
+                } ?: error("Unsupported runtime-class receive-array runtime method: ${method.name}")
+                val runtimeClassType = typeNameMapper.mapTypeName(elementType, namespace)
+                arrayOf(runtimeClassReceiveArrayReturnExpression(method.vtableIndex!!, runtimeClassType, abiArguments))
             },
         )
     }

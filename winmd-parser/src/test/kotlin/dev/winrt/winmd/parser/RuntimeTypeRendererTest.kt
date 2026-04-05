@@ -1115,6 +1115,71 @@ class RuntimeTypeRendererTest {
     }
 
     @Test
+    fun forwards_runtime_class_receive_array_static_methods_with_runtime_class_array_inputs_from_companion() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "UriPropertyValue",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            staticInterfaces = listOf("Windows.Foundation.IUriArrayStatics"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IUriArrayStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "13131313-1313-1313-1313-131313131313",
+                            methods = listOf(
+                                WinMdMethod("GetAndSetUris", "Uri[]", vtableIndex = 6, parameters = listOf(WinMdParameter("uris", "Uri[]", isIn = true))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val typeRegistry = TypeRegistry(model)
+        val renderer = RuntimeTypeRenderer(
+            typeNameMapper = TypeNameMapper(),
+            typeRegistry = typeRegistry,
+            delegateLambdaPlanResolver = DelegateLambdaPlanResolver(TypeNameMapper()),
+            eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+            runtimePropertyRenderer = RuntimePropertyRenderer(TypeNameMapper(), typeRegistry),
+            runtimeMethodRenderer = RuntimeMethodRenderer(
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                typeRegistry,
+                asyncRegistry(typeRegistry),
+            ),
+            runtimeCompanionRenderer = RuntimeCompanionRenderer(
+                typeRegistry,
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+                WinRtSignatureMapper(typeRegistry),
+                AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+                WinRtProjectionTypeMapper(),
+                KotlinCollectionProjectionMapper(),
+            ),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
+            winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
+        )
+
+        val binding = renderer.render(typeRegistry.findType("UriPropertyValue", "Windows.Foundation")!!).toString()
+
+        assertTrue(binding.contains("fun getAndSetUris("))
+        assertTrue(binding.contains("statics.getAndSetUris(uris)"))
+    }
+
+    @Test
     fun forwards_supported_int32_fill_array_static_methods_from_companion() {
         val model = WinMdModel(
             files = emptyList(),

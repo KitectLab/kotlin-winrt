@@ -1680,6 +1680,7 @@ internal class InterfaceTypeRenderer(
         plannedInt32FillArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
         plannedUInt8ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedStructReceiveArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
+        plannedRuntimeClassReceiveArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
         plannedObjectReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedInt16ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedUInt16ReceiveArrayInterfaceMethod(method)?.let { return it }
@@ -1980,6 +1981,40 @@ internal class InterfaceTypeRenderer(
                     )
                 } ?: error("Unsupported Object receive-array interface method: ${method.name}")
                 arrayOf(objectReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
+            },
+        )
+    }
+
+    private fun plannedRuntimeClassReceiveArrayInterfaceMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): PlannedInterfaceMethod? {
+        val elementType = method.runtimeClassReceiveArrayElementType(currentNamespace, typeRegistry) ?: return null
+        return PlannedInterfaceMethod(
+            statement = "return %L",
+            args = { method, namespace ->
+                val abiArguments = runtimeClassReceiveArrayAbiArguments(
+                    parameters = method.parameters,
+                    currentNamespace = namespace,
+                    typeRegistry = typeRegistry,
+                    expectedElementType = elementType,
+                ) { parameter ->
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, namespace),
+                    ) { typeName -> supportsInterfaceObjectInput(typeName, namespace) } ?: return@runtimeClassReceiveArrayAbiArguments null
+                    CodeBlock.of(
+                        "%L",
+                        unaryArgumentExpression(
+                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                            parameterType = parameter.type,
+                            category = parameterCategory,
+                            currentNamespace = namespace,
+                        ),
+                    )
+                } ?: error("Unsupported runtime-class receive-array interface method: ${method.name}")
+                val runtimeClassType = typeNameMapper.mapTypeName(elementType, namespace, genericParameters)
+                arrayOf(runtimeClassReceiveArrayReturnExpression(method.vtableIndex!!, runtimeClassType, abiArguments))
             },
         )
     }

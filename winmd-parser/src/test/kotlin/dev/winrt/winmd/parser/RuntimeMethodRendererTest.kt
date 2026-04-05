@@ -727,6 +727,41 @@ class RuntimeMethodRendererTest {
     }
 
     @Test
+    fun renders_runtime_class_receive_array_methods_with_runtime_class_array_inputs() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "UriArrayTransformer",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod("GetAndSetUris", "Uri[]", vtableIndex = 27, parameters = listOf(WinMdParameter("uris", "Uri[]", isIn = true))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/UriArrayTransformer.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fungetAndSetUris(uris:Array<Uri>):Array<Uri>"))
+        assertTrue(binding.contains("invokeObjectReceiveArrayMethod(pointer,27,uris.size,Array(uris.size){index->uris[index].pointer}).getOrThrow().map{Uri(it)}.toTypedArray()"))
+    }
+
+    @Test
     fun renders_runtime_nullable_enum_methods_via_generic_ireference_projection() {
         val model = WinMdModel(
             files = emptyList(),
