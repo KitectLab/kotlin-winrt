@@ -1,6 +1,7 @@
 package dev.winrt.winmd.parser
 
 import dev.winrt.winmd.plugin.encodeValueTypeName
+import dev.winrt.winmd.plugin.WinMdField
 import dev.winrt.winmd.plugin.WinMdModel
 import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdNamespace
@@ -785,6 +786,72 @@ class InterfaceTypeRendererTest {
 
         assertTrue(binding.contains("fungetInspectables(startIndex:UInt32):Array<Inspectable>"))
         assertTrue(binding.contains("invokeObjectReceiveArrayMethod(pointer,21,startIndex.value).getOrThrow().map{Inspectable(it)}.toTypedArray()"))
+    }
+
+    @Test
+    fun renders_supported_struct_receive_array_interface_methods_with_scalar_inputs() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Point",
+                            kind = WinMdTypeKind.Struct,
+                            fields = listOf(
+                                WinMdField("X", "Float32"),
+                                WinMdField("Y", "Float32"),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Size",
+                            kind = WinMdTypeKind.Struct,
+                            fields = listOf(
+                                WinMdField("Width", "Float32"),
+                                WinMdField("Height", "Float32"),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Rect",
+                            kind = WinMdTypeKind.Struct,
+                            fields = listOf(
+                                WinMdField("X", "Float32"),
+                                WinMdField("Y", "Float32"),
+                                WinMdField("Width", "Float32"),
+                                WinMdField("Height", "Float32"),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IStructArraySource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                            methods = listOf(
+                                WinMdMethod("GetPoints", "Point[]", vtableIndex = 22, parameters = listOf(WinMdParameter("startIndex", "UInt32"))),
+                                WinMdMethod("GetSizes", "Size[]", vtableIndex = 23, parameters = listOf(WinMdParameter("startIndex", "UInt32"))),
+                                WinMdMethod("GetRects", "Rect[]", vtableIndex = 24, parameters = listOf(WinMdParameter("startIndex", "UInt32"))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/IStructArraySource.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fungetPoints(startIndex:UInt32):Array<Point>"))
+        assertTrue(binding.contains("invokeStructReceiveArrayMethod(pointer,22,Point.ABI_LAYOUT,startIndex.value).getOrThrow().map{Point.fromAbi(it)}.toTypedArray()"))
+        assertTrue(binding.contains("fungetSizes(startIndex:UInt32):Array<Size>"))
+        assertTrue(binding.contains("invokeStructReceiveArrayMethod(pointer,23,Size.ABI_LAYOUT,startIndex.value).getOrThrow().map{Size.fromAbi(it)}.toTypedArray()"))
+        assertTrue(binding.contains("fungetRects(startIndex:UInt32):Array<Rect>"))
+        assertTrue(binding.contains("invokeStructReceiveArrayMethod(pointer,24,Rect.ABI_LAYOUT,startIndex.value).getOrThrow().map{Rect.fromAbi(it)}.toTypedArray()"))
     }
 
     @Test

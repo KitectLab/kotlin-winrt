@@ -475,6 +475,10 @@ internal class RuntimeCompanionRenderer(
                     method.parameters.all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
                 ) ||
             (
+                method.supportedStructReceiveArrayElementType(currentNamespace, typeRegistry) != null &&
+                    method.parameters.all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                ) ||
+            (
                 method.isObjectReceiveArrayReturnMethod() &&
                     method.parameters.all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
                 ) ||

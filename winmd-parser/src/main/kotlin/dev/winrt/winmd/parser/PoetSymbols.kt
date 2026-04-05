@@ -59,6 +59,7 @@ internal object PoetSymbols {
     val dispatchQueueClass = ClassName("windows.foundation", "DispatchQueue")
     val platformComInteropClass = ClassName("dev.winrt.kom", "PlatformComInterop")
     val invokeObjectReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeObjectReceiveArrayMethod")
+    val invokeStructReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeStructReceiveArrayMethod")
     val invokeUInt8ReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeUInt8ReceiveArrayMethod")
     val invokeGuidReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeGuidReceiveArrayMethod")
     val invokeInt16ReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeInt16ReceiveArrayMethod")

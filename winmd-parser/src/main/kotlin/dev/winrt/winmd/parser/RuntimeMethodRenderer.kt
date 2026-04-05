@@ -159,6 +159,7 @@ internal class RuntimeMethodRenderer(
         }
         plannedInt32FillArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         plannedUInt8ReceiveArrayRuntimeMethod(method)?.let { return it }
+        plannedStructReceiveArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         plannedObjectReceiveArrayRuntimeMethod(method)?.let { return it }
         plannedInt16ReceiveArrayRuntimeMethod(method)?.let { return it }
         plannedUInt16ReceiveArrayRuntimeMethod(method)?.let { return it }
@@ -419,6 +420,29 @@ internal class RuntimeMethodRenderer(
                     CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, currentNamespace))
                 } ?: error("Unsupported Object receive-array runtime method: ${method.name}")
                 arrayOf(objectReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
+            },
+        )
+    }
+
+    private fun plannedStructReceiveArrayRuntimeMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+    ): RuntimeMethodPlan? {
+        val elementType = method.supportedStructReceiveArrayElementType(currentNamespace, typeRegistry) ?: return null
+        return RuntimeMethodPlan(
+            nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
+            returnStatement = "return %L",
+            statementArgs = { method, namespace, parameterBindings ->
+                val abiArguments = structReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterIndex = method.parameters.indexOf(parameter)
+                    val binding = parameterBindings[parameterIndex]
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, namespace),
+                    ) { typeName -> supportsRuntimeObjectType(typeName, namespace) } ?: return@structReceiveArrayAbiArguments null
+                    CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, namespace))
+                } ?: error("Unsupported struct receive-array runtime method: ${method.name}")
+                val structType = typeNameMapper.mapTypeName(elementType, namespace)
+                arrayOf(structReceiveArrayReturnExpression(method.vtableIndex!!, structType, abiArguments))
             },
         )
     }

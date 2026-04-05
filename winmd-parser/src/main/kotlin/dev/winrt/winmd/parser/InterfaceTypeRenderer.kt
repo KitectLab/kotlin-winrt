@@ -1679,6 +1679,7 @@ internal class InterfaceTypeRenderer(
         }
         plannedInt32FillArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
         plannedUInt8ReceiveArrayInterfaceMethod(method)?.let { return it }
+        plannedStructReceiveArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
         plannedObjectReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedInt16ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedUInt16ReceiveArrayInterfaceMethod(method)?.let { return it }
@@ -1979,6 +1980,35 @@ internal class InterfaceTypeRenderer(
                     )
                 } ?: error("Unsupported Object receive-array interface method: ${method.name}")
                 arrayOf(objectReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
+            },
+        )
+    }
+
+    private fun plannedStructReceiveArrayInterfaceMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): PlannedInterfaceMethod? {
+        val elementType = method.supportedStructReceiveArrayElementType(currentNamespace, typeRegistry) ?: return null
+        return PlannedInterfaceMethod(
+            statement = "return %L",
+            args = { method, namespace ->
+                val abiArguments = structReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, namespace),
+                    ) { typeName -> supportsInterfaceObjectInput(typeName, namespace) } ?: return@structReceiveArrayAbiArguments null
+                    CodeBlock.of(
+                        "%L",
+                        unaryArgumentExpression(
+                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                            parameterType = parameter.type,
+                            category = parameterCategory,
+                            currentNamespace = namespace,
+                        ),
+                    )
+                } ?: error("Unsupported struct receive-array interface method: ${method.name}")
+                val structType = typeNameMapper.mapTypeName(elementType, namespace, genericParameters)
+                arrayOf(structReceiveArrayReturnExpression(method.vtableIndex!!, structType, abiArguments))
             },
         )
     }

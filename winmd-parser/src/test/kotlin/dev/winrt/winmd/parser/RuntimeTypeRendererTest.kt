@@ -1,8 +1,9 @@
 package dev.winrt.winmd.parser
 
-import dev.winrt.winmd.plugin.WinMdModel
 import dev.winrt.winmd.plugin.WinMdActivationKind
+import dev.winrt.winmd.plugin.WinMdField
 import dev.winrt.winmd.plugin.WinMdMethod
+import dev.winrt.winmd.plugin.WinMdModel
 import dev.winrt.winmd.plugin.WinMdNamespace
 import dev.winrt.winmd.plugin.WinMdParameter
 import dev.winrt.winmd.plugin.WinMdProperty
@@ -953,6 +954,101 @@ class RuntimeTypeRendererTest {
 
         assertTrue(binding.contains("fun getInspectables("))
         assertTrue(binding.contains("statics.getInspectables(startIndex)"))
+    }
+
+    @Test
+    fun forwards_supported_struct_receive_array_static_methods_from_companion() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Point",
+                            kind = WinMdTypeKind.Struct,
+                            fields = listOf(
+                                WinMdField("X", "Float32"),
+                                WinMdField("Y", "Float32"),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Size",
+                            kind = WinMdTypeKind.Struct,
+                            fields = listOf(
+                                WinMdField("Width", "Float32"),
+                                WinMdField("Height", "Float32"),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Rect",
+                            kind = WinMdTypeKind.Struct,
+                            fields = listOf(
+                                WinMdField("X", "Float32"),
+                                WinMdField("Y", "Float32"),
+                                WinMdField("Width", "Float32"),
+                                WinMdField("Height", "Float32"),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "StructPropertyValue",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            staticInterfaces = listOf("Windows.Foundation.IStructArrayStatics"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IStructArrayStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-dddd-dddd-dddd-dddddddddddd",
+                            methods = listOf(
+                                WinMdMethod("GetPoints", "Point[]", vtableIndex = 6, parameters = listOf(WinMdParameter("startIndex", "UInt32"))),
+                                WinMdMethod("GetSizes", "Size[]", vtableIndex = 7, parameters = listOf(WinMdParameter("startIndex", "UInt32"))),
+                                WinMdMethod("GetRects", "Rect[]", vtableIndex = 8, parameters = listOf(WinMdParameter("startIndex", "UInt32"))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val typeRegistry = TypeRegistry(model)
+        val renderer = RuntimeTypeRenderer(
+            typeNameMapper = TypeNameMapper(),
+            typeRegistry = typeRegistry,
+            delegateLambdaPlanResolver = DelegateLambdaPlanResolver(TypeNameMapper()),
+            eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+            runtimePropertyRenderer = RuntimePropertyRenderer(TypeNameMapper(), typeRegistry),
+            runtimeMethodRenderer = RuntimeMethodRenderer(
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                typeRegistry,
+                asyncRegistry(typeRegistry),
+            ),
+            runtimeCompanionRenderer = RuntimeCompanionRenderer(
+                typeRegistry,
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+                WinRtSignatureMapper(typeRegistry),
+                AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+                WinRtProjectionTypeMapper(),
+                KotlinCollectionProjectionMapper(),
+            ),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
+            winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
+        )
+
+        val binding = renderer.render(typeRegistry.findType("StructPropertyValue", "Windows.Foundation")!!).toString()
+
+        assertTrue(binding.contains("fun getPoints("))
+        assertTrue(binding.contains("statics.getPoints(startIndex)"))
+        assertTrue(binding.contains("fun getSizes("))
+        assertTrue(binding.contains("statics.getSizes(startIndex)"))
+        assertTrue(binding.contains("fun getRects("))
+        assertTrue(binding.contains("statics.getRects(startIndex)"))
     }
 
     @Test
