@@ -270,7 +270,7 @@ internal class RuntimeTypeRenderer(
         } else {
             candidate.method.parameters
         }
-        return constructorParameters.none { parameter -> parameter.type.endsWith("[]") }
+        return !constructorParameters.requiresArrayMarshaling()
     }
 
     private fun shouldRenderFactoryActivationHelper(type: WinMdType): Boolean {

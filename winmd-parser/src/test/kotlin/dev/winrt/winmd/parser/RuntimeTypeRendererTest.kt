@@ -196,7 +196,7 @@ class RuntimeTypeRendererTest {
                                     name = "CreateInt32Array",
                                     returnType = "Object",
                                     vtableIndex = 6,
-                                    parameters = listOf(WinMdParameter("value", "Int32[]")),
+                                    parameters = listOf(WinMdParameter("value", "Int32[]", isIn = true)),
                                 ),
                             ),
                         ),
@@ -595,7 +595,7 @@ class RuntimeTypeRendererTest {
                                     returnType = "Example.Xaml.Widget",
                                     vtableIndex = 6,
                                     parameters = listOf(
-                                        WinMdParameter(name = "labels", type = "String[]"),
+                                        WinMdParameter(name = "labels", type = "String[]", isIn = true),
                                     ),
                                 ),
                             ),

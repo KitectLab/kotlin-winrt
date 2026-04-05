@@ -364,19 +364,15 @@ internal class RuntimeCompanionRenderer(
     }
 
     private fun canForwardStaticProperty(property: WinMdProperty): Boolean {
-        return !isArrayType(property.type)
+        return !property.type.isWinRtArrayType()
     }
 
     private fun canForwardStaticMethod(method: WinMdMethod): Boolean {
-        return !isArrayType(method.returnType) && method.parameters.none { parameter -> isArrayType(parameter.type) }
+        return !method.requiresArrayMarshaling()
     }
 
     private fun canForwardFactoryMethod(method: WinMdMethod): Boolean {
-        return method.parameters.none { parameter -> isArrayType(parameter.type) }
-    }
-
-    private fun isArrayType(typeName: String): Boolean {
-        return typeName.endsWith("[]")
+        return !method.parameters.requiresArrayMarshaling()
     }
 
     private fun renderForwardingProperty(
