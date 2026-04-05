@@ -1679,6 +1679,7 @@ internal class InterfaceTypeRenderer(
         }
         plannedInt32FillArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
         plannedUInt8ReceiveArrayInterfaceMethod(method)?.let { return it }
+        plannedObjectReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedInt16ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedUInt16ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedInt32ReceiveArrayInterfaceMethod(method)?.let { return it }
@@ -1952,6 +1953,32 @@ internal class InterfaceTypeRenderer(
                     )
                 } ?: error("Unsupported Guid receive-array interface method: ${method.name}")
                 arrayOf(guidReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
+            },
+        )
+    }
+
+    private fun plannedObjectReceiveArrayInterfaceMethod(method: WinMdMethod): PlannedInterfaceMethod? {
+        if (!method.isObjectReceiveArrayReturnMethod()) {
+            return null
+        }
+        return PlannedInterfaceMethod(
+            statement = "return %L",
+            args = { method, currentNamespace ->
+                val abiArguments = objectReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@objectReceiveArrayAbiArguments null
+                    CodeBlock.of(
+                        "%L",
+                        unaryArgumentExpression(
+                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                            parameterType = parameter.type,
+                            category = parameterCategory,
+                            currentNamespace = currentNamespace,
+                        ),
+                    )
+                } ?: error("Unsupported Object receive-array interface method: ${method.name}")
+                arrayOf(objectReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
             },
         )
     }

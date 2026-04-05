@@ -757,6 +757,37 @@ class InterfaceTypeRendererTest {
     }
 
     @Test
+    fun renders_object_receive_array_interface_methods_with_scalar_inputs() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IVectorViewInspectable",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                            methods = listOf(
+                                WinMdMethod("GetInspectables", "Object[]", vtableIndex = 21, parameters = listOf(WinMdParameter("startIndex", "UInt32"))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/Collections/IVectorViewInspectable.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fungetInspectables(startIndex:UInt32):Array<Inspectable>"))
+        assertTrue(binding.contains("invokeObjectReceiveArrayMethod(pointer,21,startIndex.value).getOrThrow().map{Inspectable(it)}.toTypedArray()"))
+    }
+
+    @Test
     fun unsubscribes_event_slots_with_finally_to_close_delegate_handles() {
         val model = WinMdModel(
             files = emptyList(),

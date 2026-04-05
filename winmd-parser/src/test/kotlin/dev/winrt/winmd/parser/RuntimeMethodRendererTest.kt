@@ -598,6 +598,36 @@ class RuntimeMethodRendererTest {
     }
 
     @Test
+    fun renders_runtime_object_receive_array_methods_with_scalar_inputs() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "InspectableVector",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod("GetInspectables", "Object[]", vtableIndex = 21, parameters = listOf(WinMdParameter("startIndex", "UInt32"))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/Collections/InspectableVector.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fungetInspectables(startIndex:UInt32):Array<Inspectable>"))
+        assertTrue(binding.contains("invokeObjectReceiveArrayMethod(pointer,21,startIndex.value).getOrThrow().map{Inspectable(it)}.toTypedArray()"))
+    }
+
+    @Test
     fun renders_runtime_nullable_enum_methods_via_generic_ireference_projection() {
         val model = WinMdModel(
             files = emptyList(),

@@ -159,6 +159,7 @@ internal class RuntimeMethodRenderer(
         }
         plannedInt32FillArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         plannedUInt8ReceiveArrayRuntimeMethod(method)?.let { return it }
+        plannedObjectReceiveArrayRuntimeMethod(method)?.let { return it }
         plannedInt16ReceiveArrayRuntimeMethod(method)?.let { return it }
         plannedUInt16ReceiveArrayRuntimeMethod(method)?.let { return it }
         plannedInt32ReceiveArrayRuntimeMethod(method)?.let { return it }
@@ -397,6 +398,27 @@ internal class RuntimeMethodRenderer(
                     CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, currentNamespace))
                 } ?: error("Unsupported Guid receive-array runtime method: ${method.name}")
                 arrayOf(guidReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
+            },
+        )
+    }
+
+    private fun plannedObjectReceiveArrayRuntimeMethod(method: WinMdMethod): RuntimeMethodPlan? {
+        if (!method.isObjectReceiveArrayReturnMethod()) {
+            return null
+        }
+        return RuntimeMethodPlan(
+            nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
+            returnStatement = "return %L",
+            statementArgs = { method, currentNamespace, parameterBindings ->
+                val abiArguments = objectReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterIndex = method.parameters.indexOf(parameter)
+                    val binding = parameterBindings[parameterIndex]
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsRuntimeObjectType(typeName, currentNamespace) } ?: return@objectReceiveArrayAbiArguments null
+                    CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, currentNamespace))
+                } ?: error("Unsupported Object receive-array runtime method: ${method.name}")
+                arrayOf(objectReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
             },
         )
     }

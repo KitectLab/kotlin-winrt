@@ -58,6 +58,7 @@ internal object PoetSymbols {
     val coroutineScopeClass = ClassName("kotlinx.coroutines", "CoroutineScope")
     val dispatchQueueClass = ClassName("windows.foundation", "DispatchQueue")
     val platformComInteropClass = ClassName("dev.winrt.kom", "PlatformComInterop")
+    val invokeObjectReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeObjectReceiveArrayMethod")
     val invokeUInt8ReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeUInt8ReceiveArrayMethod")
     val invokeGuidReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeGuidReceiveArrayMethod")
     val invokeInt16ReceiveArrayMethodMember = MemberName("dev.winrt.kom", "invokeInt16ReceiveArrayMethod")
