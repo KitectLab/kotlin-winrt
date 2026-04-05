@@ -369,12 +369,12 @@ internal class RuntimeCompanionRenderer(
 
     private fun canForwardStaticMethod(method: WinMdMethod, currentNamespace: String): Boolean {
         return !method.requiresArrayMarshaling() ||
-            canForwardInt32ArrayMethod(method, currentNamespace)
+            canForwardSupportedArrayMethod(method, currentNamespace)
     }
 
     private fun canForwardFactoryMethod(method: WinMdMethod, currentNamespace: String): Boolean {
         return !method.parameters.requiresArrayMarshaling() ||
-            canForwardInt32ArrayMethod(method, currentNamespace)
+            canForwardSupportedArrayMethod(method, currentNamespace)
     }
 
     private fun renderForwardingProperty(
@@ -428,7 +428,7 @@ internal class RuntimeCompanionRenderer(
         return builder.build()
     }
 
-    private fun canForwardInt32ArrayMethod(method: WinMdMethod, currentNamespace: String): Boolean {
+    private fun canForwardSupportedArrayMethod(method: WinMdMethod, currentNamespace: String): Boolean {
         return method.isInt32PassArrayMethod { typeName ->
             !typeRegistry.isStructType(typeName, currentNamespace) && supportsProjectedObjectTypeName(typeName)
         } &&
@@ -444,6 +444,10 @@ internal class RuntimeCompanionRenderer(
                 ) ||
             (
                 method.isInt32ReceiveArrayReturnMethod() &&
+                    method.parameters.all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                ) ||
+            (
+                method.isUInt32ReceiveArrayReturnMethod() &&
                     method.parameters.all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
                 )
     }
