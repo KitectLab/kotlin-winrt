@@ -95,11 +95,14 @@ internal class RuntimeCompanionRenderer(
 
             val declaredPropertyNames = staticsType.properties.map { it.name }.toSet()
             staticsType.properties.forEach { property ->
-                members += renderForwardingProperty(property, type.namespace, staticsPropertyName)
+                if (canForwardStaticProperty(property)) {
+                    members += renderForwardingProperty(property, type.namespace, staticsPropertyName)
+                }
             }
             staticsType.methods
                 .filterNot { method -> isGetterLike(method) || isSetterLike(method) }
                 .filterNot(::isTemporarilyUnsupportedJsonStaticMethod)
+                .filter(::canForwardStaticMethod)
                 .forEach { method ->
                     members += renderForwardingMethod(method, type.namespace, staticsPropertyName)
                     renderForwardingAsyncAwaitMethod(method, type.namespace, staticsPropertyName)?.let(members::add)
@@ -359,6 +362,18 @@ internal class RuntimeCompanionRenderer(
         return method.name == "TryParse" || method.name == "CreateNumberValue"
     }
 
+    private fun canForwardStaticProperty(property: WinMdProperty): Boolean {
+        return !isArrayType(property.type)
+    }
+
+    private fun canForwardStaticMethod(method: WinMdMethod): Boolean {
+        return !isArrayType(method.returnType) && method.parameters.none { parameter -> isArrayType(parameter.type) }
+    }
+
+    private fun isArrayType(typeName: String): Boolean {
+        return typeName.endsWith("[]")
+    }
+
     private fun renderForwardingProperty(
         property: WinMdProperty,
         currentNamespace: String,
@@ -517,6 +532,7 @@ internal class RuntimeCompanionRenderer(
     ): List<PropertySpec> {
         return methods.asSequence()
             .filter { it.name.startsWith("get_") && it.parameters.isEmpty() }
+            .filter(::canForwardStaticMethod)
             .map { method ->
                 val propertyName = method.name.removePrefix("get_")
                 propertyName to method
