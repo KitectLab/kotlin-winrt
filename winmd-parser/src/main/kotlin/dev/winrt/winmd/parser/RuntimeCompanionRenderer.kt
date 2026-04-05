@@ -444,6 +444,14 @@ internal class RuntimeCompanionRenderer(
                         .all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
                 ) ||
             (
+                method.isUInt32PassArrayMethod { typeName ->
+                    !typeRegistry.isStructType(typeName, currentNamespace) && supportsProjectedObjectTypeName(typeName)
+                } &&
+                    method.parameters
+                        .filterNot { parameter -> parameter.isUInt32PassArrayParameter() }
+                        .all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                ) ||
+            (
                 method.isDateTimePassArrayMethod { typeName ->
                     !typeRegistry.isStructType(typeName, currentNamespace) && supportsProjectedObjectTypeName(typeName)
                 } &&

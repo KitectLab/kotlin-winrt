@@ -503,6 +503,42 @@ class InterfaceTypeRendererTest {
     }
 
     @Test
+    fun renders_uint32_pass_array_interface_methods_with_count_and_buffer_arguments() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IPropertyValueStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "16161616-1616-1616-1616-161616161616",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateUInt32Array",
+                                    returnType = "Object",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter("value", "UInt32[]", isIn = true)),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/IPropertyValueStatics.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("funcreateUInt32Array(value:Array<UInt32>):Inspectable"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethodWithArgs(pointer,6,value.size,IntArray(value.size){index->value[index].value.toInt()}).getOrThrow()"))
+    }
+
+    @Test
     fun renders_datetime_pass_array_interface_methods_with_count_and_buffer_arguments() {
         val model = WinMdModel(
             files = emptyList(),
