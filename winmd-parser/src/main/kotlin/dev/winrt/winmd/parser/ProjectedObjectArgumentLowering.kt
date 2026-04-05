@@ -10,6 +10,9 @@ internal class ProjectedObjectArgumentLowering(
     private val winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
 ) {
     fun supportsInputType(typeName: String, currentNamespace: String): Boolean {
+        if (typeRegistry.isEnumType(typeName, currentNamespace)) {
+            return false
+        }
         return supportsProjectedObjectTypeName(typeName) || supportsClosedGenericProjectedType(typeName, currentNamespace)
     }
 

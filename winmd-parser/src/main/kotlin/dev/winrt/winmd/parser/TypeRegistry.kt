@@ -46,6 +46,12 @@ internal class TypeRegistry(
         return findType(typeName, currentNamespace)?.kind == WinMdTypeKind.Enum
     }
 
+    fun enumUnderlyingType(typeName: String, currentNamespace: String): String? {
+        return findType(typeName, currentNamespace)
+            ?.takeIf { it.kind == WinMdTypeKind.Enum }
+            ?.enumUnderlyingType
+    }
+
     fun findRuntimeClassStaticsType(typeName: String, currentNamespace: String): WinMdType? {
         return findRuntimeClassStaticsTypes(typeName, currentNamespace).firstOrNull()
     }

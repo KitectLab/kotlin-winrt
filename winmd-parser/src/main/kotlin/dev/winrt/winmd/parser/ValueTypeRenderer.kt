@@ -1,6 +1,7 @@
 package dev.winrt.winmd.parser
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.PropertySpec
@@ -62,14 +63,16 @@ internal class ValueTypeRenderer(
 
     private fun renderEnum(type: WinMdType): TypeSpec {
         val declarationName = projectedDeclarationSimpleName(type.name)
+        val underlyingType = type.enumUnderlyingType ?: "Int32"
+        val valueTypeName = enumValueTypeName(underlyingType)
         return TypeSpec.enumBuilder(declarationName)
             .primaryConstructor(
                 FunSpec.constructorBuilder()
-                    .addParameter("value", Int::class)
+                    .addParameter("value", valueTypeName)
                     .build(),
             )
             .addProperty(
-                PropertySpec.builder("value", Int::class)
+                PropertySpec.builder("value", valueTypeName)
                     .initializer("value")
                     .build(),
             )
@@ -78,7 +81,7 @@ internal class ValueTypeRenderer(
                     addEnumConstant(
                         member.name,
                         TypeSpec.anonymousClassBuilder()
-                            .addSuperclassConstructorParameter("%L", member.value)
+                            .addSuperclassConstructorParameter("%L", enumMemberLiteral(member.value, underlyingType))
                             .build(),
                     )
                 }
@@ -87,9 +90,17 @@ internal class ValueTypeRenderer(
                 TypeSpec.companionObjectBuilder()
                     .addFunction(
                         FunSpec.builder("fromValue")
-                            .addParameter("value", Int::class)
+                            .addParameter("value", valueTypeName)
                             .returns(ClassName.bestGuess(declarationName))
-                            .addStatement("return entries.first { it.value == value }")
+                            .addCode(
+                                CodeBlock.builder()
+                                    .add("return entries.first { entry ->\n")
+                                    .indent()
+                                    .add("entry.value == value\n")
+                                    .unindent()
+                                    .add("}\n")
+                                    .build(),
+                            )
                             .build(),
                     )
                     .build(),

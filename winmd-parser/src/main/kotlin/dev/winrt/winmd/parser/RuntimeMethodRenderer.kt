@@ -51,16 +51,16 @@ internal class RuntimeMethodRenderer(
                 method.name.replaceFirstChar(Char::lowercase)
             }
             val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
+            val underlyingType = enumUnderlyingTypeOrDefault(typeRegistry, method.returnType, currentNamespace)
             return FunSpec.builder(functionName)
                 .returns(returnType)
                 .beginControlFlow("if (pointer.isNull)")
                 .addStatement("error(%S)", "Null runtime object pointer: ${method.name}")
                 .endControlFlow()
                 .addStatement(
-                    "return %T.fromValue(%T.invokeUInt32Method(pointer, %L).getOrThrow().toInt())",
+                    "return %T.fromValue(%L)",
                     returnType,
-                    PoetSymbols.platformComInteropClass,
-                    method.vtableIndex!!,
+                    enumGetterAbiCall(underlyingType, method.vtableIndex!!),
                 )
                 .build()
         }
@@ -1134,7 +1134,7 @@ internal class RuntimeMethodRenderer(
 
     private fun signatureParameterType(type: String, currentNamespace: String): String {
         return if (typeRegistry.isEnumType(type, currentNamespace)) {
-            "Int32"
+            enumSignatureType(typeRegistry, type, currentNamespace)
         } else {
             type
         }

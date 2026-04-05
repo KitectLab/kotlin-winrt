@@ -193,7 +193,60 @@ class KotlinBindingGeneratorTest {
         assertTrue(interfaceBinding.contains("val `class`: String"))
         assertTrue(enumBinding.contains("public val value: Int"))
         assertTrue(enumBinding.contains("fromValue(value: Int)"))
+        assertTrue(enumBinding.contains("entry.value == value"))
         assertFalse(enumBinding.contains("`value`"))
+    }
+
+    @Test
+    fun renders_unsigned_enums_with_uint_literals_and_scalar_interface_setters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Core",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Core",
+                            name = "FlagMode",
+                            kind = WinMdTypeKind.Enum,
+                            enumUnderlyingType = "UInt32",
+                            enumMembers = listOf(
+                                dev.winrt.winmd.plugin.WinMdEnumMember("None", 0),
+                                dev.winrt.winmd.plugin.WinMdEnumMember("All", -1),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Core",
+                            name = "IFlagCarrier",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-bbbb-cccc-dddd-111111111111",
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Mode",
+                                    type = "Example.Core.FlagMode",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val enumBinding = files.first { it.relativePath == "Example/Core/FlagMode.kt" }.content
+        val interfaceBinding = files.first { it.relativePath == "Example/Core/IFlagCarrier.kt" }.content
+        val normalizedInterfaceBinding = interfaceBinding.replace(Regex("\\s+"), "")
+
+        assertTrue(enumBinding.contains("public val value: UInt"))
+        assertTrue(enumBinding.contains("All(0xffffffffu)"))
+        assertTrue(enumBinding.contains("fromValue(value: UInt)"))
+        assertTrue(normalizedInterfaceBinding.contains("FlagMode.fromValue(PlatformComInterop.invokeUInt32Method(pointer,6).getOrThrow())"))
+        assertTrue(normalizedInterfaceBinding.contains("PlatformComInterop.invokeUInt32Setter(pointer,7,value.value).getOrThrow()"))
+        assertFalse(interfaceBinding.contains("projectedObjectArgumentPointer(value"))
+        assertFalse(interfaceBinding.contains("invokeObjectSetter(pointer, 7"))
     }
 
     @Test

@@ -886,13 +886,14 @@ internal class InterfaceTypeRenderer(
                 supportsInterfaceObjectReturnType(property.type, currentNamespace),
             )
         ) {
-            InterfacePropertyRuleFamily.ENUM ->
+            InterfacePropertyRuleFamily.ENUM -> {
+                val underlyingType = enumUnderlyingTypeOrDefault(typeRegistry, property.type, currentNamespace)
                 getterBuilder.addStatement(
-                    "return %T.fromValue(%T.invokeUInt32Method(pointer, %L).getOrThrow().toInt())",
+                    "return %T.fromValue(%L)",
                     propertyType,
-                    PoetSymbols.platformComInteropClass,
-                    getterVtableIndex,
+                    enumGetterAbiCall(underlyingType, getterVtableIndex),
                 )
+            }
             InterfacePropertyRuleFamily.OBJECT ->
                 getterBuilder.addStatement(
                     "return %L",
@@ -989,21 +990,27 @@ internal class InterfaceTypeRenderer(
         }
         val propertyBuilder = PropertySpec.builder(propertyName, propertyType)
             .getter(getterBuilder.build())
+        val isEnumProperty = typeRegistry.isEnumType(property.type, currentNamespace)
         val setterRuleFamily = PropertyRuleRegistry.interfaceSetterRuleFamily(
             property.type,
             supportsInterfaceObjectType(property.type, currentNamespace),
         )
-        if (property.mutable &&
-            setterRuleFamily != null &&
-            property.setterVtableIndex != null
-        ) {
+        if (property.mutable && property.setterVtableIndex != null && (isEnumProperty || setterRuleFamily != null)) {
             val setterVtableIndex = property.setterVtableIndex!!
             propertyBuilder.mutable()
             propertyBuilder.setter(
                 FunSpec.setterBuilder()
                     .addParameter("value", propertyType)
                     .apply {
-                        when (setterRuleFamily) {
+                        when {
+                            isEnumProperty -> addStatement(
+                                "%L",
+                                enumSetterAbiCall(
+                                    enumUnderlyingTypeOrDefault(typeRegistry, property.type, currentNamespace),
+                                    setterVtableIndex,
+                                ),
+                            )
+                            else -> when (setterRuleFamily) {
                             InterfacePropertyRuleFamily.OBJECT -> addStatement(
                                 "%L",
                                 AbiCallCatalog.objectSetterExpression(
@@ -1024,6 +1031,7 @@ internal class InterfaceTypeRenderer(
                             InterfacePropertyRuleFamily.INT64 -> addStatement("%L", AbiCallCatalog.int64Setter(setterVtableIndex))
                             InterfacePropertyRuleFamily.UINT64 -> addStatement("%L", AbiCallCatalog.uint64Setter(setterVtableIndex))
                             else -> return null
+                            }
                         }
                     }
                     .build(),
@@ -1226,12 +1234,12 @@ internal class InterfaceTypeRenderer(
                 method.vtableIndex != null -> {
                 val vtableIndex = method.vtableIndex!!
                 val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
+                val underlyingType = enumUnderlyingTypeOrDefault(typeRegistry, method.returnType, currentNamespace)
                 builder
                     .addStatement(
-                        "return %T.fromValue(%T.invokeUInt32Method(pointer, %L).getOrThrow().toInt())",
+                        "return %T.fromValue(%L)",
                         returnType,
-                        PoetSymbols.platformComInteropClass,
-                        vtableIndex,
+                        enumGetterAbiCall(underlyingType, vtableIndex),
                     )
                     .build()
             }
@@ -1242,13 +1250,12 @@ internal class InterfaceTypeRenderer(
                 val argumentName = method.parameters[0].name.replaceFirstChar(Char::lowercase)
                 val vtableIndex = method.vtableIndex!!
                 val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
+                val underlyingType = enumUnderlyingTypeOrDefault(typeRegistry, method.returnType, currentNamespace)
                 builder
                     .addStatement(
-                        "return %T.fromValue(%T.invokeUInt32MethodWithInt32Arg(pointer, %L, %N.value).getOrThrow().toInt())",
+                        "return %T.fromValue(%L)",
                         returnType,
-                        PoetSymbols.platformComInteropClass,
-                        vtableIndex,
-                        argumentName,
+                        enumMethodWithInt32ArgAbiCall(underlyingType, vtableIndex, argumentName),
                     )
                     .build()
             }
@@ -2389,7 +2396,7 @@ internal class InterfaceTypeRenderer(
 
     private fun signatureParameterType(type: String, currentNamespace: String): String {
         return if (typeRegistry.isEnumType(type, currentNamespace)) {
-            "Int32"
+            enumSignatureType(typeRegistry, type, currentNamespace)
         } else {
             type
         }

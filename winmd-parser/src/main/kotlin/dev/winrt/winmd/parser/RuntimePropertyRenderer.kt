@@ -19,8 +19,10 @@ internal class RuntimePropertyRenderer(
     fun renderBackingProperty(property: WinMdProperty, currentNamespace: String): PropertySpec {
         val kotlinType = typeNameMapper.mapTypeName(property.type, currentNamespace)
         val defaultValue = when {
-            typeRegistry.isEnumType(property.type, currentNamespace) ->
-                CodeBlock.of("%T.fromValue(0)", kotlinType)
+            typeRegistry.isEnumType(property.type, currentNamespace) -> {
+                val underlyingType = enumUnderlyingTypeOrDefault(typeRegistry, property.type, currentNamespace)
+                CodeBlock.of("%T.fromValue(%L)", kotlinType, enumZeroLiteral(underlyingType))
+            }
             supportsProjectedObjectTypeName(property.type) ->
                 CodeBlock.of("%T(%T.NULL)", kotlinType, PoetSymbols.comPtrClass)
             else -> typeNameMapper.defaultValueFor(kotlinType)
@@ -207,11 +209,11 @@ internal class RuntimePropertyRenderer(
                 CodeBlock.of("if (pointer.isNull) null else %L", valueGetter)
             }
             enumType != null -> RuntimePropertyGetterPlan { getterVtableIndex ->
+                val underlyingType = enumUnderlyingTypeOrDefault(typeRegistry, property.type, currentNamespace)
                 CodeBlock.of(
-                    "%T.fromValue(%T.invokeUInt32Method(pointer, %L).getOrThrow().toInt())",
+                    "%T.fromValue(%L)",
                     enumType,
-                    PoetSymbols.platformComInteropClass,
-                    getterVtableIndex,
+                    enumGetterAbiCall(underlyingType, getterVtableIndex),
                 )
             }
             objectPropertyType != null -> RuntimePropertyGetterPlan { getterVtableIndex ->
@@ -224,10 +226,13 @@ internal class RuntimePropertyRenderer(
             }
         }
         val setterPlan = when {
-            enumType != null -> RuntimePropertySetterPlan(
-                statement = "%L",
-                args = { setterVtableIndex -> arrayOf(AbiCallCatalog.uint32Setter(setterVtableIndex)) },
-            )
+            enumType != null -> {
+                val underlyingType = enumUnderlyingTypeOrDefault(typeRegistry, property.type, currentNamespace)
+                RuntimePropertySetterPlan(
+                    statement = "%L",
+                    args = { setterVtableIndex -> arrayOf(enumSetterAbiCall(underlyingType, setterVtableIndex)) },
+                )
+            }
             objectPropertyType != null -> RuntimePropertySetterPlan(
                 statement = "%L",
                 args = { setterVtableIndex -> arrayOf(AbiCallCatalog.objectSetter(setterVtableIndex, "value")) },

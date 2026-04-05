@@ -151,7 +151,50 @@ class RuntimePropertyRendererTest {
             .replace(Regex("\\s+"), "")
 
         assertTrue(binding.contains("valstate:AsyncStatus"))
-        assertTrue(binding.contains("AsyncStatus.fromValue(PlatformComInterop.invokeUInt32Method(pointer,6).getOrThrow().toInt())"))
+        assertTrue(binding.contains("AsyncStatus.fromValue(PlatformComInterop.invokeInt32Method(pointer,6).getOrThrow())"))
+    }
+
+    @Test
+    fun renders_signed_enum_properties_as_int32_backed_accessors() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "QualifiedEnumCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Mode",
+                                    type = "Example.Contracts.Mode",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "Mode",
+                            kind = WinMdTypeKind.Enum,
+                            enumUnderlyingType = "Int32",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Example/Contracts/QualifiedEnumCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("varmode:Mode"))
+        assertTrue(binding.contains("Mode.fromValue(PlatformComInterop.invokeInt32Method(pointer,6).getOrThrow())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt32Setter(pointer,7,value.value).getOrThrow()"))
     }
 
     @Test
@@ -180,6 +223,7 @@ class RuntimePropertyRendererTest {
                             namespace = "Example.Contracts",
                             name = "Mode",
                             kind = WinMdTypeKind.Enum,
+                            enumUnderlyingType = "UInt32",
                         ),
                     ),
                 ),
@@ -192,7 +236,7 @@ class RuntimePropertyRendererTest {
             .replace(Regex("\\s+"), "")
 
         assertTrue(binding.contains("varmode:Mode"))
-        assertTrue(binding.contains("Mode.fromValue(PlatformComInterop.invokeUInt32Method(pointer,6).getOrThrow().toInt())"))
+        assertTrue(binding.contains("Mode.fromValue(PlatformComInterop.invokeUInt32Method(pointer,6).getOrThrow())"))
         assertTrue(binding.contains("PlatformComInterop.invokeUInt32Setter(pointer,7,value.value).getOrThrow()"))
     }
 
