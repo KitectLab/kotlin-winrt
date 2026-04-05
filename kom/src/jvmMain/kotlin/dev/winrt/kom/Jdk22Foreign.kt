@@ -3,6 +3,7 @@ package dev.winrt.kom
 import java.lang.foreign.Arena
 import java.lang.foreign.FunctionDescriptor
 import java.lang.foreign.Linker
+import java.lang.foreign.MemoryLayout
 import java.lang.foreign.MemorySegment
 import java.lang.foreign.ValueLayout
 import java.lang.foreign.SymbolLookup
@@ -72,20 +73,28 @@ internal object Jdk22Foreign {
     }
 
     fun unitMethodWithTwoInputsHandle(
-        firstLayout: ValueLayout,
-        secondLayout: ValueLayout,
+        firstLayout: MemoryLayout,
+        secondLayout: MemoryLayout,
     ): MethodHandle = downcallHandle(
         FunctionDescriptor.of(intLayout, addressLayout, firstLayout, secondLayout),
     )
 
     fun methodWithTwoInputsHandle(
-        firstLayout: ValueLayout,
-        secondLayout: ValueLayout,
+        firstLayout: MemoryLayout,
+        secondLayout: MemoryLayout,
     ): MethodHandle = downcallHandle(
         FunctionDescriptor.of(intLayout, addressLayout, firstLayout, secondLayout, addressLayout),
     )
 
-    fun methodWithArgumentsHandle(arguments: List<ValueLayout>): MethodHandle = downcallHandle(
+    fun unitMethodWithArgumentsHandle(arguments: List<MemoryLayout>): MethodHandle = downcallHandle(
+        FunctionDescriptor.of(
+            intLayout,
+            addressLayout,
+            *arguments.toTypedArray(),
+        ),
+    )
+
+    fun methodWithArgumentsHandle(arguments: List<MemoryLayout>): MethodHandle = downcallHandle(
         FunctionDescriptor.of(
             intLayout,
             addressLayout,
@@ -94,7 +103,7 @@ internal object Jdk22Foreign {
         ),
     )
 
-    fun composableMethodWithArgumentsHandle(arguments: List<ValueLayout>): MethodHandle = downcallHandle(
+    fun composableMethodWithArgumentsHandle(arguments: List<MemoryLayout>): MethodHandle = downcallHandle(
         FunctionDescriptor.of(
             intLayout,
             addressLayout,
@@ -103,6 +112,38 @@ internal object Jdk22Foreign {
             addressLayout,
         ),
     )
+
+    fun structLayout(layout: ComStructLayout): MemoryLayout =
+        MemoryLayout.structLayout(*layout.fields.map(::fieldLayout).toTypedArray())
+
+    private fun fieldLayout(fieldKind: ComStructFieldKind): MemoryLayout =
+        when (fieldKind) {
+            ComStructFieldKind.BOOLEAN,
+            ComStructFieldKind.INT8,
+            ComStructFieldKind.UINT8 -> ValueLayout.JAVA_BYTE
+            ComStructFieldKind.INT16,
+            ComStructFieldKind.UINT16 -> ValueLayout.JAVA_SHORT
+            ComStructFieldKind.CHAR16 -> ValueLayout.JAVA_CHAR
+            ComStructFieldKind.INT32,
+            ComStructFieldKind.UINT32 -> ValueLayout.JAVA_INT
+            ComStructFieldKind.INT64,
+            ComStructFieldKind.UINT64 -> ValueLayout.JAVA_LONG
+            ComStructFieldKind.FLOAT32 -> ValueLayout.JAVA_FLOAT
+            ComStructFieldKind.FLOAT64 -> ValueLayout.JAVA_DOUBLE
+            ComStructFieldKind.GUID -> MemoryLayout.structLayout(
+                ValueLayout.JAVA_INT,
+                ValueLayout.JAVA_SHORT,
+                ValueLayout.JAVA_SHORT,
+                ValueLayout.JAVA_BYTE,
+                ValueLayout.JAVA_BYTE,
+                ValueLayout.JAVA_BYTE,
+                ValueLayout.JAVA_BYTE,
+                ValueLayout.JAVA_BYTE,
+                ValueLayout.JAVA_BYTE,
+                ValueLayout.JAVA_BYTE,
+                ValueLayout.JAVA_BYTE,
+            )
+        }
 
     val queryInterfaceHandle: MethodHandle by lazy {
         downcallHandle(

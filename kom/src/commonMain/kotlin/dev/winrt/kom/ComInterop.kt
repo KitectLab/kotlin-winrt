@@ -51,6 +51,7 @@ interface ComInterop {
     fun addRef(instance: ComPtr): UInt
     fun release(instance: ComPtr): UInt
     fun invokeUnitMethod(instance: ComPtr, vtableIndex: Int): Result<Unit>
+    fun invokeUnitMethodWithArgs(instance: ComPtr, vtableIndex: Int, vararg arguments: Any): Result<Unit>
     fun invokeUnitMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit>
     fun invokeUnitMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Unit>
     fun invokeUnitMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit>
@@ -84,12 +85,19 @@ interface ComInterop {
     fun invokeHStringMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<HString>
     fun invokeHStringMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<HString>
     fun invokeObjectMethod(instance: ComPtr, vtableIndex: Int): Result<ComPtr>
+    fun invokeObjectMethodWithArgs(instance: ComPtr, vtableIndex: Int, vararg arguments: Any): Result<ComPtr>
     fun invokeObjectMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<ComPtr>
     fun invokeObjectMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ComPtr>
     fun invokeObjectMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ComPtr>
     fun invokeObjectMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<ComPtr>
     fun invokeObjectMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<ComPtr>
     fun invokeObjectMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<ComPtr>
+    fun invokeStructMethodWithArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        layout: ComStructLayout,
+        vararg arguments: Any,
+    ): Result<ComStructValue>
     fun invokeMethodWithObjectAndInt32Args(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: ComPtr, second: Int): Result<ComMethodResult>
     fun invokeMethodWithInt32AndObjectArgs(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: Int, second: ComPtr): Result<ComMethodResult>
     fun invokeMethodWithObjectAndInt64Args(instance: ComPtr, vtableIndex: Int, resultKind: ComMethodResultKind, first: ComPtr, second: Long): Result<ComMethodResult>

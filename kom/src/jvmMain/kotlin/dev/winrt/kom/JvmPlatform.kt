@@ -1,6 +1,7 @@
 package dev.winrt.kom
 
 import java.lang.foreign.Arena
+import java.lang.foreign.MemoryLayout
 import java.lang.foreign.MemorySegment
 import java.lang.foreign.ValueLayout
 import java.nio.charset.StandardCharsets
@@ -11,7 +12,7 @@ actual object PlatformRuntime {
     actual val ffiBackend: String = "jdk22-ffm"
 }
 
-private fun methodArgumentLayout(argument: Any): ValueLayout {
+private fun methodArgumentLayout(argument: Any): MemoryLayout {
     return when (argument) {
         is ComPtr,
         is String -> ValueLayout.ADDRESS
@@ -22,6 +23,7 @@ private fun methodArgumentLayout(argument: Any): ValueLayout {
         is ULong -> ValueLayout.JAVA_LONG
         is Float -> ValueLayout.JAVA_FLOAT
         is Double -> ValueLayout.JAVA_DOUBLE
+        is ComStructValue -> Jdk22Foreign.structLayout(argument.layout)
         else -> throw IllegalArgumentException("Unsupported COM argument type: ${argument::class.qualifiedName}")
     }
 }
@@ -44,6 +46,13 @@ private fun prepareAbiArguments(arguments: Array<out Any>): PreparedAbiArguments
             is UInt -> argument.toInt()
             is Boolean -> if (argument) 1 else 0
             is ULong -> argument.toLong()
+            is ComStructValue -> {
+                val arena = Arena.ofConfined()
+                releasers += { arena.close() }
+                val segment = arena.allocate(Jdk22Foreign.structLayout(argument.layout))
+                segment.copyFrom(MemorySegment.ofArray(argument.bytes))
+                segment
+            }
             is Int,
             is Long,
             is Float,
@@ -1535,6 +1544,15 @@ private object JvmPlatformComInterop : ComInterop {
         Jdk22Foreign.methodWithTwoInputsHandle(ValueLayout.ADDRESS, ValueLayout.ADDRESS)
     }
 
+    private fun allocateStructSegment(arena: Arena, layout: ComStructLayout): MemorySegment =
+        arena.allocate(Jdk22Foreign.structLayout(layout))
+
+    private fun readStructValue(segment: MemorySegment, layout: ComStructLayout): ComStructValue {
+        val bytes = ByteArray(layout.byteSize)
+        MemorySegment.ofArray(bytes).copyFrom(segment.asSlice(0, layout.byteSize.toLong()))
+        return ComStructValue(layout, bytes)
+    }
+
     private val addressInt32OutHandle by lazy {
         Jdk22Foreign.methodWithTwoInputsHandle(ValueLayout.ADDRESS, ValueLayout.JAVA_INT)
     }
@@ -1608,6 +1626,16 @@ private object JvmPlatformComInterop : ComInterop {
             vtableIndex = vtableIndex,
             operation = "invokeUnitMethod",
             handle = Jdk22Foreign.unitMethodHandle,
+        )
+    }
+
+    override fun invokeUnitMethodWithArgs(instance: ComPtr, vtableIndex: Int, vararg arguments: Any): Result<Unit> {
+        return JvmComMethodExecutor.invokeWithoutOut(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeUnitMethodWithArgs",
+            handle = Jdk22Foreign.unitMethodWithArgumentsHandle(arguments.map(::methodArgumentLayout)),
+            *arguments,
         )
     }
 
@@ -1860,6 +1888,18 @@ private object JvmPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeObjectMethodWithArgs(instance: ComPtr, vtableIndex: Int, vararg arguments: Any): Result<ComPtr> {
+        return JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeObjectMethodWithArgs",
+            handle = Jdk22Foreign.methodWithArgumentsHandle(arguments.map(::methodArgumentLayout)),
+            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
+            *arguments,
+        )
+    }
+
     override fun invokeObjectMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ComPtr> {
         return JvmComMethodExecutor.invokeWithOutSegment(
             instance = instance,
@@ -1904,6 +1944,23 @@ private object JvmPlatformComInterop : ComInterop {
             reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
             value,
         )
+
+    override fun invokeStructMethodWithArgs(
+        instance: ComPtr,
+        vtableIndex: Int,
+        layout: ComStructLayout,
+        vararg arguments: Any,
+    ): Result<ComStructValue> {
+        return JvmComMethodExecutor.invokeWithOutSegment(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeStructMethodWithArgs",
+            handle = Jdk22Foreign.methodWithArgumentsHandle(arguments.map(::methodArgumentLayout)),
+            allocator = { arena -> allocateStructSegment(arena, layout) },
+            reader = { segment -> readStructValue(segment, layout) },
+            *arguments,
+        )
+    }
 
     override fun invokeMethodWithObjectAndStringArgs(
         instance: ComPtr,
