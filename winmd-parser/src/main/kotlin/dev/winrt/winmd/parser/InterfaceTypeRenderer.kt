@@ -1679,6 +1679,7 @@ internal class InterfaceTypeRenderer(
         }
         plannedInt32FillArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
         plannedInt32ReceiveArrayInterfaceMethod(method)?.let { return it }
+        plannedInt64ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedUInt32ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedInt32PassArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
         plannedValueTypeAwareInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
@@ -1810,6 +1811,34 @@ internal class InterfaceTypeRenderer(
                 } ?: error("Unsupported UInt32 receive-array interface method: ${method.name}")
                 arrayOf(
                     uint32ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
+                )
+            },
+        )
+    }
+
+    private fun plannedInt64ReceiveArrayInterfaceMethod(method: WinMdMethod): PlannedInterfaceMethod? {
+        if (!method.isInt64ReceiveArrayReturnMethod()) {
+            return null
+        }
+        return PlannedInterfaceMethod(
+            statement = "return %L",
+            args = { method, currentNamespace ->
+                val abiArguments = int64ReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@int64ReceiveArrayAbiArguments null
+                    CodeBlock.of(
+                        "%L",
+                        unaryArgumentExpression(
+                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                            parameterType = parameter.type,
+                            category = parameterCategory,
+                            currentNamespace = currentNamespace,
+                        ),
+                    )
+                } ?: error("Unsupported Int64 receive-array interface method: ${method.name}")
+                arrayOf(
+                    int64ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
                 )
             },
         )

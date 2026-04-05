@@ -497,6 +497,42 @@ class InterfaceTypeRendererTest {
     }
 
     @Test
+    fun renders_int64_receive_array_interface_methods_with_scalar_inputs() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IVectorViewInt64",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "33333333-3333-3333-3333-333333333333",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetRange",
+                                    returnType = "Int64[]",
+                                    vtableIndex = 8,
+                                    parameters = listOf(WinMdParameter("startIndex", "UInt32")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/Collections/IVectorViewInt64.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fungetRange(startIndex:UInt32):Array<Int64>"))
+        assertTrue(binding.contains("invokeInt64ReceiveArrayMethod(pointer,8,startIndex.value).getOrThrow().map{Int64(it)}.toTypedArray()"))
+    }
+
+    @Test
     fun unsubscribes_event_slots_with_finally_to_close_delegate_handles() {
         val model = WinMdModel(
             files = emptyList(),
