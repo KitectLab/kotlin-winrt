@@ -1630,7 +1630,13 @@ internal class InterfaceTypeRenderer(
                 statement = "return %T(%L)",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.winRtBooleanClass, AbiCallCatalog.booleanMethodWithInt64(method.vtableIndex!!, "${argumentName}.value"))
+                    arrayOf(
+                        PoetSymbols.winRtBooleanClass,
+                        AbiCallCatalog.booleanMethodWithInt64(
+                            method.vtableIndex!!,
+                            int64AbiArgumentExpression(argumentName, method.parameters.single().type),
+                        ),
+                    )
                 },
             )
             MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
@@ -1678,7 +1684,13 @@ internal class InterfaceTypeRenderer(
                 statement = "return %T(%L)",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.int32Class, AbiCallCatalog.int32MethodWithInt64(method.vtableIndex!!, "${argumentName}.value"))
+                    arrayOf(
+                        PoetSymbols.int32Class,
+                        AbiCallCatalog.int32MethodWithInt64(
+                            method.vtableIndex!!,
+                            int64AbiArgumentExpression(argumentName, method.parameters.single().type),
+                        ),
+                    )
                 },
             )
             MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
@@ -1732,7 +1744,13 @@ internal class InterfaceTypeRenderer(
                 statement = "return %T(%L)",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.uint32Class, AbiCallCatalog.uint32MethodWithInt64(method.vtableIndex!!, "${argumentName}.value"))
+                    arrayOf(
+                        PoetSymbols.uint32Class,
+                        AbiCallCatalog.uint32MethodWithInt64(
+                            method.vtableIndex!!,
+                            int64AbiArgumentExpression(argumentName, method.parameters.single().type),
+                        ),
+                    )
                 },
             )
             MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
@@ -1887,7 +1905,13 @@ internal class InterfaceTypeRenderer(
                 statement = "return %T.parse(%L.toString())",
                 args = { method, _ ->
                     val argumentName = method.parameters.single().name.replaceFirstChar(Char::lowercase)
-                    arrayOf(PoetSymbols.guidValueClass, AbiCallCatalog.guidMethodWithInt64(method.vtableIndex!!, "${argumentName}.value"))
+                    arrayOf(
+                        PoetSymbols.guidValueClass,
+                        AbiCallCatalog.guidMethodWithInt64(
+                            method.vtableIndex!!,
+                            int64AbiArgumentExpression(argumentName, method.parameters.single().type),
+                        ),
+                    )
                 },
             )
             MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.OBJECT) -> PlannedInterfaceMethod(
@@ -2118,6 +2142,8 @@ internal class InterfaceTypeRenderer(
             MethodReturnKind.STRING,
             MethodReturnKind.FLOAT32,
             MethodReturnKind.FLOAT64,
+            MethodReturnKind.DATE_TIME,
+            MethodReturnKind.TIME_SPAN,
             MethodReturnKind.EVENT_REGISTRATION_TOKEN,
             MethodReturnKind.OBJECT,
             MethodReturnKind.UNIT -> plannedUnaryInterfaceMethodForReturnKind(
@@ -2152,6 +2178,8 @@ internal class InterfaceTypeRenderer(
 
     private fun unaryInterfaceStatement(returnKind: MethodReturnKind): String = when (returnKind) {
         MethodReturnKind.STRING -> "return %L"
+        MethodReturnKind.DATE_TIME,
+        MethodReturnKind.TIME_SPAN -> "return %L"
         MethodReturnKind.FLOAT32,
         MethodReturnKind.FLOAT64,
         MethodReturnKind.EVENT_REGISTRATION_TOKEN -> "return %T(%L)"
@@ -2168,6 +2196,17 @@ internal class InterfaceTypeRenderer(
         genericParameters: Set<String>,
     ): Array<Any> = when (returnKind) {
         MethodReturnKind.STRING -> arrayOf(HStringSupport.fromCall(abiCall))
+        MethodReturnKind.DATE_TIME -> arrayOf(
+            CodeBlock.of(
+                "%T.fromEpochSeconds((%L - %L) / 10000000L, ((%L - %L) %% 10000000L * 100).toInt())",
+                PoetSymbols.dateTimeClass,
+                abiCall,
+                WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
+                abiCall,
+                WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
+            ),
+        )
+        MethodReturnKind.TIME_SPAN -> arrayOf(CodeBlock.of("%T(%L)", PoetSymbols.timeSpanClass, abiCall))
         MethodReturnKind.FLOAT32 -> arrayOf(PoetSymbols.float32Class, abiCall)
         MethodReturnKind.FLOAT64 -> arrayOf(PoetSymbols.float64Class, abiCall)
         MethodReturnKind.EVENT_REGISTRATION_TOKEN -> arrayOf(PoetSymbols.eventRegistrationTokenClass, abiCall)
@@ -2189,6 +2228,8 @@ internal class InterfaceTypeRenderer(
                 MethodReturnKind.STRING -> AbiCallCatalog.hstringMethod(vtableIndex)
                 MethodReturnKind.FLOAT32 -> AbiCallCatalog.float32Method(vtableIndex)
                 MethodReturnKind.FLOAT64 -> AbiCallCatalog.float64Method(vtableIndex)
+                MethodReturnKind.DATE_TIME,
+                MethodReturnKind.TIME_SPAN -> AbiCallCatalog.int64Getter(vtableIndex)
                 MethodReturnKind.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.int64Getter(vtableIndex)
                 MethodReturnKind.OBJECT -> AbiCallCatalog.objectMethod(vtableIndex)
                 MethodReturnKind.UNIT -> AbiCallCatalog.unitMethod(vtableIndex)
@@ -2229,6 +2270,16 @@ internal class InterfaceTypeRenderer(
                 MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.float64MethodWithInt64(vtableIndex, loweredArgument)
                 MethodParameterCategory.OBJECT -> AbiCallCatalog.float64MethodWithObject(vtableIndex, loweredArgument)
             }
+            MethodReturnKind.DATE_TIME,
+            MethodReturnKind.TIME_SPAN -> when (parameterCategory) {
+                MethodParameterCategory.STRING -> AbiCallCatalog.int64MethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.INT32 -> AbiCallCatalog.int64MethodWithInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.int64MethodWithUInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.int64MethodWithBoolean(vtableIndex, loweredArgument)
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.int64MethodWithInt64(vtableIndex, loweredArgument)
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.int64MethodWithObject(vtableIndex, loweredArgument)
+            }
             MethodReturnKind.EVENT_REGISTRATION_TOKEN -> when (parameterCategory) {
                 MethodParameterCategory.STRING -> AbiCallCatalog.int64MethodWithString(vtableIndex, argumentName)
                 MethodParameterCategory.INT32 -> AbiCallCatalog.int64MethodWithInt32(vtableIndex, loweredArgument)
@@ -2252,7 +2303,7 @@ internal class InterfaceTypeRenderer(
                 MethodParameterCategory.UINT32 -> AbiCallCatalog.unitMethodWithUInt32(vtableIndex, "$argumentName.value")
                 MethodParameterCategory.BOOLEAN -> AbiCallCatalog.unitMethodWithInt32Expression(vtableIndex, "if ($loweredArgument) 1 else 0")
                 MethodParameterCategory.INT64,
-                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.unitMethodWithInt64(vtableIndex, argumentName)
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.unitMethodWithInt64Expression(vtableIndex, loweredArgument)
                 MethodParameterCategory.STRING -> AbiCallCatalog.unitMethodWithString(vtableIndex, argumentName)
                 MethodParameterCategory.OBJECT -> AbiCallCatalog.objectSetterExpression(vtableIndex, loweredArgument)
             }
@@ -2271,7 +2322,7 @@ internal class InterfaceTypeRenderer(
         MethodParameterCategory.UINT32,
         MethodParameterCategory.BOOLEAN,
         MethodParameterCategory.INT64,
-        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$argumentName.value"
+        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> int64AbiArgumentExpression(argumentName, parameterType)
         MethodParameterCategory.STRING -> argumentName
     }
 
@@ -2495,6 +2546,8 @@ internal class InterfaceTypeRenderer(
             "String" -> HStringSupport.fromCall(abiCall)
             "Float32" -> CodeBlock.of("%T(%L)", PoetSymbols.float32Class, abiCall)
             "Float64" -> CodeBlock.of("%T(%L)", PoetSymbols.float64Class, abiCall)
+            "DateTime" -> CodeBlock.of("%T.fromEpochSeconds((%L - %L) / 10000000L, ((%L - %L) %% 10000000L * 100).toInt())", PoetSymbols.dateTimeClass, abiCall, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET, abiCall, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET)
+            "TimeSpan" -> CodeBlock.of("%T(%L)", PoetSymbols.timeSpanClass, abiCall)
             "Boolean" -> CodeBlock.of("%T(%L)", PoetSymbols.winRtBooleanClass, abiCall)
             "Int32" -> CodeBlock.of("%T(%L)", PoetSymbols.int32Class, abiCall)
             "UInt32" -> CodeBlock.of("%T(%L)", PoetSymbols.uint32Class, abiCall)
@@ -2510,6 +2563,8 @@ internal class InterfaceTypeRenderer(
             "String" -> "HSTRING"
             "Float32" -> "FLOAT32"
             "Float64" -> "FLOAT64"
+            "DateTime" -> "INT64"
+            "TimeSpan" -> "INT64"
             "Boolean" -> "BOOLEAN"
             "Int32" -> "INT32"
             "UInt32" -> "UINT32"
@@ -2525,6 +2580,8 @@ internal class InterfaceTypeRenderer(
             "String" -> PoetSymbols.requireHStringMember
             "Float32" -> PoetSymbols.requireFloat32Member
             "Float64" -> PoetSymbols.requireFloat64Member
+            "DateTime" -> PoetSymbols.requireInt64Member
+            "TimeSpan" -> PoetSymbols.requireInt64Member
             "Boolean" -> PoetSymbols.requireBooleanMember
             "Int32" -> PoetSymbols.requireInt32Member
             "UInt32" -> PoetSymbols.requireUInt32Member

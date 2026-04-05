@@ -4054,6 +4054,93 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_interface_and_runtime_methods_with_datetime_and_timespan_parameters() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "IChronoHost",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            methods = listOf(
+                                WinMdMethod(name = "GetDateTime", returnType = "DateTime", vtableIndex = 6),
+                                WinMdMethod(
+                                    name = "SetDateTime",
+                                    returnType = "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter("value", "DateTime")),
+                                ),
+                                WinMdMethod(name = "GetLifetime", returnType = "TimeSpan", vtableIndex = 8),
+                                WinMdMethod(
+                                    name = "SetLifetime",
+                                    returnType = "Unit",
+                                    vtableIndex = 9,
+                                    parameters = listOf(WinMdParameter("value", "TimeSpan")),
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "ChronoHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(name = "GetDateTime", returnType = "DateTime", vtableIndex = 6),
+                                WinMdMethod(
+                                    name = "SetDateTime",
+                                    returnType = "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter("value", "DateTime")),
+                                ),
+                                WinMdMethod(name = "GetLifetime", returnType = "TimeSpan", vtableIndex = 8),
+                                WinMdMethod(
+                                    name = "SetLifetime",
+                                    returnType = "Unit",
+                                    vtableIndex = 9,
+                                    parameters = listOf(WinMdParameter("value", "TimeSpan")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val interfaceBinding = files.first { it.relativePath == "Example/Runtime/IChronoHost.kt" }.content.replace(Regex("\\s+"), "")
+        val runtimeBinding = files.first { it.relativePath == "Example/Runtime/ChronoHost.kt" }.content.replace(Regex("\\s+"), "")
+
+        assertTrue(interfaceBinding.contains("fungetDateTime():Instant"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeInt64Getter(pointer,6).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("Instant.fromEpochSeconds(("))
+        assertTrue(interfaceBinding.contains("funsetDateTime(value:Instant)"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer,7,"))
+        assertTrue(interfaceBinding.contains("value.epochSeconds*10000000L"))
+        assertTrue(interfaceBinding.contains("value.nanosecondsOfSecond/100"))
+        assertTrue(interfaceBinding.contains("fungetLifetime():Duration"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeInt64Getter(pointer,8).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("funsetLifetime(value:Duration)"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer,9,"))
+        assertTrue(interfaceBinding.contains("value.inWholeNanoseconds/100"))
+
+        assertTrue(runtimeBinding.contains("fungetDateTime():Instant"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeInt64Getter(pointer,6).getOrThrow()"))
+        assertTrue(runtimeBinding.contains("Instant.fromEpochSeconds(("))
+        assertTrue(runtimeBinding.contains("funsetDateTime(value:Instant)"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer,7,"))
+        assertTrue(runtimeBinding.contains("value.epochSeconds*10000000L"))
+        assertTrue(runtimeBinding.contains("value.nanosecondsOfSecond/100"))
+        assertTrue(runtimeBinding.contains("fungetLifetime():Duration"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeInt64Getter(pointer,8).getOrThrow()"))
+        assertTrue(runtimeBinding.contains("funsetLifetime(value:Duration)"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer,9,"))
+        assertTrue(runtimeBinding.contains("value.inWholeNanoseconds/100"))
+    }
+
+    @Test
     fun generates_runtime_methods_with_string_return_values() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

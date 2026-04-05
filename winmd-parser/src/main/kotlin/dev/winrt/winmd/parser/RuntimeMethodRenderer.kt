@@ -196,7 +196,8 @@ internal class RuntimeMethodRenderer(
                                     MethodParameterCategory.UINT32,
                                     MethodParameterCategory.BOOLEAN,
                                     MethodParameterCategory.INT64,
-                                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "${parameterBindings[0].name}.value"
+                                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN ->
+                                        int64AbiArgumentExpression(parameterBindings[0].name, parameterBindings[0].type)
                                     else -> parameterBindings[0].name
                                 },
                                 when (it[1]) {
@@ -206,7 +207,8 @@ internal class RuntimeMethodRenderer(
                                     MethodParameterCategory.UINT32,
                                     MethodParameterCategory.BOOLEAN,
                                     MethodParameterCategory.INT64,
-                                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "${parameterBindings[1].name}.value"
+                                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN ->
+                                        int64AbiArgumentExpression(parameterBindings[1].name, parameterBindings[1].type)
                                     else -> parameterBindings[1].name
                                 },
                             ),
@@ -255,7 +257,13 @@ internal class RuntimeMethodRenderer(
                 nullPointerReturn = { PlannedStatement("return %T.FALSE", arrayOf(PoetSymbols.winRtBooleanClass)) },
                 returnStatement = "return %T(%L)",
                 statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.winRtBooleanClass, AbiCallCatalog.booleanMethodWithInt64(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
+                    arrayOf(
+                        PoetSymbols.winRtBooleanClass,
+                        AbiCallCatalog.booleanMethodWithInt64(
+                            method.vtableIndex!!,
+                            int64AbiArgumentExpression(parameterBindings.single().name, parameterBindings.single().type),
+                        ),
+                    )
                 },
             )
             MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
@@ -304,7 +312,13 @@ internal class RuntimeMethodRenderer(
                 nullPointerReturn = { PlannedStatement("return %T(0)", arrayOf(PoetSymbols.int32Class)) },
                 returnStatement = "return %T(%L)",
                 statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.int32Class, AbiCallCatalog.int32MethodWithInt64(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
+                    arrayOf(
+                        PoetSymbols.int32Class,
+                        AbiCallCatalog.int32MethodWithInt64(
+                            method.vtableIndex!!,
+                            int64AbiArgumentExpression(parameterBindings.single().name, parameterBindings.single().type),
+                        ),
+                    )
                 },
             )
             MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
@@ -437,7 +451,13 @@ internal class RuntimeMethodRenderer(
                 nullPointerReturn = { PlannedStatement("return %T(0u)", arrayOf(PoetSymbols.uint32Class)) },
                 returnStatement = "return %T(%L)",
                 statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.uint32Class, AbiCallCatalog.uint32MethodWithInt64(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
+                    arrayOf(
+                        PoetSymbols.uint32Class,
+                        AbiCallCatalog.uint32MethodWithInt64(
+                            method.vtableIndex!!,
+                            int64AbiArgumentExpression(parameterBindings.single().name, parameterBindings.single().type),
+                        ),
+                    )
                 },
             )
             MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
@@ -582,7 +602,13 @@ internal class RuntimeMethodRenderer(
                 nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
                 returnStatement = "return %T.parse(%L.toString())",
                 statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.guidValueClass, AbiCallCatalog.guidMethodWithInt64(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
+                    arrayOf(
+                        PoetSymbols.guidValueClass,
+                        AbiCallCatalog.guidMethodWithInt64(
+                            method.vtableIndex!!,
+                            int64AbiArgumentExpression(parameterBindings.single().name, parameterBindings.single().type),
+                        ),
+                    )
                 },
             )
             MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
@@ -965,7 +991,7 @@ internal class RuntimeMethodRenderer(
                 MethodParameterCategory.UINT32 -> AbiCallCatalog.unitMethodWithUInt32(vtableIndex, "$argumentName.value")
                 MethodParameterCategory.BOOLEAN -> AbiCallCatalog.unitMethodWithInt32Expression(vtableIndex, "if ($loweredArgument) 1 else 0")
                 MethodParameterCategory.INT64,
-                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.unitMethodWithInt64(vtableIndex, argumentName)
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.unitMethodWithInt64Expression(vtableIndex, loweredArgument)
                 MethodParameterCategory.STRING -> AbiCallCatalog.unitMethodWithString(vtableIndex, argumentName)
                 MethodParameterCategory.OBJECT -> AbiCallCatalog.objectSetterExpression(vtableIndex, loweredArgument)
             }
@@ -983,7 +1009,7 @@ internal class RuntimeMethodRenderer(
         MethodParameterCategory.UINT32,
         MethodParameterCategory.BOOLEAN,
         MethodParameterCategory.INT64,
-        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "${binding.name}.value"
+        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> int64AbiArgumentExpression(binding.name, binding.type)
         MethodParameterCategory.STRING -> binding.name
     }
 

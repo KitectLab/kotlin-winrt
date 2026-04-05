@@ -180,6 +180,9 @@ internal object AbiCallCatalog {
     fun unitMethodWithInt64(vtableIndex: Int, argumentName: String): CodeBlock =
         unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.INT64, vtableIndex, "${argumentName}.value")
 
+    fun unitMethodWithInt64Expression(vtableIndex: Int, argumentExpression: Any): CodeBlock =
+        unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.INT64, vtableIndex, argumentExpression)
+
     fun unitMethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
         unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.STRING, vtableIndex, argumentName)
 
@@ -406,7 +409,7 @@ internal object AbiCallCatalog {
 
     fun objectMethodWithObjectAndString(
         vtableIndex: Int,
-        firstArgumentExpression: String,
+        firstArgumentExpression: Any,
         secondArgumentName: String,
         pointerExpression: String = "pointer",
     ): CodeBlock = CodeBlock.of(
@@ -421,7 +424,7 @@ internal object AbiCallCatalog {
     fun objectMethodWithStringAndObject(
         vtableIndex: Int,
         firstArgumentName: String,
-        secondArgumentExpression: String,
+        secondArgumentExpression: Any,
         pointerExpression: String = "pointer",
     ): CodeBlock = CodeBlock.of(
         "%T.invokeMethodWithStringAndObjectArgs($pointerExpression, $vtableIndex, %T.OBJECT, %N, %L).getOrThrow().%M()",
@@ -436,7 +439,7 @@ internal object AbiCallCatalog {
         vtableIndex: Int,
         resultKindName: String,
         extractor: Any,
-        firstArgumentExpression: String,
+        firstArgumentExpression: Any,
         secondArgumentName: String,
         pointerExpression: String = "pointer",
     ): CodeBlock = CodeBlock.of(
@@ -454,7 +457,7 @@ internal object AbiCallCatalog {
         resultKindName: String,
         extractor: Any,
         firstArgumentName: String,
-        secondArgumentExpression: String,
+        secondArgumentExpression: Any,
         pointerExpression: String = "pointer",
     ): CodeBlock = CodeBlock.of(
         "%T.invokeMethodWithStringAndObjectArgs($pointerExpression, $vtableIndex, %T.%L, %N, %L).getOrThrow().%M()",
@@ -470,8 +473,8 @@ internal object AbiCallCatalog {
         vtableIndex: Int,
         resultKindName: String,
         extractor: Any,
-        firstArgumentExpression: String,
-        secondArgumentExpression: String,
+        firstArgumentExpression: Any,
+        secondArgumentExpression: Any,
         pointerExpression: String = "pointer",
     ): CodeBlock = CodeBlock.of(
         "%T.invokeMethodWithTwoObjectArgs($pointerExpression, $vtableIndex, %T.%L, %L, %L).getOrThrow().%M()",
@@ -829,7 +832,7 @@ internal object AbiCallCatalog {
     fun guidMethodWithBoolean(vtableIndex: Int, argumentExpression: String): CodeBlock =
         unaryCall(MethodAbiToken.GUID, MethodParameterAbiToken.BOOLEAN, vtableIndex, argumentExpression)
 
-    fun guidMethodWithObject(vtableIndex: Int, argumentExpression: String): CodeBlock =
+    fun guidMethodWithObject(vtableIndex: Int, argumentExpression: Any): CodeBlock =
         singleArgumentCall("invokeGuidMethodWithObjectArg", vtableIndex, argumentExpression)
 
     fun guidMethodWithInt64(vtableIndex: Int, argumentExpression: String): CodeBlock =

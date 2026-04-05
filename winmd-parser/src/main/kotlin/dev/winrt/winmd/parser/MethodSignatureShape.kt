@@ -264,6 +264,8 @@ internal fun methodParameterCategory(
         canonicalType == "String" -> MethodParameterCategory.STRING
         canonicalType == "Int32" -> MethodParameterCategory.INT32
         canonicalType == "Boolean" -> MethodParameterCategory.BOOLEAN
+        canonicalType == "DateTime" -> MethodParameterCategory.INT64
+        canonicalType == "TimeSpan" -> MethodParameterCategory.INT64
         canonicalType == "Int64" -> MethodParameterCategory.INT64
         canonicalType == "UInt32" -> MethodParameterCategory.UINT32
         canonicalType == "EventRegistrationToken" -> MethodParameterCategory.EVENT_REGISTRATION_TOKEN
