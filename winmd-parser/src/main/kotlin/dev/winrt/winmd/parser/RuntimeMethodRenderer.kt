@@ -245,9 +245,17 @@ internal class RuntimeMethodRenderer(
                 PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}"))
             },
             returnStatement = "return %L",
-            statementArgs = { method, _, _ ->
+            statementArgs = { method, currentNamespace, parameterBindings ->
+                val abiArguments = int32ReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterIndex = method.parameters.indexOf(parameter)
+                    val binding = parameterBindings[parameterIndex]
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsRuntimeObjectType(typeName, currentNamespace) } ?: return@int32ReceiveArrayAbiArguments null
+                    CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, currentNamespace))
+                } ?: error("Unsupported Int32 receive-array runtime method: ${method.name}")
                 arrayOf(
-                    int32ReceiveArrayReturnExpression(method.vtableIndex!!),
+                    int32ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
                 )
             },
         )

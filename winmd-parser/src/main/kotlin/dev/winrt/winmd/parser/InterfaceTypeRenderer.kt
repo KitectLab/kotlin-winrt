@@ -1764,9 +1764,23 @@ internal class InterfaceTypeRenderer(
         }
         return PlannedInterfaceMethod(
             statement = "return %L",
-            args = { method, _ ->
+            args = { method, currentNamespace ->
+                val abiArguments = int32ReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@int32ReceiveArrayAbiArguments null
+                    CodeBlock.of(
+                        "%L",
+                        unaryArgumentExpression(
+                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                            parameterType = parameter.type,
+                            category = parameterCategory,
+                            currentNamespace = currentNamespace,
+                        ),
+                    )
+                } ?: error("Unsupported Int32 receive-array interface method: ${method.name}")
                 arrayOf(
-                    int32ReceiveArrayReturnExpression(method.vtableIndex!!),
+                    int32ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
                 )
             },
         )

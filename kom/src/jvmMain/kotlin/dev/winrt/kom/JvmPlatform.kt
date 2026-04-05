@@ -12,7 +12,7 @@ actual object PlatformRuntime {
     actual val ffiBackend: String = "jdk22-ffm"
 }
 
-private fun methodArgumentLayout(argument: Any): MemoryLayout {
+internal fun methodArgumentLayout(argument: Any): MemoryLayout {
     return when (argument) {
         is ComPtr,
         is String,
@@ -34,12 +34,12 @@ private fun methodArgumentLayout(argument: Any): MemoryLayout {
     }
 }
 
-private data class PreparedAbiArguments(
+internal data class PreparedAbiArguments(
     val values: List<Any>,
     val close: () -> Unit,
 )
 
-private fun prepareAbiArguments(arguments: Array<out Any>): PreparedAbiArguments {
+internal fun prepareAbiArguments(arguments: Array<out Any>): PreparedAbiArguments {
     val releasers = mutableListOf<() -> Unit>()
     val values = arguments.map { argument ->
         when (argument) {

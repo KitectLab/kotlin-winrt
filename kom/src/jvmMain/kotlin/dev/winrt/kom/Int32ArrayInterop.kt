@@ -2,19 +2,9 @@ package dev.winrt.kom
 
 import java.lang.foreign.Arena
 import java.lang.foreign.FunctionDescriptor
+import java.lang.foreign.MemoryLayout
 import java.lang.foreign.MemorySegment
 import java.lang.foreign.ValueLayout
-
-private val int32ReceiveArrayMethodHandle by lazy {
-    Jdk22Foreign.downcallHandle(
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS,
-        ),
-    )
-}
 
 private val coTaskMemFreeHandle by lazy {
     Jdk22Foreign.downcall(
@@ -23,18 +13,33 @@ private val coTaskMemFreeHandle by lazy {
     )
 }
 
-actual fun invokeInt32ReceiveArrayMethod(instance: ComPtr, vtableIndex: Int): Result<IntArray> {
+private fun int32ReceiveArrayMethodHandle(argumentLayouts: List<MemoryLayout>) = Jdk22Foreign.downcallHandle(
+    FunctionDescriptor.of(
+        ValueLayout.JAVA_INT,
+        ValueLayout.ADDRESS,
+        *argumentLayouts.toTypedArray(),
+        ValueLayout.ADDRESS,
+        ValueLayout.ADDRESS,
+    ),
+)
+
+actual fun invokeInt32ReceiveArrayMethod(instance: ComPtr, vtableIndex: Int): Result<IntArray> =
+    invokeInt32ReceiveArrayMethod(instance, vtableIndex, *emptyArray<Any>())
+
+actual fun invokeInt32ReceiveArrayMethod(instance: ComPtr, vtableIndex: Int, vararg arguments: Any): Result<IntArray> {
     return runCatching {
         require(!instance.isNull) { "Method invocation requires a non-null COM pointer" }
         val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
         Arena.ofConfined().use { arena ->
             val sizeSegment = arena.allocate(ValueLayout.JAVA_INT)
             val dataSegment = arena.allocate(ValueLayout.ADDRESS)
+            val preparedArguments = prepareAbiArguments(arguments)
             var dataPointer = MemorySegment.NULL
             try {
                 val hresult = HResult(
-                    int32ReceiveArrayMethodHandle.bindTo(function).invokeWithArguments(
+                    int32ReceiveArrayMethodHandle(arguments.map(::methodArgumentLayout)).bindTo(function).invokeWithArguments(
                         Jdk22Foreign.pointerOf(instance),
+                        *preparedArguments.values.toTypedArray(),
                         sizeSegment,
                         dataSegment,
                     ) as Int,
@@ -57,6 +62,7 @@ actual fun invokeInt32ReceiveArrayMethod(instance: ComPtr, vtableIndex: Int): Re
                     valuesSegment.getAtIndex(ValueLayout.JAVA_INT, index.toLong())
                 }
             } finally {
+                preparedArguments.close()
                 if (dataPointer.address() != 0L) {
                     coTaskMemFreeHandle.invokeWithArguments(dataPointer)
                 }
