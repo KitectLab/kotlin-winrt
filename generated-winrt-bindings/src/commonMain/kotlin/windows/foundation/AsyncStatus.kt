@@ -3,15 +3,15 @@ package windows.foundation
 import kotlin.Int
 
 public enum class AsyncStatus(
-  public val `value`: Int,
+  public val value: Int,
 ) {
-  Started(0),
-  Completed(1),
   Canceled(2),
+  Completed(1),
   Error(3),
+  Started(0),
   ;
 
   public companion object {
-    public fun fromValue(`value`: Int): AsyncStatus = entries.first { it.value == value }
+    public fun fromValue(value: Int): AsyncStatus = entries.first { it.value == value }
   }
 }
