@@ -5317,7 +5317,7 @@ class KotlinBindingGeneratorTest {
             it.relativePath == "Windows/Foundation/Collections/IVector`1.kt"
         }.content
 
-        assertTrue(binding.contains("open class `IVector`1`<T>("))
+        assertTrue(binding.contains("open class IVector<T>("))
         assertTrue(binding.contains("fun signatureOf(arg0Signature: String): String"))
         assertTrue(binding.contains("fun projectionTypeKeyOf(arg0ProjectionTypeKey: String): String"))
         assertTrue(binding.contains("kotlin.collections.MutableList<"))
@@ -5337,6 +5337,47 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("inspectable.projectInterface(metadataOf("))
         assertTrue(binding.contains("arg0ProjectionTypeKey"))
         assertTrue(binding.contains("IVector"))
+    }
+
+    @Test
+    fun generates_type_parameters_for_open_generic_delegates() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "TypedEventHandler`2",
+                            kind = WinMdTypeKind.Delegate,
+                            guid = "00000000-0000-0000-0000-000000000002",
+                            genericParameters = listOf("TSender", "TResult"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Invoke",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("sender", "TSender"),
+                                        WinMdParameter("args", "TResult"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/TypedEventHandler`2.kt" }
+            .content
+        val normalizedBinding = binding.replace(Regex("\\s+"), "")
+
+        assertTrue(normalizedBinding.contains("typealiasTypedEventHandlerHandler<TSender,TResult>=(TSender,TResult)->Unit"))
+        assertTrue(normalizedBinding.contains("openclassTypedEventHandler<TSender,TResult>("))
+        assertTrue(normalizedBinding.contains("fun<TSender,TResult>from(inspectable:Inspectable):TypedEventHandler<TSender,TResult>"))
+        assertTrue(normalizedBinding.contains("inspectable.projectInterface(this,::TypedEventHandler)"))
     }
 
     @Test

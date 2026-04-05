@@ -21,7 +21,7 @@ internal class ValueTypeRenderer(
     }
 
     private fun renderStruct(type: WinMdType): TypeSpec {
-        return TypeSpec.classBuilder(type.name)
+        return TypeSpec.classBuilder(projectedDeclarationSimpleName(type.name))
             .addModifiers(KModifier.DATA)
             .primaryConstructor(
                 FunSpec.constructorBuilder().apply {
@@ -61,7 +61,8 @@ internal class ValueTypeRenderer(
     }
 
     private fun renderEnum(type: WinMdType): TypeSpec {
-        return TypeSpec.enumBuilder(type.name)
+        val declarationName = projectedDeclarationSimpleName(type.name)
+        return TypeSpec.enumBuilder(declarationName)
             .primaryConstructor(
                 FunSpec.constructorBuilder()
                     .addParameter("value", Int::class)
@@ -87,7 +88,7 @@ internal class ValueTypeRenderer(
                     .addFunction(
                         FunSpec.builder("fromValue")
                             .addParameter("value", Int::class)
-                            .returns(ClassName.bestGuess(type.name))
+                            .returns(ClassName.bestGuess(declarationName))
                             .addStatement("return entries.first { it.value == value }")
                             .build(),
                     )

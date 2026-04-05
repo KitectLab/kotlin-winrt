@@ -73,7 +73,7 @@ internal class RuntimeTypeRenderer(
             ?.takeUnless { it == "System.Object" }
             ?.let { typeNameMapper.mapTypeName(it, type.namespace) }
             ?: PoetSymbols.inspectableClass
-        val builder = TypeSpec.classBuilder(type.name)
+        val builder = TypeSpec.classBuilder(projectedDeclarationSimpleName(type.name))
             .addModifiers(KModifier.OPEN)
             .primaryConstructor(pointerConstructor())
             .superclass(superclass)

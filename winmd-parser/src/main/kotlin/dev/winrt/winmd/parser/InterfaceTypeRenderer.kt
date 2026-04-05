@@ -43,10 +43,11 @@ internal class InterfaceTypeRenderer(
     }
 
     private fun renderInterfaceClass(type: WinMdType): TypeSpec {
-        val rawTypeClass = ClassName(type.namespace.lowercase(), type.name)
+        val rawTypeClass = projectedDeclarationClassName(type.namespace, type.name)
         val typeVariables = type.genericParameters.map { TypeVariableName(it) }
         val typeClass = if (typeVariables.isEmpty()) rawTypeClass else rawTypeClass.parameterizedBy(typeVariables)
         val genericParameters = type.genericParameters.toSet()
+        val declarationName = projectedDeclarationSimpleName(type.name)
         val directBaseInterface = directBaseInterface(type, type.namespace)
         val inheritedSignatureKeys = inheritedSignatureKeys(directBaseInterface)
         val inheritedPropertyNames = inheritedPropertyNames(directBaseInterface)
@@ -55,7 +56,7 @@ internal class InterfaceTypeRenderer(
             renderProperty(property, type.namespace, genericParameters)?.let { rendered -> property.name to rendered }
         }
         val projectedPropertyNames = renderedProperties.mapTo(linkedSetOf()) { it.first }
-        return TypeSpec.classBuilder(type.name)
+        return TypeSpec.classBuilder(declarationName)
             .addModifiers(KModifier.OPEN)
             .apply {
                 if (
@@ -181,11 +182,11 @@ internal class InterfaceTypeRenderer(
                             addFunction(
                                 FunSpec.builder("from")
                                     .apply {
-                                        typeVariables.forEach(::addTypeVariable)
+                                typeVariables.forEach(::addTypeVariable)
                                     }
                                     .returns(typeClass)
                                     .addParameter("inspectable", PoetSymbols.inspectableClass)
-                                    .addStatement("return inspectable.%M(this, ::%L)", PoetSymbols.projectInterfaceMember, type.name)
+                                    .addStatement("return inspectable.%M(this, ::%L)", PoetSymbols.projectInterfaceMember, declarationName)
                                     .build(),
                             )
                             addFunction(
@@ -217,6 +218,7 @@ internal class InterfaceTypeRenderer(
     private fun renderInterfaceContract(type: WinMdType): TypeSpec {
         val typeVariables = type.genericParameters.map { TypeVariableName(it) }
         val genericParameters = type.genericParameters.toSet()
+        val declarationName = projectedDeclarationSimpleName(type.name)
         val directBaseInterface = directBaseInterface(type, type.namespace)
         val inheritedSignatureKeys = inheritedSignatureKeys(directBaseInterface)
         val inheritedPropertyNames = inheritedPropertyNames(directBaseInterface)
@@ -226,7 +228,7 @@ internal class InterfaceTypeRenderer(
                 property.name.takeIf { renderInterfaceContractProperty(property, type.namespace, genericParameters) != null }
             }
             .toSet()
-        return TypeSpec.interfaceBuilder(type.name)
+        return TypeSpec.interfaceBuilder(declarationName)
             .apply {
                 if (typeRegistry.isVersionedRuntimeClassInterface(type.name, type.namespace)) {
                     addModifiers(KModifier.INTERNAL)
@@ -261,7 +263,10 @@ internal class InterfaceTypeRenderer(
 
     private fun renderInterfaceProjection(type: WinMdType): TypeSpec {
         val genericParameters = type.genericParameters.toSet()
-        val projectionName = "${type.name}Projection"
+        val typeVariables = type.genericParameters.map { TypeVariableName(it) }
+        val rawTypeClass = projectedDeclarationClassName(type.namespace, type.name)
+        val typeClass = if (typeVariables.isEmpty()) rawTypeClass else rawTypeClass.parameterizedBy(typeVariables)
+        val projectionName = "${projectedDeclarationSimpleName(type.name)}Projection"
         val projectedProperties = allInterfaceProperties(type)
         val projectedPropertyNames = projectedProperties.asSequence()
             .mapNotNull { property ->
@@ -270,9 +275,12 @@ internal class InterfaceTypeRenderer(
             .toSet()
         return TypeSpec.classBuilder(projectionName)
             .addModifiers(KModifier.PRIVATE)
+            .apply {
+                typeVariables.forEach(::addTypeVariable)
+            }
             .primaryConstructor(pointerConstructor())
             .superclass(PoetSymbols.winRtInterfaceProjectionClass)
-            .addSuperinterface(ClassName(type.namespace.lowercase(), type.name))
+            .addSuperinterface(typeClass)
             .addSuperclassConstructorParameter("pointer")
             .addProperties(
                 projectedProperties.mapNotNull {
@@ -301,8 +309,9 @@ internal class InterfaceTypeRenderer(
     }
 
     private fun renderInterfaceCompanion(type: WinMdType, typeVariables: List<TypeVariableName>): TypeSpec {
-        val rawTypeClass = ClassName(type.namespace.lowercase(), type.name)
+        val rawTypeClass = projectedDeclarationClassName(type.namespace, type.name)
         val typeClass = if (typeVariables.isEmpty()) rawTypeClass else rawTypeClass.parameterizedBy(typeVariables)
+        val declarationName = projectedDeclarationSimpleName(type.name)
         return TypeSpec.companionObjectBuilder()
             .addSuperinterface(PoetSymbols.winRtInterfaceMetadataClass)
             .addProperty(overrideStringProperty("qualifiedName", "${type.namespace}.${type.name}"))
@@ -327,7 +336,7 @@ internal class InterfaceTypeRenderer(
                             }
                             .returns(typeClass)
                             .addParameter("inspectable", PoetSymbols.inspectableClass)
-                            .addStatement("return inspectable.%M(this, ::%LProjection)", PoetSymbols.projectInterfaceMember, type.name)
+                            .addStatement("return inspectable.%M(this, ::%LProjection)", PoetSymbols.projectInterfaceMember, declarationName)
                             .build(),
                     )
                     addFunction(
@@ -827,7 +836,7 @@ internal class InterfaceTypeRenderer(
             .addStatement(
                 "return inspectable.%M(metadataOf($metadataArgumentNames), ::%L)",
                 PoetSymbols.projectInterfaceMember,
-                type.name,
+                projectedDeclarationSimpleName(type.name),
             )
             .build()
     }

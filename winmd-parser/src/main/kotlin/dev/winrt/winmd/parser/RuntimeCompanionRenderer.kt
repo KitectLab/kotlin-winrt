@@ -25,9 +25,12 @@ internal class RuntimeCompanionRenderer(
     private val asyncMethodRuleRegistry: AsyncMethodRuleRegistry,
     private val winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     private val kotlinCollectionProjectionMapper: KotlinCollectionProjectionMapper,
+    private val projectedObjectArgumentLowering: ProjectedObjectArgumentLowering =
+        ProjectedObjectArgumentLowering(typeRegistry, winRtSignatureMapper, winRtProjectionTypeMapper),
 ) {
     fun render(type: WinMdType): TypeSpec {
-        val typeClass = ClassName(type.namespace.lowercase(), type.name)
+        val declarationName = projectedDeclarationSimpleName(type.name)
+        val typeClass = projectedDeclarationClassName(type.namespace, type.name)
         val activationKind = typeRegistry.runtimeClassActivationKind(type)
         val builder = TypeSpec.companionObjectBuilder()
             .addSuperinterface(PoetSymbols.winRtRuntimeClassMetadataClass)
@@ -54,7 +57,7 @@ internal class RuntimeCompanionRenderer(
             builder.addFunction(
                 FunSpec.builder(type.activationFunctionName)
                     .returns(typeClass)
-                    .addStatement("return %T.activate(this, ::%L)", PoetSymbols.winRtRuntimeClass, type.name)
+                    .addStatement("return %T.activate(this, ::%L)", PoetSymbols.winRtRuntimeClass, declarationName)
                     .build(),
             )
         }
@@ -324,7 +327,7 @@ internal class RuntimeCompanionRenderer(
                     }
                     members += FunSpec.builder(helperName)
                         .addModifiers(KModifier.PRIVATE)
-                        .returns(ClassName(type.namespace.lowercase(), type.name))
+                        .returns(projectedDeclarationClassName(type.namespace, type.name))
                         .addParameters(parameters)
                         .addStatement(
                             "return %N.%L(%L)",
@@ -605,7 +608,7 @@ internal class RuntimeCompanionRenderer(
 
         return FunSpec.builder(helperName)
             .addModifiers(KModifier.PRIVATE)
-            .returns(ClassName(type.namespace.lowercase(), type.name))
+            .returns(projectedDeclarationClassName(type.namespace, type.name))
             .addParameters(
                 constructorParameters.map { parameter ->
                     ParameterSpec.builder(parameter.name, exposedTypeName(parameter.type, type.namespace)).build()
@@ -630,7 +633,7 @@ internal class RuntimeCompanionRenderer(
         parameterName: String,
         parameterType: String,
         currentNamespace: String,
-    ): String {
+    ): Any {
         return when (parameterType) {
             "String" -> parameterName
             "Int32",
@@ -642,7 +645,7 @@ internal class RuntimeCompanionRenderer(
             "Float64",
             "EventRegistrationToken" -> "$parameterName.value"
             else -> if (supportsComposableFactoryObjectType(parameterType, currentNamespace)) {
-                "$parameterName.pointer"
+                projectedObjectArgumentLowering.expression(parameterName, parameterType, currentNamespace)
             } else {
                 parameterName
             }
@@ -660,13 +663,7 @@ internal class RuntimeCompanionRenderer(
     }
 
     private fun supportsComposableFactoryObjectType(typeName: String, currentNamespace: String): Boolean {
-        return typeName == "Object" ||
-            typeRegistry.findType(typeName, currentNamespace)?.kind in setOf(
-                dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
-                dev.winrt.winmd.plugin.WinMdTypeKind.Delegate,
-                dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass,
-            ) ||
-            supportsProjectedObjectTypeName(typeName)
+        return projectedObjectArgumentLowering.supportsInputType(typeName, currentNamespace)
     }
 
     private fun activationKindLiteral(kind: WinMdActivationKind): String {
