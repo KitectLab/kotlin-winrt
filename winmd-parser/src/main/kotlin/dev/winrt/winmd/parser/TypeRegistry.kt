@@ -46,6 +46,10 @@ internal class TypeRegistry(
         return findType(typeName, currentNamespace)?.kind == WinMdTypeKind.Enum
     }
 
+    fun isStructType(typeName: String, currentNamespace: String): Boolean {
+        return findType(typeName, currentNamespace)?.kind == WinMdTypeKind.Struct
+    }
+
     fun enumUnderlyingType(typeName: String, currentNamespace: String): String? {
         return findType(typeName, currentNamespace)
             ?.takeIf { it.kind == WinMdTypeKind.Enum }

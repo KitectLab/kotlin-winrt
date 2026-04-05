@@ -86,6 +86,12 @@ class TypeRegistryTest {
     }
 
     @Test
+    fun identifies_struct_types_from_metadata() {
+        assertTrue(registry.isStructType("Point", "Windows.Foundation"))
+        assertFalse(registry.isStructType("IStringable", "Windows.Foundation"))
+    }
+
+    @Test
     fun returns_null_for_unknown_types() {
         assertNull(registry.findType("Windows.Foundation.Missing"))
     }

@@ -13,9 +13,18 @@ internal class TypeFileEmitter(
     private val delegateLambdaPlanResolver = DelegateLambdaPlanResolver(typeNameMapper)
     private val eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(typeNameMapper, typeRegistry)
     private val winRtSignatureMapper = WinRtSignatureMapper(typeRegistry)
-    private val asyncMethodProjectionPlanner = AsyncMethodProjectionPlanner(typeNameMapper, winRtSignatureMapper)
-    private val asyncMethodRuleRegistry = AsyncMethodRuleRegistry(typeNameMapper, asyncMethodProjectionPlanner)
     private val winRtProjectionTypeMapper = WinRtProjectionTypeMapper()
+    private val projectedObjectArgumentLowering = ProjectedObjectArgumentLowering(
+        typeRegistry,
+        winRtSignatureMapper,
+        winRtProjectionTypeMapper,
+    )
+    private val asyncMethodProjectionPlanner = AsyncMethodProjectionPlanner(typeNameMapper, winRtSignatureMapper)
+    private val asyncMethodRuleRegistry = AsyncMethodRuleRegistry(
+        typeNameMapper,
+        asyncMethodProjectionPlanner,
+        projectedObjectArgumentLowering,
+    )
     private val interfaceTypeRenderer = InterfaceTypeRenderer(
         typeNameMapper,
         delegateLambdaPlanResolver,
@@ -23,7 +32,9 @@ internal class TypeFileEmitter(
         typeRegistry,
         asyncMethodProjectionPlanner,
         asyncMethodRuleRegistry,
+        winRtSignatureMapper,
         winRtProjectionTypeMapper,
+        projectedObjectArgumentLowering,
     )
     private val delegateTypeRenderer = DelegateTypeRenderer(typeNameMapper)
     private val runtimePropertyRenderer = RuntimePropertyRenderer(typeNameMapper, typeRegistry)
@@ -32,6 +43,7 @@ internal class TypeFileEmitter(
         delegateLambdaPlanResolver,
         typeRegistry,
         asyncMethodRuleRegistry,
+        projectedObjectArgumentLowering,
     )
     private val runtimeCompanionRenderer = RuntimeCompanionRenderer(
         typeRegistry = typeRegistry,
@@ -42,8 +54,9 @@ internal class TypeFileEmitter(
         asyncMethodRuleRegistry = asyncMethodRuleRegistry,
         winRtProjectionTypeMapper = winRtProjectionTypeMapper,
         kotlinCollectionProjectionMapper = KotlinCollectionProjectionMapper(),
+        projectedObjectArgumentLowering = projectedObjectArgumentLowering,
     )
-    private val valueTypeRenderer = ValueTypeRenderer(typeNameMapper)
+    private val valueTypeRenderer = ValueTypeRenderer(typeNameMapper, typeRegistry)
     private val runtimeTypeRenderer = RuntimeTypeRenderer(
         typeNameMapper,
         typeRegistry,

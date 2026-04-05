@@ -22,6 +22,10 @@ internal class TypeNameMapper {
             typeName == "Unit" -> Unit::class.asTypeName()
             typeName == "Object" || typeName == "System.Object" -> PoetSymbols.inspectableClass
             typeName == "Boolean" || typeName == "System.Boolean" || typeName == "Windows.Foundation.WinRtBoolean" -> PoetSymbols.winRtBooleanClass
+            typeName == "UInt8" || typeName == "System.Byte" || typeName == "Windows.Foundation.UInt8" -> UByte::class.asTypeName()
+            typeName == "Int16" || typeName == "System.Int16" || typeName == "Windows.Foundation.Int16" -> Short::class.asTypeName()
+            typeName == "UInt16" || typeName == "System.UInt16" || typeName == "Windows.Foundation.UInt16" -> UShort::class.asTypeName()
+            typeName == "Char16" || typeName == "System.Char" || typeName == "Windows.Foundation.Char16" -> Char::class.asTypeName()
             typeName == "Int" -> Int::class.asTypeName()
             typeName == "Int32" || typeName == "System.Int32" || typeName == "Windows.Foundation.Int32" -> PoetSymbols.int32Class
             typeName == "UInt32" || typeName == "System.UInt32" || typeName == "Windows.Foundation.UInt32" -> PoetSymbols.uint32Class
@@ -49,6 +53,10 @@ internal class TypeNameMapper {
         val rendered = typeName.toString()
         return when {
             rendered == "kotlin.String" -> CodeBlock.of("%S", "")
+            rendered == "kotlin.UByte" -> CodeBlock.of("0u.toUByte()")
+            rendered == "kotlin.Short" -> CodeBlock.of("0.toShort()")
+            rendered == "kotlin.UShort" -> CodeBlock.of("0u.toUShort()")
+            rendered == "kotlin.Char" -> CodeBlock.of("%S.single()", "\u0000")
             rendered == "kotlin.Int" -> CodeBlock.of("0")
             rendered == "kotlin.Unit" -> CodeBlock.of("Unit")
             rendered == PoetSymbols.inspectableClass.canonicalName -> CodeBlock.of("%T(%T.NULL)", PoetSymbols.inspectableClass, PoetSymbols.comPtrClass)
