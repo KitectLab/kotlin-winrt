@@ -1671,6 +1671,17 @@ private object JvmPlatformComInterop : ComInterop {
         return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithObjectAndInt32Args", addressInt32UnitHandle, first, second)
     }
 
+    override fun invokeUnitMethodWithObjectAndBooleanArgs(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: Boolean): Result<Unit> {
+        return JvmComMethodExecutor.invokeWithoutOut(
+            instance,
+            vtableIndex,
+            "invokeUnitMethodWithObjectAndBooleanArgs",
+            addressInt32UnitHandle,
+            first,
+            if (second) 1 else 0,
+        )
+    }
+
     override fun invokeUnitMethodWithInt32AndObjectArgs(instance: ComPtr, vtableIndex: Int, first: Int, second: ComPtr): Result<Unit> {
         return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithInt32AndObjectArgs", int32AddressUnitHandle, first, second)
     }

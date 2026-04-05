@@ -73,6 +73,12 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeUnitMethodWithObjectAndBooleanArgs(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: Boolean): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with Object and Boolean inputs is not wired yet"),
+        )
+    }
+
     override fun invokeUnitMethodWithInt32AndObjectArgs(instance: ComPtr, vtableIndex: Int, first: Int, second: ComPtr): Result<Unit> {
         return Result.failure(
             UnsupportedOperationException("Native Unit method invocation with Int32 and Object inputs is not wired yet"),
