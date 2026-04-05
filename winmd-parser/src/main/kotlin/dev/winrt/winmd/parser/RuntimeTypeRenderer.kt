@@ -559,12 +559,7 @@ internal class RuntimeTypeRenderer(
     }
 
     private fun runtimeMethodRenderKey(method: WinMdMethod): String {
-        return buildString {
-            append(renderedRuntimeMethodName(method))
-            append('(')
-            append(method.parameters.joinToString(",") { it.type })
-            append(')')
-        }
+        return method.overloadKey(renderedName = renderedRuntimeMethodName(method))
     }
 
     private fun renderedRuntimeMethodName(method: WinMdMethod): String {

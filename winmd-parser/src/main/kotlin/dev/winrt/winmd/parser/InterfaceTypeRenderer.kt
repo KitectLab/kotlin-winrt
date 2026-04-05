@@ -2905,12 +2905,7 @@ internal class InterfaceTypeRenderer(
     )
 
     private fun interfaceMethodRenderKey(method: WinMdMethod): String {
-        return buildString {
-            append(kotlinMethodName(method.name))
-            append('(')
-            append(method.parameters.joinToString(",") { it.type })
-            append(')')
-        }
+        return method.overloadKey(renderedName = kotlinMethodName(method.name))
     }
 
 }
