@@ -157,6 +157,7 @@ internal class RuntimeMethodRenderer(
         if (!isKotlinIdentifier(method.name) || method.vtableIndex == null) {
             return null
         }
+        plannedInt32FillArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         plannedInt32ReceiveArrayRuntimeMethod(method)?.let { return it }
         plannedInt32PassArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         valueAwareRuntimeMethodPlan(method, currentNamespace)?.let { return it }
@@ -173,6 +174,64 @@ internal class RuntimeMethodRenderer(
             signatureKey == MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.EMPTY) -> runtimeMethodPlanForKey(signatureKey)
             signatureKey == MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.EMPTY) -> runtimeMethodPlanForKey(signatureKey)
             signatureKey == MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.EMPTY) -> runtimeMethodPlanForKey(signatureKey)
+            else -> null
+        }
+    }
+
+    private fun plannedInt32FillArrayRuntimeMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+    ): RuntimeMethodPlan? {
+        if (!method.isInt32FillArrayMethod()) {
+            return null
+        }
+        return when {
+            method.returnType == "Unit" -> RuntimeMethodPlan(
+                nullPointerReturn = { PlannedStatement("return") },
+                returnStatement = "%L",
+                statementArgs = { method, currentNamespace, parameterBindings ->
+                    val abiArguments = runtimeInt32FillArrayAbiArguments(method, currentNamespace, parameterBindings)
+                        ?: error("Unsupported Int32 fill-array runtime method: ${method.name}")
+                    arrayOf(
+                        runtimeVarargAbiCall("invokeUnitMethodWithArgs", method.vtableIndex!!, abiArguments),
+                    )
+                },
+            )
+            supportsRuntimeObjectReturnType(method.returnType, currentNamespace) -> RuntimeMethodPlan(
+                nullPointerReturn = { method ->
+                    PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}"))
+                },
+                returnStatement = "return %L",
+                statementArgs = { method, currentNamespace, parameterBindings ->
+                    val abiArguments = runtimeInt32FillArrayAbiArguments(method, currentNamespace, parameterBindings)
+                        ?: error("Unsupported Int32 fill-array runtime method: ${method.name}")
+                    arrayOf(
+                        runtimeObjectReturnCode(
+                            method = method,
+                            currentNamespace = currentNamespace,
+                            abiCall = runtimeVarargAbiCall("invokeObjectMethodWithArgs", method.vtableIndex!!, abiArguments),
+                        ),
+                    )
+                },
+            )
+            supportsFillArrayResultKind(method.returnType) -> RuntimeMethodPlan(
+                nullPointerReturn = { method -> twoArgumentNullReturn(method.returnType, method.name) },
+                returnStatement = "return %L",
+                statementArgs = { method, currentNamespace, parameterBindings ->
+                    val abiArguments = runtimeInt32FillArrayAbiArguments(method, currentNamespace, parameterBindings)
+                        ?: error("Unsupported Int32 fill-array runtime method: ${method.name}")
+                    arrayOf(
+                        twoArgumentReturnCode(
+                            method.returnType,
+                            runtimeVarargResultKindAbiCall(
+                                vtableIndex = method.vtableIndex!!,
+                                returnType = method.returnType,
+                                abiArguments = abiArguments,
+                            ),
+                        ),
+                    )
+                },
+            )
             else -> null
         }
     }
@@ -1373,6 +1432,59 @@ internal class RuntimeMethodRenderer(
         }
     }
 
+    private fun runtimeInt32FillArrayAbiArguments(
+        method: WinMdMethod,
+        currentNamespace: String,
+        parameterBindings: List<RuntimeMethodParameterBinding>,
+    ): List<CodeBlock>? {
+        return int32FillArrayAbiArguments(method.parameters) { parameter ->
+            val parameterIndex = method.parameters.indexOf(parameter)
+            val binding = parameterBindings[parameterIndex]
+            val parameterCategory = methodParameterCategory(
+                signatureParameterType(parameter.type, currentNamespace),
+            ) { typeName -> supportsRuntimeObjectType(typeName, currentNamespace) } ?: return@int32FillArrayAbiArguments null
+            CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, currentNamespace))
+        }
+    }
+
+    private fun runtimeVarargAbiCall(
+        methodName: String,
+        vtableIndex: Int,
+        abiArguments: List<CodeBlock>,
+    ): CodeBlock {
+        return CodeBlock.builder()
+            .add("%T.%L(pointer, %L", PoetSymbols.platformComInteropClass, methodName, vtableIndex)
+            .apply {
+                abiArguments.forEach { argument ->
+                    add(", %L", argument)
+                }
+            }
+            .add(").getOrThrow()")
+            .build()
+    }
+
+    private fun runtimeVarargResultKindAbiCall(
+        vtableIndex: Int,
+        returnType: String,
+        abiArguments: List<CodeBlock>,
+    ): CodeBlock {
+        return CodeBlock.builder()
+            .add(
+                "%T.invokeMethodWithResultKind(pointer, %L, %T.%L",
+                PoetSymbols.platformComInteropClass,
+                vtableIndex,
+                PoetSymbols.comMethodResultKindClass,
+                resultKindName(returnType),
+            )
+            .apply {
+                abiArguments.forEach { argument ->
+                    add(", %L", argument)
+                }
+            }
+            .add(").getOrThrow().%M()", resultExtractor(returnType))
+            .build()
+    }
+
     private fun twoArgumentReturnCode(returnType: String, abiCall: CodeBlock): CodeBlock {
         return when (returnType) {
             "String" -> HStringSupport.fromCall(abiCall)
@@ -1438,6 +1550,24 @@ internal class RuntimeMethodRenderer(
             "UInt64" -> PoetSymbols.requireUInt64Member
             "Guid" -> PoetSymbols.requireGuidMember
             else -> error("Unsupported result extractor for two-argument return type: $returnType")
+        }
+    }
+
+    private fun supportsFillArrayResultKind(returnType: String): Boolean {
+        return when (returnType) {
+            "String",
+            "Float32",
+            "Float64",
+            "DateTime",
+            "TimeSpan",
+            "Boolean",
+            "Int32",
+            "UInt32",
+            "Int64",
+            "UInt64",
+            "Guid",
+            -> true
+            else -> false
         }
     }
 

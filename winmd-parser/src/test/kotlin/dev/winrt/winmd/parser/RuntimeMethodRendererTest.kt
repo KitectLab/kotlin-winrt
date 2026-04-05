@@ -199,6 +199,44 @@ class RuntimeMethodRendererTest {
     }
 
     @Test
+    fun renders_runtime_int32_fill_array_methods_with_count_buffer_and_scalar_return() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "Int32Vector",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    "GetMany",
+                                    "UInt32",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter("startIndex", "UInt32"),
+                                        WinMdParameter("items", "Int32[]", isOut = true),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/Collections/Int32Vector.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fungetMany(startIndex:UInt32,items:Array<Int32>):UInt32"))
+        assertTrue(binding.contains("UInt32(PlatformComInterop.invokeMethodWithResultKind(pointer,6,ComMethodResultKind.UINT32,startIndex.value,items.size,IntArray(items.size){index->items[index].value}).getOrThrow().requireUInt32())"))
+    }
+
+    @Test
     fun renders_runtime_nullable_enum_methods_via_generic_ireference_projection() {
         val model = WinMdModel(
             files = emptyList(),

@@ -1677,6 +1677,7 @@ internal class InterfaceTypeRenderer(
         if (method.vtableIndex == null) {
             return null
         }
+        plannedInt32FillArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
         plannedInt32ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedInt32PassArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
         plannedValueTypeAwareInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
@@ -1692,6 +1693,69 @@ internal class InterfaceTypeRenderer(
         return signatureKey
             ?.takeIf { MethodRuleRegistry.sharedMethodRuleFamily(it) != null }
             ?.let { plannedInterfaceMethodForKey(it, genericParameters) }
+    }
+
+    private fun plannedInt32FillArrayInterfaceMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): PlannedInterfaceMethod? {
+        if (!method.isInt32FillArrayMethod()) {
+            return null
+        }
+        val abiArguments = int32FillArrayAbiArguments(method.parameters) { parameter ->
+            val parameterCategory = methodParameterCategory(
+                signatureParameterType(parameter.type, currentNamespace),
+            ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@int32FillArrayAbiArguments null
+            CodeBlock.of(
+                "%L",
+                unaryArgumentExpression(
+                    argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                    parameterType = parameter.type,
+                    category = parameterCategory,
+                    currentNamespace = currentNamespace,
+                ),
+            )
+        } ?: return null
+        return when {
+            method.returnType == "Unit" -> PlannedInterfaceMethod(
+                statement = "%L",
+                args = { method, _ ->
+                    arrayOf(
+                        interfaceVarargAbiCall("invokeUnitMethodWithArgs", method.vtableIndex!!, abiArguments),
+                    )
+                },
+            )
+            supportsInterfaceObjectReturnType(method.returnType, currentNamespace) -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ ->
+                    arrayOf(
+                        objectReturnCode(
+                            method = method,
+                            namespace = currentNamespace,
+                            abiCall = interfaceVarargAbiCall("invokeObjectMethodWithArgs", method.vtableIndex!!, abiArguments),
+                            genericParameters = genericParameters,
+                        ),
+                    )
+                },
+            )
+            supportsFillArrayResultKind(method.returnType) -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ ->
+                    arrayOf(
+                        twoArgumentReturnCode(
+                            method,
+                            interfaceVarargResultKindAbiCall(
+                                vtableIndex = method.vtableIndex!!,
+                                returnType = method.returnType,
+                                abiArguments = abiArguments,
+                            ),
+                        ),
+                    )
+                },
+            )
+            else -> null
+        }
     }
 
     private fun plannedInt32ReceiveArrayInterfaceMethod(method: WinMdMethod): PlannedInterfaceMethod? {
@@ -2675,6 +2739,44 @@ internal class InterfaceTypeRenderer(
         },
     )
 
+    private fun interfaceVarargAbiCall(
+        methodName: String,
+        vtableIndex: Int,
+        abiArguments: List<CodeBlock>,
+    ): CodeBlock {
+        return CodeBlock.builder()
+            .add("%T.%L(pointer, %L", PoetSymbols.platformComInteropClass, methodName, vtableIndex)
+            .apply {
+                abiArguments.forEach { argument ->
+                    add(", %L", argument)
+                }
+            }
+            .add(").getOrThrow()")
+            .build()
+    }
+
+    private fun interfaceVarargResultKindAbiCall(
+        vtableIndex: Int,
+        returnType: String,
+        abiArguments: List<CodeBlock>,
+    ): CodeBlock {
+        return CodeBlock.builder()
+            .add(
+                "%T.invokeMethodWithResultKind(pointer, %L, %T.%L",
+                PoetSymbols.platformComInteropClass,
+                vtableIndex,
+                PoetSymbols.comMethodResultKindClass,
+                resultKindName(returnType),
+            )
+            .apply {
+                abiArguments.forEach { argument ->
+                    add(", %L", argument)
+                }
+            }
+            .add(").getOrThrow().%M()", resultExtractor(returnType))
+            .build()
+    }
+
     private fun twoArgumentArgumentExpressions(
         parameters: List<WinMdParameter>,
         parameterCategories: List<MethodParameterCategory>,
@@ -2917,6 +3019,24 @@ internal class InterfaceTypeRenderer(
             "UInt64" -> PoetSymbols.requireUInt64Member
             "Guid" -> PoetSymbols.requireGuidMember
             else -> error("Unsupported result extractor for two-argument return type: $returnType")
+        }
+    }
+
+    private fun supportsFillArrayResultKind(returnType: String): Boolean {
+        return when (returnType) {
+            "String",
+            "Float32",
+            "Float64",
+            "DateTime",
+            "TimeSpan",
+            "Boolean",
+            "Int32",
+            "UInt32",
+            "Int64",
+            "UInt64",
+            "Guid",
+            -> true
+            else -> false
         }
     }
 
