@@ -20,7 +20,9 @@ fun <T : WinRtObject> Inspectable.projectInterface(
             throw ProjectionException("Failed to project ${metadata.qualifiedName}: ${error.message}")
         }
         metadata.project(projected, constructor).also { wrapper ->
-            additionalTypeData.putIfAbsent(projectionTypeCacheKey, wrapper)
+            if (projectionTypeCacheKey !in additionalTypeData) {
+                additionalTypeData[projectionTypeCacheKey] = wrapper
+            }
         }
     }
 }

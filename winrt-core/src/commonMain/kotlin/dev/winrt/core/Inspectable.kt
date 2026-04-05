@@ -157,7 +157,9 @@ object WinRtRuntime {
             return cached as T
         }
         activationFactoryProjectionCache[sharedIidCacheKey]?.let { cached ->
-            activationFactoryProjectionCache.putIfAbsent(projectionTypeCacheKey, cached)
+            if (projectionTypeCacheKey !in activationFactoryProjectionCache) {
+                activationFactoryProjectionCache[projectionTypeCacheKey] = cached
+            }
             @Suppress("UNCHECKED_CAST")
             return cached as T
         }
@@ -171,8 +173,12 @@ object WinRtRuntime {
                     .getOrElse { throw it }
             }
             interfaceMetadata.project(factory, constructor).also { wrapper ->
-                activationFactoryProjectionCache.putIfAbsent(projectionTypeCacheKey, wrapper)
-                activationFactoryProjectionCache.putIfAbsent(sharedIidCacheKey, wrapper)
+                if (projectionTypeCacheKey !in activationFactoryProjectionCache) {
+                    activationFactoryProjectionCache[projectionTypeCacheKey] = wrapper
+                }
+                if (sharedIidCacheKey !in activationFactoryProjectionCache) {
+                    activationFactoryProjectionCache[sharedIidCacheKey] = wrapper
+                }
             }
         } as T
     }
