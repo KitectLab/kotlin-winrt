@@ -1,5 +1,6 @@
 package dev.winrt.winmd.parser
 
+import dev.winrt.winmd.plugin.encodeValueTypeName
 import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdModel
 import dev.winrt.winmd.plugin.WinMdNamespace
@@ -186,13 +187,13 @@ class RuntimeMethodRendererTest {
                             name = "Widget",
                             kind = WinMdTypeKind.RuntimeClass,
                             methods = listOf(
-                                WinMdMethod("GetWindowId", "Microsoft.UI.WindowId", vtableIndex = 6),
-                                WinMdMethod("GetKeyStatus", "Windows.UI.Core.CorePhysicalKeyStatus", vtableIndex = 7),
+                                WinMdMethod("GetWindowId", encodeValueTypeName("Microsoft.UI.WindowId"), vtableIndex = 6),
+                                WinMdMethod("GetKeyStatus", encodeValueTypeName("Windows.UI.Core.CorePhysicalKeyStatus"), vtableIndex = 7),
                                 WinMdMethod(
                                     "Initialize",
                                     "Unit",
                                     vtableIndex = 8,
-                                    parameters = listOf(WinMdParameter("parentWindowId", "Microsoft.UI.WindowId")),
+                                    parameters = listOf(WinMdParameter("parentWindowId", encodeValueTypeName("Microsoft.UI.WindowId"))),
                                 ),
                             ),
                         ),

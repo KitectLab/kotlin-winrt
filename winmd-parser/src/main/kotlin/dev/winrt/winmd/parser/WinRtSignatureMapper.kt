@@ -2,6 +2,7 @@ package dev.winrt.winmd.parser
 
 import dev.winrt.core.ParameterizedInterfaceId
 import dev.winrt.core.WinRtTypeSignature
+import dev.winrt.winmd.plugin.stripValueTypeNameMarker
 import dev.winrt.winmd.plugin.WinMdTypeKind
 
 internal class WinRtSignatureMapper(
@@ -70,11 +71,12 @@ internal class WinRtSignatureMapper(
     }
 
     private fun normalizeTypeName(typeName: String, currentNamespace: String): String {
-        scalarSignature(typeName)?.let { return typeName }
+        val unwrappedTypeName = stripValueTypeNameMarker(typeName.removeSuffix("[]"))
+        scalarSignature(unwrappedTypeName)?.let { return unwrappedTypeName }
         return when {
-            '.' in typeName -> typeName
-            else -> "$currentNamespace.$typeName"
-        }.removeSuffix("[]")
+            '.' in unwrappedTypeName -> unwrappedTypeName
+            else -> "$currentNamespace.$unwrappedTypeName"
+        }
     }
 
     private fun scalarSignature(typeName: String): String? =

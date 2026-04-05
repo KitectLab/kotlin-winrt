@@ -6,6 +6,7 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asTypeName
+import dev.winrt.winmd.plugin.stripValueTypeNameMarker
 
 internal const val WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET = 116444736000000000L
 
@@ -16,33 +17,34 @@ internal class TypeNameMapper {
         currentNamespace: String,
         genericParameters: Set<String> = emptySet(),
     ): TypeName {
+        val normalizedTypeName = stripValueTypeNameMarker(typeName)
         return when {
-            typeName in genericParameters -> TypeVariableName(typeName)
-            typeName == "String" || typeName == "System.String" -> String::class.asTypeName()
-            typeName == "Unit" -> Unit::class.asTypeName()
-            typeName == "Object" || typeName == "System.Object" -> PoetSymbols.inspectableClass
-            typeName == "Boolean" || typeName == "System.Boolean" || typeName == "Windows.Foundation.WinRtBoolean" -> PoetSymbols.winRtBooleanClass
-            typeName == "UInt8" || typeName == "System.Byte" || typeName == "Windows.Foundation.UInt8" -> UByte::class.asTypeName()
-            typeName == "Int16" || typeName == "System.Int16" || typeName == "Windows.Foundation.Int16" -> Short::class.asTypeName()
-            typeName == "UInt16" || typeName == "System.UInt16" || typeName == "Windows.Foundation.UInt16" -> UShort::class.asTypeName()
-            typeName == "Char16" || typeName == "System.Char" || typeName == "Windows.Foundation.Char16" -> Char::class.asTypeName()
-            typeName == "Int" -> Int::class.asTypeName()
-            typeName == "Int32" || typeName == "System.Int32" || typeName == "Windows.Foundation.Int32" -> PoetSymbols.int32Class
-            typeName == "UInt32" || typeName == "System.UInt32" || typeName == "Windows.Foundation.UInt32" -> PoetSymbols.uint32Class
-            typeName == "Int64" || typeName == "System.Int64" || typeName == "Windows.Foundation.Int64" -> PoetSymbols.int64Class
-            typeName == "UInt64" || typeName == "System.UInt64" || typeName == "Windows.Foundation.UInt64" -> PoetSymbols.uint64Class
-            typeName == "Float32" || typeName == "System.Single" || typeName == "Windows.Foundation.Float32" -> PoetSymbols.float32Class
-            typeName == "Float64" || typeName == "System.Double" || typeName == "Windows.Foundation.Float64" -> PoetSymbols.float64Class
-            typeName == "Guid" || typeName == "System.Guid" || typeName == "Windows.Foundation.Guid" -> PoetSymbols.guidValueClass
-            typeName == "DateTime" || typeName == "Windows.Foundation.DateTime" -> PoetSymbols.dateTimeClass
-            typeName == "TimeSpan" || typeName == "Windows.Foundation.TimeSpan" -> PoetSymbols.timeSpanClass
-            typeName == "EventRegistrationToken" || typeName == "Windows.Foundation.EventRegistrationToken" -> PoetSymbols.eventRegistrationTokenClass
-            typeName.endsWith("[]") -> arrayClass.parameterizedBy(
-                mapTypeName(typeName.removeSuffix("[]"), currentNamespace, genericParameters),
+            normalizedTypeName in genericParameters -> TypeVariableName(normalizedTypeName)
+            normalizedTypeName == "String" || normalizedTypeName == "System.String" -> String::class.asTypeName()
+            normalizedTypeName == "Unit" -> Unit::class.asTypeName()
+            normalizedTypeName == "Object" || normalizedTypeName == "System.Object" -> PoetSymbols.inspectableClass
+            normalizedTypeName == "Boolean" || normalizedTypeName == "System.Boolean" || normalizedTypeName == "Windows.Foundation.WinRtBoolean" -> PoetSymbols.winRtBooleanClass
+            normalizedTypeName == "UInt8" || normalizedTypeName == "System.Byte" || normalizedTypeName == "Windows.Foundation.UInt8" -> UByte::class.asTypeName()
+            normalizedTypeName == "Int16" || normalizedTypeName == "System.Int16" || normalizedTypeName == "Windows.Foundation.Int16" -> Short::class.asTypeName()
+            normalizedTypeName == "UInt16" || normalizedTypeName == "System.UInt16" || normalizedTypeName == "Windows.Foundation.UInt16" -> UShort::class.asTypeName()
+            normalizedTypeName == "Char16" || normalizedTypeName == "System.Char" || normalizedTypeName == "Windows.Foundation.Char16" -> Char::class.asTypeName()
+            normalizedTypeName == "Int" -> Int::class.asTypeName()
+            normalizedTypeName == "Int32" || normalizedTypeName == "System.Int32" || normalizedTypeName == "Windows.Foundation.Int32" -> PoetSymbols.int32Class
+            normalizedTypeName == "UInt32" || normalizedTypeName == "System.UInt32" || normalizedTypeName == "Windows.Foundation.UInt32" -> PoetSymbols.uint32Class
+            normalizedTypeName == "Int64" || normalizedTypeName == "System.Int64" || normalizedTypeName == "Windows.Foundation.Int64" -> PoetSymbols.int64Class
+            normalizedTypeName == "UInt64" || normalizedTypeName == "System.UInt64" || normalizedTypeName == "Windows.Foundation.UInt64" -> PoetSymbols.uint64Class
+            normalizedTypeName == "Float32" || normalizedTypeName == "System.Single" || normalizedTypeName == "Windows.Foundation.Float32" -> PoetSymbols.float32Class
+            normalizedTypeName == "Float64" || normalizedTypeName == "System.Double" || normalizedTypeName == "Windows.Foundation.Float64" -> PoetSymbols.float64Class
+            normalizedTypeName == "Guid" || normalizedTypeName == "System.Guid" || normalizedTypeName == "Windows.Foundation.Guid" -> PoetSymbols.guidValueClass
+            normalizedTypeName == "DateTime" || normalizedTypeName == "Windows.Foundation.DateTime" -> PoetSymbols.dateTimeClass
+            normalizedTypeName == "TimeSpan" || normalizedTypeName == "Windows.Foundation.TimeSpan" -> PoetSymbols.timeSpanClass
+            normalizedTypeName == "EventRegistrationToken" || normalizedTypeName == "Windows.Foundation.EventRegistrationToken" -> PoetSymbols.eventRegistrationTokenClass
+            normalizedTypeName.endsWith("[]") -> arrayClass.parameterizedBy(
+                mapTypeName(normalizedTypeName.removeSuffix("[]"), currentNamespace, genericParameters),
             )
-            '<' in typeName && typeName.endsWith(">") -> mapGenericTypeName(typeName, currentNamespace, genericParameters)
-            '.' in typeName -> normalizeQualifiedType(typeName)
-            else -> ClassName(currentNamespace.lowercase(), typeName)
+            '<' in normalizedTypeName && normalizedTypeName.endsWith(">") -> mapGenericTypeName(normalizedTypeName, currentNamespace, genericParameters)
+            '.' in normalizedTypeName -> normalizeQualifiedType(normalizedTypeName)
+            else -> ClassName(currentNamespace.lowercase(), normalizedTypeName)
         }
     }
 

@@ -1,5 +1,6 @@
 package dev.winrt.winmd.parser
 
+import dev.winrt.winmd.plugin.encodeValueTypeName
 import dev.winrt.winmd.plugin.WinMdModel
 import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdNamespace
@@ -509,18 +510,18 @@ class InterfaceTypeRendererTest {
                             properties = listOf(
                                 WinMdProperty(
                                     "KeyStatus",
-                                    "Windows.UI.Core.CorePhysicalKeyStatus",
+                                    encodeValueTypeName("Windows.UI.Core.CorePhysicalKeyStatus"),
                                     mutable = false,
                                     getterVtableIndex = 6,
                                 ),
                             ),
                             methods = listOf(
-                                WinMdMethod("GetWindowId", "Microsoft.UI.WindowId", vtableIndex = 7),
+                                WinMdMethod("GetWindowId", encodeValueTypeName("Microsoft.UI.WindowId"), vtableIndex = 7),
                                 WinMdMethod(
                                     "Initialize",
                                     "Unit",
                                     vtableIndex = 8,
-                                    parameters = listOf(WinMdParameter("parentWindowId", "Microsoft.UI.WindowId")),
+                                    parameters = listOf(WinMdParameter("parentWindowId", encodeValueTypeName("Microsoft.UI.WindowId"))),
                                 ),
                             ),
                         ),

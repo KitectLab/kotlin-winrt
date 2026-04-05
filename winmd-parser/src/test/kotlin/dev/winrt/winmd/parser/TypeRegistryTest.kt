@@ -1,5 +1,6 @@
 package dev.winrt.winmd.parser
 
+import dev.winrt.winmd.plugin.encodeValueTypeName
 import dev.winrt.winmd.plugin.WinMdMetadataReader
 import dev.winrt.winmd.plugin.WinMdField
 import dev.winrt.winmd.plugin.WinMdMethod
@@ -625,6 +626,23 @@ class TypeRegistryTest {
             listOf("IStringable"),
             runtimeRegistry.findImplementedInterfaceTypes("Calendar", "Windows.Globalization").map { it.name },
         )
+    }
+
+    @Test
+    fun treats_external_known_value_types_as_structs_only_when_signature_marks_them_as_valuetype() {
+        val runtimeRegistry = TypeRegistry(
+            WinMdModel(
+                files = emptyList(),
+                namespaces = emptyList(),
+            ),
+        )
+
+        assertFalse(runtimeRegistry.isStructType("Microsoft.UI.WindowId", "Example.Xaml"))
+        assertTrue(runtimeRegistry.isStructType(encodeValueTypeName("Microsoft.UI.WindowId"), "Example.Xaml"))
+        assertFalse(runtimeRegistry.isStructType("Windows.UI.Text.FontWeight", "Example.Xaml"))
+        assertTrue(runtimeRegistry.isStructType(encodeValueTypeName("Windows.UI.Text.FontWeight"), "Example.Xaml"))
+        assertFalse(runtimeRegistry.isStructType("Windows.UI.Xaml.Interop.TypeName", "Example.Xaml"))
+        assertTrue(runtimeRegistry.isStructType(encodeValueTypeName("Windows.UI.Xaml.Interop.TypeName"), "Example.Xaml"))
     }
 
     private fun localWinUiXamlWinmdCandidates(): List<Path> {

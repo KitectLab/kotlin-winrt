@@ -6,6 +6,8 @@ import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdModel
 import dev.winrt.winmd.plugin.WinMdType
 import dev.winrt.winmd.plugin.WinMdTypeKind
+import dev.winrt.winmd.plugin.hasValueTypeNameMarker
+import dev.winrt.winmd.plugin.stripValueTypeNameMarker
 
 internal data class RuntimeClassFactoryMethod(
     val runtimeClass: WinMdType,
@@ -48,7 +50,9 @@ internal class TypeRegistry(
 
     fun isStructType(typeName: String, currentNamespace: String): Boolean {
         return findType(typeName, currentNamespace)?.kind == WinMdTypeKind.Struct ||
-            resolveQualifiedName(typeName, currentNamespace) in wellKnownStructTypes
+            resolveQualifiedName(typeName, currentNamespace) in intrinsicWellKnownStructTypes ||
+            (hasValueTypeNameMarker(typeName) &&
+                resolveQualifiedName(typeName, currentNamespace) in externalValueTypeStructTypes)
     }
 
     fun enumUnderlyingType(typeName: String, currentNamespace: String): String? {
@@ -238,9 +242,9 @@ internal class TypeRegistry(
     }
 
     private fun canonicalQualifiedName(typeName: String): String {
-        return typeName.substringBefore('<')
+        return stripValueTypeNameMarker(typeName.removeSuffix("[]"))
+            .substringBefore('<')
             .substringBefore('`')
-            .removeSuffix("[]")
     }
 
     private fun resolveQualifiedName(typeName: String, currentNamespace: String?): String {
@@ -254,8 +258,7 @@ internal class TypeRegistry(
     }
 
     private companion object {
-        val wellKnownStructTypes = setOf(
-            "Microsoft.UI.WindowId",
+        val intrinsicWellKnownStructTypes = setOf(
             "Windows.Foundation.Point",
             "Windows.Foundation.Rect",
             "Windows.Foundation.Size",
@@ -267,6 +270,10 @@ internal class TypeRegistry(
             "Windows.Foundation.Numerics.Vector2",
             "Windows.Foundation.Numerics.Vector3",
             "Windows.Foundation.Numerics.Vector4",
+        )
+
+        val externalValueTypeStructTypes = setOf(
+            "Microsoft.UI.WindowId",
             "Windows.UI.Color",
             "Windows.UI.Core.CorePhysicalKeyStatus",
             "Windows.UI.Text.FontWeight",

@@ -65,6 +65,50 @@ class WinMdMetadataReaderTest {
     }
 
     @Test
+    fun preserves_value_type_signature_markers_for_real_external_winui_value_types_when_available() {
+        val winuiWinmd = localWinUiXamlWinmdCandidates().firstOrNull { Files.isRegularFile(it) } ?: return
+
+        val model = try {
+            WinMdMetadataReader.readModel(listOf(winuiWinmd))
+        } catch (error: IllegalArgumentException) {
+            if (winuiWinmd.toString().contains("microsoft.windowsappsdk", ignoreCase = true) &&
+                error.message?.startsWith("Metadata index exceeds Int range:") == true
+            ) {
+                return
+            }
+            throw error
+        }
+
+        val inputNamespace = model.namespaces.firstOrNull { it.name == "Microsoft.UI.Xaml.Input" } ?: return
+        val hostingNamespace = model.namespaces.firstOrNull { it.name == "Microsoft.UI.Xaml.Hosting" } ?: return
+        val controlsNamespace = model.namespaces.firstOrNull { it.name == "Microsoft.UI.Xaml.Controls" } ?: return
+
+        val keyArgs = inputNamespace.types.firstOrNull { it.name == "IKeyRoutedEventArgs" } ?: return
+        val desktopWindowSource = hostingNamespace.types.firstOrNull { it.name == "IDesktopWindowXamlSource" } ?: return
+        val textBlock = controlsNamespace.types.firstOrNull { it.name == "ITextBlock" } ?: return
+        val controlTemplate = controlsNamespace.types.firstOrNull { it.name == "IControlTemplate" } ?: return
+
+        val keyStatusType = keyArgs.properties.firstOrNull { it.name == "KeyStatus" }?.type ?: return
+        val initializeWindowIdType = desktopWindowSource.methods
+            .firstOrNull { it.name == "Initialize" }
+            ?.parameters
+            ?.firstOrNull()
+            ?.type
+            ?: return
+        val fontWeightType = textBlock.properties.firstOrNull { it.name == "FontWeight" }?.type ?: return
+        val targetTypeType = controlTemplate.properties.firstOrNull { it.name == "TargetType" }?.type ?: return
+
+        assertTrue(keyStatusType, hasValueTypeNameMarker(keyStatusType))
+        assertEquals("Windows.UI.Core.CorePhysicalKeyStatus", stripValueTypeNameMarker(keyStatusType))
+        assertTrue(initializeWindowIdType, hasValueTypeNameMarker(initializeWindowIdType))
+        assertEquals("Microsoft.UI.WindowId", stripValueTypeNameMarker(initializeWindowIdType))
+        assertTrue(fontWeightType, hasValueTypeNameMarker(fontWeightType))
+        assertEquals("Windows.UI.Text.FontWeight", stripValueTypeNameMarker(fontWeightType))
+        assertTrue(targetTypeType, hasValueTypeNameMarker(targetTypeType))
+        assertEquals("Windows.UI.Xaml.Interop.TypeName", stripValueTypeNameMarker(targetTypeType))
+    }
+
+    @Test
     fun reads_real_dispatcher_queue_metadata_from_windows_app_sdk_when_available() {
         val uiWinmd = windowsAppSdkWinmdCandidates("Microsoft.UI.winmd").firstOrNull { Files.isRegularFile(it) } ?: return
         if (!Files.isRegularFile(uiWinmd)) {
@@ -251,7 +295,10 @@ class WinMdMetadataReaderTest {
             jsonObject.baseInterfaces.toString(),
             jsonObject.baseInterfaces.any { it == "Windows.Foundation.IStringable" },
         )
-        assertTrue(jsonObject.properties.toString(), jsonObject.properties.any { it.name == "ValueType" && it.type == "Windows.Data.Json.JsonValueType" })
+        assertTrue(
+            jsonObject.properties.toString(),
+            jsonObject.properties.any { it.name == "ValueType" && isMarkedValueType(it.type, "Windows.Data.Json.JsonValueType") },
+        )
         assertTrue(jsonObject.properties.toString(), jsonObject.properties.any { it.name == "Size" && it.type == "UInt32" })
 
         val jsonObjectInterface = model.namespaces
@@ -424,6 +471,7 @@ class WinMdMetadataReaderTest {
         val valueTypeProperty = jsonValueInterface.properties.first { it.name == "ValueType" }
 
         assertEquals(13, getObjectAt.vtableIndex)
+        assertTrue(isMarkedValueType(valueTypeProperty.type, "Windows.Data.Json.JsonValueType"))
         assertEquals(6, valueTypeProperty.getterVtableIndex)
     }
 
@@ -451,17 +499,36 @@ class WinMdMetadataReaderTest {
         assertEquals("Windows.Globalization.ICalendar", calendar.defaultInterface)
         assertEquals("ca30221d-86d9-40fb-a26b-d44eb7cf08ea", iCalendar.guid)
         assertTrue(iCalendar.methods.any { it.name == "Clone" && it.returnType == "Windows.Globalization.Calendar" && it.vtableIndex == 6 })
-        assertTrue(iCalendar.methods.any { it.name == "GetDateTime" && it.returnType == "Windows.Foundation.DateTime" && it.vtableIndex == 16 })
+        assertTrue(
+            iCalendar.methods.any {
+                it.name == "GetDateTime" &&
+                    isMarkedValueType(it.returnType, "Windows.Foundation.DateTime") &&
+                    it.vtableIndex == 16
+            },
+        )
         assertTrue(iCalendar.methods.any { it.name == "get_Year" && it.returnType == "Int32" && it.vtableIndex == 30 })
         assertTrue(iCalendar.methods.any { it.name == "YearAsString" && it.returnType == "String" && it.vtableIndex == 33 })
         assertTrue(iCalendar.methods.any { it.name == "get_Month" && it.returnType == "Int32" && it.vtableIndex == 39 })
         assertTrue(iCalendar.methods.any { it.name == "MonthAsString" && it.returnType == "String" && it.vtableIndex == 42 })
-        assertTrue(iCalendar.methods.any { it.name == "get_DayOfWeek" && it.returnType == "Windows.Globalization.DayOfWeek" && it.vtableIndex == 57 })
+        assertTrue(
+            iCalendar.methods.any {
+                it.name == "get_DayOfWeek" &&
+                    isMarkedValueType(it.returnType, "Windows.Globalization.DayOfWeek") &&
+                    it.vtableIndex == 57
+            },
+        )
         assertTrue(iCalendar.methods.any { it.name == "get_IsDaylightSavingTime" && it.returnType == "Boolean" && it.vtableIndex == 103 })
         assertTrue(iCalendar.properties.any { it.name == "Year" && it.type == "Int32" && it.getterVtableIndex == 30 && it.setterVtableIndex == 31 && it.mutable })
         assertTrue(iCalendar.properties.any { it.name == "Month" && it.type == "Int32" && it.getterVtableIndex == 39 && it.setterVtableIndex == 40 && it.mutable })
         assertTrue(iCalendar.properties.any { it.name == "NumeralSystem" && it.type == "String" && it.getterVtableIndex == 10 && it.setterVtableIndex == 11 && it.mutable })
-        assertTrue(iCalendar.properties.any { it.name == "DayOfWeek" && it.type == "Windows.Globalization.DayOfWeek" && it.getterVtableIndex == 57 && !it.mutable })
+        assertTrue(
+            iCalendar.properties.any {
+                it.name == "DayOfWeek" &&
+                    isMarkedValueType(it.type, "Windows.Globalization.DayOfWeek") &&
+                    it.getterVtableIndex == 57 &&
+                    !it.mutable
+            },
+        )
         assertTrue(iCalendar.properties.any { it.name == "IsDaylightSavingTime" && it.type == "Boolean" && it.getterVtableIndex == 103 && !it.mutable })
         assertTrue(iCalendar.properties.any { it.name == "ResolvedLanguage" && it.type == "String" && it.getterVtableIndex == 102 && !it.mutable })
         assertTrue(
@@ -498,7 +565,13 @@ class WinMdMetadataReaderTest {
         assertTrue(iGlobalizationPreferencesStatics.methods.any { it.name == "get_Currencies" && it.returnType.contains("IVectorView") && it.vtableIndex == 8 })
         assertTrue(iGlobalizationPreferencesStatics.methods.any { it.name == "get_Languages" && it.returnType.contains("IVectorView") && it.vtableIndex == 9 })
         assertTrue(iGlobalizationPreferencesStatics.methods.any { it.name == "get_HomeGeographicRegion" && it.returnType == "String" && it.vtableIndex == 10 })
-        assertTrue(iGlobalizationPreferencesStatics.methods.any { it.name == "get_WeekStartsOn" && it.returnType == "Windows.Globalization.DayOfWeek" && it.vtableIndex == 11 })
+        assertTrue(
+            iGlobalizationPreferencesStatics.methods.any {
+                it.name == "get_WeekStartsOn" &&
+                    isMarkedValueType(it.returnType, "Windows.Globalization.DayOfWeek") &&
+                    it.vtableIndex == 11
+            },
+        )
         assertEquals(null, globalizationPreferences.defaultInterface)
 
         val numberFormatting = model.namespaces.first { it.name == "Windows.Globalization.NumberFormatting" }
@@ -561,5 +634,10 @@ class WinMdMetadataReaderTest {
                 nugetRoots = nugetRoots,
             ).winmdFiles.filter { it.fileName.toString().equals(fileName, ignoreCase = true) }
         }.getOrDefault(emptyList())
+    }
+
+    private fun isMarkedValueType(typeName: String, expectedTypeName: String): Boolean {
+        return hasValueTypeNameMarker(typeName) &&
+            stripValueTypeNameMarker(typeName) == expectedTypeName
     }
 }

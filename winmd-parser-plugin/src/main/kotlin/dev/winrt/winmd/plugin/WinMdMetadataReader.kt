@@ -658,7 +658,15 @@ object WinMdMetadataReader {
             0x0D -> "Float64"
             0x0E -> "String"
             0x10 -> parseElementType(reader, tables, typeGenericParameters, methodGenericParameters)
-            0x11, 0x12 -> resolveTypeDefOrRefOrSpecName(
+            0x11 -> encodeValueTypeName(
+                resolveTypeDefOrRefOrSpecName(
+                    reader.readCompressedUInt(),
+                    tables,
+                    typeGenericParameters,
+                    methodGenericParameters,
+                ),
+            )
+            0x12 -> resolveTypeDefOrRefOrSpecName(
                 reader.readCompressedUInt(),
                 tables,
                 typeGenericParameters,
@@ -719,7 +727,15 @@ object WinMdMetadataReader {
         }
         val next = reader.readByte()
         val genericType = when (next) {
-            0x11, 0x12 -> resolveTypeDefOrRefOrSpecName(
+            0x11 -> encodeValueTypeName(
+                resolveTypeDefOrRefOrSpecName(
+                    reader.readCompressedUInt(),
+                    tables,
+                    typeGenericParameters,
+                    methodGenericParameters,
+                ),
+            )
+            0x12 -> resolveTypeDefOrRefOrSpecName(
                 reader.readCompressedUInt(),
                 tables,
                 typeGenericParameters,

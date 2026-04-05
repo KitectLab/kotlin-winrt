@@ -1,5 +1,7 @@
 package dev.winrt.winmd.parser
 
+import dev.winrt.winmd.plugin.stripValueTypeNameMarker
+
 internal enum class MethodSignatureShape {
     EMPTY,
     STRING,
@@ -328,7 +330,7 @@ internal fun supportsProjectedObjectTypeName(type: String): Boolean =
         !type.endsWith("[]")
 
 internal fun canonicalWinRtSpecialType(type: String): String =
-    when (type) {
+    when (stripValueTypeNameMarker(type)) {
         "System.String" -> "String"
         "System.Object" -> "Object"
         "System.Boolean" -> "Boolean"
@@ -358,5 +360,5 @@ internal fun canonicalWinRtSpecialType(type: String): String =
         "Windows.Foundation.DateTime" -> "DateTime"
         "Windows.Foundation.TimeSpan" -> "TimeSpan"
         "Windows.Foundation.EventRegistrationToken" -> "EventRegistrationToken"
-        else -> type
+        else -> stripValueTypeNameMarker(type)
     }

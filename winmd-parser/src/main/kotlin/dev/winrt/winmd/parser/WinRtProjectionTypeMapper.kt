@@ -1,5 +1,7 @@
 package dev.winrt.winmd.parser
 
+import dev.winrt.winmd.plugin.stripValueTypeNameMarker
+
 internal class WinRtProjectionTypeMapper {
     fun projectionTypeKeyFor(typeName: String, currentNamespace: String): String {
         val normalizedTypeName = normalizeTypeName(typeName, currentNamespace)
@@ -24,11 +26,12 @@ internal class WinRtProjectionTypeMapper {
     }
 
     private fun normalizeTypeName(typeName: String, currentNamespace: String): String {
-        scalarProjectionTypeKey(typeName)?.let { return typeName }
+        val unwrappedTypeName = stripValueTypeNameMarker(typeName.removeSuffix("[]"))
+        scalarProjectionTypeKey(unwrappedTypeName)?.let { return unwrappedTypeName }
         return when {
-            '.' in typeName -> typeName
-            else -> "$currentNamespace.$typeName"
-        }.removeSuffix("[]")
+            '.' in unwrappedTypeName -> unwrappedTypeName
+            else -> "$currentNamespace.$unwrappedTypeName"
+        }
     }
 
     private fun scalarProjectionTypeKey(typeName: String): String? = when (canonicalWinRtSpecialType(typeName)) {
