@@ -565,6 +565,79 @@ class RuntimeTypeRendererTest {
     }
 
     @Test
+    fun does_not_render_runtime_factory_constructors_for_unsupported_array_parameters() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Xaml.IWidget",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidgetFactory",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateWithLabels",
+                                    returnType = "Example.Xaml.Widget",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter(name = "labels", type = "String[]"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val typeRegistry = TypeRegistry(model)
+        val renderer = RuntimeTypeRenderer(
+            typeNameMapper = TypeNameMapper(),
+            typeRegistry = typeRegistry,
+            delegateLambdaPlanResolver = DelegateLambdaPlanResolver(TypeNameMapper()),
+            eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+            runtimePropertyRenderer = RuntimePropertyRenderer(TypeNameMapper(), typeRegistry),
+            runtimeMethodRenderer = RuntimeMethodRenderer(
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                typeRegistry,
+                asyncRegistry(typeRegistry),
+            ),
+            runtimeCompanionRenderer = RuntimeCompanionRenderer(
+                typeRegistry,
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+                WinRtSignatureMapper(typeRegistry),
+                AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+                WinRtProjectionTypeMapper(),
+                KotlinCollectionProjectionMapper(),
+            ),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
+            winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
+        )
+
+        val binding = renderer.render(typeRegistry.findType("Widget", "Example.Xaml")!!).toString()
+
+        assertFalse(binding.contains("constructor(labels: Array<String>)"))
+        assertFalse(binding.contains("factoryCreateWithLabels"))
+    }
+
+    @Test
     fun renders_activatable_resource_dictionary_derived_runtime_classes_with_activate_constructor() {
         val model = WinMdModel(
             files = emptyList(),

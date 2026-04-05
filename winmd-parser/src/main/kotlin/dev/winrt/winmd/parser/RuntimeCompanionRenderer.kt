@@ -309,6 +309,7 @@ internal class RuntimeCompanionRenderer(
             val factoryPropertyName = helperAccessorName(factoryType.name)
             val runtimeFactoryMethods = factoryType.methods
                 .filter { method -> method.returnType == "${type.namespace}.${type.name}" }
+                .filter(::canForwardFactoryMethod)
             val projectedFactoryMethods = runtimeFactoryMethods
                 .filterNot { method -> typeRegistry.isComposableFactoryMethod(type, method) }
             if (projectedFactoryMethods.isNotEmpty()) {
@@ -368,6 +369,10 @@ internal class RuntimeCompanionRenderer(
 
     private fun canForwardStaticMethod(method: WinMdMethod): Boolean {
         return !isArrayType(method.returnType) && method.parameters.none { parameter -> isArrayType(parameter.type) }
+    }
+
+    private fun canForwardFactoryMethod(method: WinMdMethod): Boolean {
+        return method.parameters.none { parameter -> isArrayType(parameter.type) }
     }
 
     private fun isArrayType(typeName: String): Boolean {

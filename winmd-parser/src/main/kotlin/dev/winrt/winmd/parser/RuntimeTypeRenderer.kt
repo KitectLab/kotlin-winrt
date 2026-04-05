@@ -213,6 +213,7 @@ internal class RuntimeTypeRenderer(
         return typeRegistry.findRuntimeClassFactoryMethods(type.name, type.namespace)
             .firstOrNull { candidate ->
                 typeRegistry.isComposableFactoryMethod(candidate.runtimeClass, candidate.method) &&
+                    supportsFactoryConstructor(candidate) &&
                     candidate.method.parameters.dropLast(2).isEmpty()
             }
             ?.let { candidate -> "${helperAccessorName(candidate.factoryType.name)}${candidate.method.name}" }
@@ -232,6 +233,7 @@ internal class RuntimeTypeRenderer(
                 }
             }
         }
+            .filter(::supportsFactoryConstructor)
 
         return constructorFactoryMethods
             .map { candidate ->
@@ -260,6 +262,15 @@ internal class RuntimeTypeRenderer(
                     )
                     .build()
             }
+    }
+
+    private fun supportsFactoryConstructor(candidate: RuntimeClassFactoryMethod): Boolean {
+        val constructorParameters = if (typeRegistry.isComposableFactoryMethod(candidate.runtimeClass, candidate.method)) {
+            candidate.method.parameters.dropLast(2)
+        } else {
+            candidate.method.parameters
+        }
+        return constructorParameters.none { parameter -> parameter.type.endsWith("[]") }
     }
 
     private fun shouldRenderFactoryActivationHelper(type: WinMdType): Boolean {
