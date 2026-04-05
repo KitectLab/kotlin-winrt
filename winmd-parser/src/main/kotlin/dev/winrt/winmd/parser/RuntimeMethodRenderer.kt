@@ -160,6 +160,7 @@ internal class RuntimeMethodRenderer(
         plannedInt32FillArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         plannedInt32ReceiveArrayRuntimeMethod(method)?.let { return it }
         plannedInt64ReceiveArrayRuntimeMethod(method)?.let { return it }
+        plannedStringReceiveArrayRuntimeMethod(method)?.let { return it }
         plannedUInt32ReceiveArrayRuntimeMethod(method)?.let { return it }
         plannedUInt64ReceiveArrayRuntimeMethod(method)?.let { return it }
         plannedInt32PassArrayRuntimeMethod(method, currentNamespace)?.let { return it }
@@ -334,6 +335,31 @@ internal class RuntimeMethodRenderer(
                 } ?: error("Unsupported UInt64 receive-array runtime method: ${method.name}")
                 arrayOf(
                     uint64ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
+                )
+            },
+        )
+    }
+
+    private fun plannedStringReceiveArrayRuntimeMethod(method: WinMdMethod): RuntimeMethodPlan? {
+        if (!method.isStringReceiveArrayReturnMethod()) {
+            return null
+        }
+        return RuntimeMethodPlan(
+            nullPointerReturn = { method ->
+                PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}"))
+            },
+            returnStatement = "return %L",
+            statementArgs = { method, currentNamespace, parameterBindings ->
+                val abiArguments = stringReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterIndex = method.parameters.indexOf(parameter)
+                    val binding = parameterBindings[parameterIndex]
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsRuntimeObjectType(typeName, currentNamespace) } ?: return@stringReceiveArrayAbiArguments null
+                    CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, currentNamespace))
+                } ?: error("Unsupported String receive-array runtime method: ${method.name}")
+                arrayOf(
+                    stringReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
                 )
             },
         )
