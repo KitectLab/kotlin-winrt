@@ -452,6 +452,22 @@ internal class RuntimeCompanionRenderer(
                         .all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
                 ) ||
             (
+                method.isFloat32PassArrayMethod { typeName ->
+                    !typeRegistry.isStructType(typeName, currentNamespace) && supportsProjectedObjectTypeName(typeName)
+                } &&
+                    method.parameters
+                        .filterNot { parameter -> parameter.isFloat32PassArrayParameter() }
+                        .all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                ) ||
+            (
+                method.isFloat64PassArrayMethod { typeName ->
+                    !typeRegistry.isStructType(typeName, currentNamespace) && supportsProjectedObjectTypeName(typeName)
+                } &&
+                    method.parameters
+                        .filterNot { parameter -> parameter.isFloat64PassArrayParameter() }
+                        .all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                ) ||
+            (
                 method.isUInt32PassArrayMethod { typeName ->
                     !typeRegistry.isStructType(typeName, currentNamespace) && supportsProjectedObjectTypeName(typeName)
                 } &&

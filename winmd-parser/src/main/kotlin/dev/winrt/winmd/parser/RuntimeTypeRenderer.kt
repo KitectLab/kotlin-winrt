@@ -336,6 +336,38 @@ internal class RuntimeTypeRenderer(
                         }
             ) ||
             (
+                candidate.method.copy(parameters = constructorParameters).isFloat32PassArrayMethod { _ -> true } &&
+                    constructorParameters
+                        .filterNot { parameter -> parameter.isFloat32PassArrayParameter() }
+                        .all { parameter ->
+                            methodParameterCategory(
+                                if (typeRegistry.isEnumType(parameter.type, candidate.runtimeClass.namespace)) {
+                                    enumSignatureType(typeRegistry, parameter.type, candidate.runtimeClass.namespace)
+                                } else {
+                                    parameter.type
+                                },
+                            ) { typeName ->
+                                supportsProjectedObjectTypeName(typeName)
+                            } != null
+                        }
+            ) ||
+            (
+                candidate.method.copy(parameters = constructorParameters).isFloat64PassArrayMethod { _ -> true } &&
+                    constructorParameters
+                        .filterNot { parameter -> parameter.isFloat64PassArrayParameter() }
+                        .all { parameter ->
+                            methodParameterCategory(
+                                if (typeRegistry.isEnumType(parameter.type, candidate.runtimeClass.namespace)) {
+                                    enumSignatureType(typeRegistry, parameter.type, candidate.runtimeClass.namespace)
+                                } else {
+                                    parameter.type
+                                },
+                            ) { typeName ->
+                                supportsProjectedObjectTypeName(typeName)
+                            } != null
+                        }
+            ) ||
+            (
                 candidate.method.copy(parameters = constructorParameters).isDateTimePassArrayMethod { _ -> true } &&
                     constructorParameters
                         .filterNot { parameter -> parameter.isDateTimePassArrayParameter() }

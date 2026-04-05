@@ -34,7 +34,9 @@ internal fun methodArgumentLayout(argument: Any): MemoryLayout {
         is ComPtr,
         is String,
         is IntArray,
-        is LongArray -> ValueLayout.ADDRESS
+        is LongArray,
+        is FloatArray,
+        is DoubleArray -> ValueLayout.ADDRESS
         is Array<*> -> when (abiArrayKind(argument)) {
             AbiArrayKind.COM_PTR,
             AbiArrayKind.STRING,
@@ -75,6 +77,8 @@ internal fun prepareAbiArguments(arguments: Array<out Any>): PreparedAbiArgument
             }
             is IntArray -> MemorySegment.ofArray(argument)
             is LongArray -> MemorySegment.ofArray(argument)
+            is FloatArray -> MemorySegment.ofArray(argument)
+            is DoubleArray -> MemorySegment.ofArray(argument)
             is Array<*> -> {
                 val arena = Arena.ofConfined()
                 releasers += { arena.close() }
