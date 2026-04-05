@@ -1048,6 +1048,7 @@ internal class InterfaceTypeRenderer(
             (
                 isStructProperty ||
                     supportsNullableValueReference ||
+                    supportsGenericIReferenceStructProjection(property.type, currentNamespace, typeRegistry) ||
                     supportsGenericIReferenceEnumProjection(property.type, currentNamespace, typeRegistry) ||
                     isEnumProperty ||
                     setterRuleFamily != null
@@ -2660,6 +2661,8 @@ internal class InterfaceTypeRenderer(
             (
                 typeRegistry.isStructType(property.type, currentNamespace) ||
                     supportsIReferenceValueProjection(property.type, currentNamespace, typeRegistry) ||
+                    supportsGenericIReferenceStructProjection(property.type, currentNamespace, typeRegistry) ||
+                    supportsGenericIReferenceEnumProjection(property.type, currentNamespace, typeRegistry) ||
                     PropertyRuleRegistry.interfaceGetterRuleFamily(
                         type = property.type,
                         isEnumType = typeRegistry.isEnumType(property.type, currentNamespace),

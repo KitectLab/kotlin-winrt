@@ -495,6 +495,46 @@ class InterfaceTypeRendererTest {
     }
 
     @Test
+    fun renders_nullable_marked_external_struct_interface_properties_via_generic_ireference_projection() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            properties = listOf(
+                                WinMdProperty(
+                                    "FontWeight",
+                                    "Windows.Foundation.IReference`1<${encodeValueTypeName("Windows.UI.Text.FontWeight")}>",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Example/Xaml/IWidget.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("varfontWeight:FontWeight?"))
+        assertTrue(binding.contains("IReference.from<FontWeight>(Inspectable(it),\"struct(Windows.UI.Text.FontWeight;u2)\",\"Windows.UI.Text.FontWeight\")"))
+        assertTrue(binding.contains("FontWeight.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(reference.pointer,6,FontWeight.ABI_LAYOUT).getOrThrow())"))
+        assertTrue(binding.contains("projectedObjectArgumentPointer("))
+        assertTrue(binding.contains("\"pinterface({61c17706-2d65-11e0-9ae8-d48564015472};struct(Windows.UI.Text.FontWeight;u2))\""))
+    }
+
+    @Test
     fun renders_known_external_struct_interface_members_with_struct_abi_calls() {
         val model = WinMdModel(
             files = emptyList(),

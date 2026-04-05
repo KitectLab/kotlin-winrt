@@ -1,5 +1,6 @@
 package dev.winrt.winmd.parser
 
+import dev.winrt.winmd.plugin.encodeValueTypeName
 import dev.winrt.winmd.plugin.WinMdModel
 import dev.winrt.winmd.plugin.WinMdNamespace
 import dev.winrt.winmd.plugin.WinMdProperty
@@ -148,6 +149,46 @@ class RuntimePropertyRendererTest {
         assertTrue(binding.contains("valoffset:Vector2?"))
         assertTrue(binding.contains("IReference.from<Vector2>(Inspectable(it),\"struct(Windows.Foundation.Numerics.Vector2;f4;f4)\",\"Windows.Foundation.Numerics.Vector2\")"))
         assertTrue(binding.contains("Vector2.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(reference.pointer,6,Vector2.ABI_LAYOUT).getOrThrow())"))
+    }
+
+    @Test
+    fun renders_ireference_marked_external_struct_properties_as_nullable_struct_accessors() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "NullableFontWeightCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "FontWeight",
+                                    type = "Windows.Foundation.IReference`1<${encodeValueTypeName("Windows.UI.Text.FontWeight")}>",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Example/Xaml/NullableFontWeightCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("varfontWeight:FontWeight?"))
+        assertTrue(binding.contains("IReference.from<FontWeight>(Inspectable(it),\"struct(Windows.UI.Text.FontWeight;u2)\",\"Windows.UI.Text.FontWeight\")"))
+        assertTrue(binding.contains("FontWeight.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(reference.pointer,6,FontWeight.ABI_LAYOUT).getOrThrow())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectSetter(pointer,7,if(value==null)ComPtr.NULLelse"))
+        assertTrue(binding.contains("projectedObjectArgumentPointer("))
+        assertTrue(binding.contains("\"pinterface({61c17706-2d65-11e0-9ae8-d48564015472};struct(Windows.UI.Text.FontWeight;u2))\""))
     }
 
     @Test
