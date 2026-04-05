@@ -304,6 +304,75 @@ class RuntimeTypeRendererTest {
     }
 
     @Test
+    fun forwards_supported_guid_and_struct_pass_array_methods_from_companion() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "PropertyValue",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            staticInterfaces = listOf("Windows.Foundation.IPropertyValueStatics"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IPropertyValueStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "13131313-1313-1313-1313-131313131313",
+                            methods = listOf(
+                                WinMdMethod("CreateGuidArray", "Object", vtableIndex = 6, parameters = listOf(WinMdParameter("value", "Guid[]", isIn = true))),
+                                WinMdMethod("CreatePointArray", "Object", vtableIndex = 7, parameters = listOf(WinMdParameter("value", "Point[]", isIn = true))),
+                                WinMdMethod("CreateSizeArray", "Object", vtableIndex = 8, parameters = listOf(WinMdParameter("value", "Size[]", isIn = true))),
+                                WinMdMethod("CreateRectArray", "Object", vtableIndex = 9, parameters = listOf(WinMdParameter("value", "Rect[]", isIn = true))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val typeRegistry = TypeRegistry(model)
+        val renderer = RuntimeTypeRenderer(
+            typeNameMapper = TypeNameMapper(),
+            typeRegistry = typeRegistry,
+            delegateLambdaPlanResolver = DelegateLambdaPlanResolver(TypeNameMapper()),
+            eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+            runtimePropertyRenderer = RuntimePropertyRenderer(TypeNameMapper(), typeRegistry),
+            runtimeMethodRenderer = RuntimeMethodRenderer(
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                typeRegistry,
+                asyncRegistry(typeRegistry),
+            ),
+            runtimeCompanionRenderer = RuntimeCompanionRenderer(
+                typeRegistry,
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+                WinRtSignatureMapper(typeRegistry),
+                AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+                WinRtProjectionTypeMapper(),
+                KotlinCollectionProjectionMapper(),
+            ),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
+            winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
+        )
+
+        val binding = renderer.render(typeRegistry.findType("PropertyValue", "Windows.Foundation")!!).toString()
+
+        assertTrue(binding.contains("fun createGuidArray("))
+        assertTrue(binding.contains("statics.createGuidArray(value)"))
+        assertTrue(binding.contains("fun createPointArray("))
+        assertTrue(binding.contains("statics.createPointArray(value)"))
+        assertTrue(binding.contains("fun createSizeArray("))
+        assertTrue(binding.contains("statics.createSizeArray(value)"))
+        assertTrue(binding.contains("fun createRectArray("))
+        assertTrue(binding.contains("statics.createRectArray(value)"))
+    }
+
+    @Test
     fun forwards_supported_small_primitive_pass_array_methods_from_companion() {
         val model = WinMdModel(
             files = emptyList(),
@@ -2718,6 +2787,82 @@ class RuntimeTypeRendererTest {
             normalizedBinding,
             normalizedBinding.contains("factoryCreateWithInspectables(values).pointer"),
         )
+    }
+
+    @Test
+    fun renders_runtime_factory_constructors_for_supported_guid_and_struct_array_parameters() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Xaml.IWidget",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidgetFactory",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod("CreateWithGuids", "Example.Xaml.Widget", vtableIndex = 6, parameters = listOf(WinMdParameter(name = "guids", type = "Guid[]", isIn = true))),
+                                WinMdMethod("CreateWithPoints", "Example.Xaml.Widget", vtableIndex = 7, parameters = listOf(WinMdParameter(name = "points", type = "Point[]", isIn = true))),
+                                WinMdMethod("CreateWithSizes", "Example.Xaml.Widget", vtableIndex = 8, parameters = listOf(WinMdParameter(name = "sizes", type = "Size[]", isIn = true))),
+                                WinMdMethod("CreateWithRects", "Example.Xaml.Widget", vtableIndex = 9, parameters = listOf(WinMdParameter(name = "rects", type = "Rect[]", isIn = true))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val typeRegistry = TypeRegistry(model)
+        val renderer = RuntimeTypeRenderer(
+            typeNameMapper = TypeNameMapper(),
+            typeRegistry = typeRegistry,
+            delegateLambdaPlanResolver = DelegateLambdaPlanResolver(TypeNameMapper()),
+            eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+            runtimePropertyRenderer = RuntimePropertyRenderer(TypeNameMapper(), typeRegistry),
+            runtimeMethodRenderer = RuntimeMethodRenderer(
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                typeRegistry,
+                asyncRegistry(typeRegistry),
+            ),
+            runtimeCompanionRenderer = RuntimeCompanionRenderer(
+                typeRegistry,
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+                WinRtSignatureMapper(typeRegistry),
+                AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+                WinRtProjectionTypeMapper(),
+                KotlinCollectionProjectionMapper(),
+            ),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
+            winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
+        )
+
+        val binding = renderer.render(typeRegistry.findType("Widget", "Example.Xaml")!!).toString()
+        val normalizedBinding = binding.replace(Regex("\\s+"), " ")
+
+        assertTrue(normalizedBinding.contains("constructor(guids: kotlin.Array<kotlin.uuid.Uuid>)"))
+        assertTrue(normalizedBinding.contains("factoryCreateWithGuids(guids).pointer"))
+        assertTrue(normalizedBinding.contains("constructor(points: kotlin.Array<"))
+        assertTrue(normalizedBinding.contains("factoryCreateWithPoints(points).pointer"))
+        assertTrue(normalizedBinding.contains("constructor(sizes: kotlin.Array<"))
+        assertTrue(normalizedBinding.contains("factoryCreateWithSizes(sizes).pointer"))
+        assertTrue(normalizedBinding.contains("constructor(rects: kotlin.Array<"))
+        assertTrue(normalizedBinding.contains("factoryCreateWithRects(rects).pointer"))
     }
 
     @Test

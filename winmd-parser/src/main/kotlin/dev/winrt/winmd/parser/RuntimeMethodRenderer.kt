@@ -180,6 +180,8 @@ internal class RuntimeMethodRenderer(
         plannedInt32PassArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         plannedStringPassArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         plannedObjectPassArrayRuntimeMethod(method, currentNamespace)?.let { return it }
+        plannedGuidPassArrayRuntimeMethod(method, currentNamespace)?.let { return it }
+        plannedStructPassArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         plannedBooleanPassArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         plannedUInt8PassArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         plannedInt16PassArrayRuntimeMethod(method, currentNamespace)?.let { return it }
@@ -432,6 +434,36 @@ internal class RuntimeMethodRenderer(
         )
     }
 
+    private fun plannedGuidPassArrayRuntimeMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+    ): RuntimeMethodPlan? {
+        if (!method.isGuidPassArrayMethod { typeName -> supportsRuntimeObjectReturnType(typeName, currentNamespace) }) {
+            return null
+        }
+        return RuntimeMethodPlan(
+            nullPointerReturn = { method ->
+                if (method.returnType == "Unit") PlannedStatement("return")
+                else PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}"))
+            },
+            returnStatement = if (method.returnType == "Unit") "%L" else "return %L",
+            statementArgs = { method, namespace, parameterBindings ->
+                val abiArguments = guidPassArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterIndex = method.parameters.indexOf(parameter)
+                    val binding = parameterBindings[parameterIndex]
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, namespace),
+                    ) { typeName -> supportsRuntimeObjectType(typeName, namespace) } ?: return@guidPassArrayAbiArguments null
+                    CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, namespace))
+                } ?: error("Unsupported Guid pass-array runtime method: ${method.name}")
+                arrayOf(
+                    if (method.returnType == "Unit") runtimeVarargAbiCall("invokeUnitMethodWithArgs", method.vtableIndex!!, abiArguments)
+                    else runtimeObjectReturnCode(method = method, currentNamespace = namespace, abiCall = runtimeVarargAbiCall("invokeObjectMethodWithArgs", method.vtableIndex!!, abiArguments)),
+                )
+            },
+        )
+    }
+
     private fun plannedObjectReceiveArrayRuntimeMethod(method: WinMdMethod): RuntimeMethodPlan? {
         if (!method.isObjectReceiveArrayReturnMethod()) {
             return null
@@ -490,7 +522,12 @@ internal class RuntimeMethodRenderer(
             nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
             returnStatement = "return %L",
             statementArgs = { method, namespace, parameterBindings ->
-                val abiArguments = structReceiveArrayAbiArguments(method.parameters) { parameter ->
+                val abiArguments = structReceiveArrayAbiArguments(
+                    parameters = method.parameters,
+                    currentNamespace = namespace,
+                    typeRegistry = typeRegistry,
+                    expectedElementType = elementType,
+                ) { parameter ->
                     val parameterIndex = method.parameters.indexOf(parameter)
                     val binding = parameterBindings[parameterIndex]
                     val parameterCategory = methodParameterCategory(
@@ -500,6 +537,42 @@ internal class RuntimeMethodRenderer(
                 } ?: error("Unsupported struct receive-array runtime method: ${method.name}")
                 val structType = typeNameMapper.mapTypeName(elementType, namespace)
                 arrayOf(structReceiveArrayReturnExpression(method.vtableIndex!!, structType, abiArguments))
+            },
+        )
+    }
+
+    private fun plannedStructPassArrayRuntimeMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+    ): RuntimeMethodPlan? {
+        val elementType = method.supportedStructPassArrayElementType(currentNamespace, typeRegistry) ?: return null
+        if (method.returnType != "Unit" && !supportsRuntimeObjectReturnType(method.returnType, currentNamespace)) {
+            return null
+        }
+        return RuntimeMethodPlan(
+            nullPointerReturn = { method ->
+                if (method.returnType == "Unit") PlannedStatement("return")
+                else PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}"))
+            },
+            returnStatement = if (method.returnType == "Unit") "%L" else "return %L",
+            statementArgs = { method, namespace, parameterBindings ->
+                val abiArguments = structPassArrayAbiArguments(
+                    parameters = method.parameters,
+                    currentNamespace = namespace,
+                    typeRegistry = typeRegistry,
+                    expectedElementType = elementType,
+                ) { parameter ->
+                    val parameterIndex = method.parameters.indexOf(parameter)
+                    val binding = parameterBindings[parameterIndex]
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, namespace),
+                    ) { typeName -> supportsRuntimeObjectType(typeName, namespace) } ?: return@structPassArrayAbiArguments null
+                    CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, namespace))
+                } ?: error("Unsupported struct pass-array runtime method: ${method.name}")
+                arrayOf(
+                    if (method.returnType == "Unit") runtimeVarargAbiCall("invokeUnitMethodWithArgs", method.vtableIndex!!, abiArguments)
+                    else runtimeObjectReturnCode(method = method, currentNamespace = namespace, abiCall = runtimeVarargAbiCall("invokeObjectMethodWithArgs", method.vtableIndex!!, abiArguments)),
+                )
             },
         )
     }

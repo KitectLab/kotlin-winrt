@@ -336,6 +336,45 @@ internal class RuntimeTypeRenderer(
                         }
             ) ||
             (
+                candidate.method.copy(parameters = constructorParameters).isGuidPassArrayMethod { _ -> true } &&
+                    constructorParameters
+                        .filterNot { parameter -> parameter.isGuidPassArrayParameter() }
+                        .all { parameter ->
+                            methodParameterCategory(
+                                if (typeRegistry.isEnumType(parameter.type, candidate.runtimeClass.namespace)) {
+                                    enumSignatureType(typeRegistry, parameter.type, candidate.runtimeClass.namespace)
+                                } else {
+                                    parameter.type
+                                },
+                            ) { typeName ->
+                                supportsProjectedObjectTypeName(typeName)
+                            } != null
+                        }
+            ) ||
+            (
+                candidate.method.copy(parameters = constructorParameters).supportedStructPassArrayElementType(candidate.runtimeClass.namespace, typeRegistry) != null &&
+                    constructorParameters
+                        .filterNot { parameter ->
+                            parameter.isSupportedStructPassArrayParameter(
+                                candidate.runtimeClass.namespace,
+                                typeRegistry,
+                                candidate.method.copy(parameters = constructorParameters)
+                                    .supportedStructPassArrayElementType(candidate.runtimeClass.namespace, typeRegistry),
+                            )
+                        }
+                        .all { parameter ->
+                            methodParameterCategory(
+                                if (typeRegistry.isEnumType(parameter.type, candidate.runtimeClass.namespace)) {
+                                    enumSignatureType(typeRegistry, parameter.type, candidate.runtimeClass.namespace)
+                                } else {
+                                    parameter.type
+                                },
+                            ) { typeName ->
+                                supportsProjectedObjectTypeName(typeName)
+                            } != null
+                        }
+            ) ||
+            (
                 candidate.method.copy(parameters = constructorParameters).isBooleanPassArrayMethod { _ -> true } &&
                     constructorParameters
                         .filterNot { parameter -> parameter.isBooleanPassArrayParameter() }
