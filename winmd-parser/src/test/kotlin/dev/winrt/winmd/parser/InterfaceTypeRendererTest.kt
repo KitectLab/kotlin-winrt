@@ -226,6 +226,56 @@ class InterfaceTypeRendererTest {
     }
 
     @Test
+    fun does_not_project_enum_array_methods_as_scalar_enum_calls() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Core",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Core",
+                            name = "AnnotationType",
+                            kind = WinMdTypeKind.Enum,
+                            enumUnderlyingType = "Int32",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Core",
+                            name = "ISpreadsheetItemProvider",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GetAnnotationTypes",
+                                    returnType = "Example.Core.AnnotationType[]",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val typeRegistry = TypeRegistry(model)
+        val renderer = InterfaceTypeRenderer(
+            typeNameMapper = TypeNameMapper(),
+            delegateLambdaPlanResolver = DelegateLambdaPlanResolver(TypeNameMapper()),
+            eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+            typeRegistry = typeRegistry,
+            asyncMethodProjectionPlanner = AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry)),
+            asyncMethodRuleRegistry = AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
+            winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
+        )
+
+        val binding = renderer.render(typeRegistry.findType("ISpreadsheetItemProvider", "Example.Core")!!).single().toString()
+
+        assertFalse(binding.contains("fun getAnnotationTypes("))
+        assertFalse(binding.contains("Array<AnnotationType>.fromValue"))
+        assertFalse(binding.contains("invokeInt32Method(pointer, 6)"))
+    }
+
+    @Test
     fun unsubscribes_event_slots_with_finally_to_close_delegate_handles() {
         val model = WinMdModel(
             files = emptyList(),

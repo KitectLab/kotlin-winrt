@@ -45,10 +45,16 @@ internal class TypeRegistry(
     }
 
     fun isEnumType(typeName: String, currentNamespace: String): Boolean {
+        if (typeName.endsWith("[]")) {
+            return false
+        }
         return findType(typeName, currentNamespace)?.kind == WinMdTypeKind.Enum
     }
 
     fun isStructType(typeName: String, currentNamespace: String): Boolean {
+        if (typeName.endsWith("[]")) {
+            return false
+        }
         return findType(typeName, currentNamespace)?.kind == WinMdTypeKind.Struct ||
             resolveQualifiedName(typeName, currentNamespace) in intrinsicWellKnownStructTypes ||
             (hasValueTypeNameMarker(typeName) &&
@@ -56,6 +62,9 @@ internal class TypeRegistry(
     }
 
     fun enumUnderlyingType(typeName: String, currentNamespace: String): String? {
+        if (typeName.endsWith("[]")) {
+            return null
+        }
         return findType(typeName, currentNamespace)
             ?.takeIf { it.kind == WinMdTypeKind.Enum }
             ?.enumUnderlyingType

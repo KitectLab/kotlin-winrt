@@ -93,6 +93,36 @@ class TypeRegistryTest {
     }
 
     @Test
+    fun does_not_treat_arrays_as_struct_types() {
+        assertFalse(registry.isStructType("Windows.Foundation.Point[]", "Windows.Foundation"))
+    }
+
+    @Test
+    fun does_not_treat_arrays_as_enum_types() {
+        val runtimeRegistry = TypeRegistry(
+            WinMdModel(
+                files = emptyList(),
+                namespaces = listOf(
+                    WinMdNamespace(
+                        name = "Example.Core",
+                        types = listOf(
+                            WinMdType(
+                                namespace = "Example.Core",
+                                name = "AnnotationType",
+                                kind = WinMdTypeKind.Enum,
+                                enumUnderlyingType = "Int32",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        assertFalse(runtimeRegistry.isEnumType("Example.Core.AnnotationType[]", "Example.Core"))
+        assertNull(runtimeRegistry.enumUnderlyingType("Example.Core.AnnotationType[]", "Example.Core"))
+    }
+
+    @Test
     fun returns_null_for_unknown_types() {
         assertNull(registry.findType("Windows.Foundation.Missing"))
     }
