@@ -170,7 +170,7 @@ class WinRtSignatureMapperTest {
     @Test
     fun maps_struct_to_struct_signature_using_field_signatures() {
         assertEquals(
-            "struct(Windows.Foundation.Point;f8;f8)",
+            "struct(Windows.Foundation.Point;f4;f4)",
             mapper.signatureFor("Windows.Foundation.Point", "Windows.Foundation"),
         )
         assertEquals(
@@ -182,11 +182,11 @@ class WinRtSignatureMapperTest {
     @Test
     fun maps_well_known_struct_signatures_without_metadata() {
         assertEquals(
-            "struct(Windows.Foundation.Rect;f8;f8;f8;f8)",
+            "struct(Windows.Foundation.Rect;f4;f4;f4;f4)",
             mapper.signatureFor("Windows.Foundation.Rect", "Microsoft.UI.Xaml"),
         )
         assertEquals(
-            "struct(Windows.Foundation.Size;f8;f8)",
+            "struct(Windows.Foundation.Size;f4;f4)",
             mapper.signatureFor("Size", "Windows.Foundation"),
         )
         assertEquals(
@@ -198,7 +198,7 @@ class WinRtSignatureMapperTest {
     @Test
     fun maps_well_known_struct_arguments_inside_parameterized_interfaces_without_metadata() {
         assertEquals(
-            "pinterface({bbe1fa4c-b0e3-4583-baef-1f1b2e483e56};struct(Windows.Foundation.Rect;f8;f8;f8;f8))",
+            "pinterface({bbe1fa4c-b0e3-4583-baef-1f1b2e483e56};struct(Windows.Foundation.Rect;f4;f4;f4;f4))",
             mapper.signatureFor(
                 "Windows.Foundation.Collections.IVectorView`1<Windows.Foundation.Rect>",
                 "Microsoft.UI.Xaml",

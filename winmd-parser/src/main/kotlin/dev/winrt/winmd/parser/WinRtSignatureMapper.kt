@@ -118,12 +118,12 @@ internal class WinRtSignatureMapper(
             "DateTime" to "struct(Windows.Foundation.DateTime;i8)",
             "TimeSpan" to "struct(Windows.Foundation.TimeSpan;i8)",
             "EventRegistrationToken" to "struct(Windows.Foundation.EventRegistrationToken;i8)",
-            "Point" to "struct(Windows.Foundation.Point;f8;f8)",
-            "Windows.Foundation.Point" to "struct(Windows.Foundation.Point;f8;f8)",
-            "Size" to "struct(Windows.Foundation.Size;f8;f8)",
-            "Windows.Foundation.Size" to "struct(Windows.Foundation.Size;f8;f8)",
-            "Rect" to "struct(Windows.Foundation.Rect;f8;f8;f8;f8)",
-            "Windows.Foundation.Rect" to "struct(Windows.Foundation.Rect;f8;f8;f8;f8)",
+            "Point" to "struct(Windows.Foundation.Point;f4;f4)",
+            "Windows.Foundation.Point" to "struct(Windows.Foundation.Point;f4;f4)",
+            "Size" to "struct(Windows.Foundation.Size;f4;f4)",
+            "Windows.Foundation.Size" to "struct(Windows.Foundation.Size;f4;f4)",
+            "Rect" to "struct(Windows.Foundation.Rect;f4;f4;f4;f4)",
+            "Windows.Foundation.Rect" to "struct(Windows.Foundation.Rect;f4;f4;f4;f4)",
         )
 
         val wellKnownGenericInterfaceGuids = mapOf(
