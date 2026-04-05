@@ -1976,10 +1976,10 @@ class KotlinBindingGeneratorTest {
         assertTrue(applicationBinding.contains("WinRtActivationKind.Factory"))
         assertTrue(windowBinding.contains("override val activationKind"))
         assertTrue(windowBinding.contains("WinRtActivationKind.Factory"))
-        assertTrue(applicationBinding.contains("constructor() : this(Companion.activate().pointer)"))
-        assertTrue(windowBinding.contains("constructor() : this(Companion.activateInstance().pointer)"))
-        assertTrue(applicationBinding.contains("fun activate(): Application = WinRtRuntime.activate(this, ::Application)"))
-        assertTrue(windowBinding.contains("fun activateInstance(): Window = WinRtRuntime.activate(this, ::Window)"))
+        assertFalse(applicationBinding.contains("constructor() : this("))
+        assertFalse(windowBinding.contains("constructor() : this("))
+        assertFalse(applicationBinding.contains("fun activate(): Application = WinRtRuntime.activate(this, ::Application)"))
+        assertFalse(windowBinding.contains("fun activateInstance(): Window = WinRtRuntime.activate(this, ::Window)"))
         assertTrue(windowBinding.contains("defaultInterfaceName: String? = \"Microsoft.UI.Xaml.IWindow\""))
         assertTrue(iStringableBinding.contains("open class IStringable"))
         assertTrue(iStringableBinding.contains("WinRtInterfaceProjection"))
@@ -8502,6 +8502,7 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val iWindowBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/IWindow.kt" }.content
         val applicationBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/Application.kt" }.content
+        val normalizedApplicationBinding = applicationBinding.replace(Regex("\\s+"), "")
         assertTrue(iWindowBinding.contains("fun activate()"))
         assertTrue(iWindowBinding.contains("PlatformComInterop.invokeUnitMethod(pointer, 26).getOrThrow()"))
         assertTrue(iWindowBinding.contains("fun put_Title("))
@@ -8510,7 +8511,11 @@ class KotlinBindingGeneratorTest {
         assertTrue(iWindowBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 9,"))
         assertFalse(files.any { it.relativePath == "Microsoft/UI/Xaml/IApplicationOverrides.kt" })
         assertTrue(applicationBinding.contains("protected open fun onLaunched(args: LaunchActivatedEventArgs)"))
-        assertTrue(applicationBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 6, (args as Inspectable).pointer).getOrThrow()"))
+        assertTrue(
+            normalizedApplicationBinding.contains(
+                "PlatformComInterop.invokeObjectSetter(pointer,6,projectedObjectArgumentPointer(args,\"Microsoft.UI.Xaml.LaunchActivatedEventArgs\",\"cinterface(IInspectable)\")).getOrThrow()",
+            ),
+        )
     }
 
     @Test
@@ -8649,13 +8654,22 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val widgetBinding = files.first { it.relativePath == "Example/Xaml/Widget.kt" }.content
+        val normalizedWidgetBinding = widgetBinding.replace(Regex("\\s+"), "")
 
         assertFalse(files.any { it.relativePath == "Example/Xaml/IWidgetOverrides.kt" })
         assertFalse(files.any { it.relativePath == "Example/Xaml/IWidgetOverrides2.kt" })
         assertTrue(widgetBinding.contains("protected open fun onLaunch(args: LaunchArgs)"))
-        assertTrue(widgetBinding.contains("invokeObjectSetter(pointer, 6, (args as Inspectable).pointer).getOrThrow()"))
+        assertTrue(
+            normalizedWidgetBinding.contains(
+                "invokeObjectSetter(pointer,6,projectedObjectArgumentPointer(args,\"Example.Xaml.LaunchArgs\",\"cinterface(IInspectable)\")).getOrThrow()",
+            ),
+        )
         assertTrue(widgetBinding.contains("protected open fun onClose(args: CloseArgs)"))
-        assertTrue(widgetBinding.contains("invokeObjectSetter(pointer, 7, (args as Inspectable).pointer).getOrThrow()"))
+        assertTrue(
+            normalizedWidgetBinding.contains(
+                "invokeObjectSetter(pointer,7,projectedObjectArgumentPointer(args,\"Example.Xaml.CloseArgs\",\"cinterface(IInspectable)\")).getOrThrow()",
+            ),
+        )
     }
 
     @Test
@@ -8783,11 +8797,16 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val baseBinding = files.first { it.relativePath == "Example/Xaml/BaseWidget.kt" }.content
         val derivedBinding = files.first { it.relativePath == "Example/Xaml/DerivedWidget.kt" }.content
+        val normalizedDerivedBinding = derivedBinding.replace(Regex("\\s+"), "")
 
         assertTrue(baseBinding.contains("protected open fun onLaunch(args: LaunchArgs)"))
         assertTrue(baseBinding.contains("protected open var title: String"))
         assertTrue(derivedBinding.contains("protected override fun onLaunch(args: LaunchArgs)"))
-        assertTrue(derivedBinding.contains("invokeObjectSetter(pointer, 9, (args as Inspectable).pointer).getOrThrow()"))
+        assertTrue(
+            normalizedDerivedBinding.contains(
+                "invokeObjectSetter(pointer,9,projectedObjectArgumentPointer(args,\"Example.Xaml.LaunchArgs\",\"cinterface(IInspectable)\")).getOrThrow()",
+            ),
+        )
         assertTrue(derivedBinding.contains("protected override var title: String"))
         assertTrue(derivedBinding.contains("invokeHStringMethod(pointer, 10).getOrThrow()"))
         assertTrue(derivedBinding.contains("invokeStringSetter(pointer, 11, value).getOrThrow()"))
@@ -8872,9 +8891,14 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val derivedBinding = files.first { it.relativePath == "Example/Xaml/DerivedWidget.kt" }.content
+        val normalizedDerivedBinding = derivedBinding.replace(Regex("\\s+"), "")
 
         assertTrue(derivedBinding.contains("protected override fun onLaunch(args: LaunchArgs)"))
-        assertTrue(derivedBinding.contains("invokeObjectSetter(pointer, 7, (args as Inspectable).pointer).getOrThrow()"))
+        assertTrue(
+            normalizedDerivedBinding.contains(
+                "invokeObjectSetter(pointer,7,projectedObjectArgumentPointer(args,\"Example.Xaml.LaunchArgs\",\"cinterface(IInspectable)\")).getOrThrow()",
+            ),
+        )
     }
 
     @Test
