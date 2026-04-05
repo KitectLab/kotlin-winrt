@@ -357,6 +357,41 @@ class RuntimeMethodRendererTest {
     }
 
     @Test
+    fun renders_runtime_object_pass_array_methods_with_count_and_buffer_arguments() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    "CreateInspectableArray",
+                                    "Object",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter("value", "Object[]", isIn = true)),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/Widget.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("funcreateInspectableArray(value:Array<Inspectable>):Inspectable"))
+        assertTrue(binding.contains("Inspectable(PlatformComInterop.invokeObjectMethodWithArgs(pointer,6,value.size,Array(value.size){index->value[index].pointer}).getOrThrow())"))
+    }
+
+    @Test
     fun renders_runtime_uint32_pass_array_methods_with_count_and_buffer_arguments() {
         val model = WinMdModel(
             files = emptyList(),

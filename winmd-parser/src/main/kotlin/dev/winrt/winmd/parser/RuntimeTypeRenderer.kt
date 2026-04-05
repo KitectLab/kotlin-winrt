@@ -320,6 +320,22 @@ internal class RuntimeTypeRenderer(
                         }
             ) ||
             (
+                candidate.method.copy(parameters = constructorParameters).isObjectPassArrayMethod { _ -> true } &&
+                    constructorParameters
+                        .filterNot { parameter -> parameter.isObjectPassArrayParameter() }
+                        .all { parameter ->
+                            methodParameterCategory(
+                                if (typeRegistry.isEnumType(parameter.type, candidate.runtimeClass.namespace)) {
+                                    enumSignatureType(typeRegistry, parameter.type, candidate.runtimeClass.namespace)
+                                } else {
+                                    parameter.type
+                                },
+                            ) { typeName ->
+                                supportsProjectedObjectTypeName(typeName)
+                            } != null
+                        }
+            ) ||
+            (
                 candidate.method.copy(parameters = constructorParameters).isDateTimePassArrayMethod { _ -> true } &&
                     constructorParameters
                         .filterNot { parameter -> parameter.isDateTimePassArrayParameter() }

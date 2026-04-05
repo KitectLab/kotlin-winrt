@@ -179,6 +179,7 @@ internal class RuntimeMethodRenderer(
         plannedUInt64ReceiveArrayRuntimeMethod(method)?.let { return it }
         plannedInt32PassArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         plannedStringPassArrayRuntimeMethod(method, currentNamespace)?.let { return it }
+        plannedObjectPassArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         plannedUInt32PassArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         plannedInt64PassArrayRuntimeMethod(method, currentNamespace)?.let { return it }
         plannedUInt64PassArrayRuntimeMethod(method, currentNamespace)?.let { return it }
@@ -842,6 +843,49 @@ internal class RuntimeMethodRenderer(
                         CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, currentNamespace))
                     },
                 ) ?: error("Unsupported UInt32 pass-array runtime method: ${method.name}")
+                arrayOf(
+                    if (method.returnType == "Unit") {
+                        runtimeVarargAbiCall("invokeUnitMethodWithArgs", method.vtableIndex!!, abiArguments)
+                    } else {
+                        runtimeObjectReturnCode(
+                            method = method,
+                            currentNamespace = currentNamespace,
+                            abiCall = runtimeVarargAbiCall("invokeObjectMethodWithArgs", method.vtableIndex!!, abiArguments),
+                        )
+                    },
+                )
+            },
+        )
+    }
+
+    private fun plannedObjectPassArrayRuntimeMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+    ): RuntimeMethodPlan? {
+        if (!method.isObjectPassArrayMethod { typeName -> supportsRuntimeObjectReturnType(typeName, currentNamespace) }) {
+            return null
+        }
+        return RuntimeMethodPlan(
+            nullPointerReturn = { method ->
+                if (method.returnType == "Unit") {
+                    PlannedStatement("return")
+                } else {
+                    PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}"))
+                }
+            },
+            returnStatement = if (method.returnType == "Unit") "%L" else "return %L",
+            statementArgs = { method, _, parameterBindings ->
+                val abiArguments = objectPassArrayAbiArguments(
+                    parameters = method.parameters,
+                    lowerArgument = { parameter ->
+                        val parameterIndex = method.parameters.indexOf(parameter)
+                        val binding = parameterBindings[parameterIndex]
+                        val parameterCategory = methodParameterCategory(
+                            signatureParameterType(parameter.type, currentNamespace),
+                        ) { typeName -> supportsRuntimeObjectType(typeName, currentNamespace) } ?: return@objectPassArrayAbiArguments null
+                        CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, currentNamespace))
+                    },
+                ) ?: error("Unsupported Object pass-array runtime method: ${method.name}")
                 arrayOf(
                     if (method.returnType == "Unit") {
                         runtimeVarargAbiCall("invokeUnitMethodWithArgs", method.vtableIndex!!, abiArguments)
