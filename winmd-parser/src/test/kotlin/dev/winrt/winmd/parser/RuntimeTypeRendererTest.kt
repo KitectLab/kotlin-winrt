@@ -1727,6 +1727,86 @@ class RuntimeTypeRendererTest {
     }
 
     @Test
+    fun renders_runtime_factory_constructors_for_supported_uint32_array_parameters() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Xaml.IWidget",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidgetFactory",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "CreateWithIds",
+                                    returnType = "Example.Xaml.Widget",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter(name = "values", type = "UInt32[]", isIn = true),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val typeRegistry = TypeRegistry(model)
+        val renderer = RuntimeTypeRenderer(
+            typeNameMapper = TypeNameMapper(),
+            typeRegistry = typeRegistry,
+            delegateLambdaPlanResolver = DelegateLambdaPlanResolver(TypeNameMapper()),
+            eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+            runtimePropertyRenderer = RuntimePropertyRenderer(TypeNameMapper(), typeRegistry),
+            runtimeMethodRenderer = RuntimeMethodRenderer(
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                typeRegistry,
+                asyncRegistry(typeRegistry),
+            ),
+            runtimeCompanionRenderer = RuntimeCompanionRenderer(
+                typeRegistry,
+                TypeNameMapper(),
+                DelegateLambdaPlanResolver(TypeNameMapper()),
+                EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+                WinRtSignatureMapper(typeRegistry),
+                AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+                WinRtProjectionTypeMapper(),
+                KotlinCollectionProjectionMapper(),
+            ),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
+            winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
+        )
+
+        val binding = renderer.render(typeRegistry.findType("Widget", "Example.Xaml")!!).toString()
+        val normalizedBinding = binding.replace(Regex("\\s+"), " ")
+
+        assertTrue(
+            normalizedBinding,
+            normalizedBinding.contains("constructor(values: kotlin.Array<dev.winrt.core.UInt32>)"),
+        )
+        assertTrue(
+            normalizedBinding,
+            normalizedBinding.contains("factoryCreateWithIds(values).pointer"),
+        )
+    }
+
+    @Test
     fun renders_runtime_factory_constructors_for_supported_int64_array_parameters() {
         val model = WinMdModel(
             files = emptyList(),
