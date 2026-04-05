@@ -129,6 +129,7 @@ class WinUiNuGetGenerationSmokeTest {
                 "Microsoft.UI.Xaml.Controls",
                 "Microsoft.UI.Xaml.Hosting",
                 "Microsoft.UI.Xaml.Input",
+                "Microsoft.UI.Xaml.Navigation",
             ),
         )
         val generatedFiles = KotlinBindingGenerator().generate(model).associateBy { it.relativePath }
@@ -136,14 +137,29 @@ class WinUiNuGetGenerationSmokeTest {
         val keyArgsBinding = generatedFiles["Microsoft/UI/Xaml/Input/IKeyRoutedEventArgs.kt"]
         val hostingBinding = generatedFiles["Microsoft/UI/Xaml/Hosting/IDesktopWindowXamlSource.kt"]
         val tearOutBinding = generatedFiles["Microsoft/UI/Xaml/Controls/TabViewTabTearOutRequestedEventArgs.kt"]
+        val textBlockBinding = generatedFiles["Microsoft/UI/Xaml/Controls/ITextBlock.kt"]
+        val controlTemplateBinding = generatedFiles["Microsoft/UI/Xaml/Controls/IControlTemplate.kt"]
+        val navigationEventBinding = generatedFiles["Microsoft/UI/Xaml/Navigation/INavigationEventArgs.kt"]
+        val navigationFailedBinding = generatedFiles["Microsoft/UI/Xaml/Navigation/INavigationFailedEventArgs.kt"]
+        val navigatingCancelBinding = generatedFiles["Microsoft/UI/Xaml/Navigation/INavigatingCancelEventArgs.kt"]
 
         assertNotNull(keyArgsBinding)
         assertNotNull(hostingBinding)
         assertNotNull(tearOutBinding)
+        assertNotNull(textBlockBinding)
+        assertNotNull(controlTemplateBinding)
+        assertNotNull(navigationEventBinding)
+        assertNotNull(navigationFailedBinding)
+        assertNotNull(navigatingCancelBinding)
 
         val keyArgsContent = keyArgsBinding!!.content.replace(Regex("\\s+"), "")
         val hostingContent = hostingBinding!!.content.replace(Regex("\\s+"), "")
         val tearOutContent = tearOutBinding!!.content.replace(Regex("\\s+"), "")
+        val textBlockContent = textBlockBinding!!.content.replace(Regex("\\s+"), "")
+        val controlTemplateContent = controlTemplateBinding!!.content.replace(Regex("\\s+"), "")
+        val navigationEventContent = navigationEventBinding!!.content.replace(Regex("\\s+"), "")
+        val navigationFailedContent = navigationFailedBinding!!.content.replace(Regex("\\s+"), "")
+        val navigatingCancelContent = navigatingCancelBinding!!.content.replace(Regex("\\s+"), "")
 
         assertTrue(keyArgsContent.contains("valkeyStatus:CorePhysicalKeyStatus"))
         assertTrue(keyArgsContent.contains("CorePhysicalKeyStatus.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer,7,CorePhysicalKeyStatus.ABI_LAYOUT).getOrThrow())"))
@@ -153,6 +169,23 @@ class WinUiNuGetGenerationSmokeTest {
 
         assertTrue(tearOutContent.contains("valnewWindowId:WindowId"))
         assertTrue(tearOutContent.contains("WindowId.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer,8,WindowId.ABI_LAYOUT).getOrThrow())"))
+
+        assertTrue(textBlockContent.contains("varfontWeight:FontWeight"))
+        assertTrue(textBlockContent.contains("FontWeight.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer,10,FontWeight.ABI_LAYOUT).getOrThrow())"))
+        assertTrue(textBlockContent.contains("PlatformComInterop.invokeUnitMethodWithArgs(pointer,11,value.toAbi()).getOrThrow()"))
+
+        assertTrue(controlTemplateContent.contains("vartargetType:TypeName"))
+        assertTrue(controlTemplateContent.contains("TypeName.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer,6,TypeName.ABI_LAYOUT).getOrThrow())"))
+        assertTrue(controlTemplateContent.contains("PlatformComInterop.invokeUnitMethodWithArgs(pointer,7,value.toAbi()).getOrThrow()"))
+
+        assertTrue(navigationEventContent.contains("valsourcePageType:TypeName"))
+        assertTrue(navigationEventContent.contains("TypeName.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer,9,TypeName.ABI_LAYOUT).getOrThrow())"))
+
+        assertTrue(navigationFailedContent.contains("valsourcePageType:TypeName"))
+        assertTrue(navigationFailedContent.contains("TypeName.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer,9,TypeName.ABI_LAYOUT).getOrThrow())"))
+
+        assertTrue(navigatingCancelContent.contains("valsourcePageType:TypeName"))
+        assertTrue(navigatingCancelContent.contains("TypeName.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer,9,TypeName.ABI_LAYOUT).getOrThrow())"))
     }
 
     @Test
