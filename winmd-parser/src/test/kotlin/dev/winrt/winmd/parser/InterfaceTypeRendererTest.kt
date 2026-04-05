@@ -13,6 +13,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class InterfaceTypeRendererTest {
+    private fun asyncRegistry(typeRegistry: TypeRegistry): AsyncMethodRuleRegistry {
+        return AsyncMethodRuleRegistry(
+            TypeNameMapper(),
+            AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry)),
+            ProjectedObjectArgumentLowering(typeRegistry, WinRtSignatureMapper(typeRegistry), WinRtProjectionTypeMapper()),
+        )
+    }
+
     @Test
     fun renders_versioned_runtime_helpers_as_internal_and_hides_override_interfaces() {
         val model = WinMdModel(
@@ -64,6 +72,7 @@ class InterfaceTypeRendererTest {
             typeRegistry = typeRegistry,
             asyncMethodProjectionPlanner = AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry)),
             asyncMethodRuleRegistry = AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
             winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
         )
 
@@ -107,6 +116,7 @@ class InterfaceTypeRendererTest {
             typeRegistry = typeRegistry,
             asyncMethodProjectionPlanner = AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry)),
             asyncMethodRuleRegistry = AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
             winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
         )
 
@@ -154,6 +164,7 @@ class InterfaceTypeRendererTest {
             typeRegistry = typeRegistry,
             asyncMethodProjectionPlanner = AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry)),
             asyncMethodRuleRegistry = AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
             winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
         )
 
@@ -200,6 +211,7 @@ class InterfaceTypeRendererTest {
             typeRegistry = typeRegistry,
             asyncMethodProjectionPlanner = AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry)),
             asyncMethodRuleRegistry = AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
             winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
         )
 
@@ -268,6 +280,7 @@ class InterfaceTypeRendererTest {
             typeRegistry = typeRegistry,
             asyncMethodProjectionPlanner = AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry)),
             asyncMethodRuleRegistry = AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
             winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
         )
 
@@ -275,5 +288,208 @@ class InterfaceTypeRendererTest {
 
         assertTrue(binding.contains("finally"))
         assertTrue(binding.contains("delegateHandles.remove(token)?.close()"))
+    }
+
+    @Test
+    fun renders_value_type_interface_properties_and_methods_with_struct_abi_calls() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Rect",
+                            kind = WinMdTypeKind.Struct,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            properties = listOf(
+                                WinMdProperty("Bounds", "Rect", mutable = true, getterVtableIndex = 6, setterVtableIndex = 7),
+                            ),
+                            methods = listOf(
+                                WinMdMethod("TransformBounds", "Rect", vtableIndex = 8),
+                                WinMdMethod(
+                                    "CreateOverlay",
+                                    "Object",
+                                    vtableIndex = 9,
+                                    parameters = listOf(WinMdParameter("bounds", "Rect")),
+                                ),
+                                WinMdMethod(
+                                    "SetBounds",
+                                    "Unit",
+                                    vtableIndex = 10,
+                                    parameters = listOf(WinMdParameter("bounds", "Rect")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/IWidget.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("Rect.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer,6,Rect.ABI_LAYOUT).getOrThrow())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithArgs(pointer,7,value.toAbi()).getOrThrow()"))
+        assertTrue(binding.contains("Rect.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer,8,Rect.ABI_LAYOUT).getOrThrow())"))
+        assertTrue(binding.contains("Inspectable(PlatformComInterop.invokeObjectMethodWithArgs(pointer,9,bounds.toAbi()).getOrThrow())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithArgs(pointer,10,bounds.toAbi()).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_nullable_value_type_interface_properties_via_property_value_boxing() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Rect",
+                            kind = WinMdTypeKind.Struct,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            properties = listOf(
+                                WinMdProperty(
+                                    "Bounds",
+                                    "Windows.Foundation.IReference`1<Windows.Foundation.Rect>",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/IWidget.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("varbounds:Rect?"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow().let{if(it.isNull)nullelseIPropertyValue.from(Inspectable(it)).getRect()}"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectSetter(pointer,7,if(value==null)ComPtr.NULLelsePropertyValue.createRect(value).pointer).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_small_scalar_interface_properties_and_methods_via_generic_abi() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            properties = listOf(
+                                WinMdProperty(
+                                    "Priority",
+                                    "Int16",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                                WinMdProperty(
+                                    "OptionalPriority",
+                                    "Windows.Foundation.IReference`1<Int16>",
+                                    mutable = true,
+                                    getterVtableIndex = 8,
+                                    setterVtableIndex = 9,
+                                ),
+                            ),
+                            methods = listOf(
+                                WinMdMethod("GetShortcut", "Char16", vtableIndex = 10),
+                                WinMdMethod(
+                                    "CreateChild",
+                                    "Object",
+                                    vtableIndex = 11,
+                                    parameters = listOf(WinMdParameter("priority", "Int16")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/IWidget.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("varpriority:Short"))
+        assertTrue(binding.contains("PlatformComInterop.invokeMethodWithResultKind(pointer,6,ComMethodResultKind.INT16).getOrThrow().requireInt16()"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithArgs(pointer,7,value).getOrThrow()"))
+        assertTrue(binding.contains("varoptionalPriority:Short?"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethod(pointer,8).getOrThrow().let{if(it.isNull)nullelseIPropertyValue.from(Inspectable(it)).getInt16()}"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectSetter(pointer,9,if(value==null)ComPtr.NULLelsePropertyValue.createInt16(value).pointer).getOrThrow()"))
+        assertTrue(binding.contains("fungetShortcut():Char"))
+        assertTrue(binding.contains("PlatformComInterop.invokeMethodWithResultKind(pointer,10,ComMethodResultKind.CHAR16).getOrThrow().requireChar16()"))
+        assertTrue(binding.contains("Inspectable(PlatformComInterop.invokeObjectMethodWithArgs(pointer,11,priority).getOrThrow())"))
+    }
+
+    @Test
+    fun renders_nullable_enum_interface_properties_via_generic_ireference_projection() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "Mode",
+                            kind = WinMdTypeKind.Enum,
+                            enumUnderlyingType = "UInt32",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            properties = listOf(
+                                WinMdProperty(
+                                    "Mode",
+                                    "Windows.Foundation.IReference`1<Example.Contracts.Mode>",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Example/Contracts/IWidget.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("varmode:Mode?"))
+        assertTrue(binding.contains("IReference.from<Mode>(Inspectable(it),\"enum(Example.Contracts.Mode;u4)\",\"Example.Contracts.Mode\")"))
+        assertTrue(binding.contains("Mode.fromValue(PlatformComInterop.invokeUInt32Method(reference.pointer,6).getOrThrow())"))
+        assertTrue(binding.contains("projectedObjectArgumentPointer("))
+        assertTrue(binding.contains("\"pinterface({61c17706-2d65-11e0-9ae8-d48564015472};enum(Example.Contracts.Mode;u4))\""))
     }
 }

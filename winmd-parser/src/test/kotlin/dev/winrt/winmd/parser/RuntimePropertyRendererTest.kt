@@ -111,7 +111,43 @@ class RuntimePropertyRendererTest {
             .replace(Regex("\\s+"), "")
 
         assertTrue(binding.contains("valtitle:String?"))
-        assertTrue(binding.contains("if(pointer.isNull)nullelserun{valvalue=PlatformComInterop.invokeHStringMethod(pointer,6).getOrThrow()try{value.takeUnless{it.isNull}?.toKotlinString()}finally{value.close()}}"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow().let{if(it.isNull)nullelseIPropertyValue.from(Inspectable(it)).getString()}"))
+    }
+
+    @Test
+    fun renders_ireference_known_external_struct_properties_as_nullable_struct_accessors() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Graphics",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Graphics",
+                            name = "NullableVectorCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Offset",
+                                    type = "IReference<Windows.Foundation.Numerics.Vector2>",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Example/Graphics/NullableVectorCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("valoffset:Vector2?"))
+        assertTrue(binding.contains("IReference.from<Vector2>(Inspectable(it),\"struct(Windows.Foundation.Numerics.Vector2;f4;f4)\",\"Windows.Foundation.Numerics.Vector2\")"))
+        assertTrue(binding.contains("Vector2.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(reference.pointer,6,Vector2.ABI_LAYOUT).getOrThrow())"))
     }
 
     @Test
@@ -307,7 +343,7 @@ class RuntimePropertyRendererTest {
             .replace(Regex("\\s+"), "")
 
         assertTrue(binding.contains("valcount:Int32?"))
-        assertTrue(binding.contains("if(pointer.isNull)nullelseInt32(PlatformComInterop.invokeInt32Method(pointer,6).getOrThrow())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow().let{if(it.isNull)nullelseIPropertyValue.from(Inspectable(it)).getInt32()}"))
     }
 
     @Test
@@ -342,7 +378,7 @@ class RuntimePropertyRendererTest {
             .replace(Regex("\\s+"), "")
 
         assertTrue(binding.contains("valenabled:WinRtBoolean?"))
-        assertTrue(binding.contains("if(pointer.isNull)nullelseWinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer,6).getOrThrow())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow().let{if(it.isNull)nullelseIPropertyValue.from(Inspectable(it)).getBoolean()}"))
     }
 
     @Test
@@ -377,7 +413,7 @@ class RuntimePropertyRendererTest {
             .replace(Regex("\\s+"), "")
 
         assertTrue(binding.contains("valcount:UInt32?"))
-        assertTrue(binding.contains("if(pointer.isNull)nullelseUInt32(PlatformComInterop.invokeUInt32Method(pointer,6).getOrThrow())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow().let{if(it.isNull)nullelseIPropertyValue.from(Inspectable(it)).getUInt32()}"))
     }
 
     @Test
@@ -412,7 +448,7 @@ class RuntimePropertyRendererTest {
             .replace(Regex("\\s+"), "")
 
         assertTrue(binding.contains("valcount:Int64?"))
-        assertTrue(binding.contains("if(pointer.isNull)nullelseInt64(PlatformComInterop.invokeInt64Getter(pointer,6).getOrThrow())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow().let{if(it.isNull)nullelseIPropertyValue.from(Inspectable(it)).getInt64()}"))
     }
 
     @Test
@@ -447,7 +483,7 @@ class RuntimePropertyRendererTest {
             .replace(Regex("\\s+"), "")
 
         assertTrue(binding.contains("valcount:UInt64?"))
-        assertTrue(binding.contains("if(pointer.isNull)nullelseUInt64(PlatformComInterop.invokeInt64Getter(pointer,6).getOrThrow().toULong())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow().let{if(it.isNull)nullelseIPropertyValue.from(Inspectable(it)).getUInt64()}"))
     }
 
     @Test
@@ -482,7 +518,7 @@ class RuntimePropertyRendererTest {
             .replace(Regex("\\s+"), "")
 
         assertTrue(binding.contains("valratio:Float32?"))
-        assertTrue(binding.contains("if(pointer.isNull)nullelseFloat32(PlatformComInterop.invokeFloat32Method(pointer,6).getOrThrow())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow().let{if(it.isNull)nullelseIPropertyValue.from(Inspectable(it)).getSingle()}"))
     }
 
     @Test
@@ -517,7 +553,184 @@ class RuntimePropertyRendererTest {
             .replace(Regex("\\s+"), "")
 
         assertTrue(binding.contains("valratio:Float64?"))
-        assertTrue(binding.contains("if(pointer.isNull)nullelseFloat64(PlatformComInterop.invokeFloat64Method(pointer,6).getOrThrow())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow().let{if(it.isNull)nullelseIPropertyValue.from(Inspectable(it)).getDouble()}"))
+    }
+
+    @Test
+    fun renders_struct_properties_as_struct_abi_accessors() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Rect",
+                            kind = WinMdTypeKind.Struct,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "RectCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Bounds",
+                                    type = "Rect",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/RectCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("RuntimeProperty<Rect>(Rect.fromAbi(ComStructValue(Rect.ABI_LAYOUT,ByteArray(Rect.ABI_LAYOUT.byteSize))))"))
+        assertTrue(binding.contains("Rect.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer,6,Rect.ABI_LAYOUT).getOrThrow())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithArgs(pointer,7,value.toAbi()).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_nullable_struct_properties_via_property_value_boxing() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Rect",
+                            kind = WinMdTypeKind.Struct,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "NullableRectCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Bounds",
+                                    type = "Windows.Foundation.IReference`1<Windows.Foundation.Rect>",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/NullableRectCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("valbounds:Rect?") || binding.contains("varbounds:Rect?"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow().let{if(it.isNull)nullelseIPropertyValue.from(Inspectable(it)).getRect()}"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectSetter(pointer,7,if(value==null)ComPtr.NULLelsePropertyValue.createRect(value).pointer).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_small_scalar_properties_and_nullable_references_via_generic_abi_and_property_value() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "SmallScalarCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Priority",
+                                    type = "Int16",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                                WinMdProperty(
+                                    name = "OptionalPriority",
+                                    type = "Windows.Foundation.IReference`1<Int16>",
+                                    mutable = true,
+                                    getterVtableIndex = 8,
+                                    setterVtableIndex = 9,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/SmallScalarCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("varpriority:Short"))
+        assertTrue(binding.contains("PlatformComInterop.invokeMethodWithResultKind(pointer,6,ComMethodResultKind.INT16).getOrThrow().requireInt16()"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithArgs(pointer,7,value).getOrThrow()"))
+        assertTrue(binding.contains("varoptionalPriority:Short?"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectMethod(pointer,8).getOrThrow().let{if(it.isNull)nullelseIPropertyValue.from(Inspectable(it)).getInt16()}"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectSetter(pointer,9,if(value==null)ComPtr.NULLelsePropertyValue.createInt16(value).pointer).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_nullable_enum_properties_via_generic_ireference_projection() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "Mode",
+                            kind = WinMdTypeKind.Enum,
+                            enumUnderlyingType = "UInt32",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "NullableModeCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Mode",
+                                    type = "Windows.Foundation.IReference`1<Example.Contracts.Mode>",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Example/Contracts/NullableModeCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("varmode:Mode?"))
+        assertTrue(binding.contains("IReference.from<Mode>(Inspectable(it),\"enum(Example.Contracts.Mode;u4)\",\"Example.Contracts.Mode\")"))
+        assertTrue(binding.contains("Mode.fromValue(PlatformComInterop.invokeUInt32Method(reference.pointer,6).getOrThrow())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectSetter(pointer,7,if(value==null)ComPtr.NULLelse"))
+        assertTrue(binding.contains("projectedObjectArgumentPointer("))
+        assertTrue(binding.contains("\"pinterface({61c17706-2d65-11e0-9ae8-d48564015472};enum(Example.Contracts.Mode;u4))\""))
     }
 
     @Test

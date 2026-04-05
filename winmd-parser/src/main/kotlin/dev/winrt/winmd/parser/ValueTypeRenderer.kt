@@ -15,6 +15,7 @@ import dev.winrt.winmd.plugin.WinMdTypeKind
 internal class ValueTypeRenderer(
     private val typeNameMapper: TypeNameMapper,
     private val typeRegistry: TypeRegistry,
+    private val valueTypeProjectionSupport: ValueTypeProjectionSupport = ValueTypeProjectionSupport(typeNameMapper, typeRegistry),
 ) {
     fun render(type: WinMdType): TypeSpec {
         return when (type.kind) {
@@ -162,6 +163,14 @@ internal class ValueTypeRenderer(
             )
             return
         }
+        if (
+            supportsIReferenceValueProjection(typeName, currentNamespace, typeRegistry) ||
+            supportsGenericIReferenceStructProjection(typeName, currentNamespace, typeRegistry) ||
+            supportsGenericIReferenceEnumProjection(typeName, currentNamespace, typeRegistry)
+        ) {
+            builder.addStatement("add(%T.%L)", PoetSymbols.comStructFieldKindClass, "OBJECT")
+            return
+        }
         error("Unsupported struct field type for layout: $typeName")
     }
 
@@ -193,6 +202,7 @@ internal class ValueTypeRenderer(
                 "UINT64" -> CodeBlock.of("writer.writeULong(%L)\n", propertyName)
                 "FLOAT32" -> CodeBlock.of("writer.writeFloat(%L)\n", propertyName)
                 "FLOAT64" -> CodeBlock.of("writer.writeDouble(%L)\n", propertyName)
+                "HSTRING" -> CodeBlock.of("writer.writeHString(%L)\n", propertyName)
                 "GUID" -> CodeBlock.of("writer.writeGuid(%L)\n", propertyName)
                 else -> error("Unsupported struct field kind: $kind")
             }
@@ -207,19 +217,65 @@ internal class ValueTypeRenderer(
         if (typeRegistry.isStructType(typeName, currentNamespace)) {
             return CodeBlock.of("writer.writeStruct(%L.toAbi())\n", propertyName)
         }
+        if (supportsIReferenceValueProjection(typeName, currentNamespace, typeRegistry)) {
+            return CodeBlock.of(
+                "writer.writeObjectPointer(%L, releaseOnClose = true)\n",
+                valueTypeProjectionSupport.nullableValuePointerExpression(typeName, currentNamespace, propertyName)
+                    ?: error("Unsupported struct field type for writer: $typeName"),
+            )
+        }
+        if (supportsGenericIReferenceStructProjection(typeName, currentNamespace, typeRegistry)) {
+            return CodeBlock.of(
+                "writer.writeObjectPointer(%L, releaseOnClose = true)\n",
+                valueTypeProjectionSupport.genericStructReferencePointerExpression(typeName, currentNamespace, propertyName)
+                    ?: error("Unsupported struct field type for writer: $typeName"),
+            )
+        }
+        if (supportsGenericIReferenceEnumProjection(typeName, currentNamespace, typeRegistry)) {
+            return CodeBlock.of(
+                "writer.writeObjectPointer(%L, releaseOnClose = true)\n",
+                valueTypeProjectionSupport.genericEnumReferencePointerExpression(typeName, currentNamespace, propertyName)
+                    ?: error("Unsupported struct field type for writer: $typeName"),
+            )
+        }
         error("Unsupported struct field type for writer: $typeName")
     }
 
     private fun renderStructFieldRead(typeName: String, currentNamespace: String): CodeBlock {
-        return when (canonicalWinRtSpecialType(typeName)) {
-            "DateTime" -> CodeBlock.of(
+        return when {
+            canonicalWinRtSpecialType(typeName) == "DateTime" -> CodeBlock.of(
                 "reader.readLong().let { ticks -> %T.fromEpochSeconds((ticks - %LL) / 10000000L, (((ticks - %LL) %% 10000000L) * 100).toInt()) }",
                 Instant::class,
                 WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
                 WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
             )
-            "TimeSpan" -> CodeBlock.of("%T(reader.readLong())", Duration::class)
-            "EventRegistrationToken" -> CodeBlock.of("%T(reader.readLong())", PoetSymbols.eventRegistrationTokenClass)
+            canonicalWinRtSpecialType(typeName) == "TimeSpan" -> CodeBlock.of("%T(reader.readLong())", Duration::class)
+            canonicalWinRtSpecialType(typeName) == "EventRegistrationToken" ->
+                CodeBlock.of("%T(reader.readLong())", PoetSymbols.eventRegistrationTokenClass)
+            typeRegistry.isStructType(typeName, currentNamespace) ->
+                CodeBlock.of(
+                    "%T.fromAbi(reader.readStruct(%T.ABI_LAYOUT))",
+                    typeNameMapper.mapTypeName(typeName, currentNamespace),
+                    typeNameMapper.mapTypeName(typeName, currentNamespace),
+                )
+            supportsIReferenceValueProjection(typeName, currentNamespace, typeRegistry) ->
+                valueTypeProjectionSupport.nullableValueReturnExpression(
+                    referenceType = typeName,
+                    currentNamespace = currentNamespace,
+                    abiCall = CodeBlock.of("reader.readObjectPointer()"),
+                ) ?: error("Unsupported struct field type for reader: $typeName")
+            supportsGenericIReferenceStructProjection(typeName, currentNamespace, typeRegistry) ->
+                valueTypeProjectionSupport.genericStructReferenceReturnExpression(
+                    referenceType = typeName,
+                    currentNamespace = currentNamespace,
+                    abiCall = CodeBlock.of("reader.readObjectPointer()"),
+                ) ?: error("Unsupported struct field type for reader: $typeName")
+            supportsGenericIReferenceEnumProjection(typeName, currentNamespace, typeRegistry) ->
+                valueTypeProjectionSupport.genericEnumReferenceReturnExpression(
+                    referenceType = typeName,
+                    currentNamespace = currentNamespace,
+                    abiCall = CodeBlock.of("reader.readObjectPointer()"),
+                ) ?: error("Unsupported struct field type for reader: $typeName")
             else -> renderPrimitiveStructFieldRead(typeName, currentNamespace)
         }
     }
@@ -240,6 +296,7 @@ internal class ValueTypeRenderer(
                 "UINT64" -> CodeBlock.of("reader.readULong()")
                 "FLOAT32" -> CodeBlock.of("reader.readFloat()")
                 "FLOAT64" -> CodeBlock.of("reader.readDouble()")
+                "HSTRING" -> CodeBlock.of("reader.readHString()")
                 "GUID" -> CodeBlock.of("reader.readGuid()")
                 else -> error("Unsupported struct field kind: $kind")
             }
@@ -251,10 +308,6 @@ internal class ValueTypeRenderer(
                 currentNamespace,
             )
             return CodeBlock.of("%T.fromValue(%L)", mappedType, underlyingRead)
-        }
-        if (typeRegistry.isStructType(typeName, currentNamespace)) {
-            val mappedType = typeNameMapper.mapTypeName(typeName, currentNamespace)
-            return CodeBlock.of("%T.fromAbi(reader.readStruct(%T.ABI_LAYOUT))", mappedType, mappedType)
         }
         error("Unsupported struct field type for reader: $typeName")
     }
@@ -272,6 +325,7 @@ internal class ValueTypeRenderer(
             "UInt64" -> "UINT64"
             "Float32" -> "FLOAT32"
             "Float64" -> "FLOAT64"
+            "String" -> "HSTRING"
             "Guid" -> "GUID"
             else -> null
         }

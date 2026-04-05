@@ -10,20 +10,42 @@ internal class ProjectedObjectArgumentLowering(
     private val winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
 ) {
     fun supportsInputType(typeName: String, currentNamespace: String): Boolean {
-        if (typeRegistry.isEnumType(typeName, currentNamespace)) {
+        if (
+            typeRegistry.isEnumType(typeName, currentNamespace) ||
+            typeRegistry.isStructType(typeName, currentNamespace) ||
+            supportsIReferenceValueProjection(typeName, currentNamespace, typeRegistry) ||
+            supportsGenericIReferenceStructProjection(typeName, currentNamespace, typeRegistry) ||
+            supportsGenericIReferenceEnumProjection(typeName, currentNamespace, typeRegistry)
+        ) {
             return false
         }
         return supportsProjectedObjectTypeName(typeName) || supportsClosedGenericProjectedType(typeName, currentNamespace)
     }
 
     fun expression(argumentName: String, typeName: String, currentNamespace: String): CodeBlock {
+        val inputSignature = signatureForInputType(typeName, currentNamespace)
+        if (canUseDirectObjectPointer(typeName, currentNamespace, inputSignature)) {
+            return CodeBlock.of("%N.pointer", argumentName)
+        }
         return CodeBlock.of(
             "%M(%N, %S, %S)",
             PoetSymbols.projectedObjectArgumentPointerMember,
             argumentName,
             winRtProjectionTypeMapper.projectionTypeKeyFor(typeName, currentNamespace),
-            signatureForInputType(typeName, currentNamespace),
+            inputSignature,
         )
+    }
+
+    private fun canUseDirectObjectPointer(
+        typeName: String,
+        currentNamespace: String,
+        inputSignature: String,
+    ): Boolean {
+        if (inputSignature != WinRtTypeSignature.object_()) {
+            return false
+        }
+        val runtimeType = typeRegistry.findType(typeName, currentNamespace)
+        return runtimeType?.kind == WinMdTypeKind.RuntimeClass
     }
 
     private fun supportsClosedGenericProjectedType(typeName: String, currentNamespace: String): Boolean {

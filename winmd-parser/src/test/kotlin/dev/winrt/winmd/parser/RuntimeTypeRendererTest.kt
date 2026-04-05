@@ -13,6 +13,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RuntimeTypeRendererTest {
+    private fun asyncRegistry(typeRegistry: TypeRegistry): AsyncMethodRuleRegistry {
+        return AsyncMethodRuleRegistry(
+            TypeNameMapper(),
+            AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry)),
+            ProjectedObjectArgumentLowering(typeRegistry, WinRtSignatureMapper(typeRegistry), WinRtProjectionTypeMapper()),
+        )
+    }
+
     @Test
     fun keeps_runtime_class_overrides_interfaces_out_of_public_superinterface_list() {
         val model = WinMdModel(
@@ -211,7 +219,7 @@ class RuntimeTypeRendererTest {
                 TypeNameMapper(),
                 DelegateLambdaPlanResolver(TypeNameMapper()),
                 typeRegistry,
-                AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+                asyncRegistry(typeRegistry),
             ),
             runtimeCompanionRenderer = RuntimeCompanionRenderer(
                 typeRegistry,

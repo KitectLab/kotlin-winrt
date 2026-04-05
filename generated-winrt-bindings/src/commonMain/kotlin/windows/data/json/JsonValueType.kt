@@ -1,9 +1,9 @@
-package windows.`data`.json
+package windows.data.json
 
 import kotlin.Int
 
 public enum class JsonValueType(
-  public val `value`: Int,
+  public val value: Int,
 ) {
   Null(0),
   Boolean(1),
@@ -14,6 +14,8 @@ public enum class JsonValueType(
   ;
 
   public companion object {
-    public fun fromValue(`value`: Int): JsonValueType = entries.first { it.value == value }
+    public fun fromValue(value: Int): JsonValueType = entries.first { entry ->
+      entry.value == value
+    }
   }
 }

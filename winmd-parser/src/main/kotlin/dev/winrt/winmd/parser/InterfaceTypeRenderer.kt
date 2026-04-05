@@ -29,6 +29,7 @@ internal class InterfaceTypeRenderer(
     private val winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     private val projectedObjectArgumentLowering: ProjectedObjectArgumentLowering =
         ProjectedObjectArgumentLowering(typeRegistry, winRtSignatureMapper, winRtProjectionTypeMapper),
+    private val valueTypeProjectionSupport: ValueTypeProjectionSupport = ValueTypeProjectionSupport(typeNameMapper, typeRegistry),
     private val kotlinCollectionProjectionMapper: KotlinCollectionProjectionMapper = KotlinCollectionProjectionMapper(),
 ) {
     fun render(type: WinMdType): List<TypeSpec> {
@@ -879,13 +880,49 @@ internal class InterfaceTypeRenderer(
         val propertyType = typeNameMapper.mapTypeName(property.type, currentNamespace, genericParameters)
         val getterVtableIndex = property.getterVtableIndex!!
         val getterBuilder = FunSpec.getterBuilder()
-        when (
-            PropertyRuleRegistry.interfaceGetterRuleFamily(
-                property.type,
-                typeRegistry.isEnumType(property.type, currentNamespace),
-                supportsInterfaceObjectReturnType(property.type, currentNamespace),
+        val isStructProperty = typeRegistry.isStructType(property.type, currentNamespace)
+        val supportsNullableValueReference = supportsIReferenceValueProjection(property.type, currentNamespace, typeRegistry)
+        when {
+            isStructProperty -> getterBuilder.addStatement(
+                "return %T.fromAbi(%L)",
+                propertyType,
+                valueTypeProjectionSupport.invokeStructMethodWithArgs(
+                    vtableIndex = getterVtableIndex,
+                    structType = propertyType,
+                    arguments = emptyList(),
+                ),
             )
-        ) {
+            supportsNullableValueReference -> getterBuilder.addStatement(
+                "return %L",
+                valueTypeProjectionSupport.nullableValueReturnExpression(
+                    referenceType = property.type,
+                    currentNamespace = currentNamespace,
+                    abiCall = AbiCallCatalog.objectMethod(getterVtableIndex),
+                ) ?: return null,
+            )
+            supportsGenericIReferenceStructProjection(property.type, currentNamespace, typeRegistry) -> getterBuilder.addStatement(
+                "return %L",
+                valueTypeProjectionSupport.genericStructReferenceReturnExpression(
+                    referenceType = property.type,
+                    currentNamespace = currentNamespace,
+                    abiCall = AbiCallCatalog.objectMethod(getterVtableIndex),
+                ) ?: return null,
+            )
+            supportsGenericIReferenceEnumProjection(property.type, currentNamespace, typeRegistry) -> getterBuilder.addStatement(
+                "return %L",
+                valueTypeProjectionSupport.genericEnumReferenceReturnExpression(
+                    referenceType = property.type,
+                    currentNamespace = currentNamespace,
+                    abiCall = AbiCallCatalog.objectMethod(getterVtableIndex),
+                ) ?: return null,
+            )
+            else -> when (
+                PropertyRuleRegistry.interfaceGetterRuleFamily(
+                    property.type,
+                    typeRegistry.isEnumType(property.type, currentNamespace),
+                    supportsInterfaceObjectReturnType(property.type, currentNamespace),
+                )
+            ) {
             InterfacePropertyRuleFamily.ENUM -> {
                 val underlyingType = enumUnderlyingTypeOrDefault(typeRegistry, property.type, currentNamespace)
                 getterBuilder.addStatement(
@@ -909,6 +946,15 @@ internal class InterfaceTypeRenderer(
                     "return %L",
                     HStringSupport.toKotlinString("pointer", getterVtableIndex),
                 )
+            InterfacePropertyRuleFamily.UINT8,
+            InterfacePropertyRuleFamily.INT16,
+            InterfacePropertyRuleFamily.UINT16,
+            InterfacePropertyRuleFamily.CHAR16,
+            -> getterBuilder.addStatement(
+                "return %L",
+                valueTypeProjectionSupport.smallScalarAbiCall(property.type, getterVtableIndex, emptyList())
+                    ?: return null,
+            )
             InterfacePropertyRuleFamily.FLOAT32 ->
                 getterBuilder.addStatement(
                     "return %T(%L)",
@@ -987,6 +1033,7 @@ internal class InterfaceTypeRenderer(
                     getterVtableIndex,
                 )
             else -> return null
+            }
         }
         val propertyBuilder = PropertySpec.builder(propertyName, propertyType)
             .getter(getterBuilder.build())
@@ -995,7 +1042,17 @@ internal class InterfaceTypeRenderer(
             property.type,
             supportsInterfaceObjectType(property.type, currentNamespace),
         )
-        if (property.mutable && property.setterVtableIndex != null && (isEnumProperty || setterRuleFamily != null)) {
+        if (
+            property.mutable &&
+            property.setterVtableIndex != null &&
+            (
+                isStructProperty ||
+                    supportsNullableValueReference ||
+                    supportsGenericIReferenceEnumProjection(property.type, currentNamespace, typeRegistry) ||
+                    isEnumProperty ||
+                    setterRuleFamily != null
+            )
+        ) {
             val setterVtableIndex = property.setterVtableIndex!!
             propertyBuilder.mutable()
             propertyBuilder.setter(
@@ -1003,6 +1060,46 @@ internal class InterfaceTypeRenderer(
                     .addParameter("value", propertyType)
                     .apply {
                         when {
+                            isStructProperty -> addStatement(
+                                "%L",
+                                valueTypeProjectionSupport.invokeUnitMethodWithArgs(
+                                    vtableIndex = setterVtableIndex,
+                                    arguments = listOf(CodeBlock.of("value.toAbi()")),
+                                ),
+                            )
+                            supportsNullableValueReference -> addStatement(
+                                "%L",
+                                AbiCallCatalog.objectSetterExpression(
+                                    setterVtableIndex,
+                                    valueTypeProjectionSupport.nullableValuePointerExpression(
+                                        property.type,
+                                        currentNamespace,
+                                        "value",
+                                    ) ?: return null,
+                                ),
+                            )
+                            supportsGenericIReferenceStructProjection(property.type, currentNamespace, typeRegistry) -> addStatement(
+                                "%L",
+                                AbiCallCatalog.objectSetterExpression(
+                                    setterVtableIndex,
+                                    valueTypeProjectionSupport.genericStructReferencePointerExpression(
+                                        property.type,
+                                        currentNamespace,
+                                        "value",
+                                    ) ?: return null,
+                                ),
+                            )
+                            supportsGenericIReferenceEnumProjection(property.type, currentNamespace, typeRegistry) -> addStatement(
+                                "%L",
+                                AbiCallCatalog.objectSetterExpression(
+                                    setterVtableIndex,
+                                    valueTypeProjectionSupport.genericEnumReferencePointerExpression(
+                                        property.type,
+                                        currentNamespace,
+                                        "value",
+                                    ) ?: return null,
+                                ),
+                            )
                             isEnumProperty -> addStatement(
                                 "%L",
                                 enumSetterAbiCall(
@@ -1023,6 +1120,17 @@ internal class InterfaceTypeRenderer(
                                 ),
                             )
                             InterfacePropertyRuleFamily.STRING -> addStatement("%L", AbiCallCatalog.stringSetter(setterVtableIndex))
+                            InterfacePropertyRuleFamily.UINT8,
+                            InterfacePropertyRuleFamily.INT16,
+                            InterfacePropertyRuleFamily.UINT16,
+                            InterfacePropertyRuleFamily.CHAR16,
+                            -> addStatement(
+                                "%L",
+                                valueTypeProjectionSupport.invokeUnitMethodWithArgs(
+                                    vtableIndex = setterVtableIndex,
+                                    arguments = listOf(CodeBlock.of("value")),
+                                ),
+                            )
                             InterfacePropertyRuleFamily.FLOAT32 -> addStatement("%L", AbiCallCatalog.float32Setter(setterVtableIndex))
                             InterfacePropertyRuleFamily.FLOAT64 -> addStatement("%L", AbiCallCatalog.float64Setter(setterVtableIndex))
                             InterfacePropertyRuleFamily.BOOLEAN -> addStatement("%L", AbiCallCatalog.booleanSetter(setterVtableIndex))
@@ -1568,6 +1676,7 @@ internal class InterfaceTypeRenderer(
         if (method.vtableIndex == null) {
             return null
         }
+        plannedValueTypeAwareInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
         if (typeRegistry.isEnumType(method.returnType, currentNamespace)) {
             return null
         }
@@ -1580,6 +1689,136 @@ internal class InterfaceTypeRenderer(
         return signatureKey
             ?.takeIf { MethodRuleRegistry.sharedMethodRuleFamily(it) != null }
             ?.let { plannedInterfaceMethodForKey(it, genericParameters) }
+    }
+
+    private fun plannedValueTypeAwareInterfaceMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): PlannedInterfaceMethod? {
+        val argumentExpressions = method.parameters.map { parameter ->
+            valueTypeProjectionSupport.lowerGenericAbiArgument(
+                type = parameter.type,
+                currentNamespace = currentNamespace,
+                argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                supportsObjectType = { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) },
+                lowerObjectArgument = { argumentName, typeName ->
+                    interfaceObjectArgumentExpression(argumentName, typeName, currentNamespace)
+                },
+            ) ?: return null
+        }
+        return when {
+            valueTypeProjectionSupport.supportsSmallScalarProjection(method.returnType) -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ ->
+                    arrayOf(
+                        valueTypeProjectionSupport.smallScalarReturnExpression(
+                            method.returnType,
+                            valueTypeProjectionSupport.smallScalarAbiCall(
+                                type = method.returnType,
+                                vtableIndex = method.vtableIndex!!,
+                                arguments = argumentExpressions,
+                            ) ?: error("Unsupported small scalar projection type: ${method.returnType}"),
+                        ) ?: error("Unsupported small scalar projection type: ${method.returnType}"),
+                    )
+                },
+            )
+            typeRegistry.isStructType(method.returnType, currentNamespace) -> {
+                val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace, genericParameters)
+                PlannedInterfaceMethod(
+                    statement = "return %T.fromAbi(%L)",
+                    args = { method, _ ->
+                        arrayOf(
+                            returnType,
+                            valueTypeProjectionSupport.invokeStructMethodWithArgs(
+                                vtableIndex = method.vtableIndex!!,
+                                structType = returnType,
+                                arguments = argumentExpressions,
+                            ),
+                        )
+                    },
+                )
+            }
+            supportsIReferenceValueProjection(method.returnType, currentNamespace, typeRegistry) -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ ->
+                    arrayOf(
+                        valueTypeProjectionSupport.nullableValueReturnExpression(
+                            referenceType = method.returnType,
+                            currentNamespace = currentNamespace,
+                            abiCall = valueTypeProjectionSupport.invokeObjectMethodWithArgs(
+                                vtableIndex = method.vtableIndex!!,
+                                arguments = argumentExpressions,
+                            ),
+                        ) ?: error("Unsupported IReference projection type: ${method.returnType}"),
+                    )
+                },
+            )
+            supportsGenericIReferenceStructProjection(method.returnType, currentNamespace, typeRegistry) -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ ->
+                    arrayOf(
+                        valueTypeProjectionSupport.genericStructReferenceReturnExpression(
+                            referenceType = method.returnType,
+                            currentNamespace = currentNamespace,
+                            abiCall = valueTypeProjectionSupport.invokeObjectMethodWithArgs(
+                                vtableIndex = method.vtableIndex!!,
+                                arguments = argumentExpressions,
+                            ),
+                        ) ?: error("Unsupported IReference projection type: ${method.returnType}"),
+                    )
+                },
+            )
+            supportsGenericIReferenceEnumProjection(method.returnType, currentNamespace, typeRegistry) -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ ->
+                    arrayOf(
+                        valueTypeProjectionSupport.genericEnumReferenceReturnExpression(
+                            referenceType = method.returnType,
+                            currentNamespace = currentNamespace,
+                            abiCall = valueTypeProjectionSupport.invokeObjectMethodWithArgs(
+                                vtableIndex = method.vtableIndex!!,
+                                arguments = argumentExpressions,
+                            ),
+                        ) ?: error("Unsupported IReference projection type: ${method.returnType}"),
+                    )
+                },
+            )
+            method.returnType == "Unit" &&
+                method.parameters.any { parameter ->
+                    valueTypeProjectionSupport.requiresValueAwareGenericAbi(parameter.type, currentNamespace)
+                } -> PlannedInterfaceMethod(
+                statement = "%L",
+                args = { method, _ ->
+                    arrayOf(
+                        valueTypeProjectionSupport.invokeUnitMethodWithArgs(
+                            vtableIndex = method.vtableIndex!!,
+                            arguments = argumentExpressions,
+                        ),
+                    )
+                },
+            )
+            supportsInterfaceObjectReturnType(method.returnType, currentNamespace) &&
+                method.parameters.any { parameter ->
+                    valueTypeProjectionSupport.requiresValueAwareGenericAbi(parameter.type, currentNamespace)
+                } -> PlannedInterfaceMethod(
+                statement = "return %L",
+                args = { method, _ ->
+                    arrayOf(
+                        objectReturnCode(
+                            method = method,
+                            namespace = currentNamespace,
+                            abiCall = valueTypeProjectionSupport.invokeObjectMethodWithArgs(
+                                vtableIndex = method.vtableIndex!!,
+                                arguments = argumentExpressions,
+                            ),
+                            genericParameters = genericParameters,
+                        ),
+                    )
+                },
+            )
+            else -> null
+        }
     }
 
     private fun plannedInterfaceMethodForKey(
@@ -2407,7 +2646,9 @@ internal class InterfaceTypeRenderer(
     }
 
     private fun supportsInterfaceObjectReturnType(type: String, currentNamespace: String): Boolean {
-        return supportsProjectedObjectTypeName(type) || supportsClosedGenericInterfaceReturnType(type, currentNamespace)
+        return !typeRegistry.isStructType(type, currentNamespace) &&
+            !supportsIReferenceValueProjection(type, currentNamespace, typeRegistry) &&
+            (supportsProjectedObjectTypeName(type) || supportsClosedGenericInterfaceReturnType(type, currentNamespace))
     }
 
     private fun supportsInterfaceProperty(
@@ -2416,11 +2657,15 @@ internal class InterfaceTypeRenderer(
         genericParameters: Set<String>,
     ): Boolean {
         return property.getterVtableIndex != null &&
-            PropertyRuleRegistry.interfaceGetterRuleFamily(
-                type = property.type,
-                isEnumType = typeRegistry.isEnumType(property.type, currentNamespace),
-                isObjectType = supportsInterfaceObjectReturnType(property.type, currentNamespace),
-            ) != null
+            (
+                typeRegistry.isStructType(property.type, currentNamespace) ||
+                    supportsIReferenceValueProjection(property.type, currentNamespace, typeRegistry) ||
+                    PropertyRuleRegistry.interfaceGetterRuleFamily(
+                        type = property.type,
+                        isEnumType = typeRegistry.isEnumType(property.type, currentNamespace),
+                        isObjectType = supportsInterfaceObjectReturnType(property.type, currentNamespace),
+                    ) != null
+                )
     }
 
     private fun collectionSuperinterface(

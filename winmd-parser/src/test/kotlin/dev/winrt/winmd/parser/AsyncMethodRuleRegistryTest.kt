@@ -17,7 +17,11 @@ class AsyncMethodRuleRegistryTest {
         ),
     )
     private val planner = AsyncMethodProjectionPlanner(typeNameMapper, WinRtSignatureMapper(typeRegistry))
-    private val registry = AsyncMethodRuleRegistry(typeNameMapper, planner)
+    private val registry = AsyncMethodRuleRegistry(
+        typeNameMapper,
+        planner,
+        ProjectedObjectArgumentLowering(typeRegistry, WinRtSignatureMapper(typeRegistry), WinRtProjectionTypeMapper()),
+    )
 
     @Test
     fun plans_async_operations_with_scalar_results() {

@@ -29,7 +29,11 @@ internal class WinRtSignatureMapper(
                     defaultInterfaceSignature = signatureFor(defaultInterfaceName, type.namespace),
                 )
             }
-            WinMdTypeKind.Enum -> WinRtTypeSignature.enum(qualifiedName)
+            WinMdTypeKind.Enum -> WinRtTypeSignature.enum(
+                qualifiedName,
+                wellKnownTypeSignatures[enumSignatureType(typeRegistry, qualifiedName, type.namespace)]
+                    ?: error("Unsupported enum signature type for $qualifiedName"),
+            )
             WinMdTypeKind.Struct -> {
                 val fieldSignatures = type.fields
                     .map { field -> signatureFor(field.type, type.namespace) }
@@ -124,6 +128,28 @@ internal class WinRtSignatureMapper(
             "Windows.Foundation.Size" to "struct(Windows.Foundation.Size;f4;f4)",
             "Rect" to "struct(Windows.Foundation.Rect;f4;f4;f4;f4)",
             "Windows.Foundation.Rect" to "struct(Windows.Foundation.Rect;f4;f4;f4;f4)",
+            "Vector2" to "struct(Windows.Foundation.Numerics.Vector2;f4;f4)",
+            "Windows.Foundation.Numerics.Vector2" to "struct(Windows.Foundation.Numerics.Vector2;f4;f4)",
+            "Vector3" to "struct(Windows.Foundation.Numerics.Vector3;f4;f4;f4)",
+            "Windows.Foundation.Numerics.Vector3" to "struct(Windows.Foundation.Numerics.Vector3;f4;f4;f4)",
+            "Vector4" to "struct(Windows.Foundation.Numerics.Vector4;f4;f4;f4;f4)",
+            "Windows.Foundation.Numerics.Vector4" to "struct(Windows.Foundation.Numerics.Vector4;f4;f4;f4;f4)",
+            "Matrix3x2" to "struct(Windows.Foundation.Numerics.Matrix3x2;f4;f4;f4;f4;f4;f4)",
+            "Windows.Foundation.Numerics.Matrix3x2" to "struct(Windows.Foundation.Numerics.Matrix3x2;f4;f4;f4;f4;f4;f4)",
+            "Matrix4x4" to "struct(Windows.Foundation.Numerics.Matrix4x4;f4;f4;f4;f4;f4;f4;f4;f4;f4;f4;f4;f4;f4;f4;f4;f4)",
+            "Windows.Foundation.Numerics.Matrix4x4" to "struct(Windows.Foundation.Numerics.Matrix4x4;f4;f4;f4;f4;f4;f4;f4;f4;f4;f4;f4;f4;f4;f4;f4;f4)",
+            "Plane" to "struct(Windows.Foundation.Numerics.Plane;struct(Windows.Foundation.Numerics.Vector3;f4;f4;f4);f4)",
+            "Windows.Foundation.Numerics.Plane" to "struct(Windows.Foundation.Numerics.Plane;struct(Windows.Foundation.Numerics.Vector3;f4;f4;f4);f4)",
+            "Quaternion" to "struct(Windows.Foundation.Numerics.Quaternion;f4;f4;f4;f4)",
+            "Windows.Foundation.Numerics.Quaternion" to "struct(Windows.Foundation.Numerics.Quaternion;f4;f4;f4;f4)",
+            "Rational" to "struct(Windows.Foundation.Numerics.Rational;u4;u4)",
+            "Windows.Foundation.Numerics.Rational" to "struct(Windows.Foundation.Numerics.Rational;u4;u4)",
+            "Color" to "struct(Windows.UI.Color;u1;u1;u1;u1)",
+            "Windows.UI.Color" to "struct(Windows.UI.Color;u1;u1;u1;u1)",
+            "FontWeight" to "struct(Windows.UI.Text.FontWeight;u2)",
+            "Windows.UI.Text.FontWeight" to "struct(Windows.UI.Text.FontWeight;u2)",
+            "TypeName" to "struct(Windows.UI.Xaml.Interop.TypeName;string;enum(Windows.UI.Xaml.Interop.TypeKind;i4))",
+            "Windows.UI.Xaml.Interop.TypeName" to "struct(Windows.UI.Xaml.Interop.TypeName;string;enum(Windows.UI.Xaml.Interop.TypeKind;i4))",
         )
 
         val wellKnownGenericInterfaceGuids = mapOf(

@@ -47,7 +47,8 @@ internal class TypeRegistry(
     }
 
     fun isStructType(typeName: String, currentNamespace: String): Boolean {
-        return findType(typeName, currentNamespace)?.kind == WinMdTypeKind.Struct
+        return findType(typeName, currentNamespace)?.kind == WinMdTypeKind.Struct ||
+            resolveQualifiedName(typeName, currentNamespace) in wellKnownStructTypes
     }
 
     fun enumUnderlyingType(typeName: String, currentNamespace: String): String? {
@@ -249,6 +250,25 @@ internal class TypeRegistry(
                 currentNamespace != null -> "$currentNamespace.$typeName"
                 else -> typeName
             },
+        )
+    }
+
+    private companion object {
+        val wellKnownStructTypes = setOf(
+            "Windows.Foundation.Point",
+            "Windows.Foundation.Rect",
+            "Windows.Foundation.Size",
+            "Windows.Foundation.Numerics.Matrix3x2",
+            "Windows.Foundation.Numerics.Matrix4x4",
+            "Windows.Foundation.Numerics.Plane",
+            "Windows.Foundation.Numerics.Quaternion",
+            "Windows.Foundation.Numerics.Rational",
+            "Windows.Foundation.Numerics.Vector2",
+            "Windows.Foundation.Numerics.Vector3",
+            "Windows.Foundation.Numerics.Vector4",
+            "Windows.UI.Color",
+            "Windows.UI.Text.FontWeight",
+            "Windows.UI.Xaml.Interop.TypeName",
         )
     }
 

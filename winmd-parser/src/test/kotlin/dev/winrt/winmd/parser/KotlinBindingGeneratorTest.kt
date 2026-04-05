@@ -464,8 +464,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("fun getForUser(user: User): AdvertisingManagerForUser"))
         assertTrue(runtimeBinding.contains("statics2.getForUser(user)"))
         assertTrue(staticsBinding.contains("fun getForUser(user: User): AdvertisingManagerForUser"))
-        assertTrue(normalizedStaticsBinding.contains("AdvertisingManagerForUser(PlatformComInterop.invokeObjectMethodWithObjectArg(pointer,6,projectedObjectArgumentPointer(user,"))
-        assertTrue(normalizedStaticsBinding.contains("\"Windows.System.User\",\"cinterface(IInspectable)\")).getOrThrow())"))
+        assertTrue(normalizedStaticsBinding.contains("AdvertisingManagerForUser(PlatformComInterop.invokeObjectMethodWithObjectArg(pointer,6,user.pointer).getOrThrow())"))
     }
 
     @Test
@@ -591,8 +590,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("fun getLanguagesForUser(user: User): IVectorView<String>"))
         assertTrue(runtimeBinding.contains("statics2.getLanguagesForUser(user)"))
         assertTrue(staticsBinding.contains("fun getLanguagesForUser(user: User): IVectorView<String>"))
-        assertTrue(normalizedStaticsBinding.contains("IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethodWithObjectArg(pointer,6,projectedObjectArgumentPointer(user,"))
-        assertTrue(normalizedStaticsBinding.contains("\"Windows.System.User\",\"cinterface(IInspectable)\")).getOrThrow()),\"string\",\"String\")"))
+        assertTrue(normalizedStaticsBinding.contains("IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethodWithObjectArg(pointer,6,user.pointer).getOrThrow()),\"string\",\"String\")"))
     }
 
     @Test
@@ -658,8 +656,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("fun getFileForUri(uri: Uri, name: String): StorageFile"))
         assertTrue(runtimeBinding.contains("fun getFileForUri("))
         assertTrue(staticsBinding.contains("fun getFileForUri("))
-        assertTrue(normalizedStaticsBinding.contains("StorageFile(PlatformComInterop.invokeMethodWithObjectAndStringArgs(pointer,6,ComMethodResultKind.OBJECT,projectedObjectArgumentPointer(uri,"))
-        assertTrue(normalizedStaticsBinding.contains("\"Windows.Foundation.Uri\",\"cinterface(IInspectable)\"),name).getOrThrow().requireObject())"))
+        assertTrue(normalizedStaticsBinding.contains("StorageFile(PlatformComInterop.invokeMethodWithObjectAndStringArgs(pointer,6,ComMethodResultKind.OBJECT,uri.pointer,name).getOrThrow().requireObject())"))
     }
 
     @Test
@@ -725,8 +722,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("fun getFileByName(name: String, uri: Uri): StorageFile"))
         assertTrue(runtimeBinding.contains("fun getFileByName("))
         assertTrue(staticsBinding.contains("fun getFileByName("))
-        assertTrue(normalizedStaticsBinding.contains("StorageFile(PlatformComInterop.invokeMethodWithStringAndObjectArgs(pointer,6,ComMethodResultKind.OBJECT,name,projectedObjectArgumentPointer(uri,"))
-        assertTrue(normalizedStaticsBinding.contains("\"Windows.Foundation.Uri\",\"cinterface(IInspectable)\")).getOrThrow().requireObject())"))
+        assertTrue(normalizedStaticsBinding.contains("StorageFile(PlatformComInterop.invokeMethodWithStringAndObjectArgs(pointer,6,ComMethodResultKind.OBJECT,name,uri.pointer).getOrThrow().requireObject())"))
     }
 
     @Test
@@ -779,8 +775,7 @@ class KotlinBindingGeneratorTest {
         val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
 
         assertTrue(staticsBinding.contains("fun trackUri("))
-        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithObjectAndStringArgs(pointer,6,projectedObjectArgumentPointer(uri,"))
-        assertTrue(normalizedStaticsBinding.contains("\"Windows.Foundation.Uri\",\"cinterface(IInspectable)\"),tag).getOrThrow()"))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithObjectAndStringArgs(pointer,6,uri.pointer,tag).getOrThrow()"))
     }
 
     @Test
@@ -833,8 +828,7 @@ class KotlinBindingGeneratorTest {
         val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
 
         assertTrue(staticsBinding.contains("fun trackNamedUri("))
-        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithStringAndObjectArgs(pointer,6,tag,projectedObjectArgumentPointer(uri,"))
-        assertTrue(normalizedStaticsBinding.contains("\"Windows.Foundation.Uri\",\"cinterface(IInspectable)\")).getOrThrow()"))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithStringAndObjectArgs(pointer,6,tag,uri.pointer).getOrThrow()"))
     }
 
     @Test
@@ -887,8 +881,7 @@ class KotlinBindingGeneratorTest {
         val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
 
         assertTrue(staticsBinding.contains("fun trackPair("))
-        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithTwoObjectArgs(pointer,6,projectedObjectArgumentPointer(first,"))
-        assertTrue(normalizedStaticsBinding.contains("projectedObjectArgumentPointer(second,"))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithTwoObjectArgs(pointer,6,first.pointer,second.pointer).getOrThrow()"))
     }
 
     @Test
@@ -1065,7 +1058,7 @@ class KotlinBindingGeneratorTest {
         val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
 
         assertTrue(staticsBinding.contains("fun trackUserAndCount("))
-        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithObjectAndInt32Args(pointer,6,projectedObjectArgumentPointer(first,"))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithObjectAndInt32Args(pointer,6,first.pointer,"))
         assertTrue(normalizedStaticsBinding.contains("second.value).getOrThrow()"))
     }
 
@@ -1114,7 +1107,7 @@ class KotlinBindingGeneratorTest {
         val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
 
         assertTrue(staticsBinding.contains("fun findUserByCount("))
-        assertTrue(normalizedStaticsBinding.contains("User(PlatformComInterop.invokeMethodWithObjectAndInt32Args(pointer,6,ComMethodResultKind.OBJECT,projectedObjectArgumentPointer(first,"))
+        assertTrue(normalizedStaticsBinding.contains("User(PlatformComInterop.invokeMethodWithObjectAndInt32Args(pointer,6,ComMethodResultKind.OBJECT,first.pointer,"))
         assertTrue(normalizedStaticsBinding.contains("second.value).getOrThrow().requireObject())"))
     }
 
@@ -1274,8 +1267,7 @@ class KotlinBindingGeneratorTest {
         val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
 
         assertTrue(staticsBinding.contains("fun resolvePair("))
-        assertTrue(normalizedStaticsBinding.contains("StorageFile(PlatformComInterop.invokeMethodWithTwoObjectArgs(pointer,6,ComMethodResultKind.OBJECT,projectedObjectArgumentPointer(first,"))
-        assertTrue(normalizedStaticsBinding.contains("projectedObjectArgumentPointer(second,"))
+        assertTrue(normalizedStaticsBinding.contains("StorageFile(PlatformComInterop.invokeMethodWithTwoObjectArgs(pointer,6,ComMethodResultKind.OBJECT,first.pointer,second.pointer).getOrThrow().requireObject())"))
     }
 
     @Test
@@ -1413,8 +1405,8 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("statics.launchUriAsync(uri, options)"))
         assertTrue(staticsBinding.contains("fun launchUriAsync(uri: Uri, options: LauncherOptions): IAsyncOperation<String>"))
         assertTrue(normalizedStaticsBinding.contains("IAsyncOperation<String>(dev.winrt.kom.requireObject(PlatformComInterop.invokeMethodWithTwoObjectArgs(pointer,6,dev.winrt.kom.ComMethodResultKind.OBJECT,"))
-        assertTrue(normalizedStaticsBinding.contains("projectedObjectArgumentPointer(uri,\"Windows.Foundation.Uri\",\"cinterface(IInspectable)\")"))
-        assertTrue(normalizedStaticsBinding.contains("projectedObjectArgumentPointer(options,\"Windows.System.LauncherOptions\",\"cinterface(IInspectable)\")"))
+        assertTrue(normalizedStaticsBinding.contains("uri.pointer"))
+        assertTrue(normalizedStaticsBinding.contains("options.pointer"))
         assertTrue(normalizedStaticsBinding.contains(").getOrThrow()),AsyncResultTypes.signature(\"string\"))"))
     }
 
@@ -1489,7 +1481,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("statics4.launchUriWithDisplayNameAsync(uri, displayName)"))
         assertTrue(staticsBinding.contains("fun launchUriWithDisplayNameAsync(uri: Uri, displayName: String): IAsyncOperation<String>"))
         assertTrue(normalizedStaticsBinding.contains("IAsyncOperation<String>(dev.winrt.kom.requireObject(PlatformComInterop.invokeMethodWithObjectAndStringArgs(pointer,6,dev.winrt.kom.ComMethodResultKind.OBJECT,"))
-        assertTrue(normalizedStaticsBinding.contains("projectedObjectArgumentPointer(uri,\"Windows.Foundation.Uri\",\"cinterface(IInspectable)\")"))
+        assertTrue(normalizedStaticsBinding.contains("uri.pointer"))
         assertTrue(normalizedStaticsBinding.contains("displayName).getOrThrow()),AsyncResultTypes.signature(\"string\"))"))
     }
 
@@ -1559,7 +1551,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("statics5.launchNamedFileAsync(name, file)"))
         assertTrue(staticsBinding.contains("fun launchNamedFileAsync("))
         assertTrue(normalizedStaticsBinding.contains("IAsyncOperation<String>(dev.winrt.kom.requireObject(PlatformComInterop.invokeMethodWithStringAndObjectArgs(pointer,6,dev.winrt.kom.ComMethodResultKind.OBJECT,name,"))
-        assertTrue(normalizedStaticsBinding.contains("projectedObjectArgumentPointer(file,\"Windows.Storage.StorageFile\",\"cinterface(IInspectable)\")"))
+        assertTrue(normalizedStaticsBinding.contains("file.pointer"))
         assertTrue(normalizedStaticsBinding.contains(").getOrThrow()),AsyncResultTypes.signature(\"string\"))"))
     }
 
@@ -1605,7 +1597,7 @@ class KotlinBindingGeneratorTest {
         val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
 
         assertTrue(staticsBinding.contains("fun getJsonStatus(hresult: Int32): JsonErrorStatus"))
-        assertTrue(normalizedStaticsBinding.contains("JsonErrorStatus.fromValue(PlatformComInterop.invokeUInt32MethodWithInt32Arg(pointer,6,hresult.value).getOrThrow().toInt())"))
+        assertTrue(normalizedStaticsBinding.contains("JsonErrorStatus.fromValue(PlatformComInterop.invokeInt32MethodWithInt32Arg(pointer,6,hresult.value).getOrThrow())"))
     }
 
     @Test
@@ -1642,7 +1634,7 @@ class KotlinBindingGeneratorTest {
         val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
 
         assertTrue(staticsBinding.contains("fun resolveUserName(user: User): String"))
-        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeHStringMethodWithObjectArg(pointer,6,projectedObjectArgumentPointer(user,"))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeHStringMethodWithObjectArg(pointer,6,user.pointer"))
     }
 
     @Test
@@ -1679,7 +1671,7 @@ class KotlinBindingGeneratorTest {
         val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
 
         assertTrue(staticsBinding.contains("fun resolveUserId(user: User): Uuid"))
-        assertTrue(normalizedStaticsBinding.contains("Uuid.parse(PlatformComInterop.invokeGuidMethodWithObjectArg(pointer,6,projectedObjectArgumentPointer(user,"))
+        assertTrue(normalizedStaticsBinding.contains("Uuid.parse(PlatformComInterop.invokeGuidMethodWithObjectArg(pointer,6,user.pointer"))
     }
 
     @Test
@@ -2031,7 +2023,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(windowBinding.contains("val lastToken"))
         assertTrue(windowBinding.contains("val stableId"))
         assertTrue(windowBinding.contains("val optionalTitle"))
-        assertTrue(normalizedWindowBinding.contains("invokeHStringMethod(pointer,14).getOrThrow()"))
+        assertTrue(normalizedWindowBinding.contains("invokeObjectMethod(pointer,14).getOrThrow().let{if(it.isNull)nullelseIPropertyValue.from(Inspectable(it)).getString()}"))
         assertTrue(windowBinding.contains("companion object : WinRtRuntimeClassMetadata"))
         assertTrue(applicationBinding.contains("override val activationKind"))
         assertTrue(applicationBinding.contains("WinRtActivationKind.Factory"))
@@ -3986,10 +3978,10 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("fun getSignedValue(payload: Payload): Int64"))
         assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithObjectArg(pointer,"))
-        assertTrue(binding.contains("projectedObjectArgumentPointer(payload,"))
+        assertTrue(binding.contains("payload.pointer"))
         assertTrue(binding.contains("fun getUnsignedValue(payload: Payload): UInt64"))
         assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithObjectArg(pointer,"))
-        assertTrue(binding.contains("projectedObjectArgumentPointer(payload,"))
+        assertTrue(binding.contains("payload.pointer"))
     }
 
     @Test
@@ -4411,7 +4403,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("index.value).getOrThrow()"))
         assertTrue(binding.contains("fun getSignedByPayload(payload: Payload): Int32"))
         assertTrue(binding.contains("PlatformComInterop.invokeInt32MethodWithObjectArg(pointer,"))
-        assertTrue(binding.contains("projectedObjectArgumentPointer(payload,"))
+        assertTrue(binding.contains("payload.pointer"))
         assertTrue(binding.contains("fun getUnsignedByName(name: String): UInt32"))
         assertTrue(binding.contains("PlatformComInterop.invokeUInt32MethodWithStringArg(pointer,"))
         assertTrue(binding.contains("name).getOrThrow()"))
@@ -4420,7 +4412,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("index.value).getOrThrow()"))
         assertTrue(binding.contains("fun getUnsignedByPayload(payload: Payload): UInt32"))
         assertTrue(binding.contains("PlatformComInterop.invokeUInt32MethodWithObjectArg(pointer,"))
-        assertTrue(binding.contains("projectedObjectArgumentPointer(payload,"))
+        assertTrue(binding.contains("payload.pointer"))
     }
 
     @Test
@@ -4528,7 +4520,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("index.value).getOrThrow()"))
         assertTrue(binding.contains("fun getSignedByPayload(payload: Payload): Int32"))
         assertTrue(binding.contains("PlatformComInterop.invokeInt32MethodWithObjectArg(pointer,"))
-        assertTrue(binding.contains("projectedObjectArgumentPointer(payload,"))
+        assertTrue(binding.contains("payload.pointer"))
         assertTrue(binding.contains("fun getUnsignedByName(name: String): UInt32"))
         assertTrue(binding.contains("PlatformComInterop.invokeUInt32MethodWithStringArg(pointer,"))
         assertTrue(binding.contains("name).getOrThrow()"))
@@ -4537,7 +4529,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("index.value).getOrThrow()"))
         assertTrue(binding.contains("fun getUnsignedByPayload(payload: Payload): UInt32"))
         assertTrue(binding.contains("PlatformComInterop.invokeUInt32MethodWithObjectArg(pointer,"))
-        assertTrue(binding.contains("projectedObjectArgumentPointer(payload,"))
+        assertTrue(binding.contains("payload.pointer"))
     }
 
     @Test
@@ -4625,7 +4617,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("flag.value"))
         assertTrue(binding.contains("fun getSignedByPayload(payload: Payload): Int64"))
         assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithObjectArg(pointer,"))
-        assertTrue(binding.contains("projectedObjectArgumentPointer(payload,"))
+        assertTrue(binding.contains("payload.pointer"))
         assertTrue(binding.contains("fun getUnsignedByName(name: String): UInt64"))
         assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithStringArg(pointer,"))
         assertTrue(binding.contains("name).getOrThrow()"))
@@ -4639,7 +4631,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithBooleanArg(pointer, 14,"))
         assertTrue(binding.contains("fun getUnsignedByPayload(payload: Payload): UInt64"))
         assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithObjectArg(pointer,"))
-        assertTrue(binding.contains("projectedObjectArgumentPointer(payload,"))
+        assertTrue(binding.contains("payload.pointer"))
     }
 
     @Test
@@ -4694,7 +4686,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("flag.value"))
         assertTrue(binding.contains("fun getSignedByPayload(payload: Payload): Int64"))
         assertTrue(binding.contains("PlatformComInterop.invokeInt64MethodWithObjectArg(pointer,"))
-        assertTrue(binding.contains("projectedObjectArgumentPointer(payload,"))
+        assertTrue(binding.contains("payload.pointer"))
         assertTrue(binding.contains("fun getUnsignedByName(name: String): UInt64"))
         assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithStringArg(pointer,"))
         assertTrue(binding.contains("name).getOrThrow()"))
@@ -4708,7 +4700,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithBooleanArg(pointer, 14,"))
         assertTrue(binding.contains("fun getUnsignedByPayload(payload: Payload): UInt64"))
         assertTrue(binding.contains("PlatformComInterop.invokeUInt64MethodWithObjectArg(pointer,"))
-        assertTrue(binding.contains("projectedObjectArgumentPointer(payload,"))
+        assertTrue(binding.contains("payload.pointer"))
     }
 
     @Test
@@ -5017,6 +5009,7 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Example/Runtime/StringArgumentHost.kt" }.content
+        val normalizedBinding = binding.replace(Regex("\\s+"), "")
 
         assertTrue(binding.contains("fun lookup(name: String): Payload"))
         assertTrue(binding.contains("invokeObjectMethodWithStringArg(pointer, 6,"))
@@ -5025,7 +5018,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("fun hasName(name: String): WinRtBoolean"))
         assertTrue(binding.contains("invokeBooleanMethodWithStringArg(pointer, 8,"))
         assertTrue(binding.contains("fun render(name: String): String"))
-        assertTrue(binding.contains("PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 9, name).getOrThrow()"))
+        assertTrue(normalizedBinding.contains("PlatformComInterop.invokeHStringMethodWithStringArg(pointer,9,name).getOrThrow()"))
     }
 
     @Test
@@ -8618,11 +8611,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(iWindowBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 9,"))
         assertFalse(files.any { it.relativePath == "Microsoft/UI/Xaml/IApplicationOverrides.kt" })
         assertTrue(applicationBinding.contains("protected open fun onLaunched(args: LaunchActivatedEventArgs)"))
-        assertTrue(
-            normalizedApplicationBinding.contains(
-                "PlatformComInterop.invokeObjectSetter(pointer,6,projectedObjectArgumentPointer(args,\"Microsoft.UI.Xaml.LaunchActivatedEventArgs\",\"cinterface(IInspectable)\")).getOrThrow()",
-            ),
-        )
+        assertTrue(normalizedApplicationBinding.contains("PlatformComInterop.invokeObjectSetter(pointer,6,args.pointer).getOrThrow()"))
     }
 
     @Test
@@ -8766,17 +8755,9 @@ class KotlinBindingGeneratorTest {
         assertFalse(files.any { it.relativePath == "Example/Xaml/IWidgetOverrides.kt" })
         assertFalse(files.any { it.relativePath == "Example/Xaml/IWidgetOverrides2.kt" })
         assertTrue(widgetBinding.contains("protected open fun onLaunch(args: LaunchArgs)"))
-        assertTrue(
-            normalizedWidgetBinding.contains(
-                "invokeObjectSetter(pointer,6,projectedObjectArgumentPointer(args,\"Example.Xaml.LaunchArgs\",\"cinterface(IInspectable)\")).getOrThrow()",
-            ),
-        )
+        assertTrue(normalizedWidgetBinding.contains("invokeObjectSetter(pointer,6,args.pointer).getOrThrow()"))
         assertTrue(widgetBinding.contains("protected open fun onClose(args: CloseArgs)"))
-        assertTrue(
-            normalizedWidgetBinding.contains(
-                "invokeObjectSetter(pointer,7,projectedObjectArgumentPointer(args,\"Example.Xaml.CloseArgs\",\"cinterface(IInspectable)\")).getOrThrow()",
-            ),
-        )
+        assertTrue(normalizedWidgetBinding.contains("invokeObjectSetter(pointer,7,args.pointer).getOrThrow()"))
     }
 
     @Test
@@ -8909,11 +8890,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(baseBinding.contains("protected open fun onLaunch(args: LaunchArgs)"))
         assertTrue(baseBinding.contains("protected open var title: String"))
         assertTrue(derivedBinding.contains("protected override fun onLaunch(args: LaunchArgs)"))
-        assertTrue(
-            normalizedDerivedBinding.contains(
-                "invokeObjectSetter(pointer,9,projectedObjectArgumentPointer(args,\"Example.Xaml.LaunchArgs\",\"cinterface(IInspectable)\")).getOrThrow()",
-            ),
-        )
+        assertTrue(normalizedDerivedBinding.contains("invokeObjectSetter(pointer,9,args.pointer).getOrThrow()"))
         assertTrue(derivedBinding.contains("protected override var title: String"))
         assertTrue(derivedBinding.contains("invokeHStringMethod(pointer, 10).getOrThrow()"))
         assertTrue(derivedBinding.contains("invokeStringSetter(pointer, 11, value).getOrThrow()"))
@@ -9001,11 +8978,7 @@ class KotlinBindingGeneratorTest {
         val normalizedDerivedBinding = derivedBinding.replace(Regex("\\s+"), "")
 
         assertTrue(derivedBinding.contains("protected override fun onLaunch(args: LaunchArgs)"))
-        assertTrue(
-            normalizedDerivedBinding.contains(
-                "invokeObjectSetter(pointer,7,projectedObjectArgumentPointer(args,\"Example.Xaml.LaunchArgs\",\"cinterface(IInspectable)\")).getOrThrow()",
-            ),
-        )
+        assertTrue(normalizedDerivedBinding.contains("invokeObjectSetter(pointer,7,args.pointer).getOrThrow()"))
     }
 
     @Test

@@ -37,11 +37,15 @@ internal fun enumMemberLiteral(value: Int, underlyingType: String): String = whe
     else -> value.toString()
 }
 
-internal fun enumGetterAbiCall(underlyingType: String, vtableIndex: Int): CodeBlock = when (normalizedEnumAbiType(underlyingType)) {
-    "UInt32" -> CodeBlock.of("%T.invokeUInt32Method(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
-    "Int64" -> CodeBlock.of("%T.invokeInt64Method(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
-    "UInt64" -> CodeBlock.of("%T.invokeUInt64Method(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
-    else -> CodeBlock.of("%T.invokeInt32Method(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
+internal fun enumGetterAbiCall(
+    underlyingType: String,
+    vtableIndex: Int,
+    pointerExpression: String = "pointer",
+): CodeBlock = when (normalizedEnumAbiType(underlyingType)) {
+    "UInt32" -> CodeBlock.of("%T.invokeUInt32Method(%L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, pointerExpression, vtableIndex)
+    "Int64" -> CodeBlock.of("%T.invokeInt64Method(%L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, pointerExpression, vtableIndex)
+    "UInt64" -> CodeBlock.of("%T.invokeUInt64Method(%L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, pointerExpression, vtableIndex)
+    else -> CodeBlock.of("%T.invokeInt32Method(%L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, pointerExpression, vtableIndex)
 }
 
 internal fun enumMethodWithInt32ArgAbiCall(underlyingType: String, vtableIndex: Int, argumentName: String): CodeBlock =

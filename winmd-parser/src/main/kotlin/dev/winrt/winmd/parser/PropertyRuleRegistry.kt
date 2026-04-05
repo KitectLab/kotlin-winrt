@@ -4,6 +4,10 @@ internal enum class RuntimePropertyGetterRuleFamily {
     OBJECT,
     IREFERENCE_STRING,
     STRING,
+    UINT8,
+    INT16,
+    UINT16,
+    CHAR16,
     FLOAT32,
     FLOAT64,
     BOOLEAN,
@@ -20,6 +24,10 @@ internal enum class RuntimePropertyGetterRuleFamily {
 internal enum class RuntimePropertySetterRuleFamily {
     OBJECT,
     STRING,
+    UINT8,
+    INT16,
+    UINT16,
+    CHAR16,
     INT32,
     UINT32,
     FLOAT32,
@@ -33,6 +41,10 @@ internal enum class InterfacePropertyRuleFamily {
     ENUM,
     OBJECT,
     STRING,
+    UINT8,
+    INT16,
+    UINT16,
+    CHAR16,
     FLOAT32,
     FLOAT64,
     BOOLEAN,
@@ -51,6 +63,10 @@ internal object PropertyRuleRegistry {
         "Object" to RuntimePropertyGetterRuleFamily.OBJECT,
         "IReference<String>" to RuntimePropertyGetterRuleFamily.IREFERENCE_STRING,
         "String" to RuntimePropertyGetterRuleFamily.STRING,
+        "UInt8" to RuntimePropertyGetterRuleFamily.UINT8,
+        "Int16" to RuntimePropertyGetterRuleFamily.INT16,
+        "UInt16" to RuntimePropertyGetterRuleFamily.UINT16,
+        "Char16" to RuntimePropertyGetterRuleFamily.CHAR16,
         "Float32" to RuntimePropertyGetterRuleFamily.FLOAT32,
         "Float64" to RuntimePropertyGetterRuleFamily.FLOAT64,
         "Boolean" to RuntimePropertyGetterRuleFamily.BOOLEAN,
@@ -67,6 +83,10 @@ internal object PropertyRuleRegistry {
     private val setterRules: Map<String, RuntimePropertySetterRuleFamily> = mapOf(
         "Object" to RuntimePropertySetterRuleFamily.OBJECT,
         "String" to RuntimePropertySetterRuleFamily.STRING,
+        "UInt8" to RuntimePropertySetterRuleFamily.UINT8,
+        "Int16" to RuntimePropertySetterRuleFamily.INT16,
+        "UInt16" to RuntimePropertySetterRuleFamily.UINT16,
+        "Char16" to RuntimePropertySetterRuleFamily.CHAR16,
         "Int32" to RuntimePropertySetterRuleFamily.INT32,
         "UInt32" to RuntimePropertySetterRuleFamily.UINT32,
         "Float32" to RuntimePropertySetterRuleFamily.FLOAT32,
@@ -81,41 +101,51 @@ internal object PropertyRuleRegistry {
         isEnumType: Boolean,
         isObjectType: Boolean,
     ): InterfacePropertyRuleFamily? {
+        val canonicalType = canonicalWinRtSpecialType(type)
         return when {
             isEnumType -> InterfacePropertyRuleFamily.ENUM
             isObjectType -> InterfacePropertyRuleFamily.OBJECT
-            type == "String" -> InterfacePropertyRuleFamily.STRING
-            type == "Float32" -> InterfacePropertyRuleFamily.FLOAT32
-            type == "Float64" -> InterfacePropertyRuleFamily.FLOAT64
-            type == "Boolean" -> InterfacePropertyRuleFamily.BOOLEAN
-            type == "Guid" -> InterfacePropertyRuleFamily.GUID
-            type == "DateTime" -> InterfacePropertyRuleFamily.DATE_TIME
-            type == "TimeSpan" -> InterfacePropertyRuleFamily.TIME_SPAN
-            type == "EventRegistrationToken" -> InterfacePropertyRuleFamily.EVENT_REGISTRATION_TOKEN
-            type == "Int32" -> InterfacePropertyRuleFamily.INT32
-            type == "UInt32" -> InterfacePropertyRuleFamily.UINT32
-            type == "Int64" -> InterfacePropertyRuleFamily.INT64
-            type == "UInt64" -> InterfacePropertyRuleFamily.UINT64
+            canonicalType == "String" -> InterfacePropertyRuleFamily.STRING
+            canonicalType == "UInt8" -> InterfacePropertyRuleFamily.UINT8
+            canonicalType == "Int16" -> InterfacePropertyRuleFamily.INT16
+            canonicalType == "UInt16" -> InterfacePropertyRuleFamily.UINT16
+            canonicalType == "Char16" -> InterfacePropertyRuleFamily.CHAR16
+            canonicalType == "Float32" -> InterfacePropertyRuleFamily.FLOAT32
+            canonicalType == "Float64" -> InterfacePropertyRuleFamily.FLOAT64
+            canonicalType == "Boolean" -> InterfacePropertyRuleFamily.BOOLEAN
+            canonicalType == "Guid" -> InterfacePropertyRuleFamily.GUID
+            canonicalType == "DateTime" -> InterfacePropertyRuleFamily.DATE_TIME
+            canonicalType == "TimeSpan" -> InterfacePropertyRuleFamily.TIME_SPAN
+            canonicalType == "EventRegistrationToken" -> InterfacePropertyRuleFamily.EVENT_REGISTRATION_TOKEN
+            canonicalType == "Int32" -> InterfacePropertyRuleFamily.INT32
+            canonicalType == "UInt32" -> InterfacePropertyRuleFamily.UINT32
+            canonicalType == "Int64" -> InterfacePropertyRuleFamily.INT64
+            canonicalType == "UInt64" -> InterfacePropertyRuleFamily.UINT64
             else -> null
         }
     }
 
     fun interfaceSetterRuleFamily(type: String, isObjectType: Boolean): InterfacePropertyRuleFamily? {
-        return when (type) {
-            if (isObjectType) type else null -> InterfacePropertyRuleFamily.OBJECT
-            "String" -> InterfacePropertyRuleFamily.STRING
-            "Float32" -> InterfacePropertyRuleFamily.FLOAT32
-            "Boolean" -> InterfacePropertyRuleFamily.BOOLEAN
-            "Float64" -> InterfacePropertyRuleFamily.FLOAT64
-            "Int32" -> InterfacePropertyRuleFamily.INT32
-            "UInt32" -> InterfacePropertyRuleFamily.UINT32
-            "Int64" -> InterfacePropertyRuleFamily.INT64
-            "UInt64" -> InterfacePropertyRuleFamily.UINT64
+        val canonicalType = canonicalWinRtSpecialType(type)
+        return when {
+            isObjectType -> InterfacePropertyRuleFamily.OBJECT
+            canonicalType == "String" -> InterfacePropertyRuleFamily.STRING
+            canonicalType == "UInt8" -> InterfacePropertyRuleFamily.UINT8
+            canonicalType == "Int16" -> InterfacePropertyRuleFamily.INT16
+            canonicalType == "UInt16" -> InterfacePropertyRuleFamily.UINT16
+            canonicalType == "Char16" -> InterfacePropertyRuleFamily.CHAR16
+            canonicalType == "Float32" -> InterfacePropertyRuleFamily.FLOAT32
+            canonicalType == "Boolean" -> InterfacePropertyRuleFamily.BOOLEAN
+            canonicalType == "Float64" -> InterfacePropertyRuleFamily.FLOAT64
+            canonicalType == "Int32" -> InterfacePropertyRuleFamily.INT32
+            canonicalType == "UInt32" -> InterfacePropertyRuleFamily.UINT32
+            canonicalType == "Int64" -> InterfacePropertyRuleFamily.INT64
+            canonicalType == "UInt64" -> InterfacePropertyRuleFamily.UINT64
             else -> null
         }
     }
 
-    fun getterRuleFamily(type: String): RuntimePropertyGetterRuleFamily? = getterRules[type]
+    fun getterRuleFamily(type: String): RuntimePropertyGetterRuleFamily? = getterRules[canonicalWinRtSpecialType(type)]
 
-    fun setterRuleFamily(type: String): RuntimePropertySetterRuleFamily? = setterRules[type]
+    fun setterRuleFamily(type: String): RuntimePropertySetterRuleFamily? = setterRules[canonicalWinRtSpecialType(type)]
 }

@@ -91,4 +91,72 @@ class ValueTypeRendererTest {
         assertTrue(binding.contains("Point.fromAbi(reader.readStruct(Point.ABI_LAYOUT))"))
         assertTrue(binding.contains("reader.readUByte()"))
     }
+
+    @Test
+    fun generates_struct_abi_helpers_for_hstring_fields() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml.Markup",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Markup",
+                            name = "XmlnsDefinition",
+                            kind = WinMdTypeKind.Struct,
+                            fields = listOf(
+                                WinMdField("XmlNamespace", "String"),
+                                WinMdField("Namespace", "String"),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Microsoft/UI/Xaml/Markup/XmlnsDefinition.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("valxmlNamespace:String"))
+        assertTrue(binding.contains("valnamespace:String"))
+        assertTrue(binding.contains("add(ComStructFieldKind.HSTRING)"))
+        assertTrue(binding.contains("writer.writeHString(xmlNamespace)"))
+        assertTrue(binding.contains("writer.writeHString(namespace)"))
+        assertTrue(binding.contains("returnXmlnsDefinition(reader.readHString(),reader.readHString())"))
+    }
+
+    @Test
+    fun generates_struct_abi_helpers_for_nullable_ireference_fields() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Contracts",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Contracts",
+                            name = "WidgetInfo",
+                            kind = WinMdTypeKind.Struct,
+                            fields = listOf(
+                                WinMdField("OptionalVersion", "Windows.Foundation.IReference`1<UInt64>"),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Example/Contracts/WidgetInfo.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("valoptionalVersion:UInt64?"))
+        assertTrue(binding.contains("add(ComStructFieldKind.OBJECT)"))
+        assertTrue(binding.contains("writer.writeObjectPointer("))
+        assertTrue(binding.contains("PropertyValue.createUInt64(optionalVersion).pointer"))
+        assertTrue(binding.contains("reader.readObjectPointer().let{if(it.isNull)nullelseIPropertyValue.from(Inspectable(it)).getUInt64()}"))
+    }
 }

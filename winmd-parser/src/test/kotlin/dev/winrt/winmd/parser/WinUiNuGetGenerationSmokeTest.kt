@@ -3,6 +3,7 @@ package dev.winrt.winmd.parser
 import dev.winrt.winmd.plugin.WinMdModelFactory
 import dev.winrt.winmd.plugin.NuGetPackageReferences
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Files
@@ -47,6 +48,69 @@ class WinUiNuGetGenerationSmokeTest {
         assertNotNull(generatedFiles["Microsoft/UI/Xaml/ApplicationTheme.kt"])
         assertNotNull(generatedFiles["Microsoft/UI/Xaml/IApplicationInitializationCallbackParams.kt"])
         assertNotNull(generatedFiles["Microsoft/UI/Xaml/ApplicationInitializationCallbackParams.kt"])
+    }
+
+    @Test
+    fun generates_toggle_switch_surface_from_local_windows_app_sdk_winmd_when_available() {
+        val winuiWinmd = localWinUiXamlWinmd() ?: return
+
+        val model = WinMdModelFilters.filterNamespaces(
+            model = WinMdModelFactory.merge(
+                primary = WinMdModelFactory.metadataModel(listOf(winuiWinmd)),
+                supplemental = WinMdModelFactory.sampleSupplementalModel(),
+            ),
+            namespaceFilters = listOf(
+                "Microsoft.UI.Xaml",
+                "Microsoft.UI.Xaml.Controls",
+                "Microsoft.UI.Xaml.Controls.Primitives",
+            ),
+        )
+        val generatedFiles = KotlinBindingGenerator().generate(model).associateBy { it.relativePath }
+
+        val runtimeBinding = generatedFiles["Microsoft/UI/Xaml/Controls/ToggleSwitch.kt"]
+        val interfaceBinding = generatedFiles["Microsoft/UI/Xaml/Controls/IToggleSwitch.kt"]
+        val staticsBinding = generatedFiles["Microsoft/UI/Xaml/Controls/IToggleSwitchStatics.kt"]
+        val templateSettingsBinding = generatedFiles["Microsoft/UI/Xaml/Controls/Primitives/ToggleSwitchTemplateSettings.kt"]
+
+        assertNotNull(runtimeBinding)
+        assertNotNull(interfaceBinding)
+        assertNotNull(staticsBinding)
+        assertNotNull(templateSettingsBinding)
+
+        val runtimeContent = runtimeBinding!!.content
+        val interfaceContent = interfaceBinding!!.content
+        val staticsContent = staticsBinding!!.content
+        val templateSettingsContent = templateSettingsBinding!!.content
+
+        assertTrue(runtimeContent.contains("override val activationKind: WinRtActivationKind = WinRtActivationKind.Factory"))
+        assertTrue(runtimeContent.contains("constructor() : this(Companion.activate().pointer)"))
+        assertFalse(runtimeContent.contains("WinRtRuntime.compose("))
+        if (!runtimeContent.contains("var header: Inspectable")) {
+            println(runtimeContent)
+        }
+        assertTrue(runtimeContent.contains("var header: Inspectable"))
+        assertTrue(runtimeContent.contains("var headerTemplate: DataTemplate"))
+        assertTrue(runtimeContent.contains("var onContentTemplate: DataTemplate"))
+        assertTrue(runtimeContent.contains("var offContentTemplate: DataTemplate"))
+        assertTrue(runtimeContent.contains("val templateSettings: ToggleSwitchTemplateSettings"))
+        assertTrue(runtimeContent.contains("fun add_Toggled(handler: RoutedEventHandler): EventRegistrationToken"))
+        assertTrue(runtimeContent.contains("fun remove_Toggled(token: EventRegistrationToken)"))
+
+        assertTrue(interfaceContent.contains("var header: Inspectable"))
+        assertTrue(interfaceContent.contains("var headerTemplate: DataTemplate"))
+        assertTrue(interfaceContent.contains("var onContentTemplate: DataTemplate"))
+        assertTrue(interfaceContent.contains("var offContentTemplate: DataTemplate"))
+        assertTrue(interfaceContent.contains("val templateSettings: ToggleSwitchTemplateSettings"))
+        assertTrue(interfaceContent.contains("fun add_Toggled(handler: RoutedEventHandler): EventRegistrationToken"))
+        assertTrue(interfaceContent.contains("fun remove_Toggled(token: EventRegistrationToken)"))
+
+        assertTrue(staticsContent.contains("val isOnProperty: DependencyProperty"))
+        assertTrue(staticsContent.contains("val headerProperty: DependencyProperty"))
+        assertTrue(staticsContent.contains("val headerTemplateProperty: DependencyProperty"))
+        assertTrue(staticsContent.contains("val onContentTemplateProperty: DependencyProperty"))
+        assertTrue(staticsContent.contains("val offContentTemplateProperty: DependencyProperty"))
+
+        assertTrue(templateSettingsContent.contains("class ToggleSwitchTemplateSettings"))
     }
 
     private fun localWinUiXamlWinmd(): Path? {

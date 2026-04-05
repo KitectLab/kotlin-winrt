@@ -2,11 +2,22 @@ package dev.winrt.winmd.parser
 
 import com.squareup.kotlinpoet.TypeName
 import dev.winrt.winmd.plugin.WinMdMethod
+import dev.winrt.winmd.plugin.WinMdModel
 
 internal class AsyncMethodRuleRegistry(
     private val typeNameMapper: TypeNameMapper,
     private val asyncMethodProjectionPlanner: AsyncMethodProjectionPlanner,
+    private val projectedObjectArgumentLowering: ProjectedObjectArgumentLowering,
 ) {
+    constructor(
+        typeNameMapper: TypeNameMapper,
+        asyncMethodProjectionPlanner: AsyncMethodProjectionPlanner,
+    ) : this(
+        typeNameMapper,
+        asyncMethodProjectionPlanner,
+        defaultProjectedObjectArgumentLowering(),
+    )
+
     fun plan(
         method: WinMdMethod,
         currentNamespace: String,
@@ -15,7 +26,7 @@ internal class AsyncMethodRuleRegistry(
         if (!isKotlinIdentifier(method.name) || method.vtableIndex == null) {
             return null
         }
-        val invocation = asyncInvocation(method) ?: return null
+        val invocation = asyncInvocation(method, currentNamespace) ?: return null
         val rawReturnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace, genericParameters)
         val awaitReturnType = asyncMethodProjectionPlanner.awaitReturnType(
             method.returnType,
@@ -104,22 +115,33 @@ internal class AsyncMethodRuleRegistry(
         )
     }
 
-    private fun asyncInvocation(method: WinMdMethod): String? {
+    private fun asyncInvocation(method: WinMdMethod, currentNamespace: String): String? {
         val vtableIndex = method.vtableIndex ?: return null
         val parameterNames = method.parameters.map { it.name.replaceFirstChar(Char::lowercase) }
         val parameterTypes = method.parameters.map { it.type }
-        val parameterCategories = methodParameterCategories(parameterTypes, ::supportsAsyncObjectInput) ?: return null
+        val parameterCategories = methodParameterCategories(parameterTypes) { typeName ->
+            projectedObjectArgumentLowering.supportsInputType(typeName, currentNamespace)
+        } ?: return null
         return when (parameterCategories.size) {
             0 -> "%T.invokeObjectMethod(pointer, $vtableIndex).getOrThrow()"
-            1 -> asyncUnaryInvocation(parameterCategories.single(), parameterNames.single(), vtableIndex)
+            1 -> asyncUnaryInvocation(
+                parameterCategories.single(),
+                parameterNames.single(),
+                parameterTypes.single(),
+                currentNamespace,
+                vtableIndex,
+            )
             2 -> asyncTwoArgumentInvocation(
                 parameterCategories[0],
                 parameterCategories[1],
                 parameterNames[0],
                 parameterNames[1],
+                parameterTypes[0],
+                parameterTypes[1],
+                currentNamespace,
                 vtableIndex,
             )
-            else -> asyncGenericInvocation(parameterCategories, parameterNames, vtableIndex)
+            else -> asyncGenericInvocation(parameterCategories, parameterNames, parameterTypes, currentNamespace, vtableIndex)
         }
     }
 
@@ -148,9 +170,11 @@ internal class AsyncMethodRuleRegistry(
     private fun asyncUnaryInvocation(
         category: MethodParameterCategory,
         parameterName: String,
+        parameterType: String,
+        currentNamespace: String,
         vtableIndex: Int,
     ): String? {
-        val loweredArgument = asyncArgumentExpression(category, parameterName)
+        val loweredArgument = asyncArgumentExpression(category, parameterName, parameterType, currentNamespace)
         return when (category) {
             MethodParameterCategory.STRING ->
                 "%T.invokeObjectMethodWithStringArg(pointer, $vtableIndex, $loweredArgument).getOrThrow()"
@@ -173,6 +197,9 @@ internal class AsyncMethodRuleRegistry(
         second: MethodParameterCategory,
         firstName: String,
         secondName: String,
+        firstType: String,
+        secondType: String,
+        currentNamespace: String,
         vtableIndex: Int,
     ): String? {
         val firstToken = first.toAbiToken().callNamePart()
@@ -182,21 +209,35 @@ internal class AsyncMethodRuleRegistry(
         } else {
             "${firstToken}And${secondToken}Args"
         }
-        val firstArgument = asyncArgumentExpression(first, firstName)
-        val secondArgument = asyncArgumentExpression(second, secondName)
+        val firstArgument = asyncArgumentExpression(first, firstName, firstType, currentNamespace)
+        val secondArgument = asyncArgumentExpression(second, secondName, secondType, currentNamespace)
         return "dev.winrt.kom.requireObject(%T.invokeMethodWith${helperNamePart}(pointer, $vtableIndex, dev.winrt.kom.ComMethodResultKind.OBJECT, $firstArgument, $secondArgument).getOrThrow())"
     }
 
     private fun asyncGenericInvocation(
         categories: List<MethodParameterCategory>,
         parameterNames: List<String>,
+        parameterTypes: List<String>,
+        currentNamespace: String,
         vtableIndex: Int,
     ): String {
-        val arguments = categories.zip(parameterNames) { category, name -> asyncArgumentExpression(category, name) }
+        val arguments = categories.indices.map { index ->
+            asyncArgumentExpression(
+                categories[index],
+                parameterNames[index],
+                parameterTypes[index],
+                currentNamespace,
+            )
+        }
         return "dev.winrt.kom.requireObject(%T.invokeMethodWithResultKind(pointer, $vtableIndex, dev.winrt.kom.ComMethodResultKind.OBJECT, ${arguments.joinToString(", ")}).getOrThrow())"
     }
 
-    private fun asyncArgumentExpression(category: MethodParameterCategory, parameterName: String): String {
+    private fun asyncArgumentExpression(
+        category: MethodParameterCategory,
+        parameterName: String,
+        parameterType: String,
+        currentNamespace: String,
+    ): String {
         return when (category) {
             MethodParameterCategory.STRING -> parameterName
             MethodParameterCategory.INT32,
@@ -204,17 +245,10 @@ internal class AsyncMethodRuleRegistry(
             MethodParameterCategory.BOOLEAN,
             MethodParameterCategory.INT64,
             MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> "$parameterName.value"
-            MethodParameterCategory.OBJECT -> "$parameterName.pointer"
+            MethodParameterCategory.OBJECT ->
+                projectedObjectArgumentLowering.expression(parameterName, parameterType, currentNamespace).toString()
         }
     }
-
-private fun supportsAsyncObjectInput(typeName: String): Boolean {
-    return (typeName == "Object" || typeName.contains('.')) &&
-        !typeName.contains('<') &&
-        !typeName.contains('`') &&
-        !typeName.endsWith("[]")
-}
-
 }
 
 private val scalarAsyncResultTypeNames = setOf(
@@ -270,6 +304,15 @@ private fun splitGenericArguments(source: String): List<String> {
     }
     arguments += source.substring(start).trim()
     return arguments
+}
+
+private fun defaultProjectedObjectArgumentLowering(): ProjectedObjectArgumentLowering {
+    val emptyTypeRegistry = TypeRegistry(WinMdModel(files = emptyList(), namespaces = emptyList()))
+    return ProjectedObjectArgumentLowering(
+        emptyTypeRegistry,
+        WinRtSignatureMapper(emptyTypeRegistry),
+        WinRtProjectionTypeMapper(),
+    )
 }
 
 internal data class AsyncMethodRulePlan(
