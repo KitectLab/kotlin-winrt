@@ -96,6 +96,22 @@ class WinRtSignatureMapperTest {
                     ),
                 ),
             ),
+            WinMdNamespace(
+                name = "Windows.UI",
+                types = listOf(
+                    WinMdType(
+                        namespace = "Windows.UI",
+                        name = "Color",
+                        kind = WinMdTypeKind.Struct,
+                        fields = listOf(
+                            WinMdField("A", "UInt8"),
+                            WinMdField("R", "UInt8"),
+                            WinMdField("G", "UInt8"),
+                            WinMdField("B", "UInt8"),
+                        ),
+                    ),
+                ),
+            ),
         ),
     )
 
@@ -156,6 +172,10 @@ class WinRtSignatureMapperTest {
         assertEquals(
             "struct(Windows.Foundation.Point;f8;f8)",
             mapper.signatureFor("Windows.Foundation.Point", "Windows.Foundation"),
+        )
+        assertEquals(
+            "struct(Windows.UI.Color;u1;u1;u1;u1)",
+            mapper.signatureFor("Windows.UI.Color", "Windows.UI"),
         )
     }
 
