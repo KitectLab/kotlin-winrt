@@ -6,6 +6,7 @@ import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.asTypeName
 import dev.winrt.winmd.plugin.WinMdMethod
+import dev.winrt.winmd.plugin.WinMdParameter
 
 internal class RuntimeMethodRenderer(
     private val typeNameMapper: TypeNameMapper,
@@ -202,15 +203,20 @@ internal class RuntimeMethodRenderer(
         if (!method.isInt32FillArrayMethod()) {
             return null
         }
+        val fillArrayParameter = method.int32FillArrayParameter() ?: return null
         return when {
             method.returnType == "Unit" -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return") },
                 returnStatement = "%L",
                 statementArgs = { method, currentNamespace, parameterBindings ->
-                    val abiArguments = runtimeInt32FillArrayAbiArguments(method, currentNamespace, parameterBindings)
+                    val abiArguments = runtimeInt32FillArrayAbiArguments(method, currentNamespace, parameterBindings, fillArrayParameter)
                         ?: error("Unsupported Int32 fill-array runtime method: ${method.name}")
                     arrayOf(
-                        runtimeVarargAbiCall("invokeUnitMethodWithArgs", method.vtableIndex!!, abiArguments),
+                        int32FillArrayWrappedCall(
+                            fillArrayParameter,
+                            runtimeVarargAbiCall("invokeUnitMethodWithArgs", method.vtableIndex!!, abiArguments),
+                            returnsValue = false,
+                        ),
                     )
                 },
             )
@@ -220,13 +226,17 @@ internal class RuntimeMethodRenderer(
                 },
                 returnStatement = "return %L",
                 statementArgs = { method, currentNamespace, parameterBindings ->
-                    val abiArguments = runtimeInt32FillArrayAbiArguments(method, currentNamespace, parameterBindings)
+                    val abiArguments = runtimeInt32FillArrayAbiArguments(method, currentNamespace, parameterBindings, fillArrayParameter)
                         ?: error("Unsupported Int32 fill-array runtime method: ${method.name}")
                     arrayOf(
-                        runtimeObjectReturnCode(
-                            method = method,
-                            currentNamespace = currentNamespace,
-                            abiCall = runtimeVarargAbiCall("invokeObjectMethodWithArgs", method.vtableIndex!!, abiArguments),
+                        int32FillArrayWrappedCall(
+                            fillArrayParameter,
+                            runtimeObjectReturnCode(
+                                method = method,
+                                currentNamespace = currentNamespace,
+                                abiCall = runtimeVarargAbiCall("invokeObjectMethodWithArgs", method.vtableIndex!!, abiArguments),
+                            ),
+                            returnsValue = true,
                         ),
                     )
                 },
@@ -235,16 +245,20 @@ internal class RuntimeMethodRenderer(
                 nullPointerReturn = { method -> twoArgumentNullReturn(method.returnType, method.name) },
                 returnStatement = "return %L",
                 statementArgs = { method, currentNamespace, parameterBindings ->
-                    val abiArguments = runtimeInt32FillArrayAbiArguments(method, currentNamespace, parameterBindings)
+                    val abiArguments = runtimeInt32FillArrayAbiArguments(method, currentNamespace, parameterBindings, fillArrayParameter)
                         ?: error("Unsupported Int32 fill-array runtime method: ${method.name}")
                     arrayOf(
-                        twoArgumentReturnCode(
-                            method.returnType,
-                            runtimeVarargResultKindAbiCall(
-                                vtableIndex = method.vtableIndex!!,
-                                returnType = method.returnType,
-                                abiArguments = abiArguments,
+                        int32FillArrayWrappedCall(
+                            fillArrayParameter,
+                            twoArgumentReturnCode(
+                                method.returnType,
+                                runtimeVarargResultKindAbiCall(
+                                    vtableIndex = method.vtableIndex!!,
+                                    returnType = method.returnType,
+                                    abiArguments = abiArguments,
+                                ),
                             ),
+                            returnsValue = true,
                         ),
                     )
                 },
@@ -1845,15 +1859,22 @@ internal class RuntimeMethodRenderer(
         method: WinMdMethod,
         currentNamespace: String,
         parameterBindings: List<RuntimeMethodParameterBinding>,
+        fillArrayParameter: WinMdParameter,
     ): List<CodeBlock>? {
-        return int32FillArrayAbiArguments(method.parameters) { parameter ->
-            val parameterIndex = method.parameters.indexOf(parameter)
-            val binding = parameterBindings[parameterIndex]
-            val parameterCategory = methodParameterCategory(
-                signatureParameterType(parameter.type, currentNamespace),
-            ) { typeName -> supportsRuntimeObjectType(typeName, currentNamespace) } ?: return@int32FillArrayAbiArguments null
-            CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, currentNamespace))
-        }
+        return int32FillArrayAbiArguments(
+            parameters = method.parameters,
+            lowerNonArrayArgument = { parameter ->
+                val parameterIndex = method.parameters.indexOf(parameter)
+                val binding = parameterBindings[parameterIndex]
+                val parameterCategory = methodParameterCategory(
+                    signatureParameterType(parameter.type, currentNamespace),
+                ) { typeName -> supportsRuntimeObjectType(typeName, currentNamespace) } ?: return@int32FillArrayAbiArguments null
+                CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, currentNamespace))
+            },
+            lowerArrayArgument = { _ ->
+                CodeBlock.of("%N", int32FillArrayBufferName(fillArrayParameter))
+            },
+        )
     }
 
     private fun runtimeVarargAbiCall(

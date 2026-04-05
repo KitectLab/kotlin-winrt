@@ -1720,26 +1720,38 @@ internal class InterfaceTypeRenderer(
         if (!method.isInt32FillArrayMethod()) {
             return null
         }
-        val abiArguments = int32FillArrayAbiArguments(method.parameters) { parameter ->
-            val parameterCategory = methodParameterCategory(
-                signatureParameterType(parameter.type, currentNamespace),
-            ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@int32FillArrayAbiArguments null
-            CodeBlock.of(
-                "%L",
-                unaryArgumentExpression(
-                    argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                    parameterType = parameter.type,
-                    category = parameterCategory,
-                    currentNamespace = currentNamespace,
-                ),
-            )
-        } ?: return null
+        val fillArrayParameter = method.int32FillArrayParameter() ?: return null
+        val fillArrayBufferName = int32FillArrayBufferName(fillArrayParameter)
+        val abiArguments = int32FillArrayAbiArguments(
+            parameters = method.parameters,
+            lowerNonArrayArgument = { parameter ->
+                val parameterCategory = methodParameterCategory(
+                    signatureParameterType(parameter.type, currentNamespace),
+                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@int32FillArrayAbiArguments null
+                CodeBlock.of(
+                    "%L",
+                    unaryArgumentExpression(
+                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                        parameterType = parameter.type,
+                        category = parameterCategory,
+                        currentNamespace = currentNamespace,
+                    ),
+                )
+            },
+            lowerArrayArgument = { _ ->
+                CodeBlock.of("%N", fillArrayBufferName)
+            },
+        ) ?: return null
         return when {
             method.returnType == "Unit" -> PlannedInterfaceMethod(
                 statement = "%L",
                 args = { method, _ ->
                     arrayOf(
-                        interfaceVarargAbiCall("invokeUnitMethodWithArgs", method.vtableIndex!!, abiArguments),
+                        int32FillArrayWrappedCall(
+                            fillArrayParameter,
+                            interfaceVarargAbiCall("invokeUnitMethodWithArgs", method.vtableIndex!!, abiArguments),
+                            returnsValue = false,
+                        ),
                     )
                 },
             )
@@ -1747,11 +1759,15 @@ internal class InterfaceTypeRenderer(
                 statement = "return %L",
                 args = { method, _ ->
                     arrayOf(
-                        objectReturnCode(
-                            method = method,
-                            namespace = currentNamespace,
-                            abiCall = interfaceVarargAbiCall("invokeObjectMethodWithArgs", method.vtableIndex!!, abiArguments),
-                            genericParameters = genericParameters,
+                        int32FillArrayWrappedCall(
+                            fillArrayParameter,
+                            objectReturnCode(
+                                method = method,
+                                namespace = currentNamespace,
+                                abiCall = interfaceVarargAbiCall("invokeObjectMethodWithArgs", method.vtableIndex!!, abiArguments),
+                                genericParameters = genericParameters,
+                            ),
+                            returnsValue = true,
                         ),
                     )
                 },
@@ -1760,13 +1776,17 @@ internal class InterfaceTypeRenderer(
                 statement = "return %L",
                 args = { method, _ ->
                     arrayOf(
-                        twoArgumentReturnCode(
-                            method,
-                            interfaceVarargResultKindAbiCall(
-                                vtableIndex = method.vtableIndex!!,
-                                returnType = method.returnType,
-                                abiArguments = abiArguments,
+                        int32FillArrayWrappedCall(
+                            fillArrayParameter,
+                            twoArgumentReturnCode(
+                                method,
+                                interfaceVarargResultKindAbiCall(
+                                    vtableIndex = method.vtableIndex!!,
+                                    returnType = method.returnType,
+                                    abiArguments = abiArguments,
+                                ),
                             ),
+                            returnsValue = true,
                         ),
                     )
                 },

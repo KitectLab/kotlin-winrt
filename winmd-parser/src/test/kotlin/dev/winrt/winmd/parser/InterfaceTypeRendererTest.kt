@@ -383,7 +383,9 @@ class InterfaceTypeRendererTest {
             .replace(Regex("\\s+"), "")
 
         assertTrue(binding.contains("fungetMany(startIndex:UInt32,items:Array<Int32>):UInt32"))
-        assertTrue(binding.contains("UInt32(PlatformComInterop.invokeMethodWithResultKind(pointer,6,ComMethodResultKind.UINT32,startIndex.value,items.size,IntArray(items.size){index->items[index].value}).getOrThrow().requireUInt32())"))
+        assertTrue(binding.contains("valitemsAbi=IntArray(items.size){index->items[index].value}"))
+        assertTrue(binding.contains("PlatformComInterop.invokeMethodWithResultKind(pointer,6,ComMethodResultKind.UINT32,startIndex.value,items.size,itemsAbi).getOrThrow().requireUInt32()"))
+        assertTrue(binding.contains("itemsAbi.forEachIndexed{index,value->items[index]=Int32(value)}"))
     }
 
     @Test
