@@ -76,7 +76,42 @@ class RuntimePropertyRendererTest {
             .replace(Regex("\\s+"), "")
 
         assertTrue(binding.contains("valtitle:String"))
-        assertTrue(binding.contains("PlatformComInterop.invokeHStringMethod(pointer,6).getOrThrow().use{it.toKotlinString()}"))
+        assertTrue(binding.contains("run{valvalue=PlatformComInterop.invokeHStringMethod(pointer,6).getOrThrow()try{value.toKotlinString()}finally{value.close()}}"))
+    }
+
+    @Test
+    fun renders_ireference_string_properties_as_nullable_string_accessors() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "NullableStringCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "Title",
+                                    type = "IReference<String>",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/NullableStringCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("valtitle:String?"))
+        assertTrue(binding.contains("if(pointer.isNull)nullelserun{valvalue=PlatformComInterop.invokeHStringMethod(pointer,6).getOrThrow()try{value.takeUnless{it.isNull}?.toKotlinString()}finally{value.close()}}"))
     }
 
     @Test

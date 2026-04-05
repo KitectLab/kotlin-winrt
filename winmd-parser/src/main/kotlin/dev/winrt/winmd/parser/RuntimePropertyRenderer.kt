@@ -87,10 +87,7 @@ internal class RuntimePropertyRenderer(
     }
 
     private fun hStringToKotlinString(pointerName: String, vtableIndex: Int): CodeBlock {
-        return CodeBlock.of(
-            "%T.invokeHStringMethod($pointerName, $vtableIndex).getOrThrow().use { it.toKotlinString() }",
-            PoetSymbols.platformComInteropClass,
-        )
+        return HStringSupport.toKotlinString(pointerName, vtableIndex)
     }
 
     private fun scalarRuntimePropertyPlan(type: String): ScalarRuntimePropertyPlan? {
@@ -192,11 +189,7 @@ internal class RuntimePropertyRenderer(
             property.getterVtableIndex == null -> null
             iReferenceInnerType != null -> RuntimePropertyGetterPlan { getterVtableIndex ->
                 val valueGetter = when (iReferenceInnerType) {
-                    "String" -> CodeBlock.of(
-                        "%T.invokeHStringMethod(pointer, %L).getOrThrow().use { value -> value.takeUnless { it.isNull }?.toKotlinString() }",
-                        PoetSymbols.platformComInteropClass,
-                        getterVtableIndex,
-                    )
+                    "String" -> HStringSupport.nullableFromCall(AbiCallCatalog.hstringMethod(getterVtableIndex))
                     "Object" -> CodeBlock.of(
                         "%T.invokeObjectMethod(pointer, %L).getOrThrow().let { if (it.isNull) null else %T(it) }",
                         PoetSymbols.platformComInteropClass,

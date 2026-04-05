@@ -2811,7 +2811,9 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("Iterable<String> by object : Iterable<String>"))
         assertTrue(binding.contains("invokeHStringMethod("))
-        assertTrue(binding.contains(".use { it.toKotlinString() }"))
+        assertTrue(binding.contains("val value = PlatformComInterop.invokeHStringMethod("))
+        assertTrue(binding.contains("value.toKotlinString()"))
+        assertTrue(binding.contains("value.close()"))
     }
 
     @Test
@@ -2848,7 +2850,9 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("Iterator<String> by object : Iterator<String>"))
         assertTrue(binding.contains("invokeHStringMethod("))
-        assertTrue(binding.contains(".use { it.toKotlinString() }"))
+        assertTrue(binding.contains("val value = PlatformComInterop.invokeHStringMethod("))
+        assertTrue(binding.contains("value.toKotlinString()"))
+        assertTrue(binding.contains("value.close()"))
     }
 
     @Test
@@ -4755,7 +4759,8 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("return EventRegistrationToken(PlatformComInterop.invokeInt64Getter(pointer, 10).getOrThrow())"))
         assertTrue(binding.contains("var title: String"))
         assertTrue(binding.contains("PlatformComInterop.invokeHStringMethod(pointer, 11).getOrThrow()"))
-        assertTrue(binding.contains("it.toKotlinString()"))
+        assertTrue(binding.contains("value.toKotlinString()"))
+        assertTrue(binding.contains("value.close()"))
         assertTrue(binding.contains("PlatformComInterop.invokeStringSetter(pointer, 12, value).getOrThrow()"))
         assertTrue(binding.contains("var count: Int32"))
         assertTrue(binding.contains("return Int32(PlatformComInterop.invokeInt32Method(pointer, 13).getOrThrow())"))
