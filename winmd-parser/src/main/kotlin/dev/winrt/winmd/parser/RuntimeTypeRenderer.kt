@@ -286,6 +286,22 @@ internal class RuntimeTypeRenderer(
                                 supportsProjectedObjectTypeName(typeName)
                             } != null
                         }
+            ) ||
+            (
+                candidate.method.copy(parameters = constructorParameters).isStringPassArrayMethod { _ -> true } &&
+                    constructorParameters
+                        .filterNot { parameter -> parameter.isStringPassArrayParameter() }
+                        .all { parameter ->
+                            methodParameterCategory(
+                                if (typeRegistry.isEnumType(parameter.type, candidate.runtimeClass.namespace)) {
+                                    enumSignatureType(typeRegistry, parameter.type, candidate.runtimeClass.namespace)
+                                } else {
+                                    parameter.type
+                                },
+                            ) { typeName ->
+                                supportsProjectedObjectTypeName(typeName)
+                            } != null
+                        }
             )
     }
 

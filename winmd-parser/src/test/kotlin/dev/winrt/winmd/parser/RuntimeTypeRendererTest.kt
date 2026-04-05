@@ -174,7 +174,7 @@ class RuntimeTypeRendererTest {
     }
 
     @Test
-    fun does_not_forward_unsupported_string_array_methods_from_companion() {
+    fun forwards_supported_string_array_methods_from_companion() {
         val model = WinMdModel(
             files = emptyList(),
             namespaces = listOf(
@@ -234,8 +234,8 @@ class RuntimeTypeRendererTest {
 
         val binding = renderer.render(typeRegistry.findType("PropertyValue", "Windows.Foundation")!!).toString()
 
-        assertFalse(binding.contains("fun createStringArray("))
-        assertFalse(binding.contains("statics.createStringArray"))
+        assertTrue(binding.contains("fun createStringArray("))
+        assertTrue(binding.contains("statics.createStringArray(value)"))
     }
 
     @Test
@@ -1726,7 +1726,7 @@ class RuntimeTypeRendererTest {
     }
 
     @Test
-    fun does_not_render_runtime_factory_constructors_for_unsupported_array_parameters() {
+    fun renders_runtime_factory_constructors_for_supported_string_array_parameters() {
         val model = WinMdModel(
             files = emptyList(),
             namespaces = listOf(
@@ -1793,9 +1793,16 @@ class RuntimeTypeRendererTest {
         )
 
         val binding = renderer.render(typeRegistry.findType("Widget", "Example.Xaml")!!).toString()
+        val normalizedBinding = binding.replace(Regex("\\s+"), " ")
 
-        assertFalse(binding.contains("constructor(labels: Array<String>)"))
-        assertFalse(binding.contains("factoryCreateWithLabels"))
+        assertTrue(
+            normalizedBinding,
+            normalizedBinding.contains("constructor(labels: kotlin.Array<kotlin.String>)"),
+        )
+        assertTrue(
+            normalizedBinding,
+            normalizedBinding.contains("factoryCreateWithLabels(labels).pointer"),
+        )
     }
 
     @Test
