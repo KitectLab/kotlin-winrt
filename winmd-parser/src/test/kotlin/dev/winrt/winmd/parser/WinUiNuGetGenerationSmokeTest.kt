@@ -113,6 +113,46 @@ class WinUiNuGetGenerationSmokeTest {
         assertTrue(templateSettingsContent.contains("class ToggleSwitchTemplateSettings"))
     }
 
+    @Test
+    fun generates_external_struct_members_from_local_windows_app_sdk_winmd_when_available() {
+        val winuiWinmd = localWinUiXamlWinmd() ?: return
+
+        val model = WinMdModelFilters.filterNamespaces(
+            model = WinMdModelFactory.merge(
+                primary = WinMdModelFactory.metadataModel(listOf(winuiWinmd)),
+                supplemental = WinMdModelFactory.sampleSupplementalModel(),
+            ),
+            namespaceFilters = listOf(
+                "Microsoft.UI.Xaml",
+                "Microsoft.UI.Xaml.Controls",
+                "Microsoft.UI.Xaml.Hosting",
+                "Microsoft.UI.Xaml.Input",
+            ),
+        )
+        val generatedFiles = KotlinBindingGenerator().generate(model).associateBy { it.relativePath }
+
+        val keyArgsBinding = generatedFiles["Microsoft/UI/Xaml/Input/IKeyRoutedEventArgs.kt"]
+        val hostingBinding = generatedFiles["Microsoft/UI/Xaml/Hosting/IDesktopWindowXamlSource.kt"]
+        val tearOutBinding = generatedFiles["Microsoft/UI/Xaml/Controls/TabViewTabTearOutRequestedEventArgs.kt"]
+
+        assertNotNull(keyArgsBinding)
+        assertNotNull(hostingBinding)
+        assertNotNull(tearOutBinding)
+
+        val keyArgsContent = keyArgsBinding!!.content.replace(Regex("\\s+"), "")
+        val hostingContent = hostingBinding!!.content.replace(Regex("\\s+"), "")
+        val tearOutContent = tearOutBinding!!.content.replace(Regex("\\s+"), "")
+
+        assertTrue(keyArgsContent.contains("valkeyStatus:CorePhysicalKeyStatus"))
+        assertTrue(keyArgsContent.contains("CorePhysicalKeyStatus.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer,7,CorePhysicalKeyStatus.ABI_LAYOUT).getOrThrow())"))
+
+        assertTrue(hostingContent.contains("funinitialize(parentWindowId:WindowId)"))
+        assertTrue(hostingContent.contains("PlatformComInterop.invokeUnitMethodWithArgs(pointer,17,parentWindowId.toAbi()).getOrThrow()"))
+
+        assertTrue(tearOutContent.contains("valnewWindowId:WindowId"))
+        assertTrue(tearOutContent.contains("WindowId.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer,8,WindowId.ABI_LAYOUT).getOrThrow())"))
+    }
+
     private fun localWinUiXamlWinmd(): Path? {
         val candidatePaths = buildList {
             System.getProperty("dev.winrt.windowsAppSdkRoot")

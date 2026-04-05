@@ -255,6 +255,7 @@ internal class TypeRegistry(
 
     private companion object {
         val wellKnownStructTypes = setOf(
+            "Microsoft.UI.WindowId",
             "Windows.Foundation.Point",
             "Windows.Foundation.Rect",
             "Windows.Foundation.Size",
@@ -267,6 +268,7 @@ internal class TypeRegistry(
             "Windows.Foundation.Numerics.Vector3",
             "Windows.Foundation.Numerics.Vector4",
             "Windows.UI.Color",
+            "Windows.UI.Core.CorePhysicalKeyStatus",
             "Windows.UI.Text.FontWeight",
             "Windows.UI.Xaml.Interop.TypeName",
         )

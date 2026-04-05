@@ -492,4 +492,51 @@ class InterfaceTypeRendererTest {
         assertTrue(binding.contains("projectedObjectArgumentPointer("))
         assertTrue(binding.contains("\"pinterface({61c17706-2d65-11e0-9ae8-d48564015472};enum(Example.Contracts.Mode;u4))\""))
     }
+
+    @Test
+    fun renders_known_external_struct_interface_members_with_struct_abi_calls() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            properties = listOf(
+                                WinMdProperty(
+                                    "KeyStatus",
+                                    "Windows.UI.Core.CorePhysicalKeyStatus",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                            ),
+                            methods = listOf(
+                                WinMdMethod("GetWindowId", "Microsoft.UI.WindowId", vtableIndex = 7),
+                                WinMdMethod(
+                                    "Initialize",
+                                    "Unit",
+                                    vtableIndex = 8,
+                                    parameters = listOf(WinMdParameter("parentWindowId", "Microsoft.UI.WindowId")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Example/Xaml/IWidget.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("valkeyStatus:CorePhysicalKeyStatus"))
+        assertTrue(binding.contains("CorePhysicalKeyStatus.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer,6,CorePhysicalKeyStatus.ABI_LAYOUT).getOrThrow())"))
+        assertTrue(binding.contains("WindowId.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer,7,WindowId.ABI_LAYOUT).getOrThrow())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithArgs(pointer,8,parentWindowId.toAbi()).getOrThrow()"))
+    }
 }

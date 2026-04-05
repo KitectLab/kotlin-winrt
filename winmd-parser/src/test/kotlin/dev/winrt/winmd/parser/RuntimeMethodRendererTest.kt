@@ -172,4 +172,42 @@ class RuntimeMethodRendererTest {
         assertTrue(binding.contains("projectedObjectArgumentPointer("))
         assertTrue(binding.contains("\"pinterface({61c17706-2d65-11e0-9ae8-d48564015472};enum(Example.Contracts.Mode;u4))\""))
     }
+
+    @Test
+    fun renders_runtime_external_struct_methods_with_generic_abi_calls() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod("GetWindowId", "Microsoft.UI.WindowId", vtableIndex = 6),
+                                WinMdMethod("GetKeyStatus", "Windows.UI.Core.CorePhysicalKeyStatus", vtableIndex = 7),
+                                WinMdMethod(
+                                    "Initialize",
+                                    "Unit",
+                                    vtableIndex = 8,
+                                    parameters = listOf(WinMdParameter("parentWindowId", "Microsoft.UI.WindowId")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Example/Xaml/Widget.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("WindowId.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer,6,WindowId.ABI_LAYOUT).getOrThrow())"))
+        assertTrue(binding.contains("CorePhysicalKeyStatus.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer,7,CorePhysicalKeyStatus.ABI_LAYOUT).getOrThrow())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithArgs(pointer,8,parentWindowId.toAbi()).getOrThrow()"))
+    }
 }
