@@ -31,13 +31,14 @@ class MethodRuleRegistryTest {
             SharedMethodRuleFamily.TIME_SPAN,
             MethodRuleRegistry.sharedMethodRuleFamily(MethodSignatureKey(MethodReturnKind.TIME_SPAN, MethodSignatureShape.OBJECT)),
         )
+        assertEquals(
+            SharedMethodRuleFamily.EVENT_REGISTRATION_TOKEN,
+            MethodRuleRegistry.sharedMethodRuleFamily(MethodSignatureKey(MethodReturnKind.EVENT_REGISTRATION_TOKEN, MethodSignatureShape.STRING)),
+        )
     }
 
     @Test
     fun rejects_unsupported_shared_method_rule_families() {
-        assertNull(
-            MethodRuleRegistry.sharedMethodRuleFamily(MethodSignatureKey(MethodReturnKind.EVENT_REGISTRATION_TOKEN, MethodSignatureShape.STRING)),
-        )
         assertNull(
             MethodRuleRegistry.sharedMethodRuleFamily(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING_STRING)),
         )
