@@ -1012,7 +1012,8 @@ class KotlinBindingGeneratorTest {
         val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
 
         assertTrue(staticsBinding.contains("fun trackUserAndCount("))
-        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithObjectAndInt32Args(pointer,6,first.pointer,second.value).getOrThrow()"))
+        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeUnitMethodWithObjectAndInt32Args(pointer,6,projectedObjectArgumentPointer(first,"))
+        assertTrue(normalizedStaticsBinding.contains("second.value).getOrThrow()"))
     }
 
     @Test
@@ -1060,7 +1061,8 @@ class KotlinBindingGeneratorTest {
         val normalizedStaticsBinding = staticsBinding.replace(Regex("\\s+"), "")
 
         assertTrue(staticsBinding.contains("fun findUserByCount("))
-        assertTrue(normalizedStaticsBinding.contains("PlatformComInterop.invokeMethodWithObjectAndInt32Args(pointer,6,ComMethodResultKind.OBJECT,first.pointer,second.value).getOrThrow().requireObject()"))
+        assertTrue(normalizedStaticsBinding.contains("User(PlatformComInterop.invokeMethodWithObjectAndInt32Args(pointer,6,ComMethodResultKind.OBJECT,projectedObjectArgumentPointer(first,"))
+        assertTrue(normalizedStaticsBinding.contains("second.value).getOrThrow().requireObject())"))
     }
 
     @Test
@@ -1287,7 +1289,9 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("fun launchFolderAsync(folder: IStorageFolder): IAsyncOperation<String>"))
         assertTrue(runtimeBinding.contains("statics3.launchFolderAsync(folder)"))
         assertTrue(staticsBinding.contains("fun launchFolderAsync(folder: IStorageFolder): IAsyncOperation<String>"))
-        assertTrue(normalizedStaticsBinding.contains("IAsyncOperation<String>(PlatformComInterop.invokeObjectMethodWithObjectArg(pointer,6,projectedObjectArgumentPointer(folder,"))
+        assertTrue(normalizedStaticsBinding.contains("IAsyncOperation<String>(PlatformComInterop.invokeObjectMethodWithObjectArg(pointer,6,"))
+        assertTrue(normalizedStaticsBinding.contains("projectedObjectArgumentPointer(folder,\"Windows.Storage.IStorageFolder\",\"{bbbbbbbb-4444-4444-4444-bbbbbbbbbbbb}\")"))
+        assertTrue(normalizedStaticsBinding.contains(").getOrThrow(),AsyncResultTypes.signature(\"string\"))"))
     }
 
     @Test
@@ -1355,8 +1359,10 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("fun launchUriAsync(uri: Uri, options: LauncherOptions): IAsyncOperation<String>"))
         assertTrue(runtimeBinding.contains("statics.launchUriAsync(uri, options)"))
         assertTrue(staticsBinding.contains("fun launchUriAsync(uri: Uri, options: LauncherOptions): IAsyncOperation<String>"))
-        assertTrue(normalizedStaticsBinding.contains("dev.winrt.kom.requireObject(PlatformComInterop.invokeMethodWithTwoObjectArgs(pointer,6,dev.winrt.kom.ComMethodResultKind.OBJECT,projectedObjectArgumentPointer(uri,"))
-        assertTrue(normalizedStaticsBinding.contains("projectedObjectArgumentPointer(options,"))
+        assertTrue(normalizedStaticsBinding.contains("IAsyncOperation<String>(dev.winrt.kom.requireObject(PlatformComInterop.invokeMethodWithTwoObjectArgs(pointer,6,dev.winrt.kom.ComMethodResultKind.OBJECT,"))
+        assertTrue(normalizedStaticsBinding.contains("projectedObjectArgumentPointer(uri,\"Windows.Foundation.Uri\",\"cinterface(IInspectable)\")"))
+        assertTrue(normalizedStaticsBinding.contains("projectedObjectArgumentPointer(options,\"Windows.System.LauncherOptions\",\"cinterface(IInspectable)\")"))
+        assertTrue(normalizedStaticsBinding.contains(").getOrThrow()),AsyncResultTypes.signature(\"string\"))"))
     }
 
     @Test
@@ -1429,9 +1435,9 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("fun launchUriWithDisplayNameAsync(uri: Uri, displayName: String): IAsyncOperation<String>"))
         assertTrue(runtimeBinding.contains("statics4.launchUriWithDisplayNameAsync(uri, displayName)"))
         assertTrue(staticsBinding.contains("fun launchUriWithDisplayNameAsync(uri: Uri, displayName: String): IAsyncOperation<String>"))
-        assertTrue(normalizedStaticsBinding.contains("IAsyncOperation<String>("))
-        assertTrue(normalizedStaticsBinding.contains("invokeMethodWithObjectAndStringArgs(pointer,6,"))
-        assertTrue(normalizedStaticsBinding.contains("projectedObjectArgumentPointer(uri,"))
+        assertTrue(normalizedStaticsBinding.contains("IAsyncOperation<String>(dev.winrt.kom.requireObject(PlatformComInterop.invokeMethodWithObjectAndStringArgs(pointer,6,dev.winrt.kom.ComMethodResultKind.OBJECT,"))
+        assertTrue(normalizedStaticsBinding.contains("projectedObjectArgumentPointer(uri,\"Windows.Foundation.Uri\",\"cinterface(IInspectable)\")"))
+        assertTrue(normalizedStaticsBinding.contains("displayName).getOrThrow()),AsyncResultTypes.signature(\"string\"))"))
     }
 
     @Test
@@ -1499,7 +1505,9 @@ class KotlinBindingGeneratorTest {
         assertTrue(runtimeBinding.contains("fun launchNamedFileAsync("))
         assertTrue(runtimeBinding.contains("statics5.launchNamedFileAsync(name, file)"))
         assertTrue(staticsBinding.contains("fun launchNamedFileAsync("))
-        assertTrue(normalizedStaticsBinding.contains("IAsyncOperation<String>(dev.winrt.kom.requireObject(PlatformComInterop.invokeMethodWithStringAndObjectArgs(pointer,6,dev.winrt.kom.ComMethodResultKind.OBJECT,name,projectedObjectArgumentPointer(file,"))
+        assertTrue(normalizedStaticsBinding.contains("IAsyncOperation<String>(dev.winrt.kom.requireObject(PlatformComInterop.invokeMethodWithStringAndObjectArgs(pointer,6,dev.winrt.kom.ComMethodResultKind.OBJECT,name,"))
+        assertTrue(normalizedStaticsBinding.contains("projectedObjectArgumentPointer(file,\"Windows.Storage.StorageFile\",\"cinterface(IInspectable)\")"))
+        assertTrue(normalizedStaticsBinding.contains(").getOrThrow()),AsyncResultTypes.signature(\"string\"))"))
     }
 
     @Test
