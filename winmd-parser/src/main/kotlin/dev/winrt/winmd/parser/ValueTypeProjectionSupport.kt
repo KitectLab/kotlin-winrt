@@ -319,7 +319,7 @@ internal class ValueTypeProjectionSupport(
             supportsGenericIReferenceEnumProjection(type, currentNamespace, typeRegistry) -> true
             typeRegistry.isStructType(type, currentNamespace) -> true
             typeRegistry.isEnumType(type, currentNamespace) -> {
-                enumUnderlyingTypeOrDefault(typeRegistry, type, currentNamespace) in setOf("Int32", "UInt32", "Int64", "UInt64")
+                enumUnderlyingTypeOrDefault(typeRegistry, type, currentNamespace) in setOf("Int32", "UInt32")
             }
             supportsObjectType(type) -> true
             else -> when (canonicalWinRtSpecialType(type)) {
@@ -362,8 +362,6 @@ internal class ValueTypeProjectionSupport(
             typeRegistry.isEnumType(type, currentNamespace) -> when (enumUnderlyingTypeOrDefault(typeRegistry, type, currentNamespace)) {
                 "Int32",
                 "UInt32",
-                "Int64",
-                "UInt64",
                 -> CodeBlock.of("%N.value", argumentName)
                 else -> null
             }

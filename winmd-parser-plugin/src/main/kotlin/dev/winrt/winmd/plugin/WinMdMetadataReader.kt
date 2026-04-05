@@ -440,6 +440,12 @@ object WinMdMetadataReader {
             .firstOrNull { field -> field.name == "value__" }
             ?.let { field -> parseFieldSignature(field.signature, tables) }
             ?.takeUnless { it == "UnknownType" }
+            ?.let { underlyingType ->
+                requireSupportedWinRtEnumUnderlyingType(
+                    underlyingType = underlyingType,
+                    enumTypeName = qualify(typeDef.namespace, typeDef.name),
+                )
+            }
     }
 
     private fun readMethodParameters(
