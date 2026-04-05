@@ -677,6 +677,49 @@ class InterfaceTypeRendererTest {
     }
 
     @Test
+    fun renders_small_primitive_receive_array_interface_methods_with_scalar_inputs() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IVectorViewSmall",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "88888888-8888-8888-8888-888888888888",
+                            methods = listOf(
+                                WinMdMethod("GetBytes", "UInt8[]", vtableIndex = 13, parameters = listOf(WinMdParameter("startIndex", "UInt32"))),
+                                WinMdMethod("GetShorts", "Int16[]", vtableIndex = 14, parameters = listOf(WinMdParameter("startIndex", "UInt32"))),
+                                WinMdMethod("GetUShorts", "UInt16[]", vtableIndex = 15, parameters = listOf(WinMdParameter("startIndex", "UInt32"))),
+                                WinMdMethod("GetChars", "Char16[]", vtableIndex = 16, parameters = listOf(WinMdParameter("startIndex", "UInt32"))),
+                                WinMdMethod("GetFlags", "Boolean[]", vtableIndex = 17, parameters = listOf(WinMdParameter("startIndex", "UInt32"))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/Collections/IVectorViewSmall.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fungetBytes(startIndex:UInt32):Array<UByte>"))
+        assertTrue(binding.contains("invokeUInt8ReceiveArrayMethod(pointer,13,startIndex.value).getOrThrow().map{it.toUByte()}.toTypedArray()"))
+        assertTrue(binding.contains("fungetShorts(startIndex:UInt32):Array<Short>"))
+        assertTrue(binding.contains("invokeInt16ReceiveArrayMethod(pointer,14,startIndex.value).getOrThrow().toTypedArray()"))
+        assertTrue(binding.contains("fungetUShorts(startIndex:UInt32):Array<UShort>"))
+        assertTrue(binding.contains("invokeUInt16ReceiveArrayMethod(pointer,15,startIndex.value).getOrThrow().map{it.toUShort()}.toTypedArray()"))
+        assertTrue(binding.contains("fungetChars(startIndex:UInt32):Array<Char>"))
+        assertTrue(binding.contains("invokeChar16ReceiveArrayMethod(pointer,16,startIndex.value).getOrThrow().toTypedArray()"))
+        assertTrue(binding.contains("fungetFlags(startIndex:UInt32):Array<WinRtBoolean>"))
+        assertTrue(binding.contains("invokeBooleanReceiveArrayMethod(pointer,17,startIndex.value).getOrThrow().map{WinRtBoolean(it)}.toTypedArray()"))
+    }
+
+    @Test
     fun unsubscribes_event_slots_with_finally_to_close_delegate_handles() {
         val model = WinMdModel(
             files = emptyList(),

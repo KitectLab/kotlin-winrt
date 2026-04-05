@@ -443,7 +443,27 @@ internal class RuntimeCompanionRenderer(
                         .all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
                 ) ||
             (
+                method.isUInt8ReceiveArrayReturnMethod() &&
+                    method.parameters.all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                ) ||
+            (
+                method.isInt16ReceiveArrayReturnMethod() &&
+                    method.parameters.all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                ) ||
+            (
+                method.isUInt16ReceiveArrayReturnMethod() &&
+                    method.parameters.all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                ) ||
+            (
                 method.isInt32ReceiveArrayReturnMethod() &&
+                    method.parameters.all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                ) ||
+            (
+                method.isChar16ReceiveArrayReturnMethod() &&
+                    method.parameters.all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
+                ) ||
+            (
+                method.isBooleanReceiveArrayReturnMethod() &&
                     method.parameters.all { parameter -> supportsForwardableCompanionArrayParameter(parameter.type, currentNamespace) }
                 ) ||
             (

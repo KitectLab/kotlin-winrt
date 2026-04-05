@@ -1678,7 +1678,12 @@ internal class InterfaceTypeRenderer(
             return null
         }
         plannedInt32FillArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
+        plannedUInt8ReceiveArrayInterfaceMethod(method)?.let { return it }
+        plannedInt16ReceiveArrayInterfaceMethod(method)?.let { return it }
+        plannedUInt16ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedInt32ReceiveArrayInterfaceMethod(method)?.let { return it }
+        plannedChar16ReceiveArrayInterfaceMethod(method)?.let { return it }
+        plannedBooleanReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedFloat32ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedFloat64ReceiveArrayInterfaceMethod(method)?.let { return it }
         plannedInt64ReceiveArrayInterfaceMethod(method)?.let { return it }
@@ -1788,6 +1793,136 @@ internal class InterfaceTypeRenderer(
                 arrayOf(
                     int32ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
                 )
+            },
+        )
+    }
+
+    private fun plannedUInt8ReceiveArrayInterfaceMethod(method: WinMdMethod): PlannedInterfaceMethod? {
+        if (!method.isUInt8ReceiveArrayReturnMethod()) {
+            return null
+        }
+        return PlannedInterfaceMethod(
+            statement = "return %L",
+            args = { method, currentNamespace ->
+                val abiArguments = uint8ReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@uint8ReceiveArrayAbiArguments null
+                    CodeBlock.of(
+                        "%L",
+                        unaryArgumentExpression(
+                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                            parameterType = parameter.type,
+                            category = parameterCategory,
+                            currentNamespace = currentNamespace,
+                        ),
+                    )
+                } ?: error("Unsupported UInt8 receive-array interface method: ${method.name}")
+                arrayOf(uint8ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
+            },
+        )
+    }
+
+    private fun plannedInt16ReceiveArrayInterfaceMethod(method: WinMdMethod): PlannedInterfaceMethod? {
+        if (!method.isInt16ReceiveArrayReturnMethod()) {
+            return null
+        }
+        return PlannedInterfaceMethod(
+            statement = "return %L",
+            args = { method, currentNamespace ->
+                val abiArguments = int16ReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@int16ReceiveArrayAbiArguments null
+                    CodeBlock.of(
+                        "%L",
+                        unaryArgumentExpression(
+                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                            parameterType = parameter.type,
+                            category = parameterCategory,
+                            currentNamespace = currentNamespace,
+                        ),
+                    )
+                } ?: error("Unsupported Int16 receive-array interface method: ${method.name}")
+                arrayOf(int16ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
+            },
+        )
+    }
+
+    private fun plannedUInt16ReceiveArrayInterfaceMethod(method: WinMdMethod): PlannedInterfaceMethod? {
+        if (!method.isUInt16ReceiveArrayReturnMethod()) {
+            return null
+        }
+        return PlannedInterfaceMethod(
+            statement = "return %L",
+            args = { method, currentNamespace ->
+                val abiArguments = uint16ReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@uint16ReceiveArrayAbiArguments null
+                    CodeBlock.of(
+                        "%L",
+                        unaryArgumentExpression(
+                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                            parameterType = parameter.type,
+                            category = parameterCategory,
+                            currentNamespace = currentNamespace,
+                        ),
+                    )
+                } ?: error("Unsupported UInt16 receive-array interface method: ${method.name}")
+                arrayOf(uint16ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
+            },
+        )
+    }
+
+    private fun plannedChar16ReceiveArrayInterfaceMethod(method: WinMdMethod): PlannedInterfaceMethod? {
+        if (!method.isChar16ReceiveArrayReturnMethod()) {
+            return null
+        }
+        return PlannedInterfaceMethod(
+            statement = "return %L",
+            args = { method, currentNamespace ->
+                val abiArguments = char16ReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@char16ReceiveArrayAbiArguments null
+                    CodeBlock.of(
+                        "%L",
+                        unaryArgumentExpression(
+                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                            parameterType = parameter.type,
+                            category = parameterCategory,
+                            currentNamespace = currentNamespace,
+                        ),
+                    )
+                } ?: error("Unsupported Char16 receive-array interface method: ${method.name}")
+                arrayOf(char16ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
+            },
+        )
+    }
+
+    private fun plannedBooleanReceiveArrayInterfaceMethod(method: WinMdMethod): PlannedInterfaceMethod? {
+        if (!method.isBooleanReceiveArrayReturnMethod()) {
+            return null
+        }
+        return PlannedInterfaceMethod(
+            statement = "return %L",
+            args = { method, currentNamespace ->
+                val abiArguments = booleanReceiveArrayAbiArguments(method.parameters) { parameter ->
+                    val parameterCategory = methodParameterCategory(
+                        signatureParameterType(parameter.type, currentNamespace),
+                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@booleanReceiveArrayAbiArguments null
+                    CodeBlock.of(
+                        "%L",
+                        unaryArgumentExpression(
+                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                            parameterType = parameter.type,
+                            category = parameterCategory,
+                            currentNamespace = currentNamespace,
+                        ),
+                    )
+                } ?: error("Unsupported Boolean receive-array interface method: ${method.name}")
+                arrayOf(booleanReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
             },
         )
     }
