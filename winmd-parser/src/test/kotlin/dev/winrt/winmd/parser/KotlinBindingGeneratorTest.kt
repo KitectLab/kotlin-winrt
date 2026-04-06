@@ -2368,6 +2368,83 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun projects_closed_generic_runtime_method_returns_through_winrt_helpers() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IIterator",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "6a79e863-4300-459a-9966-cbb660963ee1",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IMapView",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "e480ce40-a338-4ada-adcf-272272e48cb9",
+                            genericParameters = listOf("K", "V"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Data.Json",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IJsonValue",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "IProjectionReturnHost",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Data.Json",
+                            name = "ProjectionReturnHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.Data.Json.IProjectionReturnHost",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "First",
+                                    returnType = "Windows.Foundation.Collections.IIterator<String>",
+                                    vtableIndex = 6,
+                                ),
+                                WinMdMethod(
+                                    name = "GetView",
+                                    returnType = "Windows.Foundation.Collections.IMapView<String, Windows.Data.Json.IJsonValue>",
+                                    vtableIndex = 7,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Windows/Data/Json/ProjectionReturnHost.kt"
+        }.content
+        val normalizedBinding = binding.replace(Regex("\\s+"), " ")
+
+        assertTrue(binding, binding.contains("fun first(): Iterator<"))
+        assertTrue(normalizedBinding.contains("return IIterator.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()), \"string\", \"String\")"))
+        assertFalse(binding.contains("Iterator<String>.from("))
+
+        assertTrue(binding, binding.contains("fun getView(): Map<"))
+        assertTrue(normalizedBinding.contains("return IMapView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 7).getOrThrow()), \"string\", \"{aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa}\", \"String\", \"Windows.Data.Json.IJsonValue\")"))
+        assertFalse(binding.contains("Map<String, IJsonValue>.from("))
+    }
+
+    @Test
     fun generates_json_runtime_class_direct_default_interface_members() {
         val supplemental = WinMdModelFactory.sampleSupplementalModel()
         val model = supplemental.copy(

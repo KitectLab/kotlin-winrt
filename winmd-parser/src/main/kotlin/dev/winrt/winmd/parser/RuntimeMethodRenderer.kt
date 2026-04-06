@@ -1,12 +1,14 @@
 package dev.winrt.winmd.parser
 
-import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.asTypeName
 import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdParameter
+import dev.winrt.winmd.plugin.WinMdTypeKind
 
 internal class RuntimeMethodRenderer(
     private val typeNameMapper: TypeNameMapper,
@@ -14,6 +16,8 @@ internal class RuntimeMethodRenderer(
     private val typeRegistry: TypeRegistry,
     private val asyncMethodRuleRegistry: AsyncMethodRuleRegistry,
     private val projectedObjectArgumentLowering: ProjectedObjectArgumentLowering,
+    private val winRtSignatureMapper: WinRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
+    private val winRtProjectionTypeMapper: WinRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
     private val valueTypeProjectionSupport: ValueTypeProjectionSupport = ValueTypeProjectionSupport(typeNameMapper, typeRegistry),
 ) {
     constructor(
@@ -2501,12 +2505,88 @@ internal class RuntimeMethodRenderer(
     }
 
     private fun runtimeObjectReturnCode(method: WinMdMethod, currentNamespace: String, abiCall: CodeBlock): CodeBlock {
+        closedGenericInterfaceProjectionCall(method.returnType, currentNamespace, abiCall)?.let { return it }
         val mappedType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
-        return if (typeRegistry.findType(method.returnType, currentNamespace)?.kind == dev.winrt.winmd.plugin.WinMdTypeKind.Interface) {
+        return if (typeRegistry.findType(method.returnType, currentNamespace)?.kind == WinMdTypeKind.Interface) {
             CodeBlock.of("%T.from(%T(%L))", mappedType, PoetSymbols.inspectableClass, abiCall)
         } else {
             CodeBlock.of("%T(%L)", mappedType, abiCall)
         }
+    }
+
+    private fun supportsClosedGenericInterfaceReturnType(typeName: String, currentNamespace: String): Boolean {
+        val rawTypeName = closedGenericRawTypeName(typeName) ?: return false
+        if (rawTypeName == "Windows.Foundation.IReference") {
+            return false
+        }
+        val genericArgumentSource = typeName.substringAfter('<').substringBeforeLast('>')
+        val hasResolvableArguments = splitGenericArguments(genericArgumentSource).all { argument ->
+            try {
+                winRtSignatureMapper.signatureFor(argument, currentNamespace)
+                true
+            } catch (_: IllegalStateException) {
+                false
+            }
+        }
+        if (!hasResolvableArguments) {
+            return false
+        }
+        val rawType = typeRegistry.findType(rawTypeName, currentNamespace)
+        return when {
+            rawType != null -> rawType.kind == WinMdTypeKind.Interface
+            '.' in rawTypeName -> true
+            else -> false
+        }
+    }
+
+    private fun closedGenericInterfaceProjectionCall(
+        typeName: String,
+        currentNamespace: String,
+        abiCall: CodeBlock,
+    ): CodeBlock? {
+        val rawTypeName = closedGenericRawTypeName(typeName) ?: return null
+        if (!supportsClosedGenericInterfaceReturnType(typeName, currentNamespace)) {
+            return null
+        }
+        val rawTypeClass = typeNameMapper.mapTypeName(rawTypeName, currentNamespace) as? ClassName ?: return null
+        val genericArgumentSource = typeName.substringAfter('<').substringBeforeLast('>')
+        val genericArguments = splitGenericArguments(genericArgumentSource)
+        val builder = CodeBlock.builder()
+            .add("%T.from(%T(%L)", rawTypeClass, PoetSymbols.inspectableClass, abiCall)
+        genericArguments.forEach { argument ->
+            builder.add(", %S", winRtSignatureMapper.signatureFor(argument, currentNamespace))
+        }
+        genericArguments.forEach { argument ->
+            builder.add(", %S", winRtProjectionTypeMapper.projectionTypeKeyFor(argument, currentNamespace))
+        }
+        return builder.add(")").build()
+    }
+
+    private fun closedGenericRawTypeName(typeName: String): String? {
+        return typeName
+            .takeIf { '<' in it && it.endsWith(">") }
+            ?.substringBefore('<')
+    }
+
+    private fun splitGenericArguments(source: String): List<String> {
+        if (source.isBlank()) {
+            return emptyList()
+        }
+        val arguments = mutableListOf<String>()
+        var depth = 0
+        var start = 0
+        source.forEachIndexed { index, char ->
+            when (char) {
+                '<' -> depth++
+                '>' -> depth--
+                ',' -> if (depth == 0) {
+                    arguments += source.substring(start, index).trim()
+                    start = index + 1
+                }
+            }
+        }
+        arguments += source.substring(start).trim()
+        return arguments
     }
 
     private fun runtimeInt32FillArrayAbiArguments(
