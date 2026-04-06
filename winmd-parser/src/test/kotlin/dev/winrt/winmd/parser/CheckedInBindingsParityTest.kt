@@ -24,6 +24,7 @@ class CheckedInBindingsParityTest {
         "windows/foundation/Uri.kt",
         "windows/foundation/WwwFormUrlDecoder.kt",
         "windows/foundation/WwwFormUrlDecoderEntry.kt",
+        "windows/foundation/collections/StringVectorView.kt",
         "windows/data/json/IJsonArray.kt",
         "windows/data/json/IJsonObject.kt",
         "windows/data/json/IJsonValue.kt",
@@ -70,6 +71,7 @@ class CheckedInBindingsParityTest {
             "WwwFormUrlDecoder",
             "WwwFormUrlDecoderEntry",
         ),
+        "Windows.Foundation.Collections" to setOf("StringVectorView"),
         "Windows.Data.Json" to setOf("IJsonArray", "IJsonObject", "IJsonValue", "JsonObject", "JsonValueType"),
         "Windows.Globalization" to setOf(
             "ApplicationLanguages",
