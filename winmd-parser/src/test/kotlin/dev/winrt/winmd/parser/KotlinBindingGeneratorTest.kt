@@ -5714,11 +5714,44 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("WinRtInterfaceMetadata"))
         assertTrue(binding.contains("override val projectionTypeKey: String = projectionTypeKeyOf(arg0ProjectionTypeKey)"))
         assertTrue(binding.contains("override val iid: Guid = iidOf(arg0Signature)"))
+        assertTrue(binding.contains("override fun <T : dev.winrt.core.WinRtObject> project("))
+        assertTrue(binding.contains("generic:Windows.Foundation.Collections.IVector`1:arg0:signature"))
+        assertTrue(binding.contains("generic:Windows.Foundation.Collections.IVector`1:arg0:projectionTypeKey"))
         assertTrue(binding.contains("fun <T> from("))
         assertTrue(binding.contains("inspectable: Inspectable"))
         assertTrue(binding.contains("inspectable.projectInterface(metadataOf("))
         assertTrue(binding.contains("arg0ProjectionTypeKey"))
-        assertTrue(binding.contains("IVector"))
+        assertTrue(binding.contains("::IVector"))
+    }
+
+    @Test
+    fun generic_runtime_projected_interfaces_build_projection_wrappers_with_generic_state() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IIterable`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "00000000-0000-0000-0000-000000000010",
+                            genericParameters = listOf("T"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/Collections/IIterable`1.kt" }
+            .content
+
+        assertTrue(binding.contains("override fun <T : dev.winrt.core.WinRtObject> project("))
+        assertTrue(binding.contains("generic:Windows.Foundation.Collections.IIterable`1:arg0:signature"))
+        assertTrue(binding.contains("generic:Windows.Foundation.Collections.IIterable`1:arg0:projectionTypeKey"))
+        assertTrue(binding.contains("inspectable.projectInterface(metadataOf(arg0Signature, arg0ProjectionTypeKey),"))
     }
 
     @Test

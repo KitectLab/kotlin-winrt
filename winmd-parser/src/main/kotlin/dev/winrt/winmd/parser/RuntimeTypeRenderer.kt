@@ -100,7 +100,9 @@ internal class RuntimeTypeRenderer(
             } ?: builder.addSuperinterface(projection.superinterface)
             projection.extraProperties.forEach(builder::addProperty)
             projection.extraFunctions.forEach(builder::addFunction)
-            builder.addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
+            projection.winRtSizeSlot
+                ?.let(kotlinCollectionProjectionMapper::buildWinRtSizeProperty)
+                ?.let(builder::addProperty)
         }
         val interfaceProjection = kotlinCollectionProjectionMapper.runtimeClassInterfaceProjection(
             type = type,
@@ -114,7 +116,9 @@ internal class RuntimeTypeRenderer(
             } ?: builder.addSuperinterface(projection.superinterface)
             projection.extraProperties.forEach(builder::addProperty)
             projection.extraFunctions.forEach(builder::addFunction)
-            builder.addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
+            projection.winRtSizeSlot
+                ?.let(kotlinCollectionProjectionMapper::buildWinRtSizeProperty)
+                ?.let(builder::addProperty)
         }
         if (
             kotlinCollectionProjectionMapper.runtimeClassProjection(type) == null &&

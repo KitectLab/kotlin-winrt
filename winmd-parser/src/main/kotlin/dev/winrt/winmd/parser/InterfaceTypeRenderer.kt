@@ -108,7 +108,9 @@ internal class InterfaceTypeRenderer(
                     }
                     projection.extraProperties.forEach(::addProperty)
                     projection.extraFunctions.forEach(::addFunction)
-                    addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
+                    projection.winRtSizeSlot
+                        ?.let(kotlinCollectionProjectionMapper::buildWinRtSizeProperty)
+                        ?.let(::addProperty)
                 }
                 if (isXamlBindableInteropType(type.namespace, type.name, "IBindableIterable")) {
                     addSuperinterface(PoetSymbols.iterableClass.parameterizedBy(PoetSymbols.inspectableClass))
@@ -223,7 +225,7 @@ internal class InterfaceTypeRenderer(
                             addFunction(renderGenericProjectionTypeKeyOf(type))
                             addFunction(renderGenericIidOf())
                             addFunction(renderGenericMetadataOf(type))
-                            addFunction(renderGenericFrom(type, typeClass, typeVariables))
+                            addFunction(renderGenericFrom(type, typeClass, typeVariables, declarationName))
                         }
                         type.methods.forEach { method ->
                             renderAsyncResultDescriptorProperty(method, type.namespace, genericParameters)?.let(::addProperty)
@@ -316,7 +318,9 @@ internal class InterfaceTypeRenderer(
                     }
                     projection.extraProperties.forEach(::addProperty)
                     projection.extraFunctions.forEach(::addFunction)
-                    addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
+                    projection.winRtSizeSlot
+                        ?.let(kotlinCollectionProjectionMapper::buildWinRtSizeProperty)
+                        ?.let(::addProperty)
                 }
             }
             .addProperties(
@@ -389,7 +393,7 @@ internal class InterfaceTypeRenderer(
                     addFunction(renderGenericProjectionTypeKeyOf(type))
                     addFunction(renderGenericIidOf())
                     addFunction(renderGenericMetadataOf(type))
-                    addFunction(renderGenericFrom(type, typeClass, typeVariables))
+                    addFunction(renderGenericFrom(type, typeClass, typeVariables, "${declarationName}Projection"))
                     addFunction(renderGenericInvoke(type, typeClass, typeVariables))
                 }
                 type.methods.forEach { method ->
@@ -900,6 +904,26 @@ internal class InterfaceTypeRenderer(
                     .add("override val qualifiedName: String = %S\n", "${type.namespace}.${type.name}")
                     .add("override val projectionTypeKey: String = projectionTypeKeyOf($argumentTypeKeyVars)\n")
                     .add("override val iid: %T = iidOf($argumentSignatureVars)\n", PoetSymbols.guidClass)
+                    .add("override fun <T : dev.winrt.core.WinRtObject> project(pointer: dev.winrt.kom.ComPtr, constructor: (dev.winrt.kom.ComPtr) -> T): T {\n")
+                    .indent()
+                    .add("return constructor(pointer).also { wrapper ->\n")
+                    .indent()
+                    .apply {
+                        type.genericParameters.indices.forEach { index ->
+                            add(
+                                "wrapper.additionalTypeData[%S] = arg${index}Signature\n",
+                                "generic:${type.namespace}.${type.name}:arg${index}:signature",
+                            )
+                            add(
+                                "wrapper.additionalTypeData[%S] = arg${index}ProjectionTypeKey\n",
+                                "generic:${type.namespace}.${type.name}:arg${index}:projectionTypeKey",
+                            )
+                        }
+                    }
+                    .unindent()
+                    .add("}\n")
+                    .unindent()
+                    .add("}\n")
                     .unindent()
                     .add("}\n")
                     .build(),
@@ -911,6 +935,7 @@ internal class InterfaceTypeRenderer(
         type: WinMdType,
         typeClass: TypeName,
         typeVariables: List<TypeVariableName>,
+        constructorName: String,
     ): FunSpec {
         val argumentParameters = type.genericParameters.indices.map { index ->
             ParameterSpec.builder("arg${index}Signature", String::class).build()
@@ -930,7 +955,7 @@ internal class InterfaceTypeRenderer(
             .addStatement(
                 "return inspectable.%M(metadataOf($metadataArgumentNames), ::%L)",
                 PoetSymbols.projectInterfaceMember,
-                projectedDeclarationSimpleName(type.name),
+                constructorName,
             )
             .build()
     }

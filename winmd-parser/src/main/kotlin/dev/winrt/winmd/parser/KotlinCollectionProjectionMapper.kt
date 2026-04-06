@@ -153,7 +153,7 @@ internal class KotlinCollectionProjectionMapper {
             return InterfaceCollectionProjection(
                 superinterface = PoetSymbols.mutableMapClass.parameterizedBy(keyTypeName, valueTypeName),
                 delegateFactory = CodeBlock.of(
-                    "%T(sizeProvider = { winRtSize.value.toInt() }, lookupFn = { key -> lookup(key) }, containsKeyFn = { key -> hasKey(key) }, putValueFn = { key, value -> insert(key, value) }, removeKeyFn = { key -> remove(key) }, clearerFn = { clear() }, entriesProvider = { first().asSequence().toList() })",
+                    "%T(sizeProvider = { winRtSize.value.toInt() }, lookupFn = { key -> lookup(key) }, containsKeyFn = { key -> hasKey(key).value }, putValueFn = { key, value -> insert(key, value).value }, removeKeyFn = { key -> remove(key); true }, clearerFn = { clear() }, entriesProvider = { first().asSequence().toList() })",
                     PoetSymbols.winRtMutableMapProjectionClass.parameterizedBy(keyTypeName, valueTypeName),
                 ),
                 winRtSizeSlot = 7,
@@ -165,7 +165,7 @@ internal class KotlinCollectionProjectionMapper {
             return InterfaceCollectionProjection(
                 superinterface = PoetSymbols.mutableMapClass.parameterizedBy(keyTypeName, valueTypeName),
                 delegateFactory = CodeBlock.of(
-                    "%T(sizeProvider = { winRtSize.value.toInt() }, lookupFn = { key -> lookup(key) }, containsKeyFn = { key -> hasKey(key) }, putValueFn = { key, value -> insert(key, value) }, removeKeyFn = { key -> remove(key) }, clearerFn = { clear() }, entriesProvider = { first().asSequence().toList() })",
+                    "%T(sizeProvider = { winRtSize.value.toInt() }, lookupFn = { key -> lookup(key) }, containsKeyFn = { key -> hasKey(key).value }, putValueFn = { key, value -> insert(key, value).value }, removeKeyFn = { key -> remove(key); true }, clearerFn = { clear() }, entriesProvider = { first().asSequence().toList() })",
                     PoetSymbols.winRtMutableMapProjectionClass.parameterizedBy(keyTypeName, valueTypeName),
                 ),
                 winRtSizeSlot = 7,
@@ -177,7 +177,7 @@ internal class KotlinCollectionProjectionMapper {
             return InterfaceCollectionProjection(
                 superinterface = PoetSymbols.mapClass.parameterizedBy(keyTypeName, valueTypeName),
                 delegateFactory = CodeBlock.of(
-                    "%T(sizeProvider = { winRtSize.value.toInt() }, lookupFn = { key -> lookup(key) }, containsKeyFn = { key -> hasKey(key) }, entriesProvider = { first().asSequence().toList() })",
+                    "%T(sizeProvider = { winRtSize.value.toInt() }, lookupFn = { key -> lookup(key) }, containsKeyFn = { key -> hasKey(key).value }, entriesProvider = { first().asSequence().toList() })",
                     PoetSymbols.winRtMapProjectionClass.parameterizedBy(keyTypeName, valueTypeName),
                 ),
                 winRtSizeSlot = 7,
@@ -246,7 +246,7 @@ internal class KotlinCollectionProjectionMapper {
             return CollectionInterfaceMetadata(
                 collectionSuperinterface = PoetSymbols.mapClass.parameterizedBy(keyType, valueType),
                 delegateFactory = CodeBlock.of(
-                    "%T(sizeProvider = { winRtSize.value.toInt() }, lookupFn = { key -> lookup(key) }, containsKeyFn = { key -> hasKey(key) }, entriesProvider = { first().asSequence().toList() })",
+                    "%T(sizeProvider = { winRtSize.value.toInt() }, lookupFn = { key -> lookup(key) }, containsKeyFn = { key -> hasKey(key).value }, entriesProvider = { first().asSequence().toList() })",
                     PoetSymbols.winRtMapProjectionClass.parameterizedBy(keyType, valueType),
                 ),
                 winRtSizeSlot = 7,
@@ -291,7 +291,7 @@ internal class KotlinCollectionProjectionMapper {
             return CollectionInterfaceMetadata(
                 collectionSuperinterface = PoetSymbols.mutableMapClass.parameterizedBy(keyType, valueType),
                 delegateFactory = CodeBlock.of(
-                    "%T(sizeProvider = { winRtSize.value.toInt() }, lookupFn = { key -> lookup(key) }, containsKeyFn = { key -> hasKey(key) }, putValueFn = { key, value -> insert(key, value) }, removeKeyFn = { key -> remove(key) }, clearerFn = { clear() }, entriesProvider = { first().asSequence().toList() })",
+                    "%T(sizeProvider = { winRtSize.value.toInt() }, lookupFn = { key -> lookup(key) }, containsKeyFn = { key -> hasKey(key).value }, putValueFn = { key, value -> insert(key, value).value }, removeKeyFn = { key -> remove(key); true }, clearerFn = { clear() }, entriesProvider = { first().asSequence().toList() })",
                     PoetSymbols.winRtMutableMapProjectionClass.parameterizedBy(keyType, valueType),
                 ),
                 winRtSizeSlot = 7,
@@ -679,7 +679,7 @@ internal class KotlinCollectionProjectionMapper {
 internal data class RuntimeCollectionProjection(
     val superinterface: TypeName,
     val delegateFactory: CodeBlock? = null,
-    val winRtSizeSlot: Int,
+    val winRtSizeSlot: Int? = null,
     val extraProperties: List<PropertySpec> = emptyList(),
     val extraFunctions: List<FunSpec> = emptyList(),
 )
@@ -687,7 +687,7 @@ internal data class RuntimeCollectionProjection(
 internal data class InterfaceCollectionProjection(
     val superinterface: TypeName,
     val delegateFactory: CodeBlock? = null,
-    val winRtSizeSlot: Int,
+    val winRtSizeSlot: Int? = null,
     val extraProperties: List<PropertySpec> = emptyList(),
     val extraFunctions: List<FunSpec> = emptyList(),
 )
@@ -700,7 +700,7 @@ internal data class RuntimeIterableProjection(
 internal data class CollectionInterfaceMetadata(
     val collectionSuperinterface: TypeName,
     val delegateFactory: CodeBlock? = null,
-    val winRtSizeSlot: Int,
+    val winRtSizeSlot: Int? = null,
     val extraProperties: List<PropertySpec> = emptyList(),
     val extraFunctions: List<FunSpec> = emptyList(),
 )
