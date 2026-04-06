@@ -35,6 +35,20 @@ class JvmProjectedObjectArgumentAuthoringTest {
         val unwrap: (Any?) -> T,
     )
 
+    private data class PrimitiveMapCase<T : Any>(
+        val projectionType: String,
+        val signature: String,
+        val initialFirst: Any,
+        val initialSecond: Any,
+        val first: T,
+        val second: T,
+        val replacement: T,
+        val inserted: T,
+        val lookup: (ComPtr, String) -> T,
+        val currentValue: (ComPtr) -> T,
+        val unwrap: (Any?) -> T,
+    )
+
     private fun <T : Any> assertPrimitiveVectorViewCase(case: PrimitiveVectorCase<T>) {
         val pointer = projectedObjectArgumentPointer(
             value = case.initial,
@@ -104,6 +118,92 @@ class JvmProjectedObjectArgumentAuthoringTest {
         assertEquals(2, values.size)
 
         PlatformComInterop.invokeUnitMethod(pointer, 16).getOrThrow()
+        assertTrue(values.isEmpty())
+    }
+
+    private fun <T : Any> assertPrimitiveMapViewCase(case: PrimitiveMapCase<T>) {
+        val pointer = projectedObjectArgumentPointer(
+            value = linkedMapOf("theme" to case.initialFirst, "accent" to case.initialSecond),
+            projectionTypeKey = "kotlin.collections.Map<String, ${case.projectionType}>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "e480ce40-a338-4ada-adcf-272272e48cb9",
+                WinRtTypeSignature.string(),
+                case.signature,
+            ),
+        )
+
+        assertFalse(pointer.isNull)
+        assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
+        assertTrue(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 9, "accent").getOrThrow())
+        assertEquals(case.second, case.lookup(pointer, "accent"))
+
+        val iterator = PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()
+        try {
+            val current = PlatformComInterop.invokeObjectMethod(iterator, 6).getOrThrow()
+            try {
+                PlatformComInterop.invokeHStringMethod(current, 6).getOrThrow().use { key ->
+                    assertEquals("theme", key.toKotlinString())
+                }
+                assertEquals(case.first, case.currentValue(current))
+            } finally {
+                PlatformComInterop.release(current)
+            }
+        } finally {
+            PlatformComInterop.release(iterator)
+        }
+    }
+
+    private fun <T : Any> assertPrimitiveMapCase(case: PrimitiveMapCase<T>) {
+        val values = linkedMapOf("theme" to case.initialFirst, "accent" to case.initialSecond)
+        val pointer = projectedObjectArgumentPointer(
+            value = values,
+            projectionTypeKey = "kotlin.collections.MutableMap<String, ${case.projectionType}>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "3c2925fe-8519-45c1-aa79-197b6718c1c1",
+                WinRtTypeSignature.string(),
+                case.signature,
+            ),
+        )
+
+        assertFalse(pointer.isNull)
+        assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
+        assertTrue(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 9, "accent").getOrThrow())
+        assertEquals(case.second, case.lookup(pointer, "accent"))
+
+        assertTrue(
+            PlatformComInterop.invokeMethodWithResultKind(
+                pointer,
+                11,
+                ComMethodResultKind.BOOLEAN,
+                "accent",
+                case.replacement,
+            ).getOrThrow().requireBoolean(),
+        )
+        assertEquals(case.replacement, case.unwrap(values.getValue("accent")))
+
+        assertFalse(
+            PlatformComInterop.invokeMethodWithResultKind(
+                pointer,
+                11,
+                ComMethodResultKind.BOOLEAN,
+                "language",
+                case.inserted,
+            ).getOrThrow().requireBoolean(),
+        )
+        assertEquals(case.inserted, case.unwrap(values.getValue("language")))
+
+        val view = PlatformComInterop.invokeObjectMethod(pointer, 10).getOrThrow()
+        try {
+            assertEquals(3u, PlatformComInterop.invokeUInt32Method(view, 8).getOrThrow())
+            assertEquals(case.inserted, case.lookup(view, "language"))
+        } finally {
+            PlatformComInterop.release(view)
+        }
+
+        PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 12, "theme").getOrThrow()
+        assertFalse(values.containsKey("theme"))
+
+        PlatformComInterop.invokeUnitMethod(pointer, 13).getOrThrow()
         assertTrue(values.isEmpty())
     }
 
@@ -439,6 +539,224 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 assertTrue(values.isEmpty())
             }
         }
+    }
+
+    @Test
+    fun projected_object_argument_pointer_accepts_primitive_map_values_for_map_view_on_jvm() {
+        assertPrimitiveMapViewCase(
+            PrimitiveMapCase(
+                projectionType = "dev.winrt.core.WinRtBoolean",
+                signature = "b1",
+                initialFirst = WinRtBoolean(false),
+                initialSecond = WinRtBoolean(true),
+                first = false,
+                second = true,
+                replacement = true,
+                inserted = false,
+                lookup = { pointer, key -> PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 7, key).getOrThrow() },
+                currentValue = { pointer -> PlatformComInterop.invokeBooleanGetter(pointer, 7).getOrThrow() },
+                unwrap = { value -> (value as WinRtBoolean).value },
+            ),
+        )
+        assertPrimitiveMapViewCase(
+            PrimitiveMapCase(
+                projectionType = "dev.winrt.core.Int32",
+                signature = "i4",
+                initialFirst = Int32(1),
+                initialSecond = Int32(2),
+                first = 1,
+                second = 2,
+                replacement = 7,
+                inserted = 9,
+                lookup = { pointer, key -> PlatformComInterop.invokeInt32MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                currentValue = { pointer -> PlatformComInterop.invokeInt32Method(pointer, 7).getOrThrow() },
+                unwrap = { value -> (value as Int32).value },
+            ),
+        )
+        assertPrimitiveMapViewCase(
+            PrimitiveMapCase(
+                projectionType = "dev.winrt.core.UInt32",
+                signature = "u4",
+                initialFirst = UInt32(1u),
+                initialSecond = UInt32(2u),
+                first = 1u,
+                second = 2u,
+                replacement = 7u,
+                inserted = 9u,
+                lookup = { pointer, key -> PlatformComInterop.invokeUInt32MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                currentValue = { pointer -> PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow() },
+                unwrap = { value -> (value as UInt32).value },
+            ),
+        )
+        assertPrimitiveMapViewCase(
+            PrimitiveMapCase(
+                projectionType = "dev.winrt.core.Int64",
+                signature = "i8",
+                initialFirst = Int64(1L),
+                initialSecond = Int64(2L),
+                first = 1L,
+                second = 2L,
+                replacement = 7L,
+                inserted = 9L,
+                lookup = { pointer, key -> PlatformComInterop.invokeInt64MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                currentValue = { pointer -> PlatformComInterop.invokeInt64Method(pointer, 7).getOrThrow() },
+                unwrap = { value -> (value as Int64).value },
+            ),
+        )
+        assertPrimitiveMapViewCase(
+            PrimitiveMapCase(
+                projectionType = "dev.winrt.core.UInt64",
+                signature = "u8",
+                initialFirst = UInt64(1uL),
+                initialSecond = UInt64(2uL),
+                first = 1uL,
+                second = 2uL,
+                replacement = 7uL,
+                inserted = 9uL,
+                lookup = { pointer, key -> PlatformComInterop.invokeUInt64MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                currentValue = { pointer -> PlatformComInterop.invokeUInt64Method(pointer, 7).getOrThrow() },
+                unwrap = { value -> (value as UInt64).value },
+            ),
+        )
+        assertPrimitiveMapViewCase(
+            PrimitiveMapCase(
+                projectionType = "dev.winrt.core.Float32",
+                signature = "f4",
+                initialFirst = Float32(1.5f),
+                initialSecond = Float32(2.5f),
+                first = 1.5f,
+                second = 2.5f,
+                replacement = 7.5f,
+                inserted = 9.5f,
+                lookup = { pointer, key -> PlatformComInterop.invokeFloat32MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                currentValue = { pointer -> PlatformComInterop.invokeFloat32Method(pointer, 7).getOrThrow() },
+                unwrap = { value -> (value as Float32).value },
+            ),
+        )
+        assertPrimitiveMapViewCase(
+            PrimitiveMapCase(
+                projectionType = "dev.winrt.core.Float64",
+                signature = "f8",
+                initialFirst = Float64(1.5),
+                initialSecond = Float64(2.5),
+                first = 1.5,
+                second = 2.5,
+                replacement = 7.5,
+                inserted = 9.5,
+                lookup = { pointer, key -> PlatformComInterop.invokeFloat64MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                currentValue = { pointer -> PlatformComInterop.invokeFloat64Method(pointer, 7).getOrThrow() },
+                unwrap = { value -> (value as Float64).value },
+            ),
+        )
+    }
+
+    @Test
+    fun projected_object_argument_pointer_accepts_plain_mutable_primitive_map_values_for_imap_on_jvm() {
+        assertPrimitiveMapCase(
+            PrimitiveMapCase(
+                projectionType = "dev.winrt.core.WinRtBoolean",
+                signature = "b1",
+                initialFirst = WinRtBoolean(false),
+                initialSecond = WinRtBoolean(true),
+                first = false,
+                second = true,
+                replacement = true,
+                inserted = false,
+                lookup = { pointer, key -> PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 7, key).getOrThrow() },
+                currentValue = { pointer -> PlatformComInterop.invokeBooleanGetter(pointer, 7).getOrThrow() },
+                unwrap = { value -> (value as WinRtBoolean).value },
+            ),
+        )
+        assertPrimitiveMapCase(
+            PrimitiveMapCase(
+                projectionType = "dev.winrt.core.Int32",
+                signature = "i4",
+                initialFirst = Int32(1),
+                initialSecond = Int32(2),
+                first = 1,
+                second = 2,
+                replacement = 7,
+                inserted = 9,
+                lookup = { pointer, key -> PlatformComInterop.invokeInt32MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                currentValue = { pointer -> PlatformComInterop.invokeInt32Method(pointer, 7).getOrThrow() },
+                unwrap = { value -> (value as Int32).value },
+            ),
+        )
+        assertPrimitiveMapCase(
+            PrimitiveMapCase(
+                projectionType = "dev.winrt.core.UInt32",
+                signature = "u4",
+                initialFirst = UInt32(1u),
+                initialSecond = UInt32(2u),
+                first = 1u,
+                second = 2u,
+                replacement = 7u,
+                inserted = 9u,
+                lookup = { pointer, key -> PlatformComInterop.invokeUInt32MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                currentValue = { pointer -> PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow() },
+                unwrap = { value -> (value as UInt32).value },
+            ),
+        )
+        assertPrimitiveMapCase(
+            PrimitiveMapCase(
+                projectionType = "dev.winrt.core.Int64",
+                signature = "i8",
+                initialFirst = Int64(1L),
+                initialSecond = Int64(2L),
+                first = 1L,
+                second = 2L,
+                replacement = 7L,
+                inserted = 9L,
+                lookup = { pointer, key -> PlatformComInterop.invokeInt64MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                currentValue = { pointer -> PlatformComInterop.invokeInt64Method(pointer, 7).getOrThrow() },
+                unwrap = { value -> (value as Int64).value },
+            ),
+        )
+        assertPrimitiveMapCase(
+            PrimitiveMapCase(
+                projectionType = "dev.winrt.core.UInt64",
+                signature = "u8",
+                initialFirst = UInt64(1uL),
+                initialSecond = UInt64(2uL),
+                first = 1uL,
+                second = 2uL,
+                replacement = 7uL,
+                inserted = 9uL,
+                lookup = { pointer, key -> PlatformComInterop.invokeUInt64MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                currentValue = { pointer -> PlatformComInterop.invokeUInt64Method(pointer, 7).getOrThrow() },
+                unwrap = { value -> (value as UInt64).value },
+            ),
+        )
+        assertPrimitiveMapCase(
+            PrimitiveMapCase(
+                projectionType = "dev.winrt.core.Float32",
+                signature = "f4",
+                initialFirst = Float32(1.5f),
+                initialSecond = Float32(2.5f),
+                first = 1.5f,
+                second = 2.5f,
+                replacement = 7.5f,
+                inserted = 9.5f,
+                lookup = { pointer, key -> PlatformComInterop.invokeFloat32MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                currentValue = { pointer -> PlatformComInterop.invokeFloat32Method(pointer, 7).getOrThrow() },
+                unwrap = { value -> (value as Float32).value },
+            ),
+        )
+        assertPrimitiveMapCase(
+            PrimitiveMapCase(
+                projectionType = "dev.winrt.core.Float64",
+                signature = "f8",
+                initialFirst = Float64(1.5),
+                initialSecond = Float64(2.5),
+                first = 1.5,
+                second = 2.5,
+                replacement = 7.5,
+                inserted = 9.5,
+                lookup = { pointer, key -> PlatformComInterop.invokeFloat64MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                currentValue = { pointer -> PlatformComInterop.invokeFloat64Method(pointer, 7).getOrThrow() },
+                unwrap = { value -> (value as Float64).value },
+            ),
+        )
     }
 
     @Test

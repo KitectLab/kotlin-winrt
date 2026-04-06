@@ -1035,20 +1035,75 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             iteratorSignature = iteratorSignature,
             retainedChildren = retainedChildren,
         )
-        val interfaceSpec = when (valueSignature) {
-            is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
+        val primitiveKind = primitiveAbiKind(valueSignature)
+        val lookupValue: (String) -> Any? = { key ->
+            if (!map.containsKey(key)) {
+                error("Map does not contain key '$key'")
+            }
+            map[key]
+        }
+        val interfaceSpec = when {
+            valueSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
                 noArgObjectMethods = mapOf(6 to firstMethod),
                 stringArgHStringMethods = mapOf(
-                    7 to { key ->
-                        if (!map.containsKey(key)) {
-                            error("Map does not contain key '$key'")
-                        }
-                        val result = map[key]
+                    7 to {
+                        val result = lookupValue(it)
                         result as? String
-                            ?: error("Expected map value for '$key' to be String, got ${result?.let { it::class.qualifiedName }}")
+                            ?: error("Expected map value for '$it' to be String, got ${result?.let { value -> value::class.qualifiedName }}")
                     },
                 ),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+            )
+            primitiveKind == PrimitiveAbiKind.BOOLEAN -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+                stringArgBooleanMethods = mapOf(
+                    7 to { key -> marshalPrimitiveBooleanValue(lookupValue(key)) },
+                    9 to { key -> map.containsKey(key) },
+                ),
+            )
+            primitiveKind == PrimitiveAbiKind.INT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                stringArgInt32Methods = mapOf(7 to { key -> marshalPrimitiveInt32Value(lookupValue(key)) }),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+            )
+            primitiveKind == PrimitiveAbiKind.UINT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                stringArgUInt32Methods = mapOf(7 to { key -> marshalPrimitiveUInt32Value(lookupValue(key)) }),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+            )
+            primitiveKind == PrimitiveAbiKind.INT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                stringArgInt64Methods = mapOf(7 to { key -> marshalPrimitiveInt64Value(lookupValue(key)) }),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+            )
+            primitiveKind == PrimitiveAbiKind.UINT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                stringArgUInt64Methods = mapOf(7 to { key -> marshalPrimitiveUInt64Value(lookupValue(key)) }),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+            )
+            primitiveKind == PrimitiveAbiKind.FLOAT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                stringArgFloat32Methods = mapOf(7 to { key -> marshalPrimitiveFloat32Value(lookupValue(key)) }),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+            )
+            primitiveKind == PrimitiveAbiKind.FLOAT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                stringArgFloat64Methods = mapOf(7 to { key -> marshalPrimitiveFloat64Value(lookupValue(key)) }),
                 noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
                 stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
             )
@@ -1057,11 +1112,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgObjectMethods = mapOf(6 to firstMethod),
                 stringArgObjectMethods = mapOf(
                     7 to { key ->
-                        if (!map.containsKey(key)) {
-                            error("Map does not contain key '$key'")
-                        }
                         marshalObjectResultPointer(
-                            value = map[key],
+                            value = lookupValue(key),
                             projectionTypeKey = valueProjectionTypeKey,
                             signature = valueSignature,
                             retainedChildren = retainedChildren,
@@ -1151,6 +1203,24 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             iteratorSignature = iteratorSignature,
             retainedChildren = retainedChildren,
         )
+        val primitiveKind = primitiveAbiKind(valueSignature)
+        val lookupValue: (String) -> Any? = { key ->
+            if (!map.containsKey(key)) {
+                error("Map does not contain key '$key'")
+            }
+            map[key]
+        }
+        val getViewMethod: () -> ComPtr = {
+            val viewHandle = requireNotNull(
+                createMapViewHandle(
+                    map,
+                    ProjectionTypeKey("kotlin.collections.Map", listOf(keyProjectionTypeKey, valueProjectionTypeKey)),
+                    mapViewSignature,
+                ),
+            )
+            retainedChildren += viewHandle
+            viewHandle.pointer.withAddRef()
+        }
         val interfaceSpec = when {
             valueSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
@@ -1160,7 +1230,10 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                         HResult(0)
                     },
                 ),
-                noArgObjectMethods = mapOf(6 to firstMethod),
+                noArgObjectMethods = mapOf(
+                    6 to firstMethod,
+                    10 to getViewMethod,
+                ),
                 stringArgUnitMethods = mapOf(
                     12 to { key ->
                         map.remove(key)
@@ -1168,21 +1241,222 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                     },
                 ),
                 stringArgHStringMethods = mapOf(
-                    7 to { key ->
-                        if (!map.containsKey(key)) {
-                            error("Map does not contain key '$key'")
-                        }
-                        map[key] as? String
-                            ?: error("Expected map value for '$key' to be String, got ${map[key]?.let { it::class.qualifiedName }}")
+                    7 to {
+                        val result = lookupValue(it)
+                        result as? String
+                            ?: error("Expected map value for '$it' to be String, got ${result?.let { value -> value::class.qualifiedName }}")
                     },
                 ),
-                stringArgBooleanMethods = mapOf(
-                    9 to { key -> map.containsKey(key) },
-                ),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
                 stringStringArgBooleanMethods = mapOf(
                     11 to { key, element ->
                         val replaced = map.containsKey(key)
                         map[key] = element
+                        replaced
+                    },
+                ),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+            )
+            primitiveKind == PrimitiveAbiKind.BOOLEAN -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgUnitMethods = mapOf(
+                    13 to {
+                        map.clear()
+                        HResult(0)
+                    },
+                ),
+                noArgObjectMethods = mapOf(
+                    6 to firstMethod,
+                    10 to getViewMethod,
+                ),
+                stringArgUnitMethods = mapOf(
+                    12 to { key ->
+                        map.remove(key)
+                        HResult(0)
+                    },
+                ),
+                stringArgBooleanMethods = mapOf(
+                    7 to { key -> marshalPrimitiveBooleanValue(lookupValue(key)) },
+                    9 to { key -> map.containsKey(key) },
+                ),
+                stringBooleanArgBooleanMethods = mapOf(
+                    11 to { key, element ->
+                        val replaced = map.containsKey(key)
+                        map[key] = projectPrimitiveValueFromAbi(primitiveKind, valueProjectionTypeKey, element)
+                        replaced
+                    },
+                ),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+            )
+            primitiveKind == PrimitiveAbiKind.INT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgUnitMethods = mapOf(
+                    13 to {
+                        map.clear()
+                        HResult(0)
+                    },
+                ),
+                noArgObjectMethods = mapOf(
+                    6 to firstMethod,
+                    10 to getViewMethod,
+                ),
+                stringArgUnitMethods = mapOf(
+                    12 to { key ->
+                        map.remove(key)
+                        HResult(0)
+                    },
+                ),
+                stringArgInt32Methods = mapOf(7 to { key -> marshalPrimitiveInt32Value(lookupValue(key)) }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+                stringInt32ArgBooleanMethods = mapOf(
+                    11 to { key, element ->
+                        val replaced = map.containsKey(key)
+                        map[key] = projectPrimitiveValueFromAbi(primitiveKind, valueProjectionTypeKey, element)
+                        replaced
+                    },
+                ),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+            )
+            primitiveKind == PrimitiveAbiKind.UINT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgUnitMethods = mapOf(
+                    13 to {
+                        map.clear()
+                        HResult(0)
+                    },
+                ),
+                noArgObjectMethods = mapOf(
+                    6 to firstMethod,
+                    10 to getViewMethod,
+                ),
+                stringArgUnitMethods = mapOf(
+                    12 to { key ->
+                        map.remove(key)
+                        HResult(0)
+                    },
+                ),
+                stringArgUInt32Methods = mapOf(7 to { key -> marshalPrimitiveUInt32Value(lookupValue(key)) }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+                stringUInt32ArgBooleanMethods = mapOf(
+                    11 to { key, element ->
+                        val replaced = map.containsKey(key)
+                        map[key] = projectPrimitiveValueFromAbi(primitiveKind, valueProjectionTypeKey, element)
+                        replaced
+                    },
+                ),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+            )
+            primitiveKind == PrimitiveAbiKind.INT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgUnitMethods = mapOf(
+                    13 to {
+                        map.clear()
+                        HResult(0)
+                    },
+                ),
+                noArgObjectMethods = mapOf(
+                    6 to firstMethod,
+                    10 to getViewMethod,
+                ),
+                stringArgUnitMethods = mapOf(
+                    12 to { key ->
+                        map.remove(key)
+                        HResult(0)
+                    },
+                ),
+                stringArgInt64Methods = mapOf(7 to { key -> marshalPrimitiveInt64Value(lookupValue(key)) }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+                stringInt64ArgBooleanMethods = mapOf(
+                    11 to { key, element ->
+                        val replaced = map.containsKey(key)
+                        map[key] = projectPrimitiveValueFromAbi(primitiveKind, valueProjectionTypeKey, element)
+                        replaced
+                    },
+                ),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+            )
+            primitiveKind == PrimitiveAbiKind.UINT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgUnitMethods = mapOf(
+                    13 to {
+                        map.clear()
+                        HResult(0)
+                    },
+                ),
+                noArgObjectMethods = mapOf(
+                    6 to firstMethod,
+                    10 to getViewMethod,
+                ),
+                stringArgUnitMethods = mapOf(
+                    12 to { key ->
+                        map.remove(key)
+                        HResult(0)
+                    },
+                ),
+                stringArgUInt64Methods = mapOf(7 to { key -> marshalPrimitiveUInt64Value(lookupValue(key)) }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+                stringUInt64ArgBooleanMethods = mapOf(
+                    11 to { key, element ->
+                        val replaced = map.containsKey(key)
+                        map[key] = projectPrimitiveValueFromAbi(primitiveKind, valueProjectionTypeKey, element)
+                        replaced
+                    },
+                ),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+            )
+            primitiveKind == PrimitiveAbiKind.FLOAT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgUnitMethods = mapOf(
+                    13 to {
+                        map.clear()
+                        HResult(0)
+                    },
+                ),
+                noArgObjectMethods = mapOf(
+                    6 to firstMethod,
+                    10 to getViewMethod,
+                ),
+                stringArgUnitMethods = mapOf(
+                    12 to { key ->
+                        map.remove(key)
+                        HResult(0)
+                    },
+                ),
+                stringArgFloat32Methods = mapOf(7 to { key -> marshalPrimitiveFloat32Value(lookupValue(key)) }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+                stringFloat32ArgBooleanMethods = mapOf(
+                    11 to { key, element ->
+                        val replaced = map.containsKey(key)
+                        map[key] = projectPrimitiveValueFromAbi(primitiveKind, valueProjectionTypeKey, element)
+                        replaced
+                    },
+                ),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+            )
+            primitiveKind == PrimitiveAbiKind.FLOAT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgUnitMethods = mapOf(
+                    13 to {
+                        map.clear()
+                        HResult(0)
+                    },
+                ),
+                noArgObjectMethods = mapOf(
+                    6 to firstMethod,
+                    10 to getViewMethod,
+                ),
+                stringArgUnitMethods = mapOf(
+                    12 to { key ->
+                        map.remove(key)
+                        HResult(0)
+                    },
+                ),
+                stringArgFloat64Methods = mapOf(7 to { key -> marshalPrimitiveFloat64Value(lookupValue(key)) }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+                stringFloat64ArgBooleanMethods = mapOf(
+                    11 to { key, element ->
+                        val replaced = map.containsKey(key)
+                        map[key] = projectPrimitiveValueFromAbi(primitiveKind, valueProjectionTypeKey, element)
                         replaced
                     },
                 ),
@@ -1196,7 +1470,10 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                         HResult(0)
                     },
                 ),
-                noArgObjectMethods = mapOf(6 to firstMethod),
+                noArgObjectMethods = mapOf(
+                    6 to firstMethod,
+                    10 to getViewMethod,
+                ),
                 stringArgUnitMethods = mapOf(
                     12 to { key ->
                         map.remove(key)
@@ -1205,20 +1482,15 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 ),
                 stringArgObjectMethods = mapOf(
                     7 to { key ->
-                        if (!map.containsKey(key)) {
-                            error("Map does not contain key '$key'")
-                        }
                         marshalObjectResultPointer(
-                            value = map[key],
+                            value = lookupValue(key),
                             projectionTypeKey = valueProjectionTypeKey,
                             signature = valueSignature,
                             retainedChildren = retainedChildren,
                         )
                     },
                 ),
-                stringArgBooleanMethods = mapOf(
-                    9 to { key -> map.containsKey(key) },
-                ),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
                 stringObjectArgBooleanMethods = mapOf(
                     11 to { key, pointer ->
                         val replaced = map.containsKey(key)
@@ -1234,14 +1506,63 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 iid = mapViewSignature.iid,
                 noArgObjectMethods = mapOf(6 to firstMethod),
                 stringArgHStringMethods = mapOf(
-                    7 to { key ->
-                        if (!map.containsKey(key)) {
-                            error("Map does not contain key '$key'")
-                        }
-                        map[key] as? String
-                            ?: error("Expected map value for '$key' to be String, got ${map[key]?.let { it::class.qualifiedName }}")
+                    7 to {
+                        val result = lookupValue(it)
+                        result as? String
+                            ?: error("Expected map value for '$it' to be String, got ${result?.let { value -> value::class.qualifiedName }}")
                     },
                 ),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+            )
+            primitiveKind == PrimitiveAbiKind.BOOLEAN -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = mapViewSignature.iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+                stringArgBooleanMethods = mapOf(
+                    7 to { key -> marshalPrimitiveBooleanValue(lookupValue(key)) },
+                    9 to { key -> map.containsKey(key) },
+                ),
+            )
+            primitiveKind == PrimitiveAbiKind.INT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = mapViewSignature.iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                stringArgInt32Methods = mapOf(7 to { key -> marshalPrimitiveInt32Value(lookupValue(key)) }),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+            )
+            primitiveKind == PrimitiveAbiKind.UINT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = mapViewSignature.iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                stringArgUInt32Methods = mapOf(7 to { key -> marshalPrimitiveUInt32Value(lookupValue(key)) }),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+            )
+            primitiveKind == PrimitiveAbiKind.INT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = mapViewSignature.iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                stringArgInt64Methods = mapOf(7 to { key -> marshalPrimitiveInt64Value(lookupValue(key)) }),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+            )
+            primitiveKind == PrimitiveAbiKind.UINT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = mapViewSignature.iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                stringArgUInt64Methods = mapOf(7 to { key -> marshalPrimitiveUInt64Value(lookupValue(key)) }),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+            )
+            primitiveKind == PrimitiveAbiKind.FLOAT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = mapViewSignature.iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                stringArgFloat32Methods = mapOf(7 to { key -> marshalPrimitiveFloat32Value(lookupValue(key)) }),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+            )
+            primitiveKind == PrimitiveAbiKind.FLOAT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = mapViewSignature.iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                stringArgFloat64Methods = mapOf(7 to { key -> marshalPrimitiveFloat64Value(lookupValue(key)) }),
                 noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
                 stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
             )
@@ -1250,11 +1571,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgObjectMethods = mapOf(6 to firstMethod),
                 stringArgObjectMethods = mapOf(
                     7 to { key ->
-                        if (!map.containsKey(key)) {
-                            error("Map does not contain key '$key'")
-                        }
                         marshalObjectResultPointer(
-                            value = map[key],
+                            value = lookupValue(key),
                             projectionTypeKey = valueProjectionTypeKey,
                             signature = valueSignature,
                             retainedChildren = retainedChildren,
@@ -1283,6 +1601,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         val valueSignature = signature.arguments.getOrNull(1) ?: return null
         val keyProjectionTypeKey = projectionTypeKey.arguments.getOrNull(0) ?: inferProjectionTypeKey(keySignature)
         val valueProjectionTypeKey = projectionTypeKey.arguments.getOrNull(1) ?: inferProjectionTypeKey(valueSignature)
+        val valuePrimitiveKind = primitiveAbiKind(valueSignature)
         val retainedChildren = mutableListOf<AutoCloseable>()
         val interfaceSpec = JvmWinRtObjectStub.InterfaceSpec(
             iid = signature.iid,
@@ -1300,7 +1619,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                         },
                     )
                 }
-                if (valueSignature !is AbiValueSignature.StringType) {
+                if (valueSignature !is AbiValueSignature.StringType && valuePrimitiveKind == null) {
                     put(
                         7,
                         {
@@ -1312,6 +1631,41 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                             )
                         },
                     )
+                }
+            },
+            noArgBooleanMethods = buildMap {
+                if (valuePrimitiveKind == PrimitiveAbiKind.BOOLEAN) {
+                    put(7) { marshalPrimitiveBooleanValue(entry.value) }
+                }
+            },
+            noArgInt32Methods = buildMap {
+                if (valuePrimitiveKind == PrimitiveAbiKind.INT32) {
+                    put(7) { marshalPrimitiveInt32Value(entry.value) }
+                }
+            },
+            noArgUInt32Methods = buildMap {
+                if (valuePrimitiveKind == PrimitiveAbiKind.UINT32) {
+                    put(7) { marshalPrimitiveUInt32Value(entry.value) }
+                }
+            },
+            noArgInt64Methods = buildMap {
+                if (valuePrimitiveKind == PrimitiveAbiKind.INT64) {
+                    put(7) { marshalPrimitiveInt64Value(entry.value) }
+                }
+            },
+            noArgUInt64Methods = buildMap {
+                if (valuePrimitiveKind == PrimitiveAbiKind.UINT64) {
+                    put(7) { marshalPrimitiveUInt64Value(entry.value) }
+                }
+            },
+            noArgFloat32Methods = buildMap {
+                if (valuePrimitiveKind == PrimitiveAbiKind.FLOAT32) {
+                    put(7) { marshalPrimitiveFloat32Value(entry.value) }
+                }
+            },
+            noArgFloat64Methods = buildMap {
+                if (valuePrimitiveKind == PrimitiveAbiKind.FLOAT64) {
+                    put(7) { marshalPrimitiveFloat64Value(entry.value) }
                 }
             },
             noArgHStringMethods = buildMap {
