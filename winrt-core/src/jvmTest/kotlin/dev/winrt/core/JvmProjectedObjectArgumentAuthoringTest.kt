@@ -70,6 +70,29 @@ class JvmProjectedObjectArgumentAuthoringTest {
         }
     }
 
+    private fun readStringKeyedMapKeys(pointer: ComPtr, valueSignature: String): List<String> {
+        val iterator = invokeStringKeyedMapIterator(pointer, valueSignature)
+        try {
+            if (!PlatformComInterop.invokeBooleanGetter(iterator, 7).getOrThrow()) {
+                return emptyList()
+            }
+            val keys = mutableListOf<String>()
+            do {
+                val current = PlatformComInterop.invokeObjectMethod(iterator, 6).getOrThrow()
+                try {
+                    PlatformComInterop.invokeHStringMethod(current, 6).getOrThrow().use { key ->
+                        keys += key.toKotlinString()
+                    }
+                } finally {
+                    PlatformComInterop.release(current)
+                }
+            } while (PlatformComInterop.invokeBooleanGetter(iterator, 8).getOrThrow())
+            return keys
+        } finally {
+            PlatformComInterop.release(iterator)
+        }
+    }
+
     private fun <T : Any> assertPrimitiveVectorViewCase(case: PrimitiveVectorCase<T>) {
         val pointer = projectedObjectArgumentPointer(
             value = case.initial,
@@ -412,6 +435,10 @@ class JvmProjectedObjectArgumentAuthoringTest {
             } finally {
                 PlatformComInterop.release(iterator)
             }
+
+            val (first, second) = PlatformComInterop.invokeTwoObjectMethod(pointer, 9).getOrThrow()
+            assertTrue(first.isNull)
+            assertTrue(second.isNull)
         }
     }
 
@@ -478,6 +505,48 @@ class JvmProjectedObjectArgumentAuthoringTest {
 
         PlatformComInterop.invokeUnitMethod(pointer, 12).getOrThrow()
         assertTrue(values.isEmpty())
+    }
+
+    @Test
+    fun projected_object_argument_pointer_splits_plain_map_view_like_cswinrt_on_jvm() {
+        val pointer = projectedObjectArgumentPointer(
+            value = linkedMapOf(
+                "theme" to "dark",
+                "accent" to "blue",
+                "language" to "en-US",
+            ),
+            projectionTypeKey = "kotlin.collections.Map<String, String>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "e480ce40-a338-4ada-adcf-272272e48cb9",
+                WinRtTypeSignature.string(),
+                WinRtTypeSignature.string(),
+            ),
+        )
+
+        assertFalse(pointer.isNull)
+
+        val (first, second) = PlatformComInterop.invokeTwoObjectMethod(pointer, 9).getOrThrow()
+        try {
+            assertFalse(first.isNull)
+            assertFalse(second.isNull)
+            assertEquals(2u, PlatformComInterop.invokeUInt32Method(first, 7).getOrThrow())
+            assertEquals(1u, PlatformComInterop.invokeUInt32Method(second, 7).getOrThrow())
+            assertEquals(
+                listOf("accent", "language"),
+                readStringKeyedMapKeys(first, WinRtTypeSignature.string()),
+            )
+            assertEquals(
+                listOf("theme"),
+                readStringKeyedMapKeys(second, WinRtTypeSignature.string()),
+            )
+        } finally {
+            if (!first.isNull) {
+                PlatformComInterop.release(first)
+            }
+            if (!second.isNull) {
+                PlatformComInterop.release(second)
+            }
+        }
     }
 
     @Test
@@ -834,6 +903,59 @@ class JvmProjectedObjectArgumentAuthoringTest {
                     }
                 }
             }
+        }
+    }
+
+    @Test
+    fun projected_object_argument_pointer_splits_imap_view_projection_from_mutable_map_like_cswinrt_on_jvm() {
+        val values = linkedMapOf(
+            "theme" to "dark",
+            "accent" to "blue",
+            "language" to "en-US",
+        )
+        val pointer = projectedObjectArgumentPointer(
+            value = values,
+            projectionTypeKey = "kotlin.collections.MutableMap<String, String>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "3c2925fe-8519-45c1-aa79-197b6718c1c1",
+                WinRtTypeSignature.string(),
+                WinRtTypeSignature.string(),
+            ),
+        )
+
+        val mapViewPointer = PlatformComInterop.queryInterface(
+            pointer,
+            ParameterizedInterfaceId.createFromSignature(
+                WinRtTypeSignature.parameterizedInterface(
+                    "e480ce40-a338-4ada-adcf-272272e48cb9",
+                    WinRtTypeSignature.string(),
+                    WinRtTypeSignature.string(),
+                ),
+            ),
+        ).getOrThrow()
+        try {
+            val (first, second) = PlatformComInterop.invokeTwoObjectMethod(mapViewPointer, 9).getOrThrow()
+            try {
+                assertFalse(first.isNull)
+                assertFalse(second.isNull)
+                assertEquals(
+                    listOf("accent", "language"),
+                    readStringKeyedMapKeys(first, WinRtTypeSignature.string()),
+                )
+                assertEquals(
+                    listOf("theme"),
+                    readStringKeyedMapKeys(second, WinRtTypeSignature.string()),
+                )
+            } finally {
+                if (!first.isNull) {
+                    PlatformComInterop.release(first)
+                }
+                if (!second.isNull) {
+                    PlatformComInterop.release(second)
+                }
+            }
+        } finally {
+            PlatformComInterop.release(mapViewPointer)
         }
     }
 

@@ -985,7 +985,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         projectionTypeKey: ProjectionTypeKey,
         signature: AbiValueSignature.ParameterizedInterface,
     ): ProjectedObjectHandle? {
-        val map = value as? Map<*, *> ?: return null
+        @Suppress("UNCHECKED_CAST")
+        val map = value as? Map<String, Any?> ?: return null
         val keySignature = signature.arguments.getOrNull(0) ?: return null
         val valueSignature = signature.arguments.getOrNull(1) ?: return null
         if (keySignature !is AbiValueSignature.StringType) {
@@ -1042,6 +1043,12 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             }
             map[key]
         }
+        val splitMethod = mapViewSplitMethod(
+            map = map,
+            projectionTypeKey = projectionTypeKey,
+            signature = signature,
+            retainedChildren = retainedChildren,
+        )
         val interfaceSpec = when {
             valueSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
@@ -1114,7 +1121,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
                 stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
             )
-        }
+        }.copy(noArgTwoObjectMethods = mapOf(9 to splitMethod))
         val baseIterableSpec = JvmWinRtObjectStub.InterfaceSpec(
             iid = iterableSignature.iid,
             noArgObjectMethods = mapOf(6 to firstMethod),
@@ -1212,6 +1219,12 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             retainedChildren += viewHandle
             viewHandle.pointer.withAddRef()
         }
+        val splitMethod = mapViewSplitMethod(
+            map = map,
+            projectionTypeKey = ProjectionTypeKey("kotlin.collections.Map", listOf(keyProjectionTypeKey, valueProjectionTypeKey)),
+            signature = mapViewSignature,
+            retainedChildren = retainedChildren,
+        )
         val interfaceSpec = when {
             valueSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
@@ -1555,7 +1568,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
                 stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
             )
-        }
+        }.copy(noArgTwoObjectMethods = mapOf(9 to splitMethod))
         val baseIterableSpec = JvmWinRtObjectStub.InterfaceSpec(
             iid = iterableSignature.iid,
             noArgObjectMethods = mapOf(6 to firstMethod),
@@ -1959,6 +1972,41 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
 
     private fun currentIteratorValue(state: IteratorState): Any {
         return state.currentValue ?: error("IIterator.Current was requested without a current value")
+    }
+
+    private fun splitStringKeyedMapView(map: Map<String, Any?>): Pair<Map<String, Any?>?, Map<String, Any?>?> {
+        if (map.size < 2) {
+            return null to null
+        }
+        val sortedEntries = map.entries.sortedBy(Map.Entry<String, Any?>::key)
+        val splitIndex = (sortedEntries.size + 1) / 2
+        val first = sortedEntries
+            .subList(0, splitIndex)
+            .associateTo(linkedMapOf<String, Any?>()) { it.key to it.value }
+        val second = sortedEntries
+            .subList(splitIndex, sortedEntries.size)
+            .associateTo(linkedMapOf<String, Any?>()) { it.key to it.value }
+        return first to second
+    }
+
+    private fun mapViewSplitMethod(
+        map: Map<String, Any?>,
+        projectionTypeKey: ProjectionTypeKey,
+        signature: AbiValueSignature.ParameterizedInterface,
+        retainedChildren: MutableList<AutoCloseable>,
+    ): () -> Pair<ComPtr, ComPtr> {
+        return {
+            val (firstPartition, secondPartition) = splitStringKeyedMapView(map)
+            fun createPartitionPointer(partition: Map<String, Any?>?): ComPtr {
+                if (partition == null) {
+                    return ComPtr.NULL
+                }
+                val handle = requireNotNull(createMapViewHandle(partition, projectionTypeKey, signature))
+                retainedChildren += handle
+                return handle.pointer.withAddRef()
+            }
+            createPartitionPointer(firstPartition) to createPartitionPointer(secondPartition)
+        }
     }
 
     private fun primitiveIndexOf(list: List<*>, primitiveKind: PrimitiveAbiKind, value: Any): Int {

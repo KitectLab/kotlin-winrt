@@ -192,6 +192,19 @@ class JvmWinRtObjectStub private constructor(
             ),
         )
 
+        private val noArgTwoObjectInvokeHandle = lookup.findStatic(
+            JvmWinRtObjectStub::class.java,
+            "invokeNoArgTwoObject",
+            MethodType.methodType(
+                Int::class.javaPrimitiveType,
+                Long::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                MemorySegment::class.java,
+                MemorySegment::class.java,
+                MemorySegment::class.java,
+            ),
+        )
+
         private val noArgStructInvokeHandle = lookup.findStatic(
             JvmWinRtObjectStub::class.java,
             "invokeNoArgStruct",
@@ -1025,6 +1038,7 @@ class JvmWinRtObjectStub private constructor(
                     5,
                     spec.noArgUnitMethods.keys.maxOrNull() ?: 2,
                     spec.noArgObjectMethods.keys.maxOrNull() ?: 2,
+                    spec.noArgTwoObjectMethods.keys.maxOrNull() ?: 2,
                     spec.noArgStructMethods.keys.maxOrNull() ?: 2,
                     spec.noArgBooleanMethods.keys.maxOrNull() ?: 2,
                     spec.noArgInt32Methods.keys.maxOrNull() ?: 2,
@@ -1123,6 +1137,20 @@ class JvmWinRtObjectStub private constructor(
                     )
                     vtable.setAtIndex(ValueLayout.ADDRESS, slot.toLong(), stub)
                     sharedState.noArgObjectMethods[interfaceAddress to slot] = method
+                }
+                spec.noArgTwoObjectMethods.forEach { (slot, method) ->
+                    val stub = linker.upcallStub(
+                        MethodHandles.insertArguments(noArgTwoObjectInvokeHandle, 0, interfaceAddress, slot),
+                        FunctionDescriptor.of(
+                            ValueLayout.JAVA_INT,
+                            ValueLayout.ADDRESS,
+                            ValueLayout.ADDRESS,
+                            ValueLayout.ADDRESS,
+                        ),
+                        arena,
+                    )
+                    vtable.setAtIndex(ValueLayout.ADDRESS, slot.toLong(), stub)
+                    sharedState.noArgTwoObjectMethods[interfaceAddress to slot] = method
                 }
                 spec.noArgStructMethods.forEach { (slot, method) ->
                     val stub = linker.upcallStub(
@@ -2127,6 +2155,29 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 writeAddress(result, ComPtr.NULL)
+                HResult(0x80004005.toInt()).value
+            }
+        }
+
+        @JvmStatic
+        private fun invokeNoArgTwoObject(
+            interfaceAddress: Long,
+            slot: Int,
+            thisPointer: MemorySegment,
+            firstResult: MemorySegment,
+            secondResult: MemorySegment,
+        ): Int {
+            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
+            return runCatching {
+                val value = state.noArgTwoObjectMethods[interfaceAddress to slot]
+                    ?.invoke()
+                    ?: return KnownHResults.E_NOTIMPL.value
+                writeAddress(firstResult, value.first)
+                writeAddress(secondResult, value.second)
+                HResult(0).value
+            }.getOrElse {
+                writeAddress(firstResult, ComPtr.NULL)
+                writeAddress(secondResult, ComPtr.NULL)
                 HResult(0x80004005.toInt()).value
             }
         }
@@ -3491,6 +3542,7 @@ class JvmWinRtObjectStub private constructor(
         val iid: Guid,
         val noArgUnitMethods: Map<Int, () -> HResult> = emptyMap(),
         val noArgObjectMethods: Map<Int, () -> ComPtr> = emptyMap(),
+        val noArgTwoObjectMethods: Map<Int, () -> Pair<ComPtr, ComPtr>> = emptyMap(),
         val noArgStructMethods: Map<Int, () -> ComStructValue> = emptyMap(),
         val noArgBooleanMethods: Map<Int, () -> Boolean> = emptyMap(),
         val noArgInt32Methods: Map<Int, () -> Int> = emptyMap(),
@@ -3563,6 +3615,7 @@ class JvmWinRtObjectStub private constructor(
         val interfacesByIid = linkedMapOf<String, ComPtr>()
         val noArgUnitMethods = mutableMapOf<Pair<Long, Int>, () -> HResult>()
         val noArgObjectMethods = mutableMapOf<Pair<Long, Int>, () -> ComPtr>()
+        val noArgTwoObjectMethods = mutableMapOf<Pair<Long, Int>, () -> Pair<ComPtr, ComPtr>>()
         val noArgStructMethods = mutableMapOf<Pair<Long, Int>, () -> ComStructValue>()
         val noArgBooleanMethods = mutableMapOf<Pair<Long, Int>, () -> Boolean>()
         val noArgInt32Methods = mutableMapOf<Pair<Long, Int>, () -> Int>()

@@ -97,6 +97,7 @@ interface ComInterop {
     fun invokeHStringMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<HString>
     fun invokeHStringMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<HString>
     fun invokeObjectMethod(instance: ComPtr, vtableIndex: Int): Result<ComPtr>
+    fun invokeTwoObjectMethod(instance: ComPtr, vtableIndex: Int): Result<Pair<ComPtr, ComPtr>>
     fun invokeObjectMethodWithArgs(instance: ComPtr, vtableIndex: Int, vararg arguments: Any): Result<ComPtr>
     fun invokeObjectMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<ComPtr>
     fun invokeObjectMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ComPtr>

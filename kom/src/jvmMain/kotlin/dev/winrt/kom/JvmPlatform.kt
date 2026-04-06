@@ -1975,6 +1975,27 @@ private object JvmPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeTwoObjectMethod(instance: ComPtr, vtableIndex: Int): Result<Pair<ComPtr, ComPtr>> {
+        return runCatching {
+            require(!instance.isNull) { "Method invocation requires a non-null COM pointer" }
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            Arena.ofConfined().use { arena ->
+                val firstSegment = arena.allocate(ValueLayout.ADDRESS)
+                val secondSegment = arena.allocate(ValueLayout.ADDRESS)
+                val hresult = HResult(
+                    Jdk22Foreign.twoObjectMethodHandle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        firstSegment,
+                        secondSegment,
+                    ) as Int,
+                )
+                hresult.requireSuccess("invokeTwoObjectMethod($vtableIndex)")
+                Jdk22Foreign.addressResult(firstSegment.get(ValueLayout.ADDRESS, 0L)) to
+                    Jdk22Foreign.addressResult(secondSegment.get(ValueLayout.ADDRESS, 0L))
+            }
+        }
+    }
+
     override fun invokeObjectMethodWithArgs(instance: ComPtr, vtableIndex: Int, vararg arguments: Any): Result<ComPtr> {
         return JvmComMethodExecutor.invokeWithOutSegment(
             instance = instance,
