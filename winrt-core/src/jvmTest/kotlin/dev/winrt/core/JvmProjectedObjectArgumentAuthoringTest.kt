@@ -9,6 +9,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import windows.data.json.IJsonValue
+import windows.data.json.JsonValue
 
 class JvmProjectedObjectArgumentAuthoringTest {
     private enum class ExampleMode(
@@ -348,6 +350,120 @@ class JvmProjectedObjectArgumentAuthoringTest {
 
                 PlatformComInterop.invokeUnitMethod(pointer, 13).getOrThrow()
                 assertTrue(values.isEmpty())
+            }
+        }
+    }
+
+    @Test
+    fun projected_object_argument_pointer_reprojects_mutable_interface_list_values_for_vector_on_jvm() {
+        JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(iid = IJsonValue.iid),
+        ).use { firstStub ->
+            JvmWinRtObjectStub.create(
+                JvmWinRtObjectStub.InterfaceSpec(iid = IJsonValue.iid),
+            ).use { secondStub ->
+                JvmWinRtObjectStub.create(
+                    JvmWinRtObjectStub.InterfaceSpec(iid = IJsonValue.iid),
+                ).use { replacementStub ->
+                    JvmWinRtObjectStub.create(
+                        JvmWinRtObjectStub.InterfaceSpec(iid = IJsonValue.iid),
+                    ).use { insertedStub ->
+                        JvmWinRtObjectStub.create(
+                            JvmWinRtObjectStub.InterfaceSpec(iid = IJsonValue.iid),
+                        ).use { appendedStub ->
+                            val values = mutableListOf(
+                                IJsonValue.from(Inspectable(firstStub.primaryPointer)),
+                                IJsonValue.from(Inspectable(secondStub.primaryPointer)),
+                            )
+                            val pointer = projectedObjectArgumentPointer(
+                                value = values,
+                                projectionTypeKey = "kotlin.collections.MutableList<Windows.Data.Json.IJsonValue>",
+                                signature = WinRtTypeSignature.parameterizedInterface(
+                                    "913337e9-11a1-4345-a3a2-4e7f956e222d",
+                                    WinRtTypeSignature.guid("a3219ecb-f0b3-4dcd-beee-19d48cd3ed1e"),
+                                ),
+                            )
+
+                            assertFalse(pointer.isNull)
+                            assertTrue(
+                                PlatformComInterop.invokeMethodWithResultKind(
+                                    pointer,
+                                    10,
+                                    ComMethodResultKind.BOOLEAN,
+                                    secondStub.primaryPointer,
+                                    0u,
+                                ).getOrThrow().requireBoolean(),
+                            )
+
+                            PlatformComInterop.invokeUnitMethodWithArgs(pointer, 11, 0u, replacementStub.primaryPointer).getOrThrow()
+                            PlatformComInterop.invokeUnitMethodWithArgs(pointer, 12, 1u, insertedStub.primaryPointer).getOrThrow()
+                            PlatformComInterop.invokeObjectSetter(pointer, 14, appendedStub.primaryPointer).getOrThrow()
+
+                            val replacementValue: Any = values[0]
+                            val insertedValue: Any = values[1]
+                            val appendedValue: Any = values.last()
+
+                            assertTrue(replacementValue is Inspectable)
+                            assertTrue(insertedValue is Inspectable)
+                            assertTrue(appendedValue is Inspectable)
+                            assertEquals(
+                                replacementStub.primaryPointer.value.rawValue,
+                                replacementValue.pointer.value.rawValue,
+                            )
+                            assertEquals(
+                                insertedStub.primaryPointer.value.rawValue,
+                                insertedValue.pointer.value.rawValue,
+                            )
+                            assertEquals(
+                                appendedStub.primaryPointer.value.rawValue,
+                                appendedValue.pointer.value.rawValue,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun projected_object_argument_pointer_reprojects_mutable_runtime_class_map_values_for_imap_on_jvm() {
+        JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(iid = IJsonValue.iid),
+        ).use { firstStub ->
+            JvmWinRtObjectStub.create(
+                JvmWinRtObjectStub.InterfaceSpec(iid = IJsonValue.iid),
+            ).use { replacementStub ->
+                val values = linkedMapOf("theme" to JsonValue(firstStub.primaryPointer))
+                val pointer = projectedObjectArgumentPointer(
+                    value = values,
+                    projectionTypeKey = "kotlin.collections.MutableMap<String, Windows.Data.Json.JsonValue>",
+                    signature = WinRtTypeSignature.parameterizedInterface(
+                        "3c2925fe-8519-45c1-aa79-197b6718c1c1",
+                        WinRtTypeSignature.string(),
+                        WinRtTypeSignature.runtimeClass(
+                            "Windows.Data.Json.JsonValue",
+                            WinRtTypeSignature.guid("a3219ecb-f0b3-4dcd-beee-19d48cd3ed1e"),
+                        ),
+                    ),
+                )
+
+                assertFalse(pointer.isNull)
+                assertTrue(
+                    PlatformComInterop.invokeMethodWithResultKind(
+                        pointer,
+                        11,
+                        ComMethodResultKind.BOOLEAN,
+                        "theme",
+                        replacementStub.primaryPointer,
+                    ).getOrThrow().requireBoolean(),
+                )
+
+                val replacementValue: Any = values.getValue("theme")
+                assertTrue(replacementValue is JsonValue)
+                assertEquals(
+                    replacementStub.primaryPointer.value.rawValue,
+                    replacementValue.pointer.value.rawValue,
+                )
             }
         }
     }

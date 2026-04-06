@@ -485,8 +485,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                     10 to { element, _ -> list.indexOf(element) >= 0 },
                 ),
             )
-            elementSignature is AbiValueSignature.ObjectType &&
-                elementSignature.rawSignature == WinRtTypeSignature.object_() -> JvmWinRtObjectStub.InterfaceSpec(
+            else -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
                 noArgUnitMethods = mapOf(
                     15 to {
@@ -523,11 +522,11 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 ),
                 uint32ObjectArgUnitMethods = mapOf(
                     11 to { index, pointer ->
-                        list[index.toInt()] = inspectableValueFromPointer(pointer)
+                        list[index.toInt()] = projectObjectValueFromPointer(pointer, elementProjectionTypeKey, elementSignature)
                         HResult(0)
                     },
                     12 to { index, pointer ->
-                        list.add(index.toInt(), inspectableValueFromPointer(pointer))
+                        list.add(index.toInt(), projectObjectValueFromPointer(pointer, elementProjectionTypeKey, elementSignature))
                         HResult(0)
                     },
                 ),
@@ -536,12 +535,11 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 ),
                 objectArgUnitMethods = mapOf(
                     14 to { pointer ->
-                        list.add(inspectableValueFromPointer(pointer))
+                        list.add(projectObjectValueFromPointer(pointer, elementProjectionTypeKey, elementSignature))
                         HResult(0)
                     },
                 ),
             )
-            else -> return null
         }
         val vectorViewSpec = when {
             elementSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
@@ -796,8 +794,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 ),
                 noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
             )
-            valueSignature is AbiValueSignature.ObjectType &&
-                valueSignature.rawSignature == WinRtTypeSignature.object_() -> JvmWinRtObjectStub.InterfaceSpec(
+            else -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
                 noArgUnitMethods = mapOf(
                     13 to {
@@ -831,13 +828,12 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 stringObjectArgBooleanMethods = mapOf(
                     11 to { key, pointer ->
                         val replaced = map.containsKey(key)
-                        map[key] = inspectableValueFromPointer(pointer)
+                        map[key] = projectObjectValueFromPointer(pointer, valueProjectionTypeKey, valueSignature)
                         replaced
                     },
                 ),
                 noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
             )
-            else -> return null
         }
         val mapViewSpec = when {
             valueSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
@@ -1115,11 +1111,22 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             ),
             uint32ObjectArgUnitMethods = mapOf(
                 11 to { index, pointer ->
-                    list[index.toInt()] = inspectableValueFromPointer(pointer)
+                    list[index.toInt()] = projectObjectValueFromPointer(
+                        pointer,
+                        elementProjectionTypeKey,
+                        AbiValueSignature.ObjectType(WinRtTypeSignature.object_()),
+                    )
                     HResult(0)
                 },
                 12 to { index, pointer ->
-                    list.add(index.toInt(), inspectableValueFromPointer(pointer))
+                    list.add(
+                        index.toInt(),
+                        projectObjectValueFromPointer(
+                            pointer,
+                            elementProjectionTypeKey,
+                            AbiValueSignature.ObjectType(WinRtTypeSignature.object_()),
+                        ),
+                    )
                     HResult(0)
                 },
             ),
@@ -1128,7 +1135,13 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             ),
             objectArgUnitMethods = mapOf(
                 14 to { pointer ->
-                    list.add(inspectableValueFromPointer(pointer))
+                    list.add(
+                        projectObjectValueFromPointer(
+                            pointer,
+                            elementProjectionTypeKey,
+                            AbiValueSignature.ObjectType(WinRtTypeSignature.object_()),
+                        ),
+                    )
                     HResult(0)
                 },
             ),
@@ -1188,6 +1201,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             is AbiValueSignature.StringType -> "String"
             is AbiValueSignature.ObjectType -> if (signature.rawSignature.startsWith("struct(")) {
                 signature.rawSignature.removePrefix("struct(").substringBefore(';')
+            } else if (signature.rawSignature.startsWith("rc(")) {
+                signature.rawSignature.removePrefix("rc(").substringBefore(';')
             } else if (signature.rawSignature.startsWith("enum(")) {
                 signature.rawSignature.removePrefix("enum(").substringBefore(';')
             } else {
@@ -1394,7 +1409,100 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         }
     }
 
-    private fun inspectableValueFromPointer(pointer: ComPtr): Inspectable = Inspectable(pointer)
+    private fun projectObjectValueFromPointer(
+        pointer: ComPtr,
+        projectionTypeKey: String,
+        signature: AbiValueSignature,
+    ): Any? {
+        if (pointer.isNull) {
+            return null
+        }
+        val inspectable = Inspectable(pointer)
+        val rawProjectionType = parseProjectionTypeKey(projectionTypeKey).rawType
+        if (rawProjectionType == "Object" || rawProjectionType == Inspectable::class.qualifiedName) {
+            return inspectable
+        }
+
+        val projectedClass = resolveProjectedClass(rawProjectionType)
+            ?: error("Unsupported projected type $projectionTypeKey for ABI pointer re-projection")
+        projectedCompanion(projectedClass)?.let { companion ->
+            projectedCompanionFactory(companion)?.let { factory ->
+                return factory.invoke(companion, inspectable)
+            }
+        }
+        instantiateProjectedClass(
+            projectedClass = projectedClass,
+            pointer = pointer,
+            stringArguments = if (signature is AbiValueSignature.ParameterizedInterface) {
+                signature.arguments.map { it.rawSignature }
+            } else {
+                emptyList()
+            },
+        )?.let { return it }
+        error("Unsupported projected type $projectionTypeKey for ABI pointer re-projection")
+    }
+
+    private fun resolveProjectedClass(rawProjectionType: String): Class<*>? {
+        return sequenceOf(
+            rawProjectionType,
+            toJvmQualifiedTypeName(rawProjectionType),
+        ).distinct().mapNotNull { candidate ->
+            runCatching { Class.forName(candidate) }.getOrNull()
+        }.firstOrNull()
+    }
+
+    private fun projectedCompanion(projectedClass: Class<*>): Any? {
+        return runCatching { projectedClass.getField("Companion").get(null) }.getOrNull()
+    }
+
+    private fun projectedCompanionFactory(companion: Any): java.lang.reflect.Method? {
+        return companion.javaClass.methods.firstOrNull { method ->
+            method.name == "from" &&
+                method.parameterTypes.contentEquals(arrayOf(Inspectable::class.java))
+        }
+    }
+
+    private fun instantiateProjectedClass(
+        projectedClass: Class<*>,
+        pointer: ComPtr,
+        stringArguments: List<String>,
+    ): Any? {
+        projectedClass.constructors.firstOrNull { constructor ->
+            constructor.parameterTypes.contentEquals(arrayOf(ComPtr::class.java))
+        }?.let { constructor ->
+            return constructor.newInstance(pointer)
+        }
+        projectedClass.constructors.firstOrNull { constructor ->
+            val parameterTypes = constructor.parameterTypes
+            parameterTypes.size == stringArguments.size + 1 &&
+                parameterTypes.firstOrNull() == Long::class.javaPrimitiveType &&
+                parameterTypes.drop(1).all { it == String::class.java }
+        }?.let { constructor ->
+            return constructor.newInstance(pointer.value.rawValue, *stringArguments.toTypedArray())
+        }
+        projectedClass.constructors.firstOrNull { constructor ->
+            val parameterTypes = constructor.parameterTypes
+            parameterTypes.size == stringArguments.size + 2 &&
+                parameterTypes.firstOrNull() == Long::class.javaPrimitiveType &&
+                parameterTypes.lastOrNull()?.name == "kotlin.jvm.internal.DefaultConstructorMarker" &&
+                parameterTypes.drop(1).dropLast(1).all { it == String::class.java }
+        }?.let { constructor ->
+            return constructor.newInstance(pointer.value.rawValue, *stringArguments.toTypedArray(), null)
+        }
+        return null
+    }
+
+    private fun toJvmQualifiedTypeName(rawProjectionType: String): String {
+        if (!rawProjectionType.contains('.')) {
+            return rawProjectionType
+        }
+        val parts = rawProjectionType.split('.')
+        return buildString {
+            append(parts.dropLast(1).joinToString(".") { it.lowercase() })
+            append('.')
+            append(parts.last())
+        }
+    }
 
     private class IteratorState(
         private val iterator: Iterator<*>,
