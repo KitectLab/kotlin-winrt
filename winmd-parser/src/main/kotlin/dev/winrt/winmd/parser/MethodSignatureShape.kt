@@ -127,6 +127,7 @@ internal enum class MethodAbiToken {
     INT32,
     UINT32,
     INT64,
+    UINT64,
     FLOAT32,
     FLOAT64,
     GUID,

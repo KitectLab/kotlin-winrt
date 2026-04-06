@@ -67,6 +67,7 @@ internal object AbiCallCatalog {
         MethodAbiToken.INT32 -> "Int32"
         MethodAbiToken.UINT32 -> "UInt32"
         MethodAbiToken.INT64 -> "Int64"
+        MethodAbiToken.UINT64 -> "UInt64"
         MethodAbiToken.FLOAT32 -> "Float32"
         MethodAbiToken.FLOAT64 -> "Float64"
         MethodAbiToken.GUID -> "Guid"
@@ -708,6 +709,14 @@ internal object AbiCallCatalog {
         secondArgumentExpression = secondArgumentExpression,
         pointerExpression = pointerExpression,
     )
+
+    fun unaryMethod(
+        returnToken: MethodAbiToken,
+        parameterCategory: MethodParameterCategory,
+        vtableIndex: Int,
+        argumentExpression: Any,
+        pointerExpression: String = "pointer",
+    ): CodeBlock = unaryCall(returnToken, parameterCategory.toAbiToken(), vtableIndex, argumentExpression, pointerExpression)
 
     fun booleanMethod(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeBooleanGetter(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
