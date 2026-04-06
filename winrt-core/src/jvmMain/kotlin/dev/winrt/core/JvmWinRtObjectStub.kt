@@ -2407,7 +2407,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 writeAddress(result, ComPtr.NULL)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2432,7 +2432,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2457,7 +2457,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2482,7 +2482,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2507,7 +2507,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_LONG.byteSize().toLong()).set(ValueLayout.JAVA_LONG, 0L, 0L)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2532,7 +2532,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_LONG.byteSize().toLong()).set(ValueLayout.JAVA_LONG, 0L, 0L)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2557,7 +2557,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_FLOAT.byteSize().toLong()).set(ValueLayout.JAVA_FLOAT, 0L, 0f)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2582,17 +2582,19 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_DOUBLE.byteSize().toLong()).set(ValueLayout.JAVA_DOUBLE, 0L, 0.0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
         @JvmStatic
         private fun invokeUInt32Arg(interfaceAddress: Long, slot: Int, thisPointer: MemorySegment, index: Int): Int {
             val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return state.uint32ArgUnitMethods[interfaceAddress to slot]
-                ?.invoke(index.toUInt())
-                ?.value
-                ?: KnownHResults.E_NOTIMPL.value
+            return runCatching {
+                state.uint32ArgUnitMethods[interfaceAddress to slot]
+                    ?.invoke(index.toUInt())
+                    ?.value
+                    ?: KnownHResults.E_NOTIMPL.value
+            }.getOrElse(::hResultValue)
         }
 
         @JvmStatic
@@ -2604,10 +2606,12 @@ class JvmWinRtObjectStub private constructor(
             arg: MemorySegment,
         ): Int {
             val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return state.uint32ObjectArgUnitMethods[interfaceAddress to slot]
-                ?.invoke(index.toUInt(), ComPtr(AbiIntPtr(arg.address())))
-                ?.value
-                ?: KnownHResults.E_NOTIMPL.value
+            return runCatching {
+                state.uint32ObjectArgUnitMethods[interfaceAddress to slot]
+                    ?.invoke(index.toUInt(), ComPtr(AbiIntPtr(arg.address())))
+                    ?.value
+                    ?: KnownHResults.E_NOTIMPL.value
+            }.getOrElse(::hResultValue)
         }
 
         @JvmStatic
@@ -2619,10 +2623,12 @@ class JvmWinRtObjectStub private constructor(
             arg: Int,
         ): Int {
             val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return state.uint32BooleanArgUnitMethods[interfaceAddress to slot]
-                ?.invoke(index.toUInt(), arg != 0)
-                ?.value
-                ?: KnownHResults.E_NOTIMPL.value
+            return runCatching {
+                state.uint32BooleanArgUnitMethods[interfaceAddress to slot]
+                    ?.invoke(index.toUInt(), arg != 0)
+                    ?.value
+                    ?: KnownHResults.E_NOTIMPL.value
+            }.getOrElse(::hResultValue)
         }
 
         @JvmStatic
@@ -2634,10 +2640,12 @@ class JvmWinRtObjectStub private constructor(
             arg: Int,
         ): Int {
             val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return state.uint32Int32ArgUnitMethods[interfaceAddress to slot]
-                ?.invoke(index.toUInt(), arg)
-                ?.value
-                ?: KnownHResults.E_NOTIMPL.value
+            return runCatching {
+                state.uint32Int32ArgUnitMethods[interfaceAddress to slot]
+                    ?.invoke(index.toUInt(), arg)
+                    ?.value
+                    ?: KnownHResults.E_NOTIMPL.value
+            }.getOrElse(::hResultValue)
         }
 
         @JvmStatic
@@ -2649,10 +2657,12 @@ class JvmWinRtObjectStub private constructor(
             arg: Int,
         ): Int {
             val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return state.uint32UInt32ArgUnitMethods[interfaceAddress to slot]
-                ?.invoke(index.toUInt(), arg.toUInt())
-                ?.value
-                ?: KnownHResults.E_NOTIMPL.value
+            return runCatching {
+                state.uint32UInt32ArgUnitMethods[interfaceAddress to slot]
+                    ?.invoke(index.toUInt(), arg.toUInt())
+                    ?.value
+                    ?: KnownHResults.E_NOTIMPL.value
+            }.getOrElse(::hResultValue)
         }
 
         @JvmStatic
@@ -2664,10 +2674,12 @@ class JvmWinRtObjectStub private constructor(
             arg: Long,
         ): Int {
             val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return state.uint32Int64ArgUnitMethods[interfaceAddress to slot]
-                ?.invoke(index.toUInt(), arg)
-                ?.value
-                ?: KnownHResults.E_NOTIMPL.value
+            return runCatching {
+                state.uint32Int64ArgUnitMethods[interfaceAddress to slot]
+                    ?.invoke(index.toUInt(), arg)
+                    ?.value
+                    ?: KnownHResults.E_NOTIMPL.value
+            }.getOrElse(::hResultValue)
         }
 
         @JvmStatic
@@ -2679,10 +2691,12 @@ class JvmWinRtObjectStub private constructor(
             arg: Long,
         ): Int {
             val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return state.uint32UInt64ArgUnitMethods[interfaceAddress to slot]
-                ?.invoke(index.toUInt(), arg.toULong())
-                ?.value
-                ?: KnownHResults.E_NOTIMPL.value
+            return runCatching {
+                state.uint32UInt64ArgUnitMethods[interfaceAddress to slot]
+                    ?.invoke(index.toUInt(), arg.toULong())
+                    ?.value
+                    ?: KnownHResults.E_NOTIMPL.value
+            }.getOrElse(::hResultValue)
         }
 
         @JvmStatic
@@ -2694,10 +2708,12 @@ class JvmWinRtObjectStub private constructor(
             arg: Float,
         ): Int {
             val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return state.uint32Float32ArgUnitMethods[interfaceAddress to slot]
-                ?.invoke(index.toUInt(), arg)
-                ?.value
-                ?: KnownHResults.E_NOTIMPL.value
+            return runCatching {
+                state.uint32Float32ArgUnitMethods[interfaceAddress to slot]
+                    ?.invoke(index.toUInt(), arg)
+                    ?.value
+                    ?: KnownHResults.E_NOTIMPL.value
+            }.getOrElse(::hResultValue)
         }
 
         @JvmStatic
@@ -2709,10 +2725,12 @@ class JvmWinRtObjectStub private constructor(
             arg: Double,
         ): Int {
             val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return state.uint32Float64ArgUnitMethods[interfaceAddress to slot]
-                ?.invoke(index.toUInt(), arg)
-                ?.value
-                ?: KnownHResults.E_NOTIMPL.value
+            return runCatching {
+                state.uint32Float64ArgUnitMethods[interfaceAddress to slot]
+                    ?.invoke(index.toUInt(), arg)
+                    ?.value
+                    ?: KnownHResults.E_NOTIMPL.value
+            }.getOrElse(::hResultValue)
         }
 
         @JvmStatic
@@ -2724,10 +2742,12 @@ class JvmWinRtObjectStub private constructor(
             arg: MemorySegment,
         ): Int {
             val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return state.uint32StringArgUnitMethods[interfaceAddress to slot]
-                ?.invoke(index.toUInt(), PlatformHStringBridge.toKotlinString(HString(arg.address())))
-                ?.value
-                ?: KnownHResults.E_NOTIMPL.value
+            return runCatching {
+                state.uint32StringArgUnitMethods[interfaceAddress to slot]
+                    ?.invoke(index.toUInt(), PlatformHStringBridge.toKotlinString(HString(arg.address())))
+                    ?.value
+                    ?: KnownHResults.E_NOTIMPL.value
+            }.getOrElse(::hResultValue)
         }
 
         @JvmStatic
@@ -2748,7 +2768,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 writeAddress(result, ComPtr.NULL)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 

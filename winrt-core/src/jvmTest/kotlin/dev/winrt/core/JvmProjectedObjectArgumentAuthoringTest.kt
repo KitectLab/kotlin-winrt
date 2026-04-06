@@ -1123,6 +1123,10 @@ class JvmProjectedObjectArgumentAuthoringTest {
         PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 7, 1u).getOrThrow().use { value ->
             assertEquals("fr-FR", value.toKotlinString())
         }
+        assertBoundsFailure(PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 7, 2u))
+        assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithUInt32AndStringArgs(pointer, 11, 2u, "de-DE"))
+        assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithUInt32AndStringArgs(pointer, 12, 3u, "de-DE"))
+        assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 13, 2u))
         assertTrue(
             PlatformComInterop.invokeMethodWithResultKind(
                 pointer,
@@ -1620,6 +1624,19 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 unwrap = { value -> (value as Float64).value },
             ),
         )
+
+        val int32VectorPointer = projectedObjectArgumentPointer(
+            value = mutableListOf(Int32(1), Int32(2)),
+            projectionTypeKey = "kotlin.collections.MutableList<dev.winrt.core.Int32>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "913337e9-11a1-4345-a3a2-4e7f956e222d",
+                "i4",
+            ),
+        )
+        assertBoundsFailure(PlatformComInterop.invokeInt32MethodWithUInt32Arg(int32VectorPointer, 7, 2u))
+        assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithArgs(int32VectorPointer, 11, 2u, 7))
+        assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithArgs(int32VectorPointer, 12, 3u, 7))
+        assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithUInt32Arg(int32VectorPointer, 13, 2u))
     }
 
     @Test
