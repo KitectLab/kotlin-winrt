@@ -67,6 +67,11 @@ class JvmProjectedObjectArgumentAuthoringTest {
         val count: UInt,
     )
 
+    private data class IndexOfResult(
+        val found: Boolean,
+        val index: UInt,
+    )
+
     private val linker = Linker.nativeLinker()
     private val noArgCallerAllocatedArrayHandle = linker.downcallHandle(
         FunctionDescriptor.of(
@@ -92,6 +97,51 @@ class JvmProjectedObjectArgumentAuthoringTest {
             ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS,
             ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+        ),
+    )
+    private val addressIndexOfHandle = linker.downcallHandle(
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+        ),
+    )
+    private val intIndexOfHandle = linker.downcallHandle(
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+        ),
+    )
+    private val longIndexOfHandle = linker.downcallHandle(
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+        ),
+    )
+    private val floatIndexOfHandle = linker.downcallHandle(
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_FLOAT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+        ),
+    )
+    private val doubleIndexOfHandle = linker.downcallHandle(
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_DOUBLE,
+            ValueLayout.ADDRESS,
             ValueLayout.ADDRESS,
         ),
     )
@@ -327,6 +377,181 @@ class JvmProjectedObjectArgumentAuthoringTest {
         }
     }
 
+    private fun invokeAddressIndexOf(
+        instance: ComPtr,
+        vtableIndex: Int,
+        address: Long,
+        operation: String,
+    ): Result<IndexOfResult> {
+        return runCatching {
+            val function = vtableEntry(instance, vtableIndex)
+            Arena.ofConfined().use { arena ->
+                val resultIndex = arena.allocate(ValueLayout.JAVA_INT)
+                val resultFound = arena.allocate(ValueLayout.JAVA_INT)
+                val hResult = HResult(
+                    addressIndexOfHandle.bindTo(function).invokeWithArguments(
+                        MemorySegment.ofAddress(instance.value.rawValue),
+                        if (address == 0L) MemorySegment.NULL else MemorySegment.ofAddress(address),
+                        resultIndex,
+                        resultFound,
+                    ) as Int,
+                )
+                hResult.requireSuccess(operation)
+                IndexOfResult(
+                    found = resultFound.get(ValueLayout.JAVA_INT, 0L) != 0,
+                    index = resultIndex.get(ValueLayout.JAVA_INT, 0L).toUInt(),
+                )
+            }
+        }
+    }
+
+    private fun invokeIntIndexOf(
+        instance: ComPtr,
+        vtableIndex: Int,
+        value: Int,
+        operation: String,
+    ): Result<IndexOfResult> {
+        return runCatching {
+            val function = vtableEntry(instance, vtableIndex)
+            Arena.ofConfined().use { arena ->
+                val resultIndex = arena.allocate(ValueLayout.JAVA_INT)
+                val resultFound = arena.allocate(ValueLayout.JAVA_INT)
+                val hResult = HResult(
+                    intIndexOfHandle.bindTo(function).invokeWithArguments(
+                        MemorySegment.ofAddress(instance.value.rawValue),
+                        value,
+                        resultIndex,
+                        resultFound,
+                    ) as Int,
+                )
+                hResult.requireSuccess(operation)
+                IndexOfResult(
+                    found = resultFound.get(ValueLayout.JAVA_INT, 0L) != 0,
+                    index = resultIndex.get(ValueLayout.JAVA_INT, 0L).toUInt(),
+                )
+            }
+        }
+    }
+
+    private fun invokeLongIndexOf(
+        instance: ComPtr,
+        vtableIndex: Int,
+        value: Long,
+        operation: String,
+    ): Result<IndexOfResult> {
+        return runCatching {
+            val function = vtableEntry(instance, vtableIndex)
+            Arena.ofConfined().use { arena ->
+                val resultIndex = arena.allocate(ValueLayout.JAVA_INT)
+                val resultFound = arena.allocate(ValueLayout.JAVA_INT)
+                val hResult = HResult(
+                    longIndexOfHandle.bindTo(function).invokeWithArguments(
+                        MemorySegment.ofAddress(instance.value.rawValue),
+                        value,
+                        resultIndex,
+                        resultFound,
+                    ) as Int,
+                )
+                hResult.requireSuccess(operation)
+                IndexOfResult(
+                    found = resultFound.get(ValueLayout.JAVA_INT, 0L) != 0,
+                    index = resultIndex.get(ValueLayout.JAVA_INT, 0L).toUInt(),
+                )
+            }
+        }
+    }
+
+    private fun invokeFloatIndexOf(
+        instance: ComPtr,
+        vtableIndex: Int,
+        value: Float,
+        operation: String,
+    ): Result<IndexOfResult> {
+        return runCatching {
+            val function = vtableEntry(instance, vtableIndex)
+            Arena.ofConfined().use { arena ->
+                val resultIndex = arena.allocate(ValueLayout.JAVA_INT)
+                val resultFound = arena.allocate(ValueLayout.JAVA_INT)
+                val hResult = HResult(
+                    floatIndexOfHandle.bindTo(function).invokeWithArguments(
+                        MemorySegment.ofAddress(instance.value.rawValue),
+                        value,
+                        resultIndex,
+                        resultFound,
+                    ) as Int,
+                )
+                hResult.requireSuccess(operation)
+                IndexOfResult(
+                    found = resultFound.get(ValueLayout.JAVA_INT, 0L) != 0,
+                    index = resultIndex.get(ValueLayout.JAVA_INT, 0L).toUInt(),
+                )
+            }
+        }
+    }
+
+    private fun invokeDoubleIndexOf(
+        instance: ComPtr,
+        vtableIndex: Int,
+        value: Double,
+        operation: String,
+    ): Result<IndexOfResult> {
+        return runCatching {
+            val function = vtableEntry(instance, vtableIndex)
+            Arena.ofConfined().use { arena ->
+                val resultIndex = arena.allocate(ValueLayout.JAVA_INT)
+                val resultFound = arena.allocate(ValueLayout.JAVA_INT)
+                val hResult = HResult(
+                    doubleIndexOfHandle.bindTo(function).invokeWithArguments(
+                        MemorySegment.ofAddress(instance.value.rawValue),
+                        value,
+                        resultIndex,
+                        resultFound,
+                    ) as Int,
+                )
+                hResult.requireSuccess(operation)
+                IndexOfResult(
+                    found = resultFound.get(ValueLayout.JAVA_INT, 0L) != 0,
+                    index = resultIndex.get(ValueLayout.JAVA_INT, 0L).toUInt(),
+                )
+            }
+        }
+    }
+
+    private fun invokeStringIndexOf(
+        instance: ComPtr,
+        vtableIndex: Int,
+        value: String,
+    ): Result<IndexOfResult> {
+        return HString.fromKotlin(value).use { hString ->
+            invokeAddressIndexOf(instance, vtableIndex, hString.raw, "invokeStringIndexOf($vtableIndex)")
+        }
+    }
+
+    private fun invokeObjectIndexOf(
+        instance: ComPtr,
+        vtableIndex: Int,
+        value: ComPtr,
+    ): Result<IndexOfResult> {
+        return invokeAddressIndexOf(instance, vtableIndex, value.value.rawValue, "invokeObjectIndexOf($vtableIndex)")
+    }
+
+    private fun invokePrimitiveIndexOf(
+        instance: ComPtr,
+        vtableIndex: Int,
+        value: Any,
+    ): Result<IndexOfResult> {
+        return when (value) {
+            is Boolean -> invokeIntIndexOf(instance, vtableIndex, if (value) 1 else 0, "invokePrimitiveIndexOf($vtableIndex)")
+            is Int -> invokeIntIndexOf(instance, vtableIndex, value, "invokePrimitiveIndexOf($vtableIndex)")
+            is UInt -> invokeIntIndexOf(instance, vtableIndex, value.toInt(), "invokePrimitiveIndexOf($vtableIndex)")
+            is Long -> invokeLongIndexOf(instance, vtableIndex, value, "invokePrimitiveIndexOf($vtableIndex)")
+            is ULong -> invokeLongIndexOf(instance, vtableIndex, value.toLong(), "invokePrimitiveIndexOf($vtableIndex)")
+            is Float -> invokeFloatIndexOf(instance, vtableIndex, value, "invokePrimitiveIndexOf($vtableIndex)")
+            is Double -> invokeDoubleIndexOf(instance, vtableIndex, value, "invokePrimitiveIndexOf($vtableIndex)")
+            else -> error("Unsupported primitive indexOf value ${value::class.qualifiedName}")
+        }
+    }
+
     private fun readStringCallerAllocatedBuffer(
         buffer: MemorySegment,
         size: Int,
@@ -404,6 +629,12 @@ class JvmProjectedObjectArgumentAuthoringTest {
         )
     }
 
+    private fun assertIndexOfResult(result: Result<IndexOfResult>, found: Boolean, index: UInt) {
+        val value = result.getOrThrow()
+        assertEquals(found, value.found)
+        assertEquals(index, value.index)
+    }
+
     private fun <T : Any> assertPrimitiveVectorViewCase(case: PrimitiveVectorCase<T>) {
         val pointer = projectedObjectArgumentPointer(
             value = case.initial,
@@ -417,6 +648,10 @@ class JvmProjectedObjectArgumentAuthoringTest {
         assertFalse(pointer.isNull)
         assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
         assertEquals(case.second, case.getAt(pointer, 1u))
+        assertIndexOfResult(invokePrimitiveIndexOf(pointer, 9, case.second), true, 1u)
+        if (case.initial.none { case.unwrap(it) == case.appended }) {
+            assertIndexOfResult(invokePrimitiveIndexOf(pointer, 9, case.appended), false, 0u)
+        }
 
         val iterator = PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()
         try {
@@ -440,15 +675,10 @@ class JvmProjectedObjectArgumentAuthoringTest {
         assertFalse(pointer.isNull)
         assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
         assertEquals(case.second, case.getAt(pointer, 1u))
-        assertTrue(
-            PlatformComInterop.invokeMethodWithResultKind(
-                pointer,
-                10,
-                ComMethodResultKind.BOOLEAN,
-                case.second,
-                0u,
-            ).getOrThrow().requireBoolean(),
-        )
+        assertIndexOfResult(invokePrimitiveIndexOf(pointer, 10, case.second), true, 1u)
+        if (case.initial.none { case.unwrap(it) == case.appended }) {
+            assertIndexOfResult(invokePrimitiveIndexOf(pointer, 10, case.appended), false, 0u)
+        }
 
         PlatformComInterop.invokeUnitMethodWithArgs(pointer, 11, 0u, case.replacement).getOrThrow()
         assertEquals(case.replacement, case.unwrap(values[0]))
@@ -1311,15 +1541,8 @@ class JvmProjectedObjectArgumentAuthoringTest {
                             )
 
                             assertFalse(pointer.isNull)
-                            assertTrue(
-                                PlatformComInterop.invokeMethodWithResultKind(
-                                    pointer,
-                                    10,
-                                    ComMethodResultKind.BOOLEAN,
-                                    secondStub.primaryPointer,
-                                    0u,
-                                ).getOrThrow().requireBoolean(),
-                            )
+                            assertIndexOfResult(invokeObjectIndexOf(pointer, 10, secondStub.primaryPointer), true, 1u)
+                            assertIndexOfResult(invokeObjectIndexOf(pointer, 10, ComPtr.NULL), false, 0u)
 
                             PlatformComInterop.invokeUnitMethodWithArgs(pointer, 11, 0u, replacementStub.primaryPointer).getOrThrow()
                             PlatformComInterop.invokeUnitMethodWithArgs(pointer, 12, 1u, insertedStub.primaryPointer).getOrThrow()
@@ -1509,6 +1732,8 @@ class JvmProjectedObjectArgumentAuthoringTest {
         PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 7, 1u).getOrThrow().use { value ->
             assertEquals("fr-FR", value.toKotlinString())
         }
+        assertIndexOfResult(invokeStringIndexOf(pointer, 9, "fr-FR"), true, 1u)
+        assertIndexOfResult(invokeStringIndexOf(pointer, 9, "de-DE"), false, 0u)
 
         val iterablePointer = PlatformComInterop.queryInterface(
             pointer,
@@ -1576,15 +1801,8 @@ class JvmProjectedObjectArgumentAuthoringTest {
         assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithUInt32AndStringArgs(pointer, 11, 2u, "de-DE"))
         assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithUInt32AndStringArgs(pointer, 12, 3u, "de-DE"))
         assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 13, 2u))
-        assertTrue(
-            PlatformComInterop.invokeMethodWithResultKind(
-                pointer,
-                10,
-                ComMethodResultKind.BOOLEAN,
-                "fr-FR",
-                0u,
-            ).getOrThrow().requireBoolean(),
-        )
+        assertIndexOfResult(invokeStringIndexOf(pointer, 10, "fr-FR"), true, 1u)
+        assertIndexOfResult(invokeStringIndexOf(pointer, 10, "de-DE"), false, 0u)
 
         PlatformComInterop.invokeUnitMethodWithUInt32AndStringArgs(pointer, 11, 0u, "de-DE").getOrThrow()
         assertEquals("de-DE", values[0])
@@ -1696,15 +1914,8 @@ class JvmProjectedObjectArgumentAuthoringTest {
 
                             assertFalse(pointer.isNull)
                             assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
-                            assertTrue(
-                                PlatformComInterop.invokeMethodWithResultKind(
-                                    pointer,
-                                    10,
-                                    ComMethodResultKind.BOOLEAN,
-                                    secondStub.primaryPointer,
-                                    0u,
-                                ).getOrThrow().requireBoolean(),
-                            )
+                            assertIndexOfResult(invokeObjectIndexOf(pointer, 10, secondStub.primaryPointer), true, 1u)
+                            assertIndexOfResult(invokeObjectIndexOf(pointer, 10, ComPtr.NULL), false, 0u)
 
                             PlatformComInterop.invokeUnitMethodWithArgs(pointer, 11, 0u, replacementStub.primaryPointer).getOrThrow()
                             assertEquals(replacementStub.primaryPointer.value.rawValue, values[0].pointer.value.rawValue)
@@ -1778,15 +1989,8 @@ class JvmProjectedObjectArgumentAuthoringTest {
 
                 assertFalse(pointer.isNull)
                 assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
-                assertTrue(
-                    PlatformComInterop.invokeMethodWithResultKind(
-                        pointer,
-                        9,
-                        ComMethodResultKind.BOOLEAN,
-                        secondStub.primaryPointer,
-                        0u,
-                    ).getOrThrow().requireBoolean(),
-                )
+                assertIndexOfResult(invokeObjectIndexOf(pointer, 9, secondStub.primaryPointer), true, 1u)
+                assertIndexOfResult(invokeObjectIndexOf(pointer, 9, ComPtr.NULL), false, 0u)
 
                 val iterablePointer = PlatformComInterop.queryInterface(
                     pointer,
@@ -1847,15 +2051,8 @@ class JvmProjectedObjectArgumentAuthoringTest {
 
                             assertFalse(pointer.isNull)
                             assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
-                            assertTrue(
-                                PlatformComInterop.invokeMethodWithResultKind(
-                                    pointer,
-                                    10,
-                                    ComMethodResultKind.BOOLEAN,
-                                    secondStub.primaryPointer,
-                                    0u,
-                                ).getOrThrow().requireBoolean(),
-                            )
+                            assertIndexOfResult(invokeObjectIndexOf(pointer, 10, secondStub.primaryPointer), true, 1u)
+                            assertIndexOfResult(invokeObjectIndexOf(pointer, 10, ComPtr.NULL), false, 0u)
 
                             PlatformComInterop.invokeUnitMethodWithArgs(pointer, 11, 0u, replacementStub.primaryPointer).getOrThrow()
                             assertEquals(replacementStub.primaryPointer.value.rawValue, values[0].pointer.value.rawValue)
@@ -2162,13 +2359,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
         )
 
         assertFailureHResult(
-            PlatformComInterop.invokeMethodWithResultKind(
-                pointer,
-                10,
-                ComMethodResultKind.BOOLEAN,
-                "en-US",
-                0u,
-            ),
+            invokeStringIndexOf(pointer, 10, "en-US"),
             KnownHResults.E_POINTER.value,
         )
     }

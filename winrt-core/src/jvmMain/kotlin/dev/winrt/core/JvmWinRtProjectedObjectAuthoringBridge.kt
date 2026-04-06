@@ -354,6 +354,9 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                     },
                 ),
                 noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
+                stringArgIndexOfMethods = mapOf(
+                    9 to { element -> indexOfOrNull(list.indexOf(element)) },
+                ),
             )
             primitiveKind != null -> createPrimitiveVectorViewInterfaceSpec(
                 iid = signature.iid,
@@ -375,6 +378,9 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                     },
                 ),
                 noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
+                objectArgIndexOfMethods = mapOf(
+                    9 to { pointer -> indexOfOrNull(inspectableIndexOf(list, pointer)) },
+                ),
             )
         }
         val derivedSpec = baseSpec.copy(
@@ -515,8 +521,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                         HResult(0)
                     },
                 ),
-                stringUInt32ArgBooleanMethods = mapOf(
-                    10 to { element, _ -> list.indexOf(element) >= 0 },
+                stringArgIndexOfMethods = mapOf(
+                    10 to { element -> indexOfOrNull(list.indexOf(element)) },
                 ),
             )
             primitiveKind != null -> createPrimitiveVectorInterfaceSpec(
@@ -574,8 +580,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                         HResult(0)
                     },
                 ),
-                objectUInt32ArgBooleanMethods = mapOf(
-                    10 to { pointer, _ -> inspectableIndexOf(list, pointer) >= 0 },
+                objectArgIndexOfMethods = mapOf(
+                    10 to { pointer -> indexOfOrNull(inspectableIndexOf(list, pointer)) },
                 ),
                 objectArgUnitMethods = mapOf(
                     14 to { pointer ->
@@ -603,8 +609,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                     },
                 ),
                 noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
-                stringUInt32ArgBooleanMethods = mapOf(
-                    9 to { element, _ -> list.indexOf(element) >= 0 },
+                stringArgIndexOfMethods = mapOf(
+                    9 to { element -> indexOfOrNull(list.indexOf(element)) },
                 ),
             )
             primitiveKind != null -> createPrimitiveVectorViewInterfaceSpec(
@@ -627,8 +633,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                     },
                 ),
                 noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
-                objectUInt32ArgBooleanMethods = mapOf(
-                    9 to { pointer, _ -> inspectableIndexOf(list, pointer) >= 0 },
+                objectArgIndexOfMethods = mapOf(
+                    9 to { pointer -> indexOfOrNull(inspectableIndexOf(list, pointer)) },
                 ),
             )
         }
@@ -742,8 +748,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgObjectMethods = mapOf(6 to firstMethod),
                 uint32ArgBooleanMethods = mapOf(7 to { index -> marshalPrimitiveBooleanValue(list.elementAt(index.toInt())) }),
                 noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
-                booleanUInt32ArgBooleanMethods = mapOf(
-                    9 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                booleanArgIndexOfMethods = mapOf(
+                    9 to { element -> indexOfOrNull(primitiveIndexOf(list, primitiveKind, element)) },
                 ),
             )
             PrimitiveAbiKind.INT32 -> JvmWinRtObjectStub.InterfaceSpec(
@@ -751,8 +757,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgObjectMethods = mapOf(6 to firstMethod),
                 uint32ArgInt32Methods = mapOf(7 to { index -> marshalPrimitiveInt32Value(list.elementAt(index.toInt())) }),
                 noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
-                int32UInt32ArgBooleanMethods = mapOf(
-                    9 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                int32ArgIndexOfMethods = mapOf(
+                    9 to { element -> indexOfOrNull(primitiveIndexOf(list, primitiveKind, element)) },
                 ),
             )
             PrimitiveAbiKind.UINT32 -> JvmWinRtObjectStub.InterfaceSpec(
@@ -760,8 +766,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgObjectMethods = mapOf(6 to firstMethod),
                 uint32ArgUInt32Methods = mapOf(7 to { index -> marshalPrimitiveUInt32Value(list.elementAt(index.toInt())) }),
                 noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
-                uint32UInt32ArgBooleanMethods = mapOf(
-                    9 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                uint32ArgIndexOfMethods = mapOf(
+                    9 to { element -> indexOfOrNull(primitiveIndexOf(list, primitiveKind, element)) },
                 ),
             )
             PrimitiveAbiKind.INT64 -> JvmWinRtObjectStub.InterfaceSpec(
@@ -769,8 +775,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgObjectMethods = mapOf(6 to firstMethod),
                 uint32ArgInt64Methods = mapOf(7 to { index -> marshalPrimitiveInt64Value(list.elementAt(index.toInt())) }),
                 noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
-                int64UInt32ArgBooleanMethods = mapOf(
-                    9 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                int64ArgIndexOfMethods = mapOf(
+                    9 to { element -> indexOfOrNull(primitiveIndexOf(list, primitiveKind, element)) },
                 ),
             )
             PrimitiveAbiKind.UINT64 -> JvmWinRtObjectStub.InterfaceSpec(
@@ -778,8 +784,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgObjectMethods = mapOf(6 to firstMethod),
                 uint32ArgUInt64Methods = mapOf(7 to { index -> marshalPrimitiveUInt64Value(list.elementAt(index.toInt())) }),
                 noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
-                uint64UInt32ArgBooleanMethods = mapOf(
-                    9 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                uint64ArgIndexOfMethods = mapOf(
+                    9 to { element -> indexOfOrNull(primitiveIndexOf(list, primitiveKind, element)) },
                 ),
             )
             PrimitiveAbiKind.FLOAT32 -> JvmWinRtObjectStub.InterfaceSpec(
@@ -787,8 +793,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgObjectMethods = mapOf(6 to firstMethod),
                 uint32ArgFloat32Methods = mapOf(7 to { index -> marshalPrimitiveFloat32Value(list.elementAt(index.toInt())) }),
                 noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
-                float32UInt32ArgBooleanMethods = mapOf(
-                    9 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                float32ArgIndexOfMethods = mapOf(
+                    9 to { element -> indexOfOrNull(primitiveIndexOf(list, primitiveKind, element)) },
                 ),
             )
             PrimitiveAbiKind.FLOAT64 -> JvmWinRtObjectStub.InterfaceSpec(
@@ -796,8 +802,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgObjectMethods = mapOf(6 to firstMethod),
                 uint32ArgFloat64Methods = mapOf(7 to { index -> marshalPrimitiveFloat64Value(list.elementAt(index.toInt())) }),
                 noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
-                float64UInt32ArgBooleanMethods = mapOf(
-                    9 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                float64ArgIndexOfMethods = mapOf(
+                    9 to { element -> indexOfOrNull(primitiveIndexOf(list, primitiveKind, element)) },
                 ),
             )
         }
@@ -854,8 +860,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                         HResult(0)
                     },
                 ),
-                booleanUInt32ArgBooleanMethods = mapOf(
-                    10 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                booleanArgIndexOfMethods = mapOf(
+                    10 to { element -> indexOfOrNull(primitiveIndexOf(list, primitiveKind, element)) },
                 ),
                 booleanArgUnitMethods = mapOf(
                     14 to { element ->
@@ -881,8 +887,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                         HResult(0)
                     },
                 ),
-                int32UInt32ArgBooleanMethods = mapOf(
-                    10 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                int32ArgIndexOfMethods = mapOf(
+                    10 to { element -> indexOfOrNull(primitiveIndexOf(list, primitiveKind, element)) },
                 ),
                 int32ArgUnitMethods = mapOf(
                     14 to { element ->
@@ -913,8 +919,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                         HResult(0)
                     },
                 ),
-                uint32UInt32ArgBooleanMethods = mapOf(
-                    10 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                uint32ArgIndexOfMethods = mapOf(
+                    10 to { element -> indexOfOrNull(primitiveIndexOf(list, primitiveKind, element)) },
                 ),
             )
             PrimitiveAbiKind.INT64 -> JvmWinRtObjectStub.InterfaceSpec(
@@ -934,8 +940,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                         HResult(0)
                     },
                 ),
-                int64UInt32ArgBooleanMethods = mapOf(
-                    10 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                int64ArgIndexOfMethods = mapOf(
+                    10 to { element -> indexOfOrNull(primitiveIndexOf(list, primitiveKind, element)) },
                 ),
                 int64ArgUnitMethods = mapOf(
                     14 to { element ->
@@ -961,8 +967,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                         HResult(0)
                     },
                 ),
-                uint64UInt32ArgBooleanMethods = mapOf(
-                    10 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                uint64ArgIndexOfMethods = mapOf(
+                    10 to { element -> indexOfOrNull(primitiveIndexOf(list, primitiveKind, element)) },
                 ),
                 uint64ArgUnitMethods = mapOf(
                     14 to { element ->
@@ -988,8 +994,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                         HResult(0)
                     },
                 ),
-                float32UInt32ArgBooleanMethods = mapOf(
-                    10 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                float32ArgIndexOfMethods = mapOf(
+                    10 to { element -> indexOfOrNull(primitiveIndexOf(list, primitiveKind, element)) },
                 ),
                 float32ArgUnitMethods = mapOf(
                     14 to { element ->
@@ -1015,8 +1021,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                         HResult(0)
                     },
                 ),
-                float64UInt32ArgBooleanMethods = mapOf(
-                    10 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                float64ArgIndexOfMethods = mapOf(
+                    10 to { element -> indexOfOrNull(primitiveIndexOf(list, primitiveKind, element)) },
                 ),
                 float64ArgUnitMethods = mapOf(
                     14 to { element ->
@@ -1776,8 +1782,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 },
             ),
             noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
-            objectUInt32ArgBooleanMethods = mapOf(
-                9 to { pointer, _ -> inspectableIndexOf(list, pointer) >= 0 },
+            objectArgIndexOfMethods = mapOf(
+                9 to { pointer -> indexOfOrNull(inspectableIndexOf(list, pointer)) },
             ),
         )
         val baseIterableSpec = JvmWinRtObjectStub.InterfaceSpec(
@@ -1874,8 +1880,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                     HResult(0)
                 },
             ),
-            objectUInt32ArgBooleanMethods = mapOf(
-                10 to { pointer, _ -> inspectableIndexOf(list, pointer) >= 0 },
+            objectArgIndexOfMethods = mapOf(
+                10 to { pointer -> indexOfOrNull(inspectableIndexOf(list, pointer)) },
             ),
             objectArgUnitMethods = mapOf(
                 14 to { pointer ->
@@ -2264,6 +2270,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         map.remove(key)
         return HResult(0)
     }
+
+    private fun indexOfOrNull(index: Int): UInt? = if (index >= 0) index.toUInt() else null
 
     private fun primitiveIndexOf(list: List<*>, primitiveKind: PrimitiveAbiKind, value: Any): Int {
         return list.indexOfFirst { element ->
