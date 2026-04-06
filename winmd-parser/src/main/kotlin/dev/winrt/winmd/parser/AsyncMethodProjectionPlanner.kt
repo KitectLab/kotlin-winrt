@@ -200,27 +200,6 @@ internal class AsyncMethodProjectionPlanner(
         )
     }
 
-    private fun splitGenericArguments(source: String): List<String> {
-        if (source.isBlank()) {
-            return emptyList()
-        }
-        val arguments = mutableListOf<String>()
-        var depth = 0
-        var start = 0
-        source.forEachIndexed { index, char ->
-            when (char) {
-                '<' -> depth++
-                '>' -> depth--
-                ',' -> if (depth == 0) {
-                    arguments += source.substring(start, index).trim()
-                    start = index + 1
-                }
-            }
-        }
-        arguments += source.substring(start).trim()
-        return arguments
-    }
-
     private fun containsGenericParameter(typeName: String, genericParameters: Set<String>): Boolean {
         if (typeName in genericParameters) {
             return true

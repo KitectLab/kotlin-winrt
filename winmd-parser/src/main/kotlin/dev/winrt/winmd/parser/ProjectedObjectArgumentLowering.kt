@@ -49,28 +49,12 @@ internal class ProjectedObjectArgumentLowering(
     }
 
     private fun supportsClosedGenericProjectedType(typeName: String, currentNamespace: String): Boolean {
-        val rawTypeName = typeName
-            .takeIf { '<' in it && it.endsWith(">") }
-            ?.substringBefore('<')
-            ?: return false
-        val genericArgumentSource = typeName.substringAfter('<').substringBeforeLast('>')
-        val hasResolvableArguments = splitGenericArguments(genericArgumentSource).all { argument ->
-            try {
-                winRtSignatureMapper.signatureFor(argument, currentNamespace)
-                true
-            } catch (_: IllegalStateException) {
-                false
-            }
-        }
-        if (!hasResolvableArguments) {
-            return false
-        }
-        val rawType = typeRegistry.findType(rawTypeName, currentNamespace)
-        return when {
-            rawType != null -> rawType.kind in setOf(WinMdTypeKind.Interface, WinMdTypeKind.Delegate)
-            '.' in rawTypeName -> true
-            else -> false
-        }
+        return typeRegistry.supportsClosedGenericProjectedType(
+            typeName = typeName,
+            currentNamespace = currentNamespace,
+            winRtSignatureMapper = winRtSignatureMapper,
+            supportedKinds = setOf(WinMdTypeKind.Interface, WinMdTypeKind.Delegate),
+        )
     }
 
     private fun signatureForInputType(typeName: String, currentNamespace: String): String {
@@ -94,24 +78,4 @@ internal class ProjectedObjectArgumentLowering(
         }
     }
 
-    private fun splitGenericArguments(source: String): List<String> {
-        if (source.isBlank()) {
-            return emptyList()
-        }
-        val arguments = mutableListOf<String>()
-        var depth = 0
-        var start = 0
-        source.forEachIndexed { index, char ->
-            when (char) {
-                '<' -> depth++
-                '>' -> depth--
-                ',' -> if (depth == 0) {
-                    arguments += source.substring(start, index).trim()
-                    start = index + 1
-                }
-            }
-        }
-        arguments += source.substring(start).trim()
-        return arguments
-    }
 }

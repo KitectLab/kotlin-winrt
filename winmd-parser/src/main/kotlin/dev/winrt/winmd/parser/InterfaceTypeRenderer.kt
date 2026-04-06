@@ -1902,7 +1902,7 @@ internal class InterfaceTypeRenderer(
         }
         val signatureKey = methodSignatureKey(
             returnType = method.returnType,
-            parameterTypes = method.parameters.map { signatureParameterType(it.type, currentNamespace) },
+            parameterTypes = method.parameters.map { typeRegistry.signatureParameterType(it.type, currentNamespace) },
             supportsParameterObjectType = { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) },
             supportsReturnObjectType = { typeName -> supportsInterfaceObjectReturnType(typeName, currentNamespace) },
         )
@@ -1967,7 +1967,7 @@ internal class InterfaceTypeRenderer(
                         int32FillArrayWrappedCall(
                             fillArrayParameter,
                             twoArgumentReturnCode(
-                                method,
+                                method.returnType,
                                 interfaceVarargResultKindAbiCall(
                                     vtableIndex = method.vtableIndex!!,
                                     returnType = method.returnType,
@@ -3155,7 +3155,7 @@ internal class InterfaceTypeRenderer(
     ): Array<Any> = when (returnKind) {
         MethodReturnKind.OBJECT -> arrayOf(objectReturnCode(method, namespace, abiCall, genericParameters))
         MethodReturnKind.UNIT -> arrayOf(abiCall)
-        else -> arrayOf(twoArgumentReturnCode(method, abiCall))
+        else -> arrayOf(twoArgumentReturnCode(method.returnType, abiCall))
     }
 
     private fun unaryInterfaceAbiCall(
@@ -3329,7 +3329,7 @@ internal class InterfaceTypeRenderer(
             },
         )?.let { return CodeBlock.of("%L", it) }
         val parameterCategory = methodParameterCategory(
-            signatureParameterType(parameter.type, currentNamespace),
+            typeRegistry.signatureParameterType(parameter.type, currentNamespace),
         ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return null
         return CodeBlock.of(
             "%L",
@@ -3349,7 +3349,7 @@ internal class InterfaceTypeRenderer(
         statement = "return %L",
         args = { method, namespace ->
             val parameterCategories = methodParameterCategories(
-                method.parameters.map { parameter -> signatureParameterType(parameter.type, namespace) },
+                method.parameters.map { parameter -> typeRegistry.signatureParameterType(parameter.type, namespace) },
                 { typeName -> supportsInterfaceObjectInput(typeName, namespace) },
             ) ?: error("Unsupported two-argument return shape: ${signatureKey.shape}")
             val argumentExpressions = twoArgumentArgumentExpressions(method.parameters, parameterCategories, namespace)
@@ -3365,7 +3365,7 @@ internal class InterfaceTypeRenderer(
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) {
                     objectReturnCode(method, namespace, abiCall, genericParameters)
                 } else {
-                    twoArgumentReturnCode(method, abiCall)
+                    twoArgumentReturnCode(method.returnType, abiCall)
                 },
             )
         },
@@ -3432,14 +3432,6 @@ internal class InterfaceTypeRenderer(
         return projectedObjectArgumentLowering.supportsInputType(type, currentNamespace)
     }
 
-    private fun signatureParameterType(type: String, currentNamespace: String): String {
-        return if (typeRegistry.isEnumType(type, currentNamespace)) {
-            enumSignatureType(typeRegistry, type, currentNamespace)
-        } else {
-            type
-        }
-    }
-
     private fun supportsInterfaceObjectType(type: String, currentNamespace: String): Boolean {
         return supportsInterfaceObjectInput(type, currentNamespace)
     }
@@ -3447,7 +3439,10 @@ internal class InterfaceTypeRenderer(
     private fun supportsInterfaceObjectReturnType(type: String, currentNamespace: String): Boolean {
         return !typeRegistry.isStructType(type, currentNamespace) &&
             !supportsIReferenceValueProjection(type, currentNamespace, typeRegistry) &&
-            (supportsProjectedObjectTypeName(type) || supportsClosedGenericInterfaceReturnType(type, currentNamespace))
+            (
+                supportsProjectedObjectTypeName(type) ||
+                    typeRegistry.supportsClosedGenericInterfaceReturnType(type, currentNamespace, winRtSignatureMapper)
+                )
     }
 
     private fun supportsInterfaceProperty(
@@ -3548,7 +3543,14 @@ internal class InterfaceTypeRenderer(
         abiCall: CodeBlock,
         genericParameters: Set<String>,
     ): CodeBlock {
-        closedGenericInterfaceProjectionCall(typeName, currentNamespace, abiCall)?.let { return it }
+        typeRegistry.closedGenericInterfaceProjectionCall(
+            typeName = typeName,
+            currentNamespace = currentNamespace,
+            abiCall = abiCall,
+            typeNameMapper = typeNameMapper,
+            winRtSignatureMapper = winRtSignatureMapper,
+            winRtProjectionTypeMapper = winRtProjectionTypeMapper,
+        )?.let { return it }
         val mappedType = typeNameMapper.mapTypeName(typeName, currentNamespace, genericParameters)
         return if (typeRegistry.findType(typeName, currentNamespace)?.kind == dev.winrt.winmd.plugin.WinMdTypeKind.Interface) {
             CodeBlock.of("%T.from(%T(%L))", mappedType, PoetSymbols.inspectableClass, abiCall)
@@ -3564,65 +3566,11 @@ internal class InterfaceTypeRenderer(
         genericParameters: Set<String>,
     ): CodeBlock = projectedObjectReturnCode(method.returnType, namespace, abiCall, genericParameters)
 
-    private fun supportsClosedGenericInterfaceReturnType(typeName: String, currentNamespace: String): Boolean {
-        val rawTypeName = closedGenericRawTypeName(typeName) ?: return false
-        if (rawTypeName == "Windows.Foundation.IReference") {
-            return false
-        }
-        val genericArgumentSource = typeName.substringAfter('<').substringBeforeLast('>')
-        val hasResolvableArguments = splitGenericArguments(genericArgumentSource).all { argument ->
-            try {
-                winRtSignatureMapper.signatureFor(argument, currentNamespace)
-                true
-            } catch (_: IllegalStateException) {
-                false
-            }
-        }
-        if (!hasResolvableArguments) {
-            return false
-        }
-        val rawType = typeRegistry.findType(rawTypeName, currentNamespace)
-        return when {
-            rawType != null -> rawType.kind == dev.winrt.winmd.plugin.WinMdTypeKind.Interface
-            '.' in rawTypeName -> true
-            else -> false
-        }
-    }
-
     private fun supportsClosedGenericInterfaceInputType(typeName: String, currentNamespace: String): Boolean {
-        if (!supportsClosedGenericInterfaceReturnType(typeName, currentNamespace)) {
+        if (!typeRegistry.supportsClosedGenericInterfaceReturnType(typeName, currentNamespace, winRtSignatureMapper)) {
             return false
         }
         return closedGenericRawProjectionTypeKey(typeName, currentNamespace) != null
-    }
-
-    private fun closedGenericInterfaceProjectionCall(
-        typeName: String,
-        currentNamespace: String,
-        abiCall: CodeBlock,
-    ): CodeBlock? {
-        val rawTypeName = closedGenericRawTypeName(typeName) ?: return null
-        if (!supportsClosedGenericInterfaceReturnType(typeName, currentNamespace)) {
-            return null
-        }
-        val rawTypeClass = typeNameMapper.mapTypeName(rawTypeName, currentNamespace) as? ClassName ?: return null
-        val genericArgumentSource = typeName.substringAfter('<').substringBeforeLast('>')
-        val genericArguments = splitGenericArguments(genericArgumentSource)
-        val builder = CodeBlock.builder()
-            .add("%T.from(%T(%L)", rawTypeClass, PoetSymbols.inspectableClass, abiCall)
-        genericArguments.forEach { argument ->
-            builder.add(", %S", winRtSignatureMapper.signatureFor(argument, currentNamespace))
-        }
-        genericArguments.forEach { argument ->
-            builder.add(", %S", winRtProjectionTypeMapper.projectionTypeKeyFor(argument, currentNamespace))
-        }
-        return builder.add(")").build()
-    }
-
-    private fun closedGenericRawTypeName(typeName: String): String? {
-        return typeName
-            .takeIf { '<' in it && it.endsWith(">") }
-            ?.substringBefore('<')
     }
 
     private fun interfaceObjectArgumentExpression(
@@ -3637,109 +3585,6 @@ internal class InterfaceTypeRenderer(
         return winRtProjectionTypeMapper.projectionTypeKeyFor(typeName, currentNamespace)
             .takeIf { '<' in it && it.endsWith(">") }
             ?.substringBefore('<')
-    }
-
-    private fun splitGenericArguments(source: String): List<String> {
-        if (source.isBlank()) {
-            return emptyList()
-        }
-        val arguments = mutableListOf<String>()
-        var depth = 0
-        var start = 0
-        source.forEachIndexed { index, char ->
-            when (char) {
-                '<' -> depth++
-                '>' -> depth--
-                ',' -> if (depth == 0) {
-                    arguments += source.substring(start, index).trim()
-                    start = index + 1
-                }
-            }
-        }
-        arguments += source.substring(start).trim()
-        return arguments
-    }
-
-    private fun twoArgumentReturnCode(method: WinMdMethod, abiCall: CodeBlock): CodeBlock {
-        return when (canonicalWinRtSpecialType(method.returnType)) {
-            "String" -> HStringSupport.fromCall(abiCall)
-            "Float32" -> CodeBlock.of("%T(%L)", PoetSymbols.float32Class, abiCall)
-            "Float64" -> CodeBlock.of("%T(%L)", PoetSymbols.float64Class, abiCall)
-            "DateTime" -> CodeBlock.of("%T.fromEpochSeconds((%L - %L) / 10000000L, ((%L - %L) %% 10000000L * 100).toInt())", PoetSymbols.dateTimeClass, abiCall, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET, abiCall, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET)
-            "TimeSpan" -> CodeBlock.of("%T(%L)", PoetSymbols.timeSpanClass, abiCall)
-            "Boolean" -> CodeBlock.of("%T(%L)", PoetSymbols.winRtBooleanClass, abiCall)
-            "EventRegistrationToken" -> CodeBlock.of("%T(%L)", PoetSymbols.eventRegistrationTokenClass, abiCall)
-            "HResult" -> CodeBlock.of("%M(%L)", PoetSymbols.exceptionFromHResultMember, abiCall)
-            "Int32" -> CodeBlock.of("%T(%L)", PoetSymbols.int32Class, abiCall)
-            "UInt32" -> CodeBlock.of("%T(%L)", PoetSymbols.uint32Class, abiCall)
-            "Int64" -> CodeBlock.of("%T(%L)", PoetSymbols.int64Class, abiCall)
-            "UInt64" -> CodeBlock.of("%T(%L)", PoetSymbols.uint64Class, abiCall)
-            "Guid" -> CodeBlock.of("%T.parse(%L.toString())", PoetSymbols.guidValueClass, abiCall)
-            else -> error("Unsupported two-argument return type: ${method.returnType}")
-        }
-    }
-
-    private fun resultKindName(returnType: String): String {
-        return when (canonicalWinRtSpecialType(returnType)) {
-            "String" -> "HSTRING"
-            "Float32" -> "FLOAT32"
-            "Float64" -> "FLOAT64"
-            "DateTime" -> "INT64"
-            "TimeSpan" -> "INT64"
-            "Boolean" -> "BOOLEAN"
-            "HResult" -> "INT32"
-            "Int32" -> "INT32"
-            "UInt32" -> "UINT32"
-            "Int64" -> "INT64"
-            "UInt64" -> "UINT64"
-            "Guid" -> "GUID"
-            else -> error("Unsupported result kind for two-argument return type: $returnType")
-        }
-    }
-
-    private fun resultExtractor(returnType: String): Any {
-        return when (canonicalWinRtSpecialType(returnType)) {
-            "String" -> PoetSymbols.requireHStringMember
-            "Float32" -> PoetSymbols.requireFloat32Member
-            "Float64" -> PoetSymbols.requireFloat64Member
-            "DateTime" -> PoetSymbols.requireInt64Member
-            "TimeSpan" -> PoetSymbols.requireInt64Member
-            "Boolean" -> PoetSymbols.requireBooleanMember
-            "HResult" -> PoetSymbols.requireInt32Member
-            "Int32" -> PoetSymbols.requireInt32Member
-            "UInt32" -> PoetSymbols.requireUInt32Member
-            "Int64" -> PoetSymbols.requireInt64Member
-            "UInt64" -> PoetSymbols.requireUInt64Member
-            "Guid" -> PoetSymbols.requireGuidMember
-            else -> error("Unsupported result extractor for two-argument return type: $returnType")
-        }
-    }
-
-    private fun supportsFillArrayResultKind(returnType: String): Boolean {
-        return when (canonicalWinRtSpecialType(returnType)) {
-            "String",
-            "Float32",
-            "Float64",
-            "DateTime",
-            "TimeSpan",
-            "Boolean",
-            "HResult",
-            "Int32",
-            "UInt32",
-            "Int64",
-            "UInt64",
-            "Guid",
-            -> true
-            else -> false
-        }
-    }
-
-    private fun int32ReturnCode(returnType: String, abiCall: CodeBlock): CodeBlock {
-        return if (isHResultType(returnType)) {
-            CodeBlock.of("%M(%L)", PoetSymbols.exceptionFromHResultMember, abiCall)
-        } else {
-            CodeBlock.of("%T(%L)", PoetSymbols.int32Class, abiCall)
-        }
     }
 
     private fun inheritedSignatureKeys(baseInterface: String?): Set<String> {
