@@ -93,78 +93,40 @@ internal class KotlinCollectionProjectionMapper {
         winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     ): RuntimeIterableProjection? {
         val iterableInterface = runtimeClassCollectionInterfaces(type)
-            .firstOrNull {
-                it == "Microsoft.UI.Xaml.Interop.IBindableIterable" ||
-                    it == "Microsoft.UI.Xaml.Interop.IBindableIterator" ||
-                    it == "Windows.UI.Xaml.Interop.IBindableIterable" ||
-                    it == "Windows.UI.Xaml.Interop.IBindableIterator" ||
-                    it.startsWith("Windows.Foundation.Collections.IIterable<") ||
-                    it.startsWith("Windows.Foundation.Collections.IIterator<")
+            .firstOrNull { qualifiedName ->
+                xamlBindableDescriptor(qualifiedName)?.runtimeIterableSuperinterface != null ||
+                    qualifiedName.startsWith("Windows.Foundation.Collections.IIterable<") ||
+                    qualifiedName.startsWith("Windows.Foundation.Collections.IIterator<")
             }
             ?: return null
-        return when (iterableInterface) {
-            "Microsoft.UI.Xaml.Interop.IBindableIterable",
-            "Windows.UI.Xaml.Interop.IBindableIterable",
-            -> RuntimeIterableProjection(
-                superinterface = PoetSymbols.iterableClass.parameterizedBy(PoetSymbols.inspectableClass),
+        xamlBindableDescriptor(iterableInterface)?.runtimeIterableSuperinterface?.let { superinterface ->
+            return RuntimeIterableProjection(
+                superinterface = superinterface,
                 delegateFactory = CodeBlock.of(
                     "%T.from(%T(pointer))",
                     typeNameMapper.mapTypeName(iterableInterface, iterableInterface.substringBeforeLast('.')) as ClassName,
                     PoetSymbols.inspectableClass,
                 ),
-            )
-            "Microsoft.UI.Xaml.Interop.IBindableIterator",
-            "Windows.UI.Xaml.Interop.IBindableIterator",
-            -> RuntimeIterableProjection(
-                superinterface = PoetSymbols.iteratorClass.parameterizedBy(PoetSymbols.inspectableClass),
-                delegateFactory = CodeBlock.of(
-                    "%T.from(%T(pointer))",
-                    typeNameMapper.mapTypeName(iterableInterface, iterableInterface.substringBeforeLast('.')) as ClassName,
-                    PoetSymbols.inspectableClass,
-                ),
-            )
-            else -> closedGenericIterableProjection(
-                qualifiedName = iterableInterface,
-                typeNameMapper = typeNameMapper,
-                winRtSignatureMapper = winRtSignatureMapper,
-                winRtProjectionTypeMapper = winRtProjectionTypeMapper,
             )
         }
+        return closedGenericIterableProjection(
+            qualifiedName = iterableInterface,
+            typeNameMapper = typeNameMapper,
+            winRtSignatureMapper = winRtSignatureMapper,
+            winRtProjectionTypeMapper = winRtProjectionTypeMapper,
+        )
     }
 
     fun interfaceProjection(type: WinMdType): InterfaceCollectionProjection? {
         windowsFoundationCollectionProjection(type)?.let { return it }
-        if (isXamlBindableInteropNamespace(type.namespace) && type.name == "IBindableVector") {
-            return InterfaceCollectionProjection(
-                superinterface = PoetSymbols.mutableListClass.parameterizedBy(PoetSymbols.inspectableClass),
-                delegateFactory = CodeBlock.of(
-                    "%T(sizeProvider = { %T(%L).value.toInt() }, getter = { index -> %T(%L) }, append = { value -> %L }, clearer = { %L })",
-                    PoetSymbols.winRtMutableListProjectionClass.parameterizedBy(PoetSymbols.inspectableClass),
-                    PoetSymbols.uint32Class,
-                    AbiCallCatalog.uint32Method(8),
-                    PoetSymbols.inspectableClass,
-                    AbiCallCatalog.objectMethodWithUInt32(7, "index.toUInt()"),
-                    AbiCallCatalog.objectSetter(14, "value"),
-                    AbiCallCatalog.unitMethod(16),
-                ),
-                winRtSizeSlot = 8,
-            )
-        }
-        if (isXamlBindableInteropNamespace(type.namespace) && type.name == "IBindableVectorView") {
-            return InterfaceCollectionProjection(
-                superinterface = PoetSymbols.listClass.parameterizedBy(PoetSymbols.inspectableClass),
-                delegateFactory = CodeBlock.of(
-                    "%T(sizeProvider = { %T(%L).value.toInt() }, getter = { index -> %T(%L) })",
-                    PoetSymbols.winRtListProjectionClass.parameterizedBy(PoetSymbols.inspectableClass),
-                    PoetSymbols.uint32Class,
-                    AbiCallCatalog.uint32Method(8),
-                    PoetSymbols.inspectableClass,
-                    AbiCallCatalog.objectMethodWithUInt32(7, "index.toUInt()"),
-                ),
-                winRtSizeSlot = 8,
-            )
-        }
-        return null
+        val descriptor = xamlBindableDescriptor(type.namespace, type.name) ?: return null
+        val superinterface = descriptor.collectionSuperinterface ?: return null
+        val delegateProjection = descriptor.collectionDelegateProjection ?: return null
+        return InterfaceCollectionProjection(
+            superinterface = superinterface,
+            delegateFactory = namedDelegateFactory(delegateProjection, descriptor.collectionDelegateArguments),
+            winRtSizeSlot = descriptor.winRtSizeSlot,
+        )
     }
 
     private fun windowsFoundationCollectionProjection(type: WinMdType): InterfaceCollectionProjection? {
@@ -929,6 +891,13 @@ internal class KotlinCollectionProjectionMapper {
         val operations: List<ProjectionOperation<VectorProjectionContext>>,
     )
 
+    private data class ClosedGenericRuntimeIterableElement(
+        val elementTypeName: TypeName,
+        val elementSignature: String,
+        val elementProjectionTypeKey: String,
+        val currentExpression: CodeBlock,
+    )
+
     fun buildWinRtSizeProperty(slot: Int): PropertySpec {
         return PropertySpec.builder("winRtSize", PoetSymbols.uint32Class)
             .getter(
@@ -1053,135 +1022,39 @@ internal class KotlinCollectionProjectionMapper {
         typeNameMapper: TypeNameMapper,
         winRtSignatureMapper: WinRtSignatureMapper,
         winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
-    ): CollectionInterfaceMetadata? {
-        closedGenericMapMetadata(
-            qualifiedName = qualifiedName,
-            rawQualifiedName = "Windows.Foundation.Collections.IMapView",
-            collectionSuperinterfaceFactory = { keyType, valueType ->
-                PoetSymbols.mapClass.parameterizedBy(keyType, valueType)
-            },
-            typeNameMapper = typeNameMapper,
-            winRtSignatureMapper = winRtSignatureMapper,
-            winRtProjectionTypeMapper = winRtProjectionTypeMapper,
-        )?.let { return it }
-        closedGenericMapMetadata(
-            qualifiedName = qualifiedName,
-            rawQualifiedName = "Windows.Foundation.Collections.IObservableMap",
-            collectionSuperinterfaceFactory = { keyType, valueType ->
-                PoetSymbols.mutableMapClass.parameterizedBy(keyType, valueType)
-            },
-            typeNameMapper = typeNameMapper,
-            winRtSignatureMapper = winRtSignatureMapper,
-            winRtProjectionTypeMapper = winRtProjectionTypeMapper,
-        )?.let { return it }
-        closedGenericMapMetadata(
-            qualifiedName = qualifiedName,
-            rawQualifiedName = "Windows.Foundation.Collections.IMap",
-            collectionSuperinterfaceFactory = { keyType, valueType ->
-                PoetSymbols.mutableMapClass.parameterizedBy(keyType, valueType)
-            },
-            typeNameMapper = typeNameMapper,
-            winRtSignatureMapper = winRtSignatureMapper,
-            winRtProjectionTypeMapper = winRtProjectionTypeMapper,
-        )?.let { return it }
-        closedGenericVectorMetadata(
-            qualifiedName = qualifiedName,
-            rawQualifiedName = "Windows.Foundation.Collections.IObservableVector",
-            collectionSuperinterfaceFactory = { elementType ->
-                PoetSymbols.mutableListClass.parameterizedBy(elementType)
-            },
-            typeNameMapper = typeNameMapper,
-            winRtSignatureMapper = winRtSignatureMapper,
-            winRtProjectionTypeMapper = winRtProjectionTypeMapper,
-        )?.let { return it }
-        closedGenericVectorMetadata(
-            qualifiedName = qualifiedName,
-            rawQualifiedName = "Windows.Foundation.Collections.IVectorView",
-            collectionSuperinterfaceFactory = { elementType ->
-                PoetSymbols.listClass.parameterizedBy(elementType)
-            },
-            typeNameMapper = typeNameMapper,
-            winRtSignatureMapper = winRtSignatureMapper,
-            winRtProjectionTypeMapper = winRtProjectionTypeMapper,
-        )?.let { return it }
-        closedGenericVectorMetadata(
-            qualifiedName = qualifiedName,
-            rawQualifiedName = "Windows.Foundation.Collections.IVector",
-            collectionSuperinterfaceFactory = { elementType ->
-                PoetSymbols.mutableListClass.parameterizedBy(elementType)
-            },
-            typeNameMapper = typeNameMapper,
-            winRtSignatureMapper = winRtSignatureMapper,
-            winRtProjectionTypeMapper = winRtProjectionTypeMapper,
-        )?.let { return it }
-        return when (qualifiedName) {
-            "Microsoft.UI.Xaml.Interop.IBindableVector",
-            "Windows.UI.Xaml.Interop.IBindableVector",
-            -> CollectionInterfaceMetadata(
-                collectionSuperinterface = PoetSymbols.mutableListClass.parameterizedBy(PoetSymbols.inspectableClass),
-                delegateFactory = CodeBlock.of(
-                    "%T.from(%T(pointer))",
-                    typeNameMapper.mapTypeName(qualifiedName, qualifiedName.substringBeforeLast('.')) as ClassName,
-                    PoetSymbols.inspectableClass,
-                ),
-                winRtSizeSlot = 8,
-                extraFunctions = listOf(
-                    FunSpec.builder("contains")
-                        .addParameter("element", PoetSymbols.inspectableClass)
-                        .returns(Boolean::class)
-                        .addStatement("return indexOf(element) >= 0")
-                        .build(),
-                    FunSpec.builder("containsAll")
-                        .addParameter("elements", Collection::class.asTypeName().parameterizedBy(PoetSymbols.inspectableClass))
-                        .returns(Boolean::class)
-                        .addStatement("return elements.all { contains(it) }")
-                        .build(),
-                ),
+    ): CollectionInterfaceMetadata? =
+        closedGenericCollectionMetadataDescriptors.firstNotNullOfOrNull { descriptor ->
+            closedGenericCollectionMetadata(
+                qualifiedName = qualifiedName,
+                descriptor = descriptor,
+                typeNameMapper = typeNameMapper,
+                winRtSignatureMapper = winRtSignatureMapper,
+                winRtProjectionTypeMapper = winRtProjectionTypeMapper,
             )
-            "Microsoft.UI.Xaml.Interop.IBindableVectorView",
-            "Windows.UI.Xaml.Interop.IBindableVectorView",
-            -> CollectionInterfaceMetadata(
-                collectionSuperinterface = PoetSymbols.listClass.parameterizedBy(PoetSymbols.inspectableClass),
-                delegateFactory = CodeBlock.of(
-                    "%T.from(%T(pointer))",
-                    typeNameMapper.mapTypeName(qualifiedName, qualifiedName.substringBeforeLast('.')) as ClassName,
-                    PoetSymbols.inspectableClass,
-                ),
-                winRtSizeSlot = 8,
-                extraFunctions = listOf(
-                    FunSpec.builder("contains")
-                        .addParameter("element", PoetSymbols.inspectableClass)
-                        .returns(Boolean::class)
-                        .addStatement("return indexOf(element) >= 0")
-                        .build(),
-                    FunSpec.builder("containsAll")
-                        .addParameter("elements", Collection::class.asTypeName().parameterizedBy(PoetSymbols.inspectableClass))
-                        .returns(Boolean::class)
-                        .addStatement("return elements.all { contains(it) }")
-                        .build(),
-                ),
-            )
-            else -> null
-        }
-    }
+        } ?: xamlBindableCollectionMetadata(qualifiedName, typeNameMapper)
 
-    private fun closedGenericMapMetadata(
+    private fun closedGenericCollectionMetadata(
         qualifiedName: String,
-        rawQualifiedName: String,
-        collectionSuperinterfaceFactory: (TypeName, TypeName) -> TypeName,
+        descriptor: ClosedGenericCollectionMetadataDescriptor,
         typeNameMapper: TypeNameMapper,
         winRtSignatureMapper: WinRtSignatureMapper,
         winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     ): CollectionInterfaceMetadata? {
-        val arguments = closedGenericArguments(qualifiedName, rawQualifiedName, 2) ?: return null
-        val keyType = collectionElementTypeName(arguments[0], typeNameMapper)
-        val valueType = collectionElementTypeName(arguments[1], typeNameMapper)
+        val arguments = closedGenericArguments(
+            qualifiedName = qualifiedName,
+            rawQualifiedName = descriptor.rawQualifiedName,
+            expectedCount = descriptor.argumentCount,
+        ) ?: return null
+        if (!descriptor.supportsTypeArguments(arguments)) {
+            return null
+        }
+        val typeArguments = arguments.map { argument -> collectionElementTypeName(argument, typeNameMapper) }
         val rawInterfaceClass = typeNameMapper.mapTypeName(
-            rawQualifiedName,
-            rawQualifiedName.substringBeforeLast('.'),
+            descriptor.rawQualifiedName,
+            descriptor.rawQualifiedName.substringBeforeLast('.'),
         ) as ClassName
         return CollectionInterfaceMetadata(
-            collectionSuperinterface = collectionSuperinterfaceFactory(keyType, valueType),
+            collectionSuperinterface = descriptor.collectionSuperinterface(typeArguments),
             delegateFactory = closedGenericInterfaceFactory(
                 rawInterfaceClass = rawInterfaceClass,
                 signatures = arguments.map { argument ->
@@ -1191,38 +1064,41 @@ internal class KotlinCollectionProjectionMapper {
                     winRtProjectionTypeMapper.projectionTypeKeyFor(argument, "Windows.Foundation.Collections")
                 },
             ),
-            winRtSizeSlot = 7,
+            winRtSizeSlot = descriptor.winRtSizeSlot,
         )
     }
 
-    private fun closedGenericVectorMetadata(
+    private fun xamlBindableCollectionMetadata(
         qualifiedName: String,
-        rawQualifiedName: String,
-        collectionSuperinterfaceFactory: (TypeName) -> TypeName,
         typeNameMapper: TypeNameMapper,
-        winRtSignatureMapper: WinRtSignatureMapper,
-        winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     ): CollectionInterfaceMetadata? {
-        val elementType = closedGenericArguments(qualifiedName, rawQualifiedName, 1)?.singleOrNull() ?: return null
-        if (!supportsClosedGenericVectorElement(elementType)) {
-            return null
-        }
-        val rawInterfaceClass = typeNameMapper.mapTypeName(
-            rawQualifiedName,
-            rawQualifiedName.substringBeforeLast('.'),
-        ) as ClassName
+        val namespace = qualifiedName.substringBeforeLast('.', "")
+        val descriptor = xamlBindableDescriptor(namespace, qualifiedName.substringAfterLast('.')) ?: return null
+        val collectionSuperinterface = descriptor.collectionSuperinterface ?: return null
         return CollectionInterfaceMetadata(
-            collectionSuperinterface = collectionSuperinterfaceFactory(collectionElementTypeName(elementType, typeNameMapper)),
-            delegateFactory = closedGenericInterfaceFactory(
-                rawInterfaceClass = rawInterfaceClass,
-                signatures = listOf(winRtSignatureMapper.signatureFor(elementType, "Windows.Foundation.Collections")),
-                projectionTypeKeys = listOf(
-                    winRtProjectionTypeMapper.projectionTypeKeyFor(elementType, "Windows.Foundation.Collections"),
-                ),
+            collectionSuperinterface = collectionSuperinterface,
+            delegateFactory = CodeBlock.of(
+                "%T.from(%T(pointer))",
+                typeNameMapper.mapTypeName(qualifiedName, namespace) as ClassName,
+                PoetSymbols.inspectableClass,
             ),
-            winRtSizeSlot = 7,
+            winRtSizeSlot = descriptor.winRtSizeSlot,
+            extraFunctions = bindableCollectionExtraFunctions(),
         )
     }
+
+    private fun bindableCollectionExtraFunctions(): List<FunSpec> = listOf(
+        FunSpec.builder("contains")
+            .addParameter("element", PoetSymbols.inspectableClass)
+            .returns(Boolean::class)
+            .addStatement("return indexOf(element) >= 0")
+            .build(),
+        FunSpec.builder("containsAll")
+            .addParameter("elements", Collection::class.asTypeName().parameterizedBy(PoetSymbols.inspectableClass))
+            .returns(Boolean::class)
+            .addStatement("return elements.all { contains(it) }")
+            .build(),
+    )
 
     private fun closedGenericArguments(
         qualifiedName: String,
@@ -1262,11 +1138,13 @@ internal class KotlinCollectionProjectionMapper {
         winRtSignatureMapper: WinRtSignatureMapper,
         winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     ): RuntimeIterableProjection? {
-        if (qualifiedName.startsWith("Windows.Foundation.Collections.IIterable<") && qualifiedName.endsWith(">")) {
-            val elementType = qualifiedName.substringAfter('<').substringBeforeLast('>')
-            if (!supportsClosedGenericIterableElement(elementType)) {
-                return null
-            }
+        closedGenericRuntimeIterableElement(
+            qualifiedName = qualifiedName,
+            rawQualifiedName = "Windows.Foundation.Collections.IIterable",
+            typeNameMapper = typeNameMapper,
+            winRtSignatureMapper = winRtSignatureMapper,
+            winRtProjectionTypeMapper = winRtProjectionTypeMapper,
+        )?.let { element ->
             val rawIterableClass = typeNameMapper.mapTypeName(
                 "Windows.Foundation.Collections.IIterable",
                 "Windows.Foundation.Collections",
@@ -1275,105 +1153,114 @@ internal class KotlinCollectionProjectionMapper {
                 "Windows.Foundation.Collections.IIterator",
                 "Windows.Foundation.Collections",
             ) as ClassName
-            val elementTypeName = collectionElementTypeName(elementType, typeNameMapper)
-            val elementSignature = winRtSignatureMapper.signatureFor(elementType, "Windows.Foundation.Collections")
-            val elementProjectionTypeKey = winRtProjectionTypeMapper.projectionTypeKeyFor(elementType, "Windows.Foundation.Collections")
             return RuntimeIterableProjection(
-                superinterface = PoetSymbols.iterableClass.parameterizedBy(elementTypeName),
+                superinterface = PoetSymbols.iterableClass.parameterizedBy(element.elementTypeName),
                 delegateFactory = CodeBlock.of(
                     "object : %T {\n" +
-                        "  override fun iterator(): %T = object : %T {\n" +
-                        "    private val iteratorProjection = %T.from(%T(%T.invokeObjectMethod(%T.from(%T(pointer), %S, %S).pointer, 6).getOrThrow()), %S, %S)\n" +
-                        "    override fun hasNext(): Boolean = %T(%L).value\n" +
-                        "    override fun next(): %T {\n" +
-                        "      if (!hasNext()) throw %T()\n" +
-                        "      val current = %L\n" +
-                        "      %T.invokeBooleanGetter(iteratorProjection.pointer, 8).getOrThrow()\n" +
-                        "      return current\n" +
-                        "    }\n" +
-                        "  }\n" +
+                        "  override fun iterator(): %T = %L\n" +
                         "}",
-                    PoetSymbols.iterableClass.parameterizedBy(elementTypeName),
-                    PoetSymbols.iteratorClass.parameterizedBy(elementTypeName),
-                    PoetSymbols.iteratorClass.parameterizedBy(elementTypeName),
-                    rawIteratorClass,
-                    PoetSymbols.inspectableClass,
-                    PoetSymbols.platformComInteropClass,
-                    rawIterableClass,
-                    PoetSymbols.inspectableClass,
-                    elementSignature,
-                    elementProjectionTypeKey,
-                    elementSignature,
-                    elementProjectionTypeKey,
-                    PoetSymbols.winRtBooleanClass,
-                    AbiCallCatalog.booleanGetter(7, "iteratorProjection.pointer"),
-                    elementTypeName,
-                    NoSuchElementException::class,
-                    if (isKeyValuePairElement(elementType)) {
-                        keyValuePairEntryExpression(elementType, "iteratorProjection.pointer")
-                    } else {
-                        elementReadExpression(elementTypeName, "iteratorProjection.pointer", 6)
-                    },
-                    PoetSymbols.platformComInteropClass,
+                    PoetSymbols.iterableClass.parameterizedBy(element.elementTypeName),
+                    PoetSymbols.iteratorClass.parameterizedBy(element.elementTypeName),
+                    closedGenericIteratorProjectionAdapter(
+                        element = element,
+                        iteratorProjectionInitializer = CodeBlock.of(
+                            "%T.from(%T(%T.invokeObjectMethod(%T.from(%T(pointer), %S, %S).pointer, 6).getOrThrow()), %S, %S)",
+                            rawIteratorClass,
+                            PoetSymbols.inspectableClass,
+                            PoetSymbols.platformComInteropClass,
+                            rawIterableClass,
+                            PoetSymbols.inspectableClass,
+                            element.elementSignature,
+                            element.elementProjectionTypeKey,
+                            element.elementSignature,
+                            element.elementProjectionTypeKey,
+                        ),
+                    ),
                 ),
             )
         }
-        if (qualifiedName.startsWith("Windows.Foundation.Collections.IIterator<") && qualifiedName.endsWith(">")) {
-            val elementType = qualifiedName.substringAfter('<').substringBeforeLast('>')
-            if (!supportsClosedGenericIterableElement(elementType)) {
-                return null
-            }
+        closedGenericRuntimeIterableElement(
+            qualifiedName = qualifiedName,
+            rawQualifiedName = "Windows.Foundation.Collections.IIterator",
+            typeNameMapper = typeNameMapper,
+            winRtSignatureMapper = winRtSignatureMapper,
+            winRtProjectionTypeMapper = winRtProjectionTypeMapper,
+        )?.let { element ->
             val rawIteratorClass = typeNameMapper.mapTypeName(
                 "Windows.Foundation.Collections.IIterator",
                 "Windows.Foundation.Collections",
             ) as ClassName
-            val elementTypeName = collectionElementTypeName(elementType, typeNameMapper)
-            val elementSignature = winRtSignatureMapper.signatureFor(elementType, "Windows.Foundation.Collections")
-            val elementProjectionTypeKey = winRtProjectionTypeMapper.projectionTypeKeyFor(elementType, "Windows.Foundation.Collections")
             return RuntimeIterableProjection(
-                superinterface = PoetSymbols.iteratorClass.parameterizedBy(elementTypeName),
-                delegateFactory = CodeBlock.of(
-                    "object : %T {\n" +
-                        "  private val iteratorProjection = %T.from(%T(pointer), %S, %S)\n" +
-                        "  override fun hasNext(): Boolean = %T(%L).value\n" +
-                        "  override fun next(): %T {\n" +
-                        "    if (!hasNext()) throw %T()\n" +
-                        "    val current = %L\n" +
-                        "    %T.invokeBooleanGetter(iteratorProjection.pointer, 8).getOrThrow()\n" +
-                        "    return current\n" +
-                        "  }\n" +
-                        "}",
-                    PoetSymbols.iteratorClass.parameterizedBy(elementTypeName),
-                    rawIteratorClass,
-                    PoetSymbols.inspectableClass,
-                    elementSignature,
-                    elementProjectionTypeKey,
-                    PoetSymbols.winRtBooleanClass,
-                    AbiCallCatalog.booleanGetter(7, "iteratorProjection.pointer"),
-                    elementTypeName,
-                    NoSuchElementException::class,
-                    if (isKeyValuePairElement(elementType)) {
-                        keyValuePairEntryExpression(elementType, "iteratorProjection.pointer")
-                    } else {
-                        elementReadExpression(elementTypeName, "iteratorProjection.pointer", 6)
-                    },
-                    PoetSymbols.platformComInteropClass,
+                superinterface = PoetSymbols.iteratorClass.parameterizedBy(element.elementTypeName),
+                delegateFactory = closedGenericIteratorProjectionAdapter(
+                    element = element,
+                    iteratorProjectionInitializer = CodeBlock.of(
+                        "%T.from(%T(pointer), %S, %S)",
+                        rawIteratorClass,
+                        PoetSymbols.inspectableClass,
+                        element.elementSignature,
+                        element.elementProjectionTypeKey,
+                    ),
                 ),
             )
         }
         return null
     }
 
-    private fun supportsClosedGenericIterableElement(typeName: String): Boolean {
-        return typeName == "String" || typeName == "Boolean" || typeName == "Int32" || typeName == "UInt32" || typeName == "Int64" || typeName == "UInt64" || typeName == "Float32" || typeName == "Float64" || typeName == "DateTime" || typeName == "TimeSpan" || (
-            (typeName == "Object" || typeName.contains('.')) &&
-                !typeName.endsWith("[]") &&
-                (typeName.indexOf('<') < 0 || isKeyValuePairElement(typeName))
-            )
+    private fun xamlBindableDescriptor(namespace: String, name: String): XamlBindableDescriptor? =
+        xamlBindableDescriptors.firstOrNull { isXamlBindableInteropNamespace(namespace) && it.simpleName == name }
+
+    private fun xamlBindableDescriptor(qualifiedName: String): XamlBindableDescriptor? =
+        xamlBindableDescriptor(qualifiedName.substringBeforeLast('.', ""), qualifiedName.substringAfterLast('.'))
+
+    private fun closedGenericRuntimeIterableElement(
+        qualifiedName: String,
+        rawQualifiedName: String,
+        typeNameMapper: TypeNameMapper,
+        winRtSignatureMapper: WinRtSignatureMapper,
+        winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
+    ): ClosedGenericRuntimeIterableElement? {
+        val elementType = closedGenericArguments(qualifiedName, rawQualifiedName, 1)?.singleOrNull() ?: return null
+        if (!supportsClosedGenericCollectionElement(elementType)) {
+            return null
+        }
+        val elementTypeName = collectionElementTypeName(elementType, typeNameMapper)
+        return ClosedGenericRuntimeIterableElement(
+            elementTypeName = elementTypeName,
+            elementSignature = winRtSignatureMapper.signatureFor(elementType, "Windows.Foundation.Collections"),
+            elementProjectionTypeKey = winRtProjectionTypeMapper.projectionTypeKeyFor(elementType, "Windows.Foundation.Collections"),
+            currentExpression = if (isKeyValuePairCollectionElement(elementType)) {
+                keyValuePairEntryExpression(elementType, "iteratorProjection.pointer")
+            } else {
+                elementReadExpression(elementTypeName, "iteratorProjection.pointer", 6)
+            },
+        )
     }
 
-    private fun supportsClosedGenericVectorElement(typeName: String): Boolean {
-        return supportsClosedGenericIterableElement(typeName)
+    private fun closedGenericIteratorProjectionAdapter(
+        element: ClosedGenericRuntimeIterableElement,
+        iteratorProjectionInitializer: CodeBlock,
+    ): CodeBlock {
+        return CodeBlock.of(
+            "object : %T {\n" +
+                "  private val iteratorProjection = %L\n" +
+                "  override fun hasNext(): Boolean = %T(%L).value\n" +
+                "  override fun next(): %T {\n" +
+                "    if (!hasNext()) throw %T()\n" +
+                "    val current = %L\n" +
+                "    %T.invokeBooleanGetter(iteratorProjection.pointer, 8).getOrThrow()\n" +
+                "    return current\n" +
+                "  }\n" +
+                "}",
+            PoetSymbols.iteratorClass.parameterizedBy(element.elementTypeName),
+            iteratorProjectionInitializer,
+            PoetSymbols.winRtBooleanClass,
+            AbiCallCatalog.booleanGetter(7, "iteratorProjection.pointer"),
+            element.elementTypeName,
+            NoSuchElementException::class,
+            element.currentExpression,
+            PoetSymbols.platformComInteropClass,
+        )
     }
 
     private fun isXamlBindableInteropNamespace(namespace: String): Boolean {
@@ -1485,10 +1372,6 @@ internal class KotlinCollectionProjectionMapper {
         )
     }
 
-    private fun isKeyValuePairElement(typeName: String): Boolean {
-        return typeName.startsWith("Windows.Foundation.Collections.IKeyValuePair<") && typeName.endsWith(">")
-    }
-
     private fun collectionElementTypeName(typeName: String, typeNameMapper: TypeNameMapper): TypeName {
         return when (typeName) {
             "Boolean" -> Boolean::class.asTypeName()
@@ -1533,3 +1416,113 @@ internal data class CollectionInterfaceMetadata(
     val extraProperties: List<PropertySpec> = emptyList(),
     val extraFunctions: List<FunSpec> = emptyList(),
 )
+
+private data class ClosedGenericCollectionMetadataDescriptor(
+    val rawQualifiedName: String,
+    val argumentCount: Int,
+    val collectionSuperinterface: (List<TypeName>) -> TypeName,
+    val supportsTypeArguments: (List<String>) -> Boolean = { true },
+    val winRtSizeSlot: Int = 7,
+)
+
+private data class XamlBindableDescriptor(
+    val simpleName: String,
+    val collectionSuperinterface: TypeName? = null,
+    val collectionDelegateProjection: TypeName? = null,
+    val collectionDelegateArguments: List<Pair<String, CodeBlock>> = emptyList(),
+    val runtimeIterableSuperinterface: TypeName? = null,
+    val winRtSizeSlot: Int = 8,
+)
+
+private val closedGenericCollectionMetadataDescriptors = listOf(
+    mapCollectionMetadataDescriptor("Windows.Foundation.Collections.IMapView", PoetSymbols.mapClass),
+    mapCollectionMetadataDescriptor("Windows.Foundation.Collections.IObservableMap", PoetSymbols.mutableMapClass),
+    mapCollectionMetadataDescriptor("Windows.Foundation.Collections.IMap", PoetSymbols.mutableMapClass),
+    vectorCollectionMetadataDescriptor("Windows.Foundation.Collections.IObservableVector", PoetSymbols.mutableListClass),
+    vectorCollectionMetadataDescriptor("Windows.Foundation.Collections.IVectorView", PoetSymbols.listClass),
+    vectorCollectionMetadataDescriptor("Windows.Foundation.Collections.IVector", PoetSymbols.mutableListClass),
+)
+
+private val xamlBindableDescriptors = listOf(
+    XamlBindableDescriptor(
+        simpleName = "IBindableVector",
+        collectionSuperinterface = PoetSymbols.mutableListClass.parameterizedBy(PoetSymbols.inspectableClass),
+        collectionDelegateProjection = PoetSymbols.winRtMutableListProjectionClass.parameterizedBy(PoetSymbols.inspectableClass),
+        collectionDelegateArguments = listOf(
+            "sizeProvider" to CodeBlock.of(
+                "{ %T(%L).value.toInt() }",
+                PoetSymbols.uint32Class,
+                AbiCallCatalog.uint32Method(8),
+            ),
+            "getter" to CodeBlock.of(
+                "{ index -> %T(%L) }",
+                PoetSymbols.inspectableClass,
+                AbiCallCatalog.objectMethodWithUInt32(7, "index.toUInt()"),
+            ),
+            "append" to CodeBlock.of("{ value -> %L }", AbiCallCatalog.objectSetter(14, "value")),
+            "clearer" to CodeBlock.of("{ %L }", AbiCallCatalog.unitMethod(16)),
+        ),
+    ),
+    XamlBindableDescriptor(
+        simpleName = "IBindableVectorView",
+        collectionSuperinterface = PoetSymbols.listClass.parameterizedBy(PoetSymbols.inspectableClass),
+        collectionDelegateProjection = PoetSymbols.winRtListProjectionClass.parameterizedBy(PoetSymbols.inspectableClass),
+        collectionDelegateArguments = listOf(
+            "sizeProvider" to CodeBlock.of(
+                "{ %T(%L).value.toInt() }",
+                PoetSymbols.uint32Class,
+                AbiCallCatalog.uint32Method(8),
+            ),
+            "getter" to CodeBlock.of(
+                "{ index -> %T(%L) }",
+                PoetSymbols.inspectableClass,
+                AbiCallCatalog.objectMethodWithUInt32(7, "index.toUInt()"),
+            ),
+        ),
+    ),
+    XamlBindableDescriptor("IBindableIterable", runtimeIterableSuperinterface = PoetSymbols.iterableClass.parameterizedBy(PoetSymbols.inspectableClass)),
+    XamlBindableDescriptor("IBindableIterator", runtimeIterableSuperinterface = PoetSymbols.iteratorClass.parameterizedBy(PoetSymbols.inspectableClass)),
+)
+
+private fun mapCollectionMetadataDescriptor(
+    rawQualifiedName: String,
+    collectionSuperinterface: ClassName,
+) = ClosedGenericCollectionMetadataDescriptor(
+    rawQualifiedName = rawQualifiedName,
+    argumentCount = 2,
+    collectionSuperinterface = { arguments ->
+        collectionSuperinterface.parameterizedBy(arguments[0], arguments[1])
+    },
+)
+
+private fun vectorCollectionMetadataDescriptor(
+    rawQualifiedName: String,
+    collectionSuperinterface: ClassName,
+) = ClosedGenericCollectionMetadataDescriptor(
+    rawQualifiedName = rawQualifiedName,
+    argumentCount = 1,
+    collectionSuperinterface = { arguments ->
+        collectionSuperinterface.parameterizedBy(arguments.single())
+    },
+    supportsTypeArguments = { arguments -> supportsClosedGenericCollectionElement(arguments.single()) },
+)
+
+private fun supportsClosedGenericCollectionElement(typeName: String): Boolean =
+    typeName == "String" ||
+        typeName == "Boolean" ||
+        typeName == "Int32" ||
+        typeName == "UInt32" ||
+        typeName == "Int64" ||
+        typeName == "UInt64" ||
+        typeName == "Float32" ||
+        typeName == "Float64" ||
+        typeName == "DateTime" ||
+        typeName == "TimeSpan" ||
+        (
+            (typeName == "Object" || typeName.contains('.')) &&
+                !typeName.endsWith("[]") &&
+                (typeName.indexOf('<') < 0 || isKeyValuePairCollectionElement(typeName))
+        )
+
+private fun isKeyValuePairCollectionElement(typeName: String): Boolean =
+    typeName.startsWith("Windows.Foundation.Collections.IKeyValuePair<") && typeName.endsWith(">")
