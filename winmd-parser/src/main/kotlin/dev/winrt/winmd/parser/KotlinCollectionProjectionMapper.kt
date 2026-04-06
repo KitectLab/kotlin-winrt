@@ -94,12 +94,12 @@ internal class KotlinCollectionProjectionMapper {
     ): RuntimeIterableProjection? {
         val iterableInterface = runtimeClassCollectionInterfaces(type)
             .firstOrNull { qualifiedName ->
-                xamlBindableDescriptor(qualifiedName)?.runtimeIterableSuperinterface != null ||
+                xamlBindableRuntimeIterableSuperinterface(qualifiedName) != null ||
                     qualifiedName.startsWith("Windows.Foundation.Collections.IIterable<") ||
                     qualifiedName.startsWith("Windows.Foundation.Collections.IIterator<")
             }
             ?: return null
-        xamlBindableDescriptor(iterableInterface)?.runtimeIterableSuperinterface?.let { superinterface ->
+        xamlBindableRuntimeIterableSuperinterface(iterableInterface)?.let { superinterface ->
             return RuntimeIterableProjection(
                 superinterface = superinterface,
                 delegateFactory = CodeBlock.of(
@@ -120,12 +120,14 @@ internal class KotlinCollectionProjectionMapper {
     fun interfaceProjection(type: WinMdType): InterfaceCollectionProjection? {
         windowsFoundationCollectionProjection(type)?.let { return it }
         val descriptor = xamlBindableDescriptor(type.namespace, type.name) ?: return null
-        val superinterface = descriptor.collectionSuperinterface ?: return null
-        val delegateProjection = descriptor.collectionDelegateProjection ?: return null
         return InterfaceCollectionProjection(
-            superinterface = superinterface,
-            delegateFactory = namedDelegateFactory(delegateProjection, descriptor.collectionDelegateArguments),
+            superinterface = descriptor.collectionSuperinterface,
+            delegateFactory = descriptor.collectionDelegateProjection?.let { delegateProjection ->
+                namedDelegateFactory(delegateProjection, descriptor.collectionDelegateArguments)
+            },
             winRtSizeSlot = descriptor.winRtSizeSlot,
+            extraProperties = descriptor.extraProperties,
+            extraFunctions = descriptor.extraFunctions,
         )
     }
 
@@ -156,11 +158,7 @@ internal class KotlinCollectionProjectionMapper {
             type = type,
             superinterface = PoetSymbols.iterableClass.parameterizedBy(elementTypeName),
             extraFunctions = listOf(
-                FunSpec.builder("iterator")
-                    .addModifiers(KModifier.OVERRIDE)
-                    .returns(PoetSymbols.iteratorClass.parameterizedBy(elementTypeName))
-                    .addStatement("return first()")
-                    .build(),
+                iterableIteratorOverrideFunction(elementTypeName),
                 FunSpec.builder("first")
                     .returns(rawIteratorClass.parameterizedBy(elementTypeName))
                     .addStatement(
@@ -199,36 +197,16 @@ internal class KotlinCollectionProjectionMapper {
                             .build(),
                     )
                     .build(),
-                PropertySpec.builder("winRtHasCurrent", PoetSymbols.winRtBooleanClass)
-                    .getter(
-                        FunSpec.getterBuilder()
-                            .addStatement(
-                                "return %M(%T.invokeBooleanGetter(pointer, %L).getOrThrow())",
-                                PoetSymbols.winRtBooleanMember,
-                                PoetSymbols.platformComInteropClass,
-                                getterSlot(type, "HasCurrent", 7),
-                            )
-                            .build(),
-                    )
-                    .build(),
+                winRtHasCurrentProperty(
+                    CodeBlock.of(
+                        "return %M(%T.invokeBooleanGetter(pointer, %L).getOrThrow())\n",
+                        PoetSymbols.winRtBooleanMember,
+                        PoetSymbols.platformComInteropClass,
+                        getterSlot(type, "HasCurrent", 7),
+                    ),
+                ),
             ),
-            extraFunctions = listOf(
-                FunSpec.builder("hasNext")
-                    .addModifiers(KModifier.OVERRIDE)
-                    .returns(Boolean::class)
-                    .addStatement("return winRtHasCurrent.value")
-                    .build(),
-                FunSpec.builder("next")
-                    .addModifiers(KModifier.OVERRIDE)
-                    .returns(elementTypeName)
-                    .beginControlFlow("if (!hasNext())")
-                    .addStatement("throw %T()", NoSuchElementException::class)
-                    .endControlFlow()
-                    .addStatement("val current = winRtCurrent")
-                    .addStatement("moveNext()")
-                    .addStatement("return current")
-                    .build(),
-            ),
+            extraFunctions = iteratorTraversalFunctions(elementTypeName),
         )
     }
 
@@ -1074,9 +1052,11 @@ internal class KotlinCollectionProjectionMapper {
     ): CollectionInterfaceMetadata? {
         val namespace = qualifiedName.substringBeforeLast('.', "")
         val descriptor = xamlBindableDescriptor(namespace, qualifiedName.substringAfterLast('.')) ?: return null
-        val collectionSuperinterface = descriptor.collectionSuperinterface ?: return null
+        if (descriptor.collectionDelegateProjection == null) {
+            return null
+        }
         return CollectionInterfaceMetadata(
-            collectionSuperinterface = collectionSuperinterface,
+            collectionSuperinterface = descriptor.collectionSuperinterface,
             delegateFactory = CodeBlock.of(
                 "%T.from(%T(pointer))",
                 typeNameMapper.mapTypeName(qualifiedName, namespace) as ClassName,
@@ -1210,8 +1190,10 @@ internal class KotlinCollectionProjectionMapper {
     private fun xamlBindableDescriptor(namespace: String, name: String): XamlBindableDescriptor? =
         xamlBindableDescriptors.firstOrNull { isXamlBindableInteropNamespace(namespace) && it.simpleName == name }
 
-    private fun xamlBindableDescriptor(qualifiedName: String): XamlBindableDescriptor? =
+    private fun xamlBindableRuntimeIterableSuperinterface(qualifiedName: String): TypeName? =
         xamlBindableDescriptor(qualifiedName.substringBeforeLast('.', ""), qualifiedName.substringAfterLast('.'))
+            ?.takeIf { it.collectionDelegateProjection == null }
+            ?.collectionSuperinterface
 
     private fun closedGenericRuntimeIterableElement(
         qualifiedName: String,
@@ -1263,9 +1245,8 @@ internal class KotlinCollectionProjectionMapper {
         )
     }
 
-    private fun isXamlBindableInteropNamespace(namespace: String): Boolean {
-        return namespace == "Microsoft.UI.Xaml.Interop" || namespace == "Windows.UI.Xaml.Interop"
-    }
+    private fun isXamlBindableInteropNamespace(namespace: String): Boolean =
+        namespace == "Microsoft.UI.Xaml.Interop" || namespace == "Windows.UI.Xaml.Interop"
 
     private fun elementReadExpression(
         elementTypeName: TypeName,
@@ -1427,11 +1408,12 @@ private data class ClosedGenericCollectionMetadataDescriptor(
 
 private data class XamlBindableDescriptor(
     val simpleName: String,
-    val collectionSuperinterface: TypeName? = null,
+    val collectionSuperinterface: TypeName,
     val collectionDelegateProjection: TypeName? = null,
     val collectionDelegateArguments: List<Pair<String, CodeBlock>> = emptyList(),
-    val runtimeIterableSuperinterface: TypeName? = null,
-    val winRtSizeSlot: Int = 8,
+    val extraProperties: List<PropertySpec> = emptyList(),
+    val extraFunctions: List<FunSpec> = emptyList(),
+    val winRtSizeSlot: Int? = null,
 )
 
 private val closedGenericCollectionMetadataDescriptors = listOf(
@@ -1444,44 +1426,44 @@ private val closedGenericCollectionMetadataDescriptors = listOf(
 )
 
 private val xamlBindableDescriptors = listOf(
-    XamlBindableDescriptor(
+    xamlBindableVectorDescriptor(
         simpleName = "IBindableVector",
         collectionSuperinterface = PoetSymbols.mutableListClass.parameterizedBy(PoetSymbols.inspectableClass),
         collectionDelegateProjection = PoetSymbols.winRtMutableListProjectionClass.parameterizedBy(PoetSymbols.inspectableClass),
-        collectionDelegateArguments = listOf(
-            "sizeProvider" to CodeBlock.of(
-                "{ %T(%L).value.toInt() }",
-                PoetSymbols.uint32Class,
-                AbiCallCatalog.uint32Method(8),
-            ),
-            "getter" to CodeBlock.of(
-                "{ index -> %T(%L) }",
-                PoetSymbols.inspectableClass,
-                AbiCallCatalog.objectMethodWithUInt32(7, "index.toUInt()"),
-            ),
-            "append" to CodeBlock.of("{ value -> %L }", AbiCallCatalog.objectSetter(14, "value")),
-            "clearer" to CodeBlock.of("{ %L }", AbiCallCatalog.unitMethod(16)),
-        ),
+        mutable = true,
     ),
-    XamlBindableDescriptor(
+    xamlBindableVectorDescriptor(
         simpleName = "IBindableVectorView",
         collectionSuperinterface = PoetSymbols.listClass.parameterizedBy(PoetSymbols.inspectableClass),
         collectionDelegateProjection = PoetSymbols.winRtListProjectionClass.parameterizedBy(PoetSymbols.inspectableClass),
-        collectionDelegateArguments = listOf(
-            "sizeProvider" to CodeBlock.of(
-                "{ %T(%L).value.toInt() }",
-                PoetSymbols.uint32Class,
-                AbiCallCatalog.uint32Method(8),
-            ),
-            "getter" to CodeBlock.of(
-                "{ index -> %T(%L) }",
-                PoetSymbols.inspectableClass,
-                AbiCallCatalog.objectMethodWithUInt32(7, "index.toUInt()"),
+        mutable = false,
+    ),
+    xamlBindableIterableDescriptor(
+        simpleName = "IBindableIterable",
+        superinterface = PoetSymbols.iterableClass.parameterizedBy(PoetSymbols.inspectableClass),
+        extraFunctions = listOf(iterableIteratorOverrideFunction(PoetSymbols.inspectableClass)),
+    ),
+    xamlBindableIterableDescriptor(
+        simpleName = "IBindableIterator",
+        superinterface = PoetSymbols.iteratorClass.parameterizedBy(PoetSymbols.inspectableClass),
+        extraProperties = listOf(
+            PropertySpec.builder("winRtCurrent", PoetSymbols.inspectableClass)
+                .getter(
+                    FunSpec.getterBuilder()
+                        .addStatement(
+                            "return %T(%T.invokeObjectMethod(pointer, 6).getOrThrow())",
+                            PoetSymbols.inspectableClass,
+                            PoetSymbols.platformComInteropClass,
+                        )
+                        .build(),
+                )
+                .build(),
+            winRtHasCurrentProperty(
+                CodeBlock.of("return %M(%L)\n", PoetSymbols.winRtBooleanMember, AbiCallCatalog.booleanGetter(7)),
             ),
         ),
+        extraFunctions = iteratorTraversalFunctions(PoetSymbols.inspectableClass),
     ),
-    XamlBindableDescriptor("IBindableIterable", runtimeIterableSuperinterface = PoetSymbols.iterableClass.parameterizedBy(PoetSymbols.inspectableClass)),
-    XamlBindableDescriptor("IBindableIterator", runtimeIterableSuperinterface = PoetSymbols.iteratorClass.parameterizedBy(PoetSymbols.inspectableClass)),
 )
 
 private fun mapCollectionMetadataDescriptor(
@@ -1493,6 +1475,77 @@ private fun mapCollectionMetadataDescriptor(
     collectionSuperinterface = { arguments ->
         collectionSuperinterface.parameterizedBy(arguments[0], arguments[1])
     },
+)
+
+private fun bindableVectorDelegateArguments(mutable: Boolean): List<Pair<String, CodeBlock>> = buildList {
+    add(
+        "sizeProvider" to CodeBlock.of(
+            "{ %T(%L).value.toInt() }",
+            PoetSymbols.uint32Class,
+            AbiCallCatalog.uint32Method(8),
+        ),
+    )
+    add(
+        "getter" to CodeBlock.of(
+            "{ index -> %T(%L) }",
+            PoetSymbols.inspectableClass,
+            AbiCallCatalog.objectMethodWithUInt32(7, "index.toUInt()"),
+        ),
+    )
+    if (mutable) {
+        add("append" to CodeBlock.of("{ value -> %L }", AbiCallCatalog.objectSetter(14, "value")))
+        add("clearer" to CodeBlock.of("{ %L }", AbiCallCatalog.unitMethod(16)))
+    }
+}
+
+private fun iterableIteratorOverrideFunction(elementTypeName: TypeName): FunSpec =
+    FunSpec.builder("iterator")
+        .addModifiers(KModifier.OVERRIDE)
+        .returns(PoetSymbols.iteratorClass.parameterizedBy(elementTypeName))
+        .addStatement("return first()")
+        .build()
+
+private fun winRtHasCurrentProperty(getterCode: CodeBlock): PropertySpec =
+    PropertySpec.builder("winRtHasCurrent", PoetSymbols.winRtBooleanClass)
+        .getter(FunSpec.getterBuilder().addCode(getterCode).build())
+        .build()
+
+private fun iteratorTraversalFunctions(elementTypeName: TypeName): List<FunSpec> = listOf(
+    FunSpec.builder("hasNext")
+        .addModifiers(KModifier.OVERRIDE)
+        .returns(Boolean::class)
+        .addStatement("return winRtHasCurrent.value")
+        .build(),
+    FunSpec.builder("next")
+        .addModifiers(KModifier.OVERRIDE)
+        .returns(elementTypeName)
+        .beginControlFlow("if (!hasNext())")
+        .addStatement("throw %T()", NoSuchElementException::class)
+        .endControlFlow()
+        .addStatement("val current = winRtCurrent")
+        .addStatement("moveNext()")
+        .addStatement("return current")
+        .build(),
+)
+
+private fun xamlBindableVectorDescriptor(simpleName: String, collectionSuperinterface: TypeName, collectionDelegateProjection: TypeName, mutable: Boolean) = XamlBindableDescriptor(
+    simpleName = simpleName,
+    collectionSuperinterface = collectionSuperinterface,
+    collectionDelegateProjection = collectionDelegateProjection,
+    collectionDelegateArguments = bindableVectorDelegateArguments(mutable),
+    winRtSizeSlot = 8,
+)
+
+private fun xamlBindableIterableDescriptor(
+    simpleName: String,
+    superinterface: TypeName,
+    extraProperties: List<PropertySpec> = emptyList(),
+    extraFunctions: List<FunSpec> = emptyList(),
+) = XamlBindableDescriptor(
+    simpleName = simpleName,
+    collectionSuperinterface = superinterface,
+    extraProperties = extraProperties,
+    extraFunctions = extraFunctions,
 )
 
 private fun vectorCollectionMetadataDescriptor(
