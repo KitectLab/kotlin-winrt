@@ -7,31 +7,22 @@ import dev.winrt.core.guidOf
 import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
+import kotlin.String
 
 internal open class IPropertyMetadataFactory(
-    pointer: ComPtr,
+  pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
-    fun createInstanceWithDefaultValue(
-        defaultValue: Inspectable,
-        baseInterface: Inspectable,
-        innerInterface: Inspectable,
-    ): PropertyMetadata = error("Unbound runtime factory: createInstanceWithDefaultValue")
+  public companion object : WinRtInterfaceMetadata {
+    override val qualifiedName: String = "Microsoft.UI.Xaml.IPropertyMetadataFactory"
 
-    fun createInstanceWithDefaultValueAndCallback(
-        defaultValue: Inspectable,
-        propertyChangedCallback: PropertyChangedCallback,
-        baseInterface: Inspectable,
-        innerInterface: Inspectable,
-    ): PropertyMetadata = error("Unbound runtime factory: createInstanceWithDefaultValueAndCallback")
+    override val projectionTypeKey: String = "Microsoft.UI.Xaml.IPropertyMetadataFactory"
 
-    companion object : WinRtInterfaceMetadata {
-        override val qualifiedName: String = "Microsoft.UI.Xaml.IPropertyMetadataFactory"
-        override val projectionTypeKey: String = "Microsoft.UI.Xaml.IPropertyMetadataFactory"
-        override val iid: Guid = guidOf("9f420906-111a-5465-91ee-bed14b3e7fec")
+    override val iid: Guid = guidOf("9f420906-111a-5465-91ee-bed14b3e7fec")
 
-        fun from(inspectable: Inspectable): IPropertyMetadataFactory =
-            inspectable.projectInterface(this, ::IPropertyMetadataFactory)
+    public fun from(inspectable: Inspectable): IPropertyMetadataFactory =
+        inspectable.projectInterface(this, ::IPropertyMetadataFactory)
 
-        operator fun invoke(inspectable: Inspectable): IPropertyMetadataFactory = from(inspectable)
-    }
+    public operator fun invoke(inspectable: Inspectable): IPropertyMetadataFactory =
+        from(inspectable)
+  }
 }

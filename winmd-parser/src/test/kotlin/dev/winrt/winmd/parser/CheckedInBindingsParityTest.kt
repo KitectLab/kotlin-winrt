@@ -411,11 +411,11 @@ class CheckedInBindingsParityTest {
     @Test
     fun checked_in_json_value_keeps_verified_runtime_surface() {
         val checkedIn = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/data/json/IJsonValue.kt").readText()
+        val normalizedCheckedIn = normalizeWhitespace(checkedIn)
 
         assertTrue(checkedIn.contains("val valueType: JsonValueType"))
         assertTrue(checkedIn.contains("fun get_ValueType(): JsonValueType"))
-        assertTrue(checkedIn.contains("invokeUInt32Method(pointer,"))
-        assertTrue(checkedIn.contains("6).getOrThrow().toInt()"))
+        assertTrue(normalizedCheckedIn.contains("JsonValueType.fromValue(PlatformComInterop.invokeInt32Method(pointer,6).getOrThrow())"))
         assertTrue(checkedIn.contains("fun stringify(): String"))
         assertTrue(checkedIn.contains("invokeHStringMethod(pointer,"))
         assertTrue(checkedIn.contains("7).getOrThrow()"))
@@ -477,12 +477,12 @@ class CheckedInBindingsParityTest {
         assertTrue(checkedIn.contains("fun setDateTime(value: Instant)"))
         assertTrue(
             normalizedCheckedIn.contains(
-                "Instant.fromEpochSeconds((PlatformComInterop.invokeInt64Getter(pointer,16).getOrThrow()-116_444_736_000_000_000)/10000000L,((PlatformComInterop.invokeInt64Getter(pointer,16).getOrThrow()-116_444_736_000_000_000)%10000000L*100).toInt())",
+                "Instant.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer,16,Instant.ABI_LAYOUT).getOrThrow())",
             ),
         )
         assertTrue(
             normalizedCheckedIn.contains(
-                "PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer,17,(((value.epochSeconds*10000000L)+(value.nanosecondsOfSecond/100))+116444736000000000)).getOrThrow()",
+                "PlatformComInterop.invokeUnitMethodWithArgs(pointer,17,value.toAbi()).getOrThrow()",
             ),
         )
         assertTrue(checkedIn.contains("var numeralSystem: String"))
@@ -567,7 +567,7 @@ class CheckedInBindingsParityTest {
         assertTrue(checkedIn.contains("val dayOfWeek: DayOfWeek"))
         assertTrue(
             normalizedCheckedIn.contains(
-                "invokeUInt32Method(pointer,57).getOrThrow().toInt()",
+                "DayOfWeek.fromValue(PlatformComInterop.invokeInt32Method(pointer,57).getOrThrow())",
             ),
         )
         assertTrue(checkedIn.contains("val resolvedLanguage: String"))
@@ -688,7 +688,7 @@ class CheckedInBindingsParityTest {
         assertTrue(statics.contains("qualifiedName: String = \"Windows.Globalization.IApplicationLanguagesStatics\""))
         assertTrue(statics.contains("75b40847-0a4c-4a92-9565-fd63c95f7aed"))
         assertTrue(statics2.contains("fun getLanguagesForUser(user: User): IVectorView<String>"))
-        assertTrue(normalizedStatics2.contains("IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethodWithObjectArg(pointer,6,user.pointer).getOrThrow()),\"string\",\"String\")"))
+        assertTrue(normalizedStatics2.contains("IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethodWithObjectArg(pointer,6,projectedObjectArgumentPointer(user,\"Windows.System.User\",\"rc(Windows.System.User;{df9a26c6-e746-4bcd-b5d4-120103c4209b})\")).getOrThrow()),\"string\",\"String\")"))
         assertFalse(runtimeClass.contains("languageFactory"))
     }
 
@@ -750,7 +750,7 @@ class CheckedInBindingsParityTest {
         assertTrue(statics.contains("val homeGeographicRegion: String"))
         assertTrue(statics.contains("invokeHStringMethod(pointer, 10).getOrThrow()"))
         assertTrue(statics.contains("val weekStartsOn: DayOfWeek"))
-        assertTrue(statics.contains("DayOfWeek(PlatformComInterop.invokeObjectMethod(pointer, 11).getOrThrow())"))
+        assertTrue(statics.contains("DayOfWeek.fromValue(PlatformComInterop.invokeInt32Method(pointer, 11).getOrThrow())"))
         assertTrue(statics.contains("Windows.System.UserProfile.IGlobalizationPreferencesStatics"))
         assertTrue(statics.contains("01bf4326-ed37-4e96-b0e9-c1340d1ea158"))
         assertTrue(statics2.contains("fun trySetLanguages(languageTags: Iterable<String>): WinRtBoolean"))
@@ -786,7 +786,7 @@ class CheckedInBindingsParityTest {
         assertTrue(runtimeClass.contains("fun get_Languages(): IVectorView<String>"))
         assertTrue(
             normalizedRuntimeClass.contains(
-                "IVectorView<String>(PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow())",
+                "IVectorView<String>.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow()))",
             ),
         )
         assertTrue(translator.contains("28f5bc2c-8c23-4234-ad2e-fa5a3a426e9b"))
@@ -815,7 +815,8 @@ class CheckedInBindingsParityTest {
         assertTrue(checkedIn.contains("private val backing_OptionalTitle: RuntimeProperty<String?> = RuntimeProperty<String?>(null)"))
         assertTrue(checkedIn.contains("val optionalTitle: String?"))
         assertTrue(checkedIn.contains("return backing_OptionalTitle.get()"))
-        assertTrue(checkedIn.contains("value.takeUnless { it.isNull }?.toKotlinString()"))
+        assertTrue(checkedIn.contains("if (it.isNull) null else"))
+        assertTrue(checkedIn.contains("IPropertyValue.from(Inspectable(it)).getString()"))
     }
 
     @Test
@@ -834,13 +835,13 @@ class CheckedInBindingsParityTest {
         assertTrue(calendarStatics.contains("val gregorian: String"))
         assertTrue(
             normalizedCalendarStatics.contains(
-                "get()=PlatformComInterop.invokeHStringMethod(pointer,6).getOrThrow().use{it.toKotlinString()}",
+                "get()=run{valvalue=PlatformComInterop.invokeHStringMethod(pointer,6).getOrThrow()try{value.toKotlinString()}finally{value.close()}}",
             ),
         )
         assertTrue(calendarStatics.contains("val umAlQura: String"))
         assertTrue(
             normalizedCalendarStatics.contains(
-                "get()=PlatformComInterop.invokeHStringMethod(pointer,14).getOrThrow().use{it.toKotlinString()}",
+                "get()=run{valvalue=PlatformComInterop.invokeHStringMethod(pointer,14).getOrThrow()try{value.toKotlinString()}finally{value.close()}}",
             ),
         )
         assertFalse(calendarStatics.contains("readString("))
@@ -852,13 +853,13 @@ class CheckedInBindingsParityTest {
         assertTrue(clockStatics.contains("val twelveHour: String"))
         assertTrue(
             normalizedClockStatics.contains(
-                "get()=PlatformComInterop.invokeHStringMethod(pointer,6).getOrThrow().use{it.toKotlinString()}",
+                "get()=run{valvalue=PlatformComInterop.invokeHStringMethod(pointer,6).getOrThrow()try{value.toKotlinString()}finally{value.close()}}",
             ),
         )
         assertTrue(clockStatics.contains("val twentyFourHour: String"))
         assertTrue(
             normalizedClockStatics.contains(
-                "get()=PlatformComInterop.invokeHStringMethod(pointer,7).getOrThrow().use{it.toKotlinString()}",
+                "get()=run{valvalue=PlatformComInterop.invokeHStringMethod(pointer,7).getOrThrow()try{value.toKotlinString()}finally{value.close()}}",
             ),
         )
         assertFalse(clockStatics.contains("readString("))

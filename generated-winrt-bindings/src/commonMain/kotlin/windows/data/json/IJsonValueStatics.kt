@@ -1,4 +1,4 @@
-package windows.`data`.json
+package windows.data.json
 
 import dev.winrt.core.Inspectable
 import dev.winrt.core.WinRtBoolean
@@ -6,9 +6,12 @@ import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.WinRtInterfaceProjection
 import dev.winrt.core.guidOf
 import dev.winrt.core.projectInterface
+import dev.winrt.core.projectedObjectArgumentPointer
+import dev.winrt.kom.ComMethodResultKind
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
+import dev.winrt.kom.requireBoolean
 import kotlin.String
 
 internal open class IJsonValueStatics(
@@ -17,9 +20,15 @@ internal open class IJsonValueStatics(
   public fun parse(input: String): JsonValue =
       JsonValue(PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 6, input).getOrThrow())
 
+  public fun tryParse(input: String, result: JsonValue): WinRtBoolean =
+      WinRtBoolean(PlatformComInterop.invokeMethodWithStringAndObjectArgs(pointer, 7,
+      ComMethodResultKind.BOOLEAN, input, projectedObjectArgumentPointer(result,
+      "Windows.Data.Json.JsonValue",
+      "rc(Windows.Data.Json.JsonValue;{a3219ecb-f0b3-4dcd-beee-19d48cd3ed1e})")).getOrThrow().requireBoolean())
+
   public fun createBooleanValue(input: WinRtBoolean): JsonValue =
-      JsonValue(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 8, if (input.value) 1u
-      else 0u).getOrThrow())
+      JsonValue(PlatformComInterop.invokeObjectMethodWithBooleanArg(pointer, 8,
+      input.value).getOrThrow())
 
   public fun createStringValue(input: String): JsonValue =
       JsonValue(PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 10, input).getOrThrow())

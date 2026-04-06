@@ -22,6 +22,8 @@ public interface IStringable {
 
     public fun from(inspectable: Inspectable): IStringable = inspectable.projectInterface(this,
         ::IStringableProjection)
+
+    public operator fun invoke(inspectable: Inspectable): IStringable = from(inspectable)
   }
 }
 
@@ -29,6 +31,12 @@ private class IStringableProjection(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer),
     IStringable {
-  override fun toString(): String = PlatformComInterop.invokeHStringMethod(pointer,
-      6).getOrThrow().use { it.toKotlinString() }
+  override fun toString(): String {
+    val value = PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()
+    return try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
 }

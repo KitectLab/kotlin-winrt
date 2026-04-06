@@ -1,13 +1,17 @@
 package microsoft.ui.xaml.controls
 
-enum class Orientation(
-    val value: Int,
-) {
-    Horizontal(0),
-    Vertical(1);
+import kotlin.Int
 
-    companion object {
-        fun fromValue(value: Int): Orientation =
-            entries.first { it.value == value }
+public enum class Orientation(
+  public val value: Int,
+) {
+  Vertical(0),
+  Horizontal(1),
+  ;
+
+  public companion object {
+    public fun fromValue(value: Int): Orientation = entries.first { entry ->
+      entry.value == value
     }
+  }
 }

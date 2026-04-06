@@ -3,7 +3,7 @@ package windows.globalization
 import kotlin.Int
 
 public enum class DayOfWeek(
-  public val `value`: Int,
+  public val value: Int,
 ) {
   Sunday(0),
   Monday(1),
@@ -15,6 +15,8 @@ public enum class DayOfWeek(
   ;
 
   public companion object {
-    public fun fromValue(`value`: Int): DayOfWeek = entries.first { it.value == value }
+    public fun fromValue(value: Int): DayOfWeek = entries.first { entry ->
+      entry.value == value
+    }
   }
 }

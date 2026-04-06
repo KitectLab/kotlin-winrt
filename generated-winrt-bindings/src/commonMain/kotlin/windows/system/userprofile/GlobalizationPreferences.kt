@@ -23,7 +23,7 @@ public open class GlobalizationPreferences(
     get() = backing_HomeGeographicRegion.get()
 
   private val backing_WeekStartsOn: RuntimeProperty<DayOfWeek> =
-      RuntimeProperty<DayOfWeek>(DayOfWeek(ComPtr.NULL))
+      RuntimeProperty<DayOfWeek>(DayOfWeek.fromValue(0))
 
   public val weekStartsOn: DayOfWeek
     get() = backing_WeekStartsOn.get()

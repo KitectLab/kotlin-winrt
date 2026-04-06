@@ -8,38 +8,35 @@ import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
+import kotlin.String
 
-interface IPropertyMetadata {
-    val createDefaultValueCallback: CreateDefaultValueCallback
-    val defaultValue: Inspectable
+public interface IPropertyMetadata {
+  public val createDefaultValueCallback: CreateDefaultValueCallback
 
-    fun get_DefaultValue(): Inspectable
-    fun get_CreateDefaultValueCallback(): CreateDefaultValueCallback
+  public val defaultValue: Inspectable
 
-    companion object : WinRtInterfaceMetadata {
-        override val qualifiedName: String = "Microsoft.UI.Xaml.IPropertyMetadata"
-        override val projectionTypeKey: String = "Microsoft.UI.Xaml.IPropertyMetadata"
-        override val iid: Guid = guidOf("b3644425-9464-5434-b0ae-aff8d3159fe1")
+  public companion object : WinRtInterfaceMetadata {
+    override val qualifiedName: String = "Microsoft.UI.Xaml.IPropertyMetadata"
 
-        fun from(inspectable: Inspectable): IPropertyMetadata =
-            inspectable.projectInterface(this, ::IPropertyMetadataProjection)
+    override val projectionTypeKey: String = "Microsoft.UI.Xaml.IPropertyMetadata"
 
-        operator fun invoke(inspectable: Inspectable): IPropertyMetadata = from(inspectable)
-    }
+    override val iid: Guid = guidOf("b3644425-9464-5434-b0ae-aff8d3159fe1")
+
+    public fun from(inspectable: Inspectable): IPropertyMetadata =
+        inspectable.projectInterface(this, ::IPropertyMetadataProjection)
+
+    public operator fun invoke(inspectable: Inspectable): IPropertyMetadata = from(inspectable)
+  }
 }
 
 private class IPropertyMetadataProjection(
-    pointer: ComPtr,
-) : WinRtInterfaceProjection(pointer), IPropertyMetadata {
-    override val createDefaultValueCallback: CreateDefaultValueCallback
-        get() = CreateDefaultValueCallback(PlatformComInterop.invokeObjectMethod(pointer, 7).getOrThrow())
+  pointer: ComPtr,
+) : WinRtInterfaceProjection(pointer),
+    IPropertyMetadata {
+  override val createDefaultValueCallback: CreateDefaultValueCallback
+    get() = CreateDefaultValueCallback(PlatformComInterop.invokeObjectMethod(pointer,
+        7).getOrThrow())
 
-    override val defaultValue: Inspectable
-        get() = Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
-
-    override fun get_DefaultValue(): Inspectable =
-        Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
-
-    override fun get_CreateDefaultValueCallback(): CreateDefaultValueCallback =
-        CreateDefaultValueCallback(PlatformComInterop.invokeObjectMethod(pointer, 7).getOrThrow())
+  override val defaultValue: Inspectable
+    get() = Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
 }

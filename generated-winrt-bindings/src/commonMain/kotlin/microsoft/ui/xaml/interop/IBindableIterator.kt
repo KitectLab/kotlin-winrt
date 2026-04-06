@@ -9,25 +9,52 @@ import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
+import java.util.NoSuchElementException
+import kotlin.Boolean
+import kotlin.String
+import kotlin.collections.Iterator
 
-open class IBindableIterator(
-    pointer: ComPtr,
-) : WinRtInterfaceProjection(pointer) {
-    fun get_Current(): Inspectable =
-        Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
+public open class IBindableIterator(
+  pointer: ComPtr,
+) : WinRtInterfaceProjection(pointer),
+    Iterator<Inspectable> {
+  public val winRtCurrent: Inspectable
+    get() = Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
 
-    fun get_HasCurrent(): WinRtBoolean =
-        WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 7).getOrThrow())
+  public val winRtHasCurrent: WinRtBoolean
+    get() = dev.winrt.core.WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer,
+        7).getOrThrow())
 
-    fun moveNext(): WinRtBoolean =
-        WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 8).getOrThrow())
+  public val current: Inspectable
+    get() = Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
 
-    companion object : WinRtInterfaceMetadata {
-        override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableIterator"
-        override val projectionTypeKey: String = "kotlin.collections.Iterator"
-        override val iid: Guid = guidOf("6a1d6c07-076d-49f2-8314-f52c9c9a8331")
+  public val hasCurrent: WinRtBoolean
+    get() = WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 7).getOrThrow())
 
-        fun from(inspectable: Inspectable): IBindableIterator =
-            inspectable.projectInterface(this, ::IBindableIterator)
+  override fun hasNext(): Boolean = winRtHasCurrent.value
+
+  override fun next(): Inspectable {
+    if (!hasNext()) {
+      throw NoSuchElementException()
     }
+    val current = winRtCurrent
+    moveNext()
+    return current
+  }
+
+  public fun moveNext(): WinRtBoolean = WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer,
+      8).getOrThrow())
+
+  public companion object : WinRtInterfaceMetadata {
+    override val qualifiedName: String = "Microsoft.UI.Xaml.Interop.IBindableIterator"
+
+    override val projectionTypeKey: String = "kotlin.collections.Iterator"
+
+    override val iid: Guid = guidOf("6a1d6c07-076d-49f2-8314-f52c9c9a8331")
+
+    public fun from(inspectable: Inspectable): IBindableIterator =
+        inspectable.projectInterface(this, ::IBindableIterator)
+
+    public operator fun invoke(inspectable: Inspectable): IBindableIterator = from(inspectable)
+  }
 }

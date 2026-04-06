@@ -412,6 +412,116 @@ class InterfaceTypeRendererTest {
     }
 
     @Test
+    fun runtime_projected_interfaces_do_not_inherit_kotlin_map_superinterfaces_from_map_view_bases() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IIterable`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            genericParameters = listOf("T"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "First",
+                                    returnType = "Windows.Foundation.Collections.IIterator<T>",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IIterator`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            genericParameters = listOf("T"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IKeyValuePair`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "33333333-3333-3333-3333-333333333333",
+                            genericParameters = listOf("K", "V"),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IMapView`2",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "44444444-4444-4444-4444-444444444444",
+                            genericParameters = listOf("K", "V"),
+                            baseInterfaces = listOf("Windows.Foundation.Collections.IIterable<Windows.Foundation.Collections.IKeyValuePair<K, V>>"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Lookup",
+                                    returnType = "V",
+                                    parameters = listOf(WinMdParameter("key", "K")),
+                                    vtableIndex = 7,
+                                ),
+                                WinMdMethod(
+                                    name = "HasKey",
+                                    returnType = "Boolean",
+                                    parameters = listOf(WinMdParameter("key", "K")),
+                                    vtableIndex = 8,
+                                ),
+                                WinMdMethod(
+                                    name = "Split",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("first", "Windows.Foundation.Collections.IMapView<K, V>"),
+                                        WinMdParameter("second", "Windows.Foundation.Collections.IMapView<K, V>"),
+                                    ),
+                                    vtableIndex = 9,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Collections",
+                            name = "FirstSignInSettings",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Collections.IFirstSignInSettings",
+                        ),
+                        WinMdType(
+                            namespace = "Example.Collections",
+                            name = "IFirstSignInSettings",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "55555555-5555-5555-5555-555555555555",
+                            baseInterfaces = listOf("Windows.Foundation.Collections.IMapView<String, Object>"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val typeRegistry = TypeRegistry(model)
+        val renderer = InterfaceTypeRenderer(
+            typeNameMapper = TypeNameMapper(),
+            delegateLambdaPlanResolver = DelegateLambdaPlanResolver(TypeNameMapper()),
+            eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+            typeRegistry = typeRegistry,
+            asyncMethodProjectionPlanner = AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry)),
+            asyncMethodRuleRegistry = AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
+            winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
+        )
+
+        val binding = renderer.render(typeRegistry.findType("IFirstSignInSettings", "Example.Collections")!!)
+            .joinToString("\n") { it.toString() }
+        val content = binding.replace(Regex("\\s+"), "")
+
+        assertTrue(binding, content.contains("publicinterfaceIFirstSignInSettings"))
+        assertTrue(binding, content.contains("IMapView<"))
+        assertFalse(binding, content.contains(":Map<String,Inspectable>"))
+    }
+
+    @Test
     fun does_not_project_enum_array_methods_as_scalar_enum_calls() {
         val model = WinMdModel(
             files = emptyList(),

@@ -1,4 +1,4 @@
-package windows.`data`.json
+package windows.data.json
 
 import dev.winrt.core.Inspectable
 import dev.winrt.core.Int32
@@ -15,8 +15,8 @@ internal open class IJsonErrorStatics2(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
   public fun getJsonStatus(hresult: Int32): JsonErrorStatus =
-      JsonErrorStatus.fromValue(PlatformComInterop.invokeUInt32MethodWithInt32Arg(pointer, 6,
-      hresult.value).getOrThrow().toInt())
+      JsonErrorStatus.fromValue(PlatformComInterop.invokeInt32MethodWithInt32Arg(pointer, 6,
+      hresult.value).getOrThrow())
 
   public companion object : WinRtInterfaceMetadata {
     override val qualifiedName: String = "Windows.Data.Json.IJsonErrorStatics2"

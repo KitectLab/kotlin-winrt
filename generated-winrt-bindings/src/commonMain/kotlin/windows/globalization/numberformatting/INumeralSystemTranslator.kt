@@ -8,58 +8,73 @@ import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
-import windows.foundation.collections.StringVectorView
+import kotlin.String
+import windows.foundation.collections.IVectorView
 
-public open class INumeralSystemTranslator(
-  pointer: ComPtr,
-) : WinRtInterfaceProjection(pointer) {
-  public val languages: StringVectorView
-    get() = get_Languages()
+public interface INumeralSystemTranslator {
+  public val languages: IVectorView<String>
+
+  public var numeralSystem: String
 
   public val resolvedLanguage: String
-    get() = get_ResolvedLanguage()
 
-  public val numeralSystem: String
-    get() = get_NumeralSystem()
-
-  public fun get_Languages(): StringVectorView =
-      StringVectorView(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
-
-  public fun get_ResolvedLanguage(): String {
-    val value = PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow()
-    return try {
-      value.toKotlinString()
-    } finally {
-      value.close()
-    }
-  }
-
-  public fun get_NumeralSystem(): String {
-    val value = PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow()
-    return try {
-      value.toKotlinString()
-    } finally {
-      value.close()
-    }
-  }
-
-  public fun translateNumerals(value: String): String {
-    val translated = PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 10,
-        value).getOrThrow()
-    return try {
-      translated.toKotlinString()
-    } finally {
-      translated.close()
-    }
-  }
+  public fun translateNumerals(value: String): String
 
   public companion object : WinRtInterfaceMetadata {
     override val qualifiedName: String =
         "Windows.Globalization.NumberFormatting.INumeralSystemTranslator"
 
+    override val projectionTypeKey: String =
+        "Windows.Globalization.NumberFormatting.INumeralSystemTranslator"
+
     override val iid: Guid = guidOf("28f5bc2c-8c23-4234-ad2e-fa5a3a426e9b")
 
     public fun from(inspectable: Inspectable): INumeralSystemTranslator =
-        inspectable.projectInterface(this, ::INumeralSystemTranslator)
+        inspectable.projectInterface(this, ::INumeralSystemTranslatorProjection)
+
+    public operator fun invoke(inspectable: Inspectable): INumeralSystemTranslator =
+        from(inspectable)
+  }
+}
+
+private class INumeralSystemTranslatorProjection(
+  pointer: ComPtr,
+) : WinRtInterfaceProjection(pointer),
+    INumeralSystemTranslator {
+  override val languages: IVectorView<String>
+    get() = IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,
+        6).getOrThrow()), "string", "String")
+
+  override var numeralSystem: String
+    get() = run {
+      val value = PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow()
+      try {
+        value.toKotlinString()
+      } finally {
+        value.close()
+      }
+    }
+    set(value) {
+      PlatformComInterop.invokeStringSetter(pointer, 9, value).getOrThrow()
+    }
+
+  override val resolvedLanguage: String
+    get() = run {
+      val value = PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow()
+      try {
+        value.toKotlinString()
+      } finally {
+        value.close()
+      }
+    }
+
+  override fun translateNumerals(value: String): String {
+    val value = PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 10,
+        value).getOrThrow()
+    return try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
   }
 }

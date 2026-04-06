@@ -22,8 +22,14 @@ public open class NumeralSystemTranslator(
       if (pointer.isNull) {
         return backing_NumeralSystem.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
     set(value) {
       if (pointer.isNull) {
@@ -40,8 +46,14 @@ public open class NumeralSystemTranslator(
       if (pointer.isNull) {
         return backing_ResolvedLanguage.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
 
   public constructor(languages: Iterable<String>) : this(Companion.factoryCreate(languages).pointer)
@@ -50,15 +62,23 @@ public open class NumeralSystemTranslator(
     if (pointer.isNull) {
       error("Null runtime object pointer: get_Languages")
     }
-    return IVectorView<String>(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
+    return IVectorView<String>.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,
+        6).getOrThrow()))
   }
 
   public fun translateNumerals(value: String): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 10,
-        value).getOrThrow().use { it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 10,
+              value).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public companion object : WinRtRuntimeClassMetadata {

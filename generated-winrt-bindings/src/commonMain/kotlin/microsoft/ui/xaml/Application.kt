@@ -11,13 +11,14 @@ import dev.winrt.core.WinRtDelegateHandle
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.core.guidOf
+import dev.winrt.core.projectedObjectArgumentPointer
 import dev.winrt.kom.ComPtr
+import dev.winrt.kom.ComStructValue
 import dev.winrt.kom.PlatformComInterop
 import java.lang.AutoCloseable
 import kotlin.String
 import kotlin.Unit
 import kotlin.collections.MutableMap
-import microsoft.ui.xaml.controls.primitives.ComponentResourceLocation
 import windows.foundation.TypedEventHandler
 import windows.foundation.Uri
 
@@ -32,15 +33,15 @@ public open class Application(
       if (pointer.isNull) {
         return backing_DispatcherShutdownMode.get()
       }
-      return DispatcherShutdownMode(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
+      return DispatcherShutdownMode.fromValue(PlatformComInterop.invokeInt32Method(pointer,
+          6).getOrThrow())
     }
     set(value) {
       if (pointer.isNull) {
         backing_DispatcherShutdownMode.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 7, (value as
-          Inspectable).pointer).getOrThrow()
+      PlatformComInterop.invokeInt32Setter(pointer, 7, value.value).getOrThrow()
     }
 
   private val backing_DebugSettings: RuntimeProperty<DebugSettings> =
@@ -62,26 +63,26 @@ public open class Application(
       if (pointer.isNull) {
         return backing_FocusVisualKind.get()
       }
-      return FocusVisualKind(PlatformComInterop.invokeObjectMethod(pointer, 11).getOrThrow())
+      return FocusVisualKind.fromValue(PlatformComInterop.invokeInt32Method(pointer,
+          11).getOrThrow())
     }
     set(value) {
       if (pointer.isNull) {
         backing_FocusVisualKind.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 12, (value as
-          Inspectable).pointer).getOrThrow()
+      PlatformComInterop.invokeInt32Setter(pointer, 12, value.value).getOrThrow()
     }
 
   private val backing_HighContrastAdjustment: RuntimeProperty<ApplicationHighContrastAdjustment> =
-      RuntimeProperty<ApplicationHighContrastAdjustment>(ApplicationHighContrastAdjustment.fromValue(0))
+      RuntimeProperty<ApplicationHighContrastAdjustment>(ApplicationHighContrastAdjustment.fromValue(0u))
 
   public var highContrastAdjustment: ApplicationHighContrastAdjustment
     get() {
       if (pointer.isNull) {
         return backing_HighContrastAdjustment.get()
       }
-      return ApplicationHighContrastAdjustment(PlatformComInterop.invokeObjectMethod(pointer,
+      return ApplicationHighContrastAdjustment.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
           13).getOrThrow())
     }
     set(value) {
@@ -89,8 +90,7 @@ public open class Application(
         backing_HighContrastAdjustment.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 14, (value as
-          Inspectable).pointer).getOrThrow()
+      PlatformComInterop.invokeUInt32Setter(pointer, 14, value.value).getOrThrow()
     }
 
   private val backing_RequestedTheme: RuntimeProperty<ApplicationTheme> =
@@ -101,15 +101,15 @@ public open class Application(
       if (pointer.isNull) {
         return backing_RequestedTheme.get()
       }
-      return ApplicationTheme(PlatformComInterop.invokeObjectMethod(pointer, 9).getOrThrow())
+      return ApplicationTheme.fromValue(PlatformComInterop.invokeInt32Method(pointer,
+          9).getOrThrow())
     }
     set(value) {
       if (pointer.isNull) {
         backing_RequestedTheme.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 10, (value as
-          Inspectable).pointer).getOrThrow()
+      PlatformComInterop.invokeInt32Setter(pointer, 10, value.value).getOrThrow()
     }
 
   private val backing_Resources: RuntimeProperty<ResourceDictionary> =
@@ -145,34 +145,52 @@ public open class Application(
 
   public constructor() : this(Companion.factoryCreateInstance().pointer)
 
+  public
+      fun add_ResourceManagerRequested(handler: TypedEventHandler<Inspectable, ResourceManagerRequestedEventArgs>):
+      EventRegistrationToken {
+    if (pointer.isNull) {
+      return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
+          ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
+    }
+    return EventRegistrationToken.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer, 6,
+        EventRegistrationToken.ABI_LAYOUT, projectedObjectArgumentPointer(handler,
+        "Windows.Foundation.TypedEventHandler`2<Object, Microsoft.UI.Xaml.ResourceManagerRequestedEventArgs>",
+        "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};cinterface(IInspectable);rc(Microsoft.UI.Xaml.ResourceManagerRequestedEventArgs;{c35f4cf1-fcd6-5c6b-9be2-4cfaefb68b2a}))")).getOrThrow())
+  }
+
   public fun remove_ResourceManagerRequested(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 7, token.value).getOrThrow()
+    PlatformComInterop.invokeUnitMethodWithArgs(pointer, 7, token.toAbi()).getOrThrow()
   }
 
   public fun onLaunched(args: LaunchActivatedEventArgs) {
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 6, (args as Inspectable).pointer).getOrThrow()
+    PlatformComInterop.invokeObjectSetter(pointer, 6, projectedObjectArgumentPointer(args,
+        "Microsoft.UI.Xaml.LaunchActivatedEventArgs",
+        "rc(Microsoft.UI.Xaml.LaunchActivatedEventArgs;{d505cea9-1bcb-5b29-a8be-944e00f06f78})")).getOrThrow()
   }
 
   public fun add_UnhandledException(handler: UnhandledExceptionEventHandler):
       EventRegistrationToken {
     if (pointer.isNull) {
-      return EventRegistrationToken(0)
+      return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
+          ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
     }
-    return EventRegistrationToken(PlatformComInterop.invokeInt64MethodWithObjectArg(pointer, 15,
-        handler.pointer).getOrThrow())
+    return EventRegistrationToken.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer, 15,
+        EventRegistrationToken.ABI_LAYOUT, projectedObjectArgumentPointer(handler,
+        "Microsoft.UI.Xaml.UnhandledExceptionEventHandler",
+        "delegate({3427c1b6-5eca-5631-84b8-5bae732fb67f})")).getOrThrow())
   }
 
   public fun remove_UnhandledException(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 16, token.value).getOrThrow()
+    PlatformComInterop.invokeUnitMethodWithArgs(pointer, 16, token.toAbi()).getOrThrow()
   }
 
   public fun exit() {
@@ -216,7 +234,7 @@ public open class Application(
     public fun subscribe(handler: (ComPtr, ResourceManagerRequestedEventArgs) -> Unit):
         EventRegistrationToken {
       val delegateHandle =
-          WinRtDelegateBridge.createUnitDelegate(guidOf("00000000-0000-0000-0000-000000000000"),
+          WinRtDelegateBridge.createUnitDelegate(guidOf("9de1c534-6ae1-11e0-84e1-18a905bcc53f"),
           listOf(dev.winrt.core.WinRtDelegateValueKind.OBJECT,
           dev.winrt.core.WinRtDelegateValueKind.OBJECT)) { args -> handler(args[0] as ComPtr,
           ResourceManagerRequestedEventArgs(args[1] as ComPtr)) }
@@ -303,14 +321,6 @@ public open class Application(
 
     public fun loadComponent(component: Inspectable, resourceLocator: Uri) {
       statics.loadComponent(component, resourceLocator)
-    }
-
-    public fun loadComponent(
-      component: Inspectable,
-      resourceLocator: Uri,
-      componentResourceLocation: ComponentResourceLocation,
-    ) {
-      statics.loadComponent(component, resourceLocator, componentResourceLocation)
     }
   }
 }

@@ -2,14 +2,26 @@ package windows.globalization
 
 import dev.winrt.core.Inspectable
 import dev.winrt.core.RuntimeClassId
+import dev.winrt.core.RuntimeProperty
 import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.kom.ComPtr
+import kotlin.String
 
 public open class ClockIdentifiers(
   pointer: ComPtr,
 ) : Inspectable(pointer) {
+  private val backing_TwelveHour: RuntimeProperty<String> = RuntimeProperty<String>("")
+
+  public val twelveHour: String
+    get() = backing_TwelveHour.get()
+
+  private val backing_TwentyFourHour: RuntimeProperty<String> = RuntimeProperty<String>("")
+
+  public val twentyFourHour: String
+    get() = backing_TwentyFourHour.get()
+
   public companion object : WinRtRuntimeClassMetadata {
     override val qualifiedName: String = "Windows.Globalization.ClockIdentifiers"
 

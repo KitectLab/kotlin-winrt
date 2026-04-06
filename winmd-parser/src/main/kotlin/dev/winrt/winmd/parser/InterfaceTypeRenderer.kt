@@ -17,6 +17,8 @@ import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdParameter
 import dev.winrt.winmd.plugin.WinMdProperty
 import dev.winrt.winmd.plugin.WinMdType
+import dev.winrt.winmd.plugin.WinMdTypeKind
+import dev.winrt.winmd.plugin.stripValueTypeNameMarker
 
 internal class InterfaceTypeRenderer(
     private val typeNameMapper: TypeNameMapper,
@@ -56,6 +58,11 @@ internal class InterfaceTypeRenderer(
         val genericParameters = type.genericParameters.toSet()
         val declarationName = projectedDeclarationSimpleName(type.name)
         val directBaseInterface = directBaseInterface(type, type.namespace)
+        val directBaseIsRuntimeProjected = directBaseInterface?.let {
+            typeRegistry.isRuntimeProjectedInterface(it, type.namespace)
+        } == true
+        val directBaseInterfaceType = directBaseInterface
+            ?.let { projectedInterfaceTypeName(it, type.namespace, genericParameters) }
         val inheritedSignatureKeys = inheritedSignatureKeys(directBaseInterface)
         val inheritedPropertyNames = inheritedPropertyNames(directBaseInterface)
         val projectedProperties = dedupeInterfaceProperties(
@@ -81,11 +88,15 @@ internal class InterfaceTypeRenderer(
             }
             .primaryConstructor(pointerConstructor())
             .superclass(
-                directBaseInterface?.let { typeNameMapper.mapTypeName(it, type.namespace, genericParameters) }
+                directBaseInterfaceType
+                    ?.takeUnless { directBaseIsRuntimeProjected }
                     ?: PoetSymbols.winRtInterfaceProjectionClass,
             )
             .addSuperclassConstructorParameter("pointer")
             .apply {
+                directBaseInterfaceType
+                    ?.takeIf { directBaseIsRuntimeProjected }
+                    ?.let(::addSuperinterface)
                 type.baseInterfaces.mapNotNull { baseInterface ->
                     collectionSuperinterface(baseInterface, type.namespace, genericParameters)
                 }.forEach { addSuperinterface(it) }
@@ -230,6 +241,8 @@ internal class InterfaceTypeRenderer(
         val genericParameters = type.genericParameters.toSet()
         val declarationName = projectedDeclarationSimpleName(type.name)
         val directBaseInterface = directBaseInterface(type, type.namespace)
+        val directBaseInterfaceType = directBaseInterface
+            ?.let { projectedInterfaceTypeName(it, type.namespace, genericParameters) }
         val inheritedSignatureKeys = inheritedSignatureKeys(directBaseInterface)
         val inheritedPropertyNames = inheritedPropertyNames(directBaseInterface)
         val projectedProperties = dedupeInterfaceProperties(
@@ -247,15 +260,16 @@ internal class InterfaceTypeRenderer(
                     addModifiers(KModifier.INTERNAL)
                 }
                 typeVariables.forEach(::addTypeVariable)
-                directBaseInterface?.let {
-                    addSuperinterface(typeNameMapper.mapTypeName(it, type.namespace, genericParameters))
-                }
+                directBaseInterfaceType?.let(::addSuperinterface)
                 type.baseInterfaces
                     .filterNot { it == directBaseInterface }
                     .mapNotNull { baseInterface ->
                         collectionSuperinterface(baseInterface, type.namespace, genericParameters)
                     }
                     .forEach(::addSuperinterface)
+                kotlinCollectionProjectionMapper.interfaceProjection(type)?.let { projection ->
+                    addSuperinterface(projection.superinterface)
+                }
                 renderDispatchQueueOverride(type, type.namespace, genericParameters)?.let { dispatchOverride ->
                     addSuperinterface(PoetSymbols.dispatchQueueClass)
                     addFunction(dispatchOverride)
@@ -293,8 +307,18 @@ internal class InterfaceTypeRenderer(
             }
             .primaryConstructor(pointerConstructor())
             .superclass(PoetSymbols.winRtInterfaceProjectionClass)
-            .addSuperinterface(typeClass)
             .addSuperclassConstructorParameter("pointer")
+            .apply {
+                addSuperinterface(typeClass)
+                kotlinCollectionProjectionMapper.interfaceProjection(type)?.let { projection ->
+                    projection.delegateFactory?.let { delegateFactory ->
+                        addSuperinterface(projection.superinterface, delegateFactory)
+                    }
+                    projection.extraProperties.forEach(::addProperty)
+                    projection.extraFunctions.forEach(::addFunction)
+                    addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
+                }
+            }
             .addProperties(
                 projectedProperties.mapNotNull {
                     renderProperty(it, type.namespace, genericParameters)
@@ -3901,14 +3925,47 @@ internal class InterfaceTypeRenderer(
         genericParameters: Set<String>,
     ): TypeName? {
         val mapped = typeNameMapper.mapTypeName(baseInterface, currentNamespace, genericParameters)
-        return if (mapped.toString().startsWith("kotlin.collections.")) mapped else null
+        return when (mapped.toString().substringBefore('<')) {
+            "kotlin.collections.Iterable",
+            "kotlin.collections.Iterator",
+            -> mapped
+            else -> null
+        }
     }
 
     private fun directBaseInterface(type: WinMdType, currentNamespace: String): String? {
         return type.baseInterfaces.firstOrNull { baseInterface ->
             collectionSuperinterface(baseInterface, currentNamespace, type.genericParameters.toSet()) == null &&
-                typeRegistry.findType(baseInterface, currentNamespace)?.kind == dev.winrt.winmd.plugin.WinMdTypeKind.Interface
+                typeRegistry.findType(baseInterface, currentNamespace)?.kind == WinMdTypeKind.Interface
         }
+    }
+
+    private fun projectedInterfaceTypeName(
+        typeName: String,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): TypeName {
+        val normalizedTypeName = stripValueTypeNameMarker(typeName)
+        if ('<' !in normalizedTypeName || !normalizedTypeName.endsWith(">")) {
+            val interfaceType = typeRegistry.findType(normalizedTypeName, currentNamespace)
+            return if (interfaceType?.kind == WinMdTypeKind.Interface) {
+                projectedDeclarationClassName(interfaceType.namespace, interfaceType.name)
+            } else {
+                typeNameMapper.mapTypeName(typeName, currentNamespace, genericParameters)
+            }
+        }
+
+        val rawTypeName = normalizedTypeName.substringBefore('<')
+        val interfaceType = typeRegistry.findType(rawTypeName, currentNamespace)
+        if (interfaceType?.kind != WinMdTypeKind.Interface) {
+            return typeNameMapper.mapTypeName(typeName, currentNamespace, genericParameters)
+        }
+
+        val argumentSource = normalizedTypeName.substringAfter('<').substringBeforeLast('>')
+        val arguments = splitGenericArguments(argumentSource)
+            .map { argument -> typeNameMapper.mapTypeName(argument, currentNamespace, genericParameters) }
+        return projectedDeclarationClassName(interfaceType.namespace, interfaceType.name)
+            .parameterizedBy(arguments)
     }
 
     private fun projectedObjectReturnCode(

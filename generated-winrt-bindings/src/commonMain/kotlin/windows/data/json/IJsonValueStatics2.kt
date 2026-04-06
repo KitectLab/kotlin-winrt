@@ -1,4 +1,4 @@
-package windows.`data`.json
+package windows.data.json
 
 import dev.winrt.core.Inspectable
 import dev.winrt.core.WinRtInterfaceMetadata

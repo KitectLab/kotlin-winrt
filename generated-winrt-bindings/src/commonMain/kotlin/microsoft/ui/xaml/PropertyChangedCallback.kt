@@ -7,17 +7,21 @@ import dev.winrt.core.guidOf
 import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
+import kotlin.String
+import kotlin.Unit
 
-typealias PropertyChangedCallbackHandler = (DependencyObject, DependencyPropertyChangedEventArgs) -> Unit
+public typealias PropertyChangedCallbackHandler = (DependencyObject,
+    DependencyPropertyChangedEventArgs) -> Unit
 
-open class PropertyChangedCallback(
-    pointer: ComPtr,
+public open class PropertyChangedCallback(
+  pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
-    companion object : WinRtInterfaceMetadata {
-        override val qualifiedName: String = "Microsoft.UI.Xaml.PropertyChangedCallback"
-        override val iid: Guid = guidOf("5fd9243a-2422-53c9-8d6f-f1ba1a0bba9a")
+  public companion object : WinRtInterfaceMetadata {
+    override val qualifiedName: String = "Microsoft.UI.Xaml.PropertyChangedCallback"
 
-        fun from(inspectable: Inspectable): PropertyChangedCallback =
-            inspectable.projectInterface(this, ::PropertyChangedCallback)
-    }
+    override val iid: Guid = guidOf("5fd9243a-2422-53c9-8d6f-f1ba1a0bba9a")
+
+    public fun from(inspectable: Inspectable): PropertyChangedCallback =
+        inspectable.projectInterface(this, ::PropertyChangedCallback)
+  }
 }

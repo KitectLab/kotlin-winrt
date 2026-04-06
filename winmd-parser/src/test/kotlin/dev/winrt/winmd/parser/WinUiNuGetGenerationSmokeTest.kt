@@ -242,13 +242,25 @@ class WinUiNuGetGenerationSmokeTest {
         assertNotNull(collectionViewBinding)
 
         val content = collectionViewBinding!!.content.replace(Regex("\\s+"), "")
-        val occurrences = { pattern: String -> Regex(pattern).findAll(content).count() }
+        val interfaceHeader = content.substringAfter("publicinterfaceICollectionView").substringBefore("{")
+        val contractContent = content.substringAfter("publicinterfaceICollectionView").substringBefore("privateclassICollectionViewProjection")
+        val projectionContent = content.substringAfter("privateclassICollectionViewProjection")
+        val contractOccurrences = { pattern: String -> Regex(pattern).findAll(contractContent).count() }
+        val projectionOccurrences = { pattern: String -> Regex(pattern).findAll(projectionContent).count() }
 
-        assertEquals(1, occurrences("funindexOf\\("))
-        assertEquals(1, occurrences("funsetAt\\("))
-        assertEquals(1, occurrences("funinsertAt\\("))
-        assertEquals(1, occurrences("funappend\\("))
-        assertEquals(1, occurrences("funreplaceAll\\("))
+        assertTrue(content, content.contains("publicinterfaceICollectionView"))
+        assertTrue(content, content.contains("privateclassICollectionViewProjection"))
+        assertFalse(interfaceHeader, interfaceHeader.contains("MutableList<Inspectable>"))
+        assertEquals(1, contractOccurrences("funindexOf\\("))
+        assertEquals(1, contractOccurrences("funsetAt\\("))
+        assertEquals(1, contractOccurrences("funinsertAt\\("))
+        assertEquals(1, contractOccurrences("funappend\\("))
+        assertEquals(1, contractOccurrences("funreplaceAll\\("))
+        assertEquals(1, projectionOccurrences("funindexOf\\("))
+        assertEquals(1, projectionOccurrences("funsetAt\\("))
+        assertEquals(1, projectionOccurrences("funinsertAt\\("))
+        assertEquals(1, projectionOccurrences("funappend\\("))
+        assertEquals(1, projectionOccurrences("funreplaceAll\\("))
     }
 
     private fun localWindowsAppSdkSourceFiles(): List<Path>? {

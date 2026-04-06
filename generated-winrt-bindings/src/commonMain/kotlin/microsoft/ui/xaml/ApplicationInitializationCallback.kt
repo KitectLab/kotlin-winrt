@@ -7,6 +7,11 @@ import dev.winrt.core.guidOf
 import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
+import kotlin.String
+import kotlin.Unit
+
+public typealias ApplicationInitializationCallbackHandler =
+    (ApplicationInitializationCallbackParams) -> Unit
 
 public open class ApplicationInitializationCallback(
   pointer: ComPtr,

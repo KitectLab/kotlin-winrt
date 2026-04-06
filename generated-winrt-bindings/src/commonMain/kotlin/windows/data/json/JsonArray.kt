@@ -1,4 +1,4 @@
-package windows.`data`.json
+package windows.data.json
 
 import dev.winrt.core.Float64
 import dev.winrt.core.Inspectable
@@ -9,13 +9,20 @@ import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
+import dev.winrt.core.projectedObjectArgumentPointer
+import dev.winrt.kom.ComMethodResultKind
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
+import dev.winrt.kom.requireBoolean
 import kotlin.String
+import kotlin.collections.Iterator
+import windows.foundation.IStringable
+import windows.foundation.collections.IVectorView
 
 public open class JsonArray(
   pointer: ComPtr,
-) : Inspectable(pointer) {
+) : Inspectable(pointer),
+    IStringable {
   private val backing_Size: RuntimeProperty<UInt32> = RuntimeProperty<UInt32>(UInt32(0u))
 
   public val size: UInt32
@@ -34,8 +41,7 @@ public open class JsonArray(
       if (pointer.isNull) {
         return backing_ValueType.get()
       }
-      return JsonValueType.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
-          6).getOrThrow().toInt())
+      return JsonValueType.fromValue(PlatformComInterop.invokeInt32Method(pointer, 6).getOrThrow())
     }
 
   public constructor() : this(Companion.activate().pointer)
@@ -48,11 +54,40 @@ public open class JsonArray(
         7, index.value).getOrThrow()))
   }
 
-  public fun get_Size(): UInt32 {
+  public fun getView(): IVectorView<IJsonValue> {
     if (pointer.isNull) {
-      return UInt32(0u)
+      error("Null runtime object pointer: GetView")
     }
-    return UInt32(PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
+    return IVectorView<IJsonValue>.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,
+        9).getOrThrow()))
+  }
+
+  public fun indexOf(value: IJsonValue, index: UInt32): WinRtBoolean {
+    if (pointer.isNull) {
+      return WinRtBoolean.FALSE
+    }
+    return WinRtBoolean(PlatformComInterop.invokeMethodWithObjectAndUInt32Args(pointer, 10,
+        ComMethodResultKind.BOOLEAN, projectedObjectArgumentPointer(value,
+        "Windows.Data.Json.IJsonValue", "{a3219ecb-f0b3-4dcd-beee-19d48cd3ed1e}"),
+        index.value).getOrThrow().requireBoolean())
+  }
+
+  public fun setAt(index: UInt32, value: IJsonValue) {
+    if (pointer.isNull) {
+      return
+    }
+    PlatformComInterop.invokeUnitMethodWithUInt32AndObjectArgs(pointer, 11, index.value,
+        projectedObjectArgumentPointer(value, "Windows.Data.Json.IJsonValue",
+        "{a3219ecb-f0b3-4dcd-beee-19d48cd3ed1e}")).getOrThrow()
+  }
+
+  public fun insertAt(index: UInt32, value: IJsonValue) {
+    if (pointer.isNull) {
+      return
+    }
+    PlatformComInterop.invokeUnitMethodWithUInt32AndObjectArgs(pointer, 12, index.value,
+        projectedObjectArgumentPointer(value, "Windows.Data.Json.IJsonValue",
+        "{a3219ecb-f0b3-4dcd-beee-19d48cd3ed1e}")).getOrThrow()
   }
 
   public fun removeAt(index: UInt32) {
@@ -62,12 +97,12 @@ public open class JsonArray(
     PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 13, index.value).getOrThrow()
   }
 
-  public fun append(`value`: IJsonValue) {
+  public fun append(value: IJsonValue) {
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 14, (`value` as
-        Inspectable).pointer).getOrThrow()
+    PlatformComInterop.invokeObjectSetter(pointer, 14, projectedObjectArgumentPointer(value,
+        "Windows.Data.Json.IJsonValue", "{a3219ecb-f0b3-4dcd-beee-19d48cd3ed1e}")).getOrThrow()
   }
 
   public fun removeAtEnd() {
@@ -84,11 +119,25 @@ public open class JsonArray(
     PlatformComInterop.invokeUnitMethod(pointer, 16).getOrThrow()
   }
 
+  public fun first(): Iterator<IJsonValue> {
+    if (pointer.isNull) {
+      error("Null runtime object pointer: First")
+    }
+    return Iterator<IJsonValue>.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,
+        6).getOrThrow()))
+  }
+
   override fun toString(): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow().use { it.toKotlinString()
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
         }
   }
 
@@ -112,8 +161,15 @@ public open class JsonArray(
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 8,
-        index.value).getOrThrow().use { it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 8,
+              index.value).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun getNumberAt(index: UInt32): Float64 {
@@ -132,11 +188,24 @@ public open class JsonArray(
         index.value).getOrThrow())
   }
 
+  public fun get_ValueType(): JsonValueType {
+    if (pointer.isNull) {
+      error("Null runtime object pointer: Get_ValueType")
+    }
+    return JsonValueType.fromValue(PlatformComInterop.invokeInt32Method(pointer, 6).getOrThrow())
+  }
+
   public fun stringify(): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow().use { it.toKotlinString()
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
         }
   }
 
@@ -144,7 +213,13 @@ public open class JsonArray(
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow().use { it.toKotlinString()
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
         }
   }
 
@@ -174,14 +249,6 @@ public open class JsonArray(
       error("Null runtime object pointer: GetArray")
     }
     return JsonArray(PlatformComInterop.invokeObjectMethod(pointer, 11).getOrThrow())
-  }
-
-  public fun get_ValueType(): JsonValueType {
-    if (pointer.isNull) {
-      error("Null runtime object pointer: get_ValueType")
-    }
-    return JsonValueType.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
-        6).getOrThrow().toInt())
   }
 
   public companion object : WinRtRuntimeClassMetadata {

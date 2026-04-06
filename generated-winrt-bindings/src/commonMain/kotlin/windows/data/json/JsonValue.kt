@@ -1,4 +1,4 @@
-package windows.`data`.json
+package windows.data.json
 
 import dev.winrt.core.Float64
 import dev.winrt.core.Inspectable
@@ -11,10 +11,12 @@ import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
+import windows.foundation.IStringable
 
 public open class JsonValue(
   pointer: ComPtr,
-) : Inspectable(pointer) {
+) : Inspectable(pointer),
+    IStringable {
   private val backing_ValueType: RuntimeProperty<JsonValueType> =
       RuntimeProperty<JsonValueType>(JsonValueType.fromValue(0))
 
@@ -23,25 +25,41 @@ public open class JsonValue(
       if (pointer.isNull) {
         return backing_ValueType.get()
       }
-      return JsonValueType.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
-          6).getOrThrow().toInt())
+      return JsonValueType.fromValue(PlatformComInterop.invokeInt32Method(pointer, 6).getOrThrow())
     }
-
-  public constructor() : this(Companion.activate().pointer)
 
   override fun toString(): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow().use { it.toKotlinString()
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
         }
+  }
+
+  public fun get_ValueType(): JsonValueType {
+    if (pointer.isNull) {
+      error("Null runtime object pointer: Get_ValueType")
+    }
+    return JsonValueType.fromValue(PlatformComInterop.invokeInt32Method(pointer, 6).getOrThrow())
   }
 
   public fun stringify(): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow().use { it.toKotlinString()
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
         }
   }
 
@@ -49,7 +67,13 @@ public open class JsonValue(
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow().use { it.toKotlinString()
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
         }
   }
 
@@ -81,14 +105,6 @@ public open class JsonValue(
     return JsonArray(PlatformComInterop.invokeObjectMethod(pointer, 11).getOrThrow())
   }
 
-  public fun get_ValueType(): JsonValueType {
-    if (pointer.isNull) {
-      error("Null runtime object pointer: get_ValueType")
-    }
-    return JsonValueType.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
-        6).getOrThrow().toInt())
-  }
-
   public companion object : WinRtRuntimeClassMetadata {
     override val qualifiedName: String = "Windows.Data.Json.JsonValue"
 
@@ -98,13 +114,13 @@ public open class JsonValue(
 
     override val activationKind: WinRtActivationKind = WinRtActivationKind.Factory
 
-    private val statics: IJsonValueStatics by lazy { WinRtRuntime.projectActivationFactory(this,
-        IJsonValueStatics, ::IJsonValueStatics) }
-
     private val statics2: IJsonValueStatics2 by lazy { WinRtRuntime.projectActivationFactory(this,
         IJsonValueStatics2, ::IJsonValueStatics2) }
 
-    public fun activate(): JsonValue = WinRtRuntime.activate(this, ::JsonValue)
+    private val statics: IJsonValueStatics by lazy { WinRtRuntime.projectActivationFactory(this,
+        IJsonValueStatics, ::IJsonValueStatics) }
+
+    public fun createNullValue(): JsonValue = statics2.createNullValue()
 
     public fun parse(input: String): JsonValue = statics.parse(input)
 
@@ -112,7 +128,5 @@ public open class JsonValue(
         statics.createBooleanValue(input)
 
     public fun createStringValue(input: String): JsonValue = statics.createStringValue(input)
-
-    public fun createNullValue(): JsonValue = statics2.createNullValue()
   }
 }

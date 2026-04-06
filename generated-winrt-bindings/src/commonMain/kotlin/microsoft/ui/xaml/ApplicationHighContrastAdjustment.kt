@@ -1,12 +1,18 @@
 package microsoft.ui.xaml
 
-import kotlin.Int
+import kotlin.UInt
 
 public enum class ApplicationHighContrastAdjustment(
-  public val `value`: Int,
+  public val value: UInt,
 ) {
+  None(0u),
+  Auto(0xffffffffu),
   ;
+
   public companion object {
-    public fun fromValue(`value`: Int): ApplicationHighContrastAdjustment = entries.first { it.value == value }
+    public fun fromValue(value: UInt): ApplicationHighContrastAdjustment = entries.first {
+        entry ->
+      entry.value == value
+    }
   }
 }

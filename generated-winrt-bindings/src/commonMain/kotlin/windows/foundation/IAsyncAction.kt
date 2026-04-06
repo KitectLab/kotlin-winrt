@@ -4,27 +4,25 @@ import dev.winrt.core.Inspectable
 import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.guidOf
 import dev.winrt.core.projectInterface
+import dev.winrt.core.projectedObjectArgumentPointer
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
+import kotlin.String
 
 public open class IAsyncAction(
   pointer: ComPtr,
 ) : IAsyncInfo(pointer) {
-  public open var completed: AsyncActionCompletedHandler
-    get() = get_Completed()
+  public var completed: AsyncActionCompletedHandler
+    get() = AsyncActionCompletedHandler(PlatformComInterop.invokeObjectMethod(pointer,
+        12).getOrThrow())
     set(value) {
-      put_Completed(value)
+      PlatformComInterop.invokeObjectSetter(pointer, 11, projectedObjectArgumentPointer(value,
+          "Windows.Foundation.AsyncActionCompletedHandler",
+          "delegate({a4ed5c81-76c9-40bd-8be6-b1d90fb20ae7})")).getOrThrow()
     }
 
-  public open fun put_Completed(handler: AsyncActionCompletedHandler) {
-    PlatformComInterop.invokeObjectSetter(pointer, 11, handler.pointer).getOrThrow()
-  }
-
-  public open fun get_Completed(): AsyncActionCompletedHandler =
-      AsyncActionCompletedHandler(PlatformComInterop.invokeObjectMethod(pointer, 12).getOrThrow())
-
-  public open fun getResults() {
+  public fun getResults() {
     PlatformComInterop.invokeUnitMethod(pointer, 13).getOrThrow()
   }
 
@@ -35,7 +33,9 @@ public open class IAsyncAction(
 
     override val iid: Guid = guidOf("5a648006-843a-4da9-865b-9d26e5dfad7b")
 
-    public fun from(inspectable: Inspectable): IAsyncAction =
-        inspectable.projectInterface(this, ::IAsyncAction)
+    public fun from(inspectable: Inspectable): IAsyncAction = inspectable.projectInterface(this,
+        ::IAsyncAction)
+
+    public operator fun invoke(inspectable: Inspectable): IAsyncAction = from(inspectable)
   }
 }

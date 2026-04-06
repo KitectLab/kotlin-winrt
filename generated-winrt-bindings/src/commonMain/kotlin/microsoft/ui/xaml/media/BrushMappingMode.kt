@@ -1,13 +1,17 @@
 package microsoft.ui.xaml.media
 
-enum class BrushMappingMode(
-    val value: Int,
-) {
-    Absolute(0),
-    RelativeToBoundingBox(1);
+import kotlin.Int
 
-    companion object {
-        fun fromValue(value: Int): BrushMappingMode =
-            entries.first { it.value == value }
+public enum class BrushMappingMode(
+  public val value: Int,
+) {
+  Absolute(0),
+  RelativeToBoundingBox(1),
+  ;
+
+  public companion object {
+    public fun fromValue(value: Int): BrushMappingMode = entries.first { entry ->
+      entry.value == value
     }
+  }
 }

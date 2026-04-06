@@ -1,4 +1,4 @@
-package windows.`data`.json
+package windows.data.json
 
 import dev.winrt.core.Inspectable
 import dev.winrt.core.Int32
@@ -12,8 +12,6 @@ import kotlin.String
 public open class JsonError(
   pointer: ComPtr,
 ) : Inspectable(pointer) {
-  public constructor() : this(Companion.activate().pointer)
-
   public companion object : WinRtRuntimeClassMetadata {
     override val qualifiedName: String = "Windows.Data.Json.JsonError"
 
@@ -25,8 +23,6 @@ public open class JsonError(
 
     private val statics2: IJsonErrorStatics2 by lazy { WinRtRuntime.projectActivationFactory(this,
         IJsonErrorStatics2, ::IJsonErrorStatics2) }
-
-    public fun activate(): JsonError = WinRtRuntime.activate(this, ::JsonError)
 
     public fun getJsonStatus(hresult: Int32): JsonErrorStatus = statics2.getJsonStatus(hresult)
   }

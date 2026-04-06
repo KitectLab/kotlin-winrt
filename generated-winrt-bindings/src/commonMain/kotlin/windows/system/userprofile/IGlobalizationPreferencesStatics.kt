@@ -9,17 +9,40 @@ import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
+import windows.foundation.collections.IVectorView
 import windows.globalization.DayOfWeek
 
 internal open class IGlobalizationPreferencesStatics(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
+  public val calendars: IVectorView<String>
+    get() = IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,
+        6).getOrThrow()), "string", "String")
+
+  public val clocks: IVectorView<String>
+    get() = IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,
+        7).getOrThrow()), "string", "String")
+
+  public val currencies: IVectorView<String>
+    get() = IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,
+        8).getOrThrow()), "string", "String")
+
   public val homeGeographicRegion: String
-    get() = PlatformComInterop.invokeHStringMethod(pointer, 10).getOrThrow().use {
-        it.toKotlinString() }
+    get() = run {
+      val value = PlatformComInterop.invokeHStringMethod(pointer, 10).getOrThrow()
+      try {
+        value.toKotlinString()
+      } finally {
+        value.close()
+      }
+    }
+
+  public val languages: IVectorView<String>
+    get() = IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,
+        9).getOrThrow()), "string", "String")
 
   public val weekStartsOn: DayOfWeek
-    get() = DayOfWeek(PlatformComInterop.invokeObjectMethod(pointer, 11).getOrThrow())
+    get() = DayOfWeek.fromValue(PlatformComInterop.invokeInt32Method(pointer, 11).getOrThrow())
 
   public companion object : WinRtInterfaceMetadata {
     override val qualifiedName: String =

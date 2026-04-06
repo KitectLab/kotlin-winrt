@@ -9,13 +9,28 @@ import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
+import windows.foundation.collections.IVectorView
 
 internal open class IApplicationLanguagesStatics(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
+  public val languages: IVectorView<String>
+    get() = IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,
+        8).getOrThrow()), "string", "String")
+
+  public val manifestLanguages: IVectorView<String>
+    get() = IVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,
+        9).getOrThrow()), "string", "String")
+
   public var primaryLanguageOverride: String
-    get() = PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow().use {
-        it.toKotlinString() }
+    get() = run {
+      val value = PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()
+      try {
+        value.toKotlinString()
+      } finally {
+        value.close()
+      }
+    }
     set(value) {
       PlatformComInterop.invokeStringSetter(pointer, 7, value).getOrThrow()
     }

@@ -7,17 +7,19 @@ import dev.winrt.core.guidOf
 import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
+import kotlin.String
 
-typealias CreateDefaultValueCallbackHandler = () -> Inspectable
+public typealias CreateDefaultValueCallbackHandler = () -> Inspectable
 
-open class CreateDefaultValueCallback(
-    pointer: ComPtr,
+public open class CreateDefaultValueCallback(
+  pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
-    companion object : WinRtInterfaceMetadata {
-        override val qualifiedName: String = "Microsoft.UI.Xaml.CreateDefaultValueCallback"
-        override val iid: Guid = guidOf("7f808c05-2ac4-5ad9-ac8a-26890333d81e")
+  public companion object : WinRtInterfaceMetadata {
+    override val qualifiedName: String = "Microsoft.UI.Xaml.CreateDefaultValueCallback"
 
-        fun from(inspectable: Inspectable): CreateDefaultValueCallback =
-            inspectable.projectInterface(this, ::CreateDefaultValueCallback)
-    }
+    override val iid: Guid = guidOf("7f808c05-2ac4-5ad9-ac8a-26890333d81e")
+
+    public fun from(inspectable: Inspectable): CreateDefaultValueCallback =
+        inspectable.projectInterface(this, ::CreateDefaultValueCallback)
+  }
 }

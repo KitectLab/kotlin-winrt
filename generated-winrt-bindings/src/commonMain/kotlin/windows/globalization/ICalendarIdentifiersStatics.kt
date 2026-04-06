@@ -8,70 +8,112 @@ import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
+import kotlin.String
 
 internal open class ICalendarIdentifiersStatics(
   pointer: ComPtr,
 ) : WinRtInterfaceProjection(pointer) {
   public val gregorian: String
-    get() = get_Gregorian()
+    get() = run {
+      val value = PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()
+      try {
+        value.toKotlinString()
+      } finally {
+        value.close()
+      }
+    }
 
   public val hebrew: String
-    get() = get_Hebrew()
+    get() = run {
+      val value = PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow()
+      try {
+        value.toKotlinString()
+      } finally {
+        value.close()
+      }
+    }
 
   public val hijri: String
-    get() = get_Hijri()
+    get() = run {
+      val value = PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow()
+      try {
+        value.toKotlinString()
+      } finally {
+        value.close()
+      }
+    }
 
   public val japanese: String
-    get() = get_Japanese()
+    get() = run {
+      val value = PlatformComInterop.invokeHStringMethod(pointer, 9).getOrThrow()
+      try {
+        value.toKotlinString()
+      } finally {
+        value.close()
+      }
+    }
 
   public val julian: String
-    get() = get_Julian()
+    get() = run {
+      val value = PlatformComInterop.invokeHStringMethod(pointer, 10).getOrThrow()
+      try {
+        value.toKotlinString()
+      } finally {
+        value.close()
+      }
+    }
 
   public val korean: String
-    get() = get_Korean()
+    get() = run {
+      val value = PlatformComInterop.invokeHStringMethod(pointer, 11).getOrThrow()
+      try {
+        value.toKotlinString()
+      } finally {
+        value.close()
+      }
+    }
 
   public val taiwan: String
-    get() = get_Taiwan()
+    get() = run {
+      val value = PlatformComInterop.invokeHStringMethod(pointer, 12).getOrThrow()
+      try {
+        value.toKotlinString()
+      } finally {
+        value.close()
+      }
+    }
 
   public val thai: String
-    get() = get_Thai()
+    get() = run {
+      val value = PlatformComInterop.invokeHStringMethod(pointer, 13).getOrThrow()
+      try {
+        value.toKotlinString()
+      } finally {
+        value.close()
+      }
+    }
 
   public val umAlQura: String
-    get() = get_UmAlQura()
-
-  public fun get_Gregorian(): String = readString(6)
-
-  public fun get_Hebrew(): String = readString(7)
-
-  public fun get_Hijri(): String = readString(8)
-
-  public fun get_Japanese(): String = readString(9)
-
-  public fun get_Julian(): String = readString(10)
-
-  public fun get_Korean(): String = readString(11)
-
-  public fun get_Taiwan(): String = readString(12)
-
-  public fun get_Thai(): String = readString(13)
-
-  public fun get_UmAlQura(): String = readString(14)
-
-  private fun readString(vtableIndex: Int): String {
-    val value = PlatformComInterop.invokeHStringMethod(pointer, vtableIndex).getOrThrow()
-    return try {
-      value.toKotlinString()
-    } finally {
-      value.close()
+    get() = run {
+      val value = PlatformComInterop.invokeHStringMethod(pointer, 14).getOrThrow()
+      try {
+        value.toKotlinString()
+      } finally {
+        value.close()
+      }
     }
-  }
 
   public companion object : WinRtInterfaceMetadata {
     override val qualifiedName: String = "Windows.Globalization.ICalendarIdentifiersStatics"
+
+    override val projectionTypeKey: String = "Windows.Globalization.ICalendarIdentifiersStatics"
 
     override val iid: Guid = guidOf("80653f68-2cb2-4c1f-b590-f0f52bf4fd1a")
 
     public fun from(inspectable: Inspectable): ICalendarIdentifiersStatics =
         inspectable.projectInterface(this, ::ICalendarIdentifiersStatics)
+
+    public operator fun invoke(inspectable: Inspectable): ICalendarIdentifiersStatics =
+        from(inspectable)
   }
 }

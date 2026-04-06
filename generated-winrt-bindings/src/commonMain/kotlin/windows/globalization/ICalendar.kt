@@ -215,8 +215,7 @@ private class ICalendarProjection(
     }
 
   override val dayOfWeek: DayOfWeek
-    get() = DayOfWeek.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
-        57).getOrThrow().toInt())
+    get() = DayOfWeek.fromValue(PlatformComInterop.invokeInt32Method(pointer, 57).getOrThrow())
 
   override var era: Int32
     get() = Int32(PlatformComInterop.invokeInt32Method(pointer, 22).getOrThrow())
@@ -328,8 +327,14 @@ private class ICalendarProjection(
     get() = Int32(PlatformComInterop.invokeInt32Method(pointer, 29).getOrThrow())
 
   override var numeralSystem: String
-    get() = PlatformComInterop.invokeHStringMethod(pointer, 10).getOrThrow().use {
-        it.toKotlinString() }
+    get() = run {
+      val value = PlatformComInterop.invokeHStringMethod(pointer, 10).getOrThrow()
+      try {
+        value.toKotlinString()
+      } finally {
+        value.close()
+      }
+    }
     set(value) {
       PlatformComInterop.invokeStringSetter(pointer, 11, value).getOrThrow()
     }
@@ -341,8 +346,14 @@ private class ICalendarProjection(
     }
 
   override val resolvedLanguage: String
-    get() = PlatformComInterop.invokeHStringMethod(pointer, 102).getOrThrow().use {
-        it.toKotlinString() }
+    get() = run {
+      val value = PlatformComInterop.invokeHStringMethod(pointer, 102).getOrThrow()
+      try {
+        value.toKotlinString()
+      } finally {
+        value.close()
+      }
+    }
 
   override var second: Int32
     get() = Int32(PlatformComInterop.invokeInt32Method(pointer, 83).getOrThrow())
@@ -394,13 +405,11 @@ private class ICalendarProjection(
   }
 
   override fun getDateTime(): Instant =
-      Instant.fromEpochSeconds((PlatformComInterop.invokeInt64Getter(pointer, 16).getOrThrow() -
-      116_444_736_000_000_000) / 10000000L, ((PlatformComInterop.invokeInt64Getter(pointer,
-      16).getOrThrow() - 116_444_736_000_000_000) % 10000000L * 100).toInt())
+      Instant.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer, 16,
+      Instant.ABI_LAYOUT).getOrThrow())
 
   override fun setDateTime(value: Instant) {
-    PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 17, (((value.epochSeconds *
-        10000000L) + (value.nanosecondsOfSecond / 100)) + 116444736000000000)).getOrThrow()
+    PlatformComInterop.invokeUnitMethodWithArgs(pointer, 17, value.toAbi()).getOrThrow()
   }
 
   override fun setToNow() {
@@ -420,9 +429,15 @@ private class ICalendarProjection(
     }
   }
 
-  override fun eraAsString(idealLength: Int32): String =
-      PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 26,
-      idealLength.value).getOrThrow().use { it.toKotlinString() }
+  override fun eraAsString(idealLength: Int32): String = run {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 26,
+        idealLength.value).getOrThrow()
+    try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
 
   override fun addYears(years: Int32) {
     PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 32, years.value).getOrThrow()
@@ -437,13 +452,25 @@ private class ICalendarProjection(
     }
   }
 
-  override fun yearAsTruncatedString(remainingDigits: Int32): String =
-      PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 34,
-      remainingDigits.value).getOrThrow().use { it.toKotlinString() }
+  override fun yearAsTruncatedString(remainingDigits: Int32): String = run {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 34,
+        remainingDigits.value).getOrThrow()
+    try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
 
-  override fun yearAsPaddedString(minDigits: Int32): String =
-      PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 35,
-      minDigits.value).getOrThrow().use { it.toKotlinString() }
+  override fun yearAsPaddedString(minDigits: Int32): String = run {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 35,
+        minDigits.value).getOrThrow()
+    try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
 
   override fun addMonths(months: Int32) {
     PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 41, months.value).getOrThrow()
@@ -458,9 +485,15 @@ private class ICalendarProjection(
     }
   }
 
-  override fun monthAsString(idealLength: Int32): String =
-      PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 43,
-      idealLength.value).getOrThrow().use { it.toKotlinString() }
+  override fun monthAsString(idealLength: Int32): String = run {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 43,
+        idealLength.value).getOrThrow()
+    try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
 
   override fun monthAsSoloString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 44).getOrThrow()
@@ -471,9 +504,15 @@ private class ICalendarProjection(
     }
   }
 
-  override fun monthAsSoloString(idealLength: Int32): String =
-      PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 45,
-      idealLength.value).getOrThrow().use { it.toKotlinString() }
+  override fun monthAsSoloString(idealLength: Int32): String = run {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 45,
+        idealLength.value).getOrThrow()
+    try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
 
   override fun monthAsNumericString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 46).getOrThrow()
@@ -484,9 +523,15 @@ private class ICalendarProjection(
     }
   }
 
-  override fun monthAsPaddedNumericString(minDigits: Int32): String =
-      PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 47,
-      minDigits.value).getOrThrow().use { it.toKotlinString() }
+  override fun monthAsPaddedNumericString(minDigits: Int32): String = run {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 47,
+        minDigits.value).getOrThrow()
+    try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
 
   override fun addWeeks(weeks: Int32) {
     PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 48, weeks.value).getOrThrow()
@@ -505,9 +550,15 @@ private class ICalendarProjection(
     }
   }
 
-  override fun dayAsPaddedString(minDigits: Int32): String =
-      PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 56,
-      minDigits.value).getOrThrow().use { it.toKotlinString() }
+  override fun dayAsPaddedString(minDigits: Int32): String = run {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 56,
+        minDigits.value).getOrThrow()
+    try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
 
   override fun dayOfWeekAsString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 58).getOrThrow()
@@ -518,9 +569,15 @@ private class ICalendarProjection(
     }
   }
 
-  override fun dayOfWeekAsString(idealLength: Int32): String =
-      PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 59,
-      idealLength.value).getOrThrow().use { it.toKotlinString() }
+  override fun dayOfWeekAsString(idealLength: Int32): String = run {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 59,
+        idealLength.value).getOrThrow()
+    try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
 
   override fun dayOfWeekAsSoloString(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 60).getOrThrow()
@@ -531,9 +588,15 @@ private class ICalendarProjection(
     }
   }
 
-  override fun dayOfWeekAsSoloString(idealLength: Int32): String =
-      PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 61,
-      idealLength.value).getOrThrow().use { it.toKotlinString() }
+  override fun dayOfWeekAsSoloString(idealLength: Int32): String = run {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 61,
+        idealLength.value).getOrThrow()
+    try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
 
   override fun addPeriods(periods: Int32) {
     PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 67, periods.value).getOrThrow()
@@ -548,9 +611,15 @@ private class ICalendarProjection(
     }
   }
 
-  override fun periodAsString(idealLength: Int32): String =
-      PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 69,
-      idealLength.value).getOrThrow().use { it.toKotlinString() }
+  override fun periodAsString(idealLength: Int32): String = run {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 69,
+        idealLength.value).getOrThrow()
+    try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
 
   override fun addHours(hours: Int32) {
     PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 75, hours.value).getOrThrow()
@@ -565,9 +634,15 @@ private class ICalendarProjection(
     }
   }
 
-  override fun hourAsPaddedString(minDigits: Int32): String =
-      PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 77,
-      minDigits.value).getOrThrow().use { it.toKotlinString() }
+  override fun hourAsPaddedString(minDigits: Int32): String = run {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 77,
+        minDigits.value).getOrThrow()
+    try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
 
   override fun addMinutes(minutes: Int32) {
     PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 80, minutes.value).getOrThrow()
@@ -582,9 +657,15 @@ private class ICalendarProjection(
     }
   }
 
-  override fun minuteAsPaddedString(minDigits: Int32): String =
-      PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 82,
-      minDigits.value).getOrThrow().use { it.toKotlinString() }
+  override fun minuteAsPaddedString(minDigits: Int32): String = run {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 82,
+        minDigits.value).getOrThrow()
+    try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
 
   override fun addSeconds(seconds: Int32) {
     PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 85, seconds.value).getOrThrow()
@@ -599,9 +680,15 @@ private class ICalendarProjection(
     }
   }
 
-  override fun secondAsPaddedString(minDigits: Int32): String =
-      PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 87,
-      minDigits.value).getOrThrow().use { it.toKotlinString() }
+  override fun secondAsPaddedString(minDigits: Int32): String = run {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 87,
+        minDigits.value).getOrThrow()
+    try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
 
   override fun addNanoseconds(nanoseconds: Int32) {
     PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 90, nanoseconds.value).getOrThrow()
@@ -616,9 +703,15 @@ private class ICalendarProjection(
     }
   }
 
-  override fun nanosecondAsPaddedString(minDigits: Int32): String =
-      PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 92,
-      minDigits.value).getOrThrow().use { it.toKotlinString() }
+  override fun nanosecondAsPaddedString(minDigits: Int32): String = run {
+    val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 92,
+        minDigits.value).getOrThrow()
+    try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
 
   override fun compare(other: Calendar): Int32 =
       Int32(PlatformComInterop.invokeInt32MethodWithObjectArg(pointer, 93,

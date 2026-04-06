@@ -11,7 +11,9 @@ import dev.winrt.core.WinRtDelegateHandle
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.core.guidOf
+import dev.winrt.core.projectedObjectArgumentPointer
 import dev.winrt.kom.ComPtr
+import dev.winrt.kom.ComStructValue
 import dev.winrt.kom.PlatformComInterop
 import java.lang.AutoCloseable
 import kotlin.String
@@ -24,6 +26,7 @@ import microsoft.ui.composition.Compositor
 import microsoft.ui.dispatching.DispatcherQueue
 import microsoft.ui.windowing.AppWindow
 import microsoft.ui.xaml.media.SystemBackdrop
+import windows.foundation.IPropertyValue
 import windows.foundation.Rect
 import windows.foundation.TypedEventHandler
 import windows.ui.core.CoreDispatcher
@@ -62,14 +65,17 @@ public open class Window(
           Inspectable).pointer).getOrThrow()
     }
 
-  private val backing_Bounds: RuntimeProperty<Rect> = RuntimeProperty<Rect>(Rect(ComPtr.NULL))
+  private val backing_Bounds: RuntimeProperty<Rect> =
+      RuntimeProperty<Rect>(Rect.fromAbi(ComStructValue(Rect.ABI_LAYOUT,
+      ByteArray(Rect.ABI_LAYOUT.byteSize))))
 
   public val bounds: Rect
     get() {
       if (pointer.isNull) {
         return backing_Bounds.get()
       }
-      return Rect(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
+      return Rect.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer, 6,
+          Rect.ABI_LAYOUT).getOrThrow())
     }
 
   private val backing_Compositor: RuntimeProperty<Compositor> =
@@ -160,8 +166,14 @@ public open class Window(
       if (pointer.isNull) {
         return backing_Title.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 14).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 14).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
     set(value) {
       if (pointer.isNull) {
@@ -253,8 +265,9 @@ public open class Window(
       if (pointer.isNull) {
         return backing_OptionalTitle.get()
       }
-      return if (pointer.isNull) null else PlatformComInterop.invokeHStringMethod(pointer,
-          14).getOrThrow().use { value -> value.takeUnless { it.isNull }?.toKotlinString() }
+      return if (pointer.isNull) null else PlatformComInterop.invokeObjectMethod(pointer,
+          14).getOrThrow().let { if (it.isNull) null else
+          IPropertyValue.from(Inspectable(it)).getString() }
     }
 
   private val activatedEventSlot: ActivatedEvent = ActivatedEvent()
@@ -279,32 +292,81 @@ public open class Window(
 
   public constructor() : this(Companion.factoryCreateInstance().pointer)
 
+  public fun add_Activated(handler: TypedEventHandler<Inspectable, WindowActivatedEventArgs>):
+      EventRegistrationToken {
+    if (pointer.isNull) {
+      return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
+          ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
+    }
+    return EventRegistrationToken.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer, 18,
+        EventRegistrationToken.ABI_LAYOUT, projectedObjectArgumentPointer(handler,
+        "Windows.Foundation.TypedEventHandler`2<Object, Microsoft.UI.Xaml.WindowActivatedEventArgs>",
+        "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};cinterface(IInspectable);rc(Microsoft.UI.Xaml.WindowActivatedEventArgs;{c723a5ea-82c4-5dd6-861b-70ef573b88d6}))")).getOrThrow())
+  }
+
   public fun remove_Activated(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 19, token.value).getOrThrow()
+    PlatformComInterop.invokeUnitMethodWithArgs(pointer, 19, token.toAbi()).getOrThrow()
+  }
+
+  public fun add_Closed(handler: TypedEventHandler<Inspectable, WindowEventArgs>):
+      EventRegistrationToken {
+    if (pointer.isNull) {
+      return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
+          ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
+    }
+    return EventRegistrationToken.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer, 20,
+        EventRegistrationToken.ABI_LAYOUT, projectedObjectArgumentPointer(handler,
+        "Windows.Foundation.TypedEventHandler`2<Object, Microsoft.UI.Xaml.WindowEventArgs>",
+        "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};cinterface(IInspectable);rc(Microsoft.UI.Xaml.WindowEventArgs;{1140827c-fe0a-5268-bc2b-f4492c2ccb49}))")).getOrThrow())
   }
 
   public fun remove_Closed(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 21, token.value).getOrThrow()
+    PlatformComInterop.invokeUnitMethodWithArgs(pointer, 21, token.toAbi()).getOrThrow()
+  }
+
+  public fun add_SizeChanged(handler: TypedEventHandler<Inspectable, WindowSizeChangedEventArgs>):
+      EventRegistrationToken {
+    if (pointer.isNull) {
+      return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
+          ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
+    }
+    return EventRegistrationToken.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer, 22,
+        EventRegistrationToken.ABI_LAYOUT, projectedObjectArgumentPointer(handler,
+        "Windows.Foundation.TypedEventHandler`2<Object, Microsoft.UI.Xaml.WindowSizeChangedEventArgs>",
+        "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};cinterface(IInspectable);rc(Microsoft.UI.Xaml.WindowSizeChangedEventArgs;{542f6f2c-4b64-5c72-a7a5-3a7e0664b8ff}))")).getOrThrow())
   }
 
   public fun remove_SizeChanged(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 23, token.value).getOrThrow()
+    PlatformComInterop.invokeUnitMethodWithArgs(pointer, 23, token.toAbi()).getOrThrow()
+  }
+
+  public
+      fun add_VisibilityChanged(handler: TypedEventHandler<Inspectable, WindowVisibilityChangedEventArgs>):
+      EventRegistrationToken {
+    if (pointer.isNull) {
+      return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
+          ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
+    }
+    return EventRegistrationToken.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer, 24,
+        EventRegistrationToken.ABI_LAYOUT, projectedObjectArgumentPointer(handler,
+        "Windows.Foundation.TypedEventHandler`2<Object, Microsoft.UI.Xaml.WindowVisibilityChangedEventArgs>",
+        "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};cinterface(IInspectable);rc(Microsoft.UI.Xaml.WindowVisibilityChangedEventArgs;{7bb24a6d-070c-5cb6-8e9c-547905be8265}))")).getOrThrow())
   }
 
   public fun remove_VisibilityChanged(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 25, token.value).getOrThrow()
+    PlatformComInterop.invokeUnitMethodWithArgs(pointer, 25, token.toAbi()).getOrThrow()
   }
 
   public fun activate() {
@@ -325,8 +387,9 @@ public open class Window(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 28, (titleBar as
-        Inspectable).pointer).getOrThrow()
+    PlatformComInterop.invokeObjectSetter(pointer, 28, projectedObjectArgumentPointer(titleBar,
+        "Microsoft.UI.Xaml.UIElement",
+        "rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b})")).getOrThrow()
   }
 
   public inner class ActivatedEvent {
@@ -347,7 +410,7 @@ public open class Window(
     public fun subscribe(handler: (ComPtr, WindowActivatedEventArgs) -> Unit):
         EventRegistrationToken {
       val delegateHandle =
-          WinRtDelegateBridge.createUnitDelegate(guidOf("00000000-0000-0000-0000-000000000000"),
+          WinRtDelegateBridge.createUnitDelegate(guidOf("9de1c534-6ae1-11e0-84e1-18a905bcc53f"),
           listOf(dev.winrt.core.WinRtDelegateValueKind.OBJECT,
           dev.winrt.core.WinRtDelegateValueKind.OBJECT)) { args -> handler(args[0] as ComPtr,
           WindowActivatedEventArgs(args[1] as ComPtr)) }
@@ -408,7 +471,7 @@ public open class Window(
 
     public fun subscribe(handler: (ComPtr, WindowEventArgs) -> Unit): EventRegistrationToken {
       val delegateHandle =
-          WinRtDelegateBridge.createUnitDelegate(guidOf("00000000-0000-0000-0000-000000000000"),
+          WinRtDelegateBridge.createUnitDelegate(guidOf("9de1c534-6ae1-11e0-84e1-18a905bcc53f"),
           listOf(dev.winrt.core.WinRtDelegateValueKind.OBJECT,
           dev.winrt.core.WinRtDelegateValueKind.OBJECT)) { args -> handler(args[0] as ComPtr,
           WindowEventArgs(args[1] as ComPtr)) }
@@ -469,7 +532,7 @@ public open class Window(
     public fun subscribe(handler: (ComPtr, WindowSizeChangedEventArgs) -> Unit):
         EventRegistrationToken {
       val delegateHandle =
-          WinRtDelegateBridge.createUnitDelegate(guidOf("00000000-0000-0000-0000-000000000000"),
+          WinRtDelegateBridge.createUnitDelegate(guidOf("9de1c534-6ae1-11e0-84e1-18a905bcc53f"),
           listOf(dev.winrt.core.WinRtDelegateValueKind.OBJECT,
           dev.winrt.core.WinRtDelegateValueKind.OBJECT)) { args -> handler(args[0] as ComPtr,
           WindowSizeChangedEventArgs(args[1] as ComPtr)) }
@@ -533,7 +596,7 @@ public open class Window(
     public fun subscribe(handler: (ComPtr, WindowVisibilityChangedEventArgs) -> Unit):
         EventRegistrationToken {
       val delegateHandle =
-          WinRtDelegateBridge.createUnitDelegate(guidOf("00000000-0000-0000-0000-000000000000"),
+          WinRtDelegateBridge.createUnitDelegate(guidOf("9de1c534-6ae1-11e0-84e1-18a905bcc53f"),
           listOf(dev.winrt.core.WinRtDelegateValueKind.OBJECT,
           dev.winrt.core.WinRtDelegateValueKind.OBJECT)) { args -> handler(args[0] as ComPtr,
           WindowVisibilityChangedEventArgs(args[1] as ComPtr)) }

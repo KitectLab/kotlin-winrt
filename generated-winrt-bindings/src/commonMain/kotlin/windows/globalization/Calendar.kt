@@ -10,6 +10,7 @@ import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.core.projectedObjectArgumentPointer
 import dev.winrt.kom.ComPtr
+import dev.winrt.kom.ComStructValue
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
 import kotlin.collections.Iterable
@@ -45,7 +46,7 @@ public open class Calendar(
       if (pointer.isNull) {
         return backing_DayOfWeek.get()
       }
-      return DayOfWeek(PlatformComInterop.invokeObjectMethod(pointer, 57).getOrThrow())
+      return DayOfWeek.fromValue(PlatformComInterop.invokeInt32Method(pointer, 57).getOrThrow())
     }
 
   private val backing_Era: RuntimeProperty<Int32> = RuntimeProperty<Int32>(Int32(0))
@@ -406,8 +407,14 @@ public open class Calendar(
       if (pointer.isNull) {
         return backing_NumeralSystem.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 10).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 10).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
     set(value) {
       if (pointer.isNull) {
@@ -441,8 +448,14 @@ public open class Calendar(
       if (pointer.isNull) {
         return backing_ResolvedLanguage.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 102).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 102).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
 
   private val backing_Second: RuntimeProperty<Int32> = RuntimeProperty<Int32>(Int32(0))
@@ -500,7 +513,13 @@ public open class Calendar(
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow().use { it.toKotlinString()
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
         }
   }
 
@@ -515,7 +534,13 @@ public open class Calendar(
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow().use { it.toKotlinString()
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
         }
   }
 
@@ -523,8 +548,15 @@ public open class Calendar(
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 9,
-        idealLength.value).getOrThrow().use { it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 9,
+              idealLength.value).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun clone(): Calendar {
@@ -552,15 +584,22 @@ public open class Calendar(
     if (pointer.isNull) {
       error("Null runtime object pointer: get_Languages")
     }
-    return IVectorView<String>(PlatformComInterop.invokeObjectMethod(pointer, 9).getOrThrow())
+    return IVectorView<String>.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,
+        9).getOrThrow()))
   }
 
   public fun getCalendarSystem(): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 12).getOrThrow().use {
-        it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 12).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun changeCalendarSystem(value: String) {
@@ -574,8 +613,14 @@ public open class Calendar(
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 14).getOrThrow().use {
-        it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 14).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun changeClock(value: String) {
@@ -587,20 +632,18 @@ public open class Calendar(
 
   public fun getDateTime(): Instant {
     if (pointer.isNull) {
-      return Instant.fromEpochSeconds(0)
+      return Instant.fromAbi(ComStructValue(Instant.ABI_LAYOUT,
+          ByteArray(Instant.ABI_LAYOUT.byteSize)))
     }
-    return Instant.fromEpochSeconds((PlatformComInterop.invokeInt64Getter(pointer,
-        16).getOrThrow() - 116_444_736_000_000_000) / 10000000L,
-        ((PlatformComInterop.invokeInt64Getter(pointer, 16).getOrThrow() - 116_444_736_000_000_000)
-        % 10000000L * 100).toInt())
+    return Instant.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer, 16,
+        Instant.ABI_LAYOUT).getOrThrow())
   }
 
   public fun setDateTime(value: Instant) {
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 17, (((value.epochSeconds *
-        10000000L) + (value.nanosecondsOfSecond / 100)) + 116444736000000000)).getOrThrow()
+    PlatformComInterop.invokeUnitMethodWithArgs(pointer, 17, value.toAbi()).getOrThrow()
   }
 
   public fun setToNow() {
@@ -621,16 +664,29 @@ public open class Calendar(
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 25).getOrThrow().use {
-        it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 25).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun eraAsString(idealLength: Int32): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 26,
-        idealLength.value).getOrThrow().use { it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 26,
+              idealLength.value).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun addYears(years: Int32) {
@@ -644,24 +700,44 @@ public open class Calendar(
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 33).getOrThrow().use {
-        it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 33).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun yearAsTruncatedString(remainingDigits: Int32): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 34,
-        remainingDigits.value).getOrThrow().use { it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 34,
+              remainingDigits.value).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun yearAsPaddedString(minDigits: Int32): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 35,
-        minDigits.value).getOrThrow().use { it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 35,
+              minDigits.value).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun addMonths(months: Int32) {
@@ -675,48 +751,87 @@ public open class Calendar(
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 42).getOrThrow().use {
-        it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 42).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun monthAsString(idealLength: Int32): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 43,
-        idealLength.value).getOrThrow().use { it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 43,
+              idealLength.value).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun monthAsSoloString(): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 44).getOrThrow().use {
-        it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 44).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun monthAsSoloString(idealLength: Int32): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 45,
-        idealLength.value).getOrThrow().use { it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 45,
+              idealLength.value).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun monthAsNumericString(): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 46).getOrThrow().use {
-        it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 46).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun monthAsPaddedNumericString(minDigits: Int32): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 47,
-        minDigits.value).getOrThrow().use { it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 47,
+              minDigits.value).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun addWeeks(weeks: Int32) {
@@ -737,48 +852,87 @@ public open class Calendar(
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 55).getOrThrow().use {
-        it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 55).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun dayAsPaddedString(minDigits: Int32): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 56,
-        minDigits.value).getOrThrow().use { it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 56,
+              minDigits.value).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun dayOfWeekAsString(): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 58).getOrThrow().use {
-        it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 58).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun dayOfWeekAsString(idealLength: Int32): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 59,
-        idealLength.value).getOrThrow().use { it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 59,
+              idealLength.value).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun dayOfWeekAsSoloString(): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 60).getOrThrow().use {
-        it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 60).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun dayOfWeekAsSoloString(idealLength: Int32): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 61,
-        idealLength.value).getOrThrow().use { it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 61,
+              idealLength.value).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun addPeriods(periods: Int32) {
@@ -792,16 +946,29 @@ public open class Calendar(
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 68).getOrThrow().use {
-        it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 68).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun periodAsString(idealLength: Int32): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 69,
-        idealLength.value).getOrThrow().use { it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 69,
+              idealLength.value).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun addHours(hours: Int32) {
@@ -815,16 +982,29 @@ public open class Calendar(
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 76).getOrThrow().use {
-        it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 76).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun hourAsPaddedString(minDigits: Int32): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 77,
-        minDigits.value).getOrThrow().use { it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 77,
+              minDigits.value).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun addMinutes(minutes: Int32) {
@@ -838,16 +1018,29 @@ public open class Calendar(
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 81).getOrThrow().use {
-        it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 81).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun minuteAsPaddedString(minDigits: Int32): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 82,
-        minDigits.value).getOrThrow().use { it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 82,
+              minDigits.value).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun addSeconds(seconds: Int32) {
@@ -861,16 +1054,29 @@ public open class Calendar(
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 86).getOrThrow().use {
-        it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 86).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun secondAsPaddedString(minDigits: Int32): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 87,
-        minDigits.value).getOrThrow().use { it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 87,
+              minDigits.value).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun addNanoseconds(nanoseconds: Int32) {
@@ -884,16 +1090,29 @@ public open class Calendar(
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 91).getOrThrow().use {
-        it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 91).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun nanosecondAsPaddedString(minDigits: Int32): String {
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 92,
-        minDigits.value).getOrThrow().use { it.toKotlinString() }
+    return run {
+          val value = PlatformComInterop.invokeHStringMethodWithInt32Arg(pointer, 92,
+              minDigits.value).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
+        }
   }
 
   public fun compare(other: Calendar): Int32 {
@@ -926,23 +1145,7 @@ public open class Calendar(
     private val factory: ICalendarFactory by lazy { WinRtRuntime.projectActivationFactory(this,
         ICalendarFactory, ::ICalendarFactory) }
 
-    private val factory2: ICalendarFactory2 by lazy { WinRtRuntime.projectActivationFactory(this,
-        ICalendarFactory2, ::ICalendarFactory2) }
-
     private fun factoryCreateCalendarDefaultCalendarAndClock(languages: Iterable<String>): Calendar
         = factory.createCalendarDefaultCalendarAndClock(languages)
-
-    private fun factoryCreateCalendar(
-      languages: Iterable<String>,
-      calendar: String,
-      clock: String,
-    ): Calendar = factory.createCalendar(languages, calendar, clock)
-
-    private fun factory2CreateCalendarWithTimeZone(
-      languages: Iterable<String>,
-      calendar: String,
-      clock: String,
-      timeZoneId: String,
-    ): Calendar = factory2.createCalendarWithTimeZone(languages, calendar, clock, timeZoneId)
   }
 }

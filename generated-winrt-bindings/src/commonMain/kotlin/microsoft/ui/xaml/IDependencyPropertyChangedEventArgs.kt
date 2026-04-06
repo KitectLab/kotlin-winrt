@@ -8,51 +8,40 @@ import dev.winrt.core.projectInterface
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
+import kotlin.String
 
-interface IDependencyPropertyChangedEventArgs {
-    val newValue: Inspectable
-    val oldValue: Inspectable
-    val property: DependencyProperty
+public interface IDependencyPropertyChangedEventArgs {
+  public val newValue: Inspectable
 
-    fun get_Property(): DependencyProperty
-    fun get_OldValue(): Inspectable
-    fun get_NewValue(): Inspectable
+  public val oldValue: Inspectable
 
-    companion object : WinRtInterfaceMetadata {
-        override val qualifiedName: String =
-            "Microsoft.UI.Xaml.IDependencyPropertyChangedEventArgs"
+  public val property: DependencyProperty
 
-        override val projectionTypeKey: String =
-            "Microsoft.UI.Xaml.IDependencyPropertyChangedEventArgs"
+  public companion object : WinRtInterfaceMetadata {
+    override val qualifiedName: String = "Microsoft.UI.Xaml.IDependencyPropertyChangedEventArgs"
 
-        override val iid: Guid = guidOf("84ead020-7849-5e98-8030-488a80d164ec")
+    override val projectionTypeKey: String = "Microsoft.UI.Xaml.IDependencyPropertyChangedEventArgs"
 
-        fun from(inspectable: Inspectable): IDependencyPropertyChangedEventArgs =
-            inspectable.projectInterface(this, ::IDependencyPropertyChangedEventArgsProjection)
+    override val iid: Guid = guidOf("84ead020-7849-5e98-8030-488a80d164ec")
 
-        operator fun invoke(inspectable: Inspectable): IDependencyPropertyChangedEventArgs =
-            from(inspectable)
-    }
+    public fun from(inspectable: Inspectable): IDependencyPropertyChangedEventArgs =
+        inspectable.projectInterface(this, ::IDependencyPropertyChangedEventArgsProjection)
+
+    public operator fun invoke(inspectable: Inspectable): IDependencyPropertyChangedEventArgs =
+        from(inspectable)
+  }
 }
 
 private class IDependencyPropertyChangedEventArgsProjection(
-    pointer: ComPtr,
-) : WinRtInterfaceProjection(pointer), IDependencyPropertyChangedEventArgs {
-    override val newValue: Inspectable
-        get() = Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 8).getOrThrow())
+  pointer: ComPtr,
+) : WinRtInterfaceProjection(pointer),
+    IDependencyPropertyChangedEventArgs {
+  override val newValue: Inspectable
+    get() = Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 8).getOrThrow())
 
-    override val oldValue: Inspectable
-        get() = Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 7).getOrThrow())
+  override val oldValue: Inspectable
+    get() = Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 7).getOrThrow())
 
-    override val property: DependencyProperty
-        get() = DependencyProperty(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
-
-    override fun get_Property(): DependencyProperty =
-        DependencyProperty(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
-
-    override fun get_OldValue(): Inspectable =
-        Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 7).getOrThrow())
-
-    override fun get_NewValue(): Inspectable =
-        Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 8).getOrThrow())
+  override val property: DependencyProperty
+    get() = DependencyProperty(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
 }

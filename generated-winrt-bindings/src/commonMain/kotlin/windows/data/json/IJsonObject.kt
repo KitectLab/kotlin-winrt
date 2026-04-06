@@ -1,4 +1,4 @@
-package windows.`data`.json
+package windows.data.json
 
 import dev.winrt.core.Float64
 import dev.winrt.core.Inspectable
@@ -44,12 +44,36 @@ private class IJsonObjectProjection(
 ) : WinRtInterfaceProjection(pointer),
     IJsonObject {
   override val valueType: JsonValueType
-    get() = JsonValueType.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
-        6).getOrThrow().toInt())
+    get() = JsonValueType.fromValue(PlatformComInterop.invokeInt32Method(pointer, 6).getOrThrow())
+
+  override fun getNamedValue(name: String): IJsonValue =
+      IJsonValue.from(Inspectable(PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 6,
+      name).getOrThrow()))
+
+  override fun getNamedString(name: String): String {
+    val value = PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 10, name).getOrThrow()
+    return try {
+      value.toKotlinString()
+    } finally {
+      value.close()
+    }
+  }
+
+  override fun getNamedObject(name: String): JsonObject =
+      JsonObject(PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 8, name).getOrThrow())
+
+  override fun getNamedArray(name: String): JsonArray =
+      JsonArray(PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 9, name).getOrThrow())
+
+  override fun getNamedNumber(name: String): Float64 =
+      Float64(PlatformComInterop.invokeFloat64MethodWithStringArg(pointer, 11, name).getOrThrow())
+
+  override fun getNamedBoolean(name: String): WinRtBoolean =
+      WinRtBoolean(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 12,
+      name).getOrThrow())
 
   override fun get_ValueType(): JsonValueType =
-      JsonValueType.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
-      6).getOrThrow().toInt())
+      JsonValueType.fromValue(PlatformComInterop.invokeInt32Method(pointer, 6).getOrThrow())
 
   override fun stringify(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow()
@@ -80,30 +104,4 @@ private class IJsonObjectProjection(
 
   override fun getArray(): JsonArray = JsonArray(PlatformComInterop.invokeObjectMethod(pointer,
       11).getOrThrow())
-
-  override fun getNamedValue(name: String): IJsonValue =
-      IJsonValue.from(Inspectable(PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 6,
-      name).getOrThrow()))
-
-  override fun getNamedString(name: String): String {
-    val value = PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 10, name).getOrThrow()
-    return try {
-      value.toKotlinString()
-    } finally {
-      value.close()
-    }
-  }
-
-  override fun getNamedObject(name: String): JsonObject =
-      JsonObject(PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 8, name).getOrThrow())
-
-  override fun getNamedArray(name: String): JsonArray =
-      JsonArray(PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 9, name).getOrThrow())
-
-  override fun getNamedNumber(name: String): Float64 =
-      Float64(PlatformComInterop.invokeFloat64MethodWithStringArg(pointer, 11, name).getOrThrow())
-
-  override fun getNamedBoolean(name: String): WinRtBoolean =
-      WinRtBoolean(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 12,
-      name).getOrThrow())
 }

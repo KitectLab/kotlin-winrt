@@ -1,4 +1,4 @@
-package windows.`data`.json
+package windows.data.json
 
 import dev.winrt.core.Float64
 import dev.winrt.core.Inspectable
@@ -48,12 +48,10 @@ private class IJsonValueProjection(
 ) : WinRtInterfaceProjection(pointer),
     IJsonValue {
   override val valueType: JsonValueType
-    get() = JsonValueType.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
-        6).getOrThrow().toInt())
+    get() = JsonValueType.fromValue(PlatformComInterop.invokeInt32Method(pointer, 6).getOrThrow())
 
   override fun get_ValueType(): JsonValueType =
-      JsonValueType.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
-      6).getOrThrow().toInt())
+      JsonValueType.fromValue(PlatformComInterop.invokeInt32Method(pointer, 6).getOrThrow())
 
   override fun stringify(): String {
     val value = PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow()

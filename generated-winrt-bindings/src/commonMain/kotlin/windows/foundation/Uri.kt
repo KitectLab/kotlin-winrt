@@ -8,6 +8,7 @@ import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
+import dev.winrt.core.projectedObjectArgumentPointer
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
@@ -25,8 +26,14 @@ public open class Uri(
       if (pointer.isNull) {
         return backing_AbsoluteCanonicalUri.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
 
   private val backing_DisplayIri: RuntimeProperty<String> = RuntimeProperty<String>("")
@@ -36,8 +43,14 @@ public open class Uri(
       if (pointer.isNull) {
         return backing_DisplayIri.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
 
   private val backing_AbsoluteUri: RuntimeProperty<String> = RuntimeProperty<String>("")
@@ -47,8 +60,14 @@ public open class Uri(
       if (pointer.isNull) {
         return backing_AbsoluteUri.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
 
   private val backing_DisplayUri: RuntimeProperty<String> = RuntimeProperty<String>("")
@@ -58,8 +77,14 @@ public open class Uri(
       if (pointer.isNull) {
         return backing_DisplayUri.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 7).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
 
   private val backing_Domain: RuntimeProperty<String> = RuntimeProperty<String>("")
@@ -69,8 +94,14 @@ public open class Uri(
       if (pointer.isNull) {
         return backing_Domain.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 8).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
 
   private val backing_Extension: RuntimeProperty<String> = RuntimeProperty<String>("")
@@ -80,8 +111,14 @@ public open class Uri(
       if (pointer.isNull) {
         return backing_Extension.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 9).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 9).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
 
   private val backing_Fragment: RuntimeProperty<String> = RuntimeProperty<String>("")
@@ -91,8 +128,14 @@ public open class Uri(
       if (pointer.isNull) {
         return backing_Fragment.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 10).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 10).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
 
   private val backing_Host: RuntimeProperty<String> = RuntimeProperty<String>("")
@@ -102,8 +145,14 @@ public open class Uri(
       if (pointer.isNull) {
         return backing_Host.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 11).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 11).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
 
   private val backing_Password: RuntimeProperty<String> = RuntimeProperty<String>("")
@@ -113,8 +162,14 @@ public open class Uri(
       if (pointer.isNull) {
         return backing_Password.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 12).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 12).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
 
   private val backing_Path: RuntimeProperty<String> = RuntimeProperty<String>("")
@@ -124,8 +179,14 @@ public open class Uri(
       if (pointer.isNull) {
         return backing_Path.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 13).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 13).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
 
   private val backing_Port: RuntimeProperty<Int32> = RuntimeProperty<Int32>(Int32(0))
@@ -145,8 +206,14 @@ public open class Uri(
       if (pointer.isNull) {
         return backing_Query.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 14).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 14).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
 
   private val backing_QueryParsed: RuntimeProperty<WwwFormUrlDecoder> =
@@ -167,8 +234,14 @@ public open class Uri(
       if (pointer.isNull) {
         return backing_RawUri.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 16).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 16).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
 
   private val backing_SchemeName: RuntimeProperty<String> = RuntimeProperty<String>("")
@@ -178,8 +251,14 @@ public open class Uri(
       if (pointer.isNull) {
         return backing_SchemeName.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 17).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 17).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
 
   private val backing_Suspicious: RuntimeProperty<WinRtBoolean> =
@@ -200,8 +279,14 @@ public open class Uri(
       if (pointer.isNull) {
         return backing_UserName.get()
       }
-      return PlatformComInterop.invokeHStringMethod(pointer, 18).getOrThrow().use {
-          it.toKotlinString() }
+      return run {
+            val value = PlatformComInterop.invokeHStringMethod(pointer, 18).getOrThrow()
+            try {
+              value.toKotlinString()
+            } finally {
+              value.close()
+            }
+          }
     }
 
   public constructor(uri: String) : this(Companion.factoryCreateUri(uri).pointer)
@@ -213,7 +298,13 @@ public open class Uri(
     if (pointer.isNull) {
       return ""
     }
-    return PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow().use { it.toKotlinString()
+    return run {
+          val value = PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()
+          try {
+            value.toKotlinString()
+          } finally {
+            value.close()
+          }
         }
   }
 
@@ -222,7 +313,8 @@ public open class Uri(
       return WinRtBoolean.FALSE
     }
     return WinRtBoolean(PlatformComInterop.invokeBooleanMethodWithObjectArg(pointer, 21,
-        pUri.pointer).getOrThrow())
+        projectedObjectArgumentPointer(pUri, "Windows.Foundation.Uri",
+        "rc(Windows.Foundation.Uri;{9e365e57-48b2-4160-956f-c7385120bbfc})")).getOrThrow())
   }
 
   override fun combineUri(relativeUri: String): Uri {
@@ -250,9 +342,6 @@ public open class Uri(
         IUriEscapeStatics, ::IUriEscapeStatics) }
 
     private fun factoryCreateUri(uri: String): Uri = factory.createUri(uri)
-
-    private fun factoryCreateWithRelativeUri(baseUri: String, relativeUri: String): Uri =
-        factory.createWithRelativeUri(baseUri, relativeUri)
 
     public fun unescapeComponent(toUnescape: String): String = statics.unescapeComponent(toUnescape)
 

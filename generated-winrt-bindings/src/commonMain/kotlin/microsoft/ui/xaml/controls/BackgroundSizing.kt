@@ -1,13 +1,17 @@
 package microsoft.ui.xaml.controls
 
-enum class BackgroundSizing(
-    val value: Int,
-) {
-    InnerBorderEdge(0),
-    OuterBorderEdge(1);
+import kotlin.Int
 
-    companion object {
-        fun fromValue(value: Int): BackgroundSizing =
-            entries.first { it.value == value }
+public enum class BackgroundSizing(
+  public val value: Int,
+) {
+  InnerBorderEdge(0),
+  OuterBorderEdge(1),
+  ;
+
+  public companion object {
+    public fun fromValue(value: Int): BackgroundSizing = entries.first { entry ->
+      entry.value == value
     }
+  }
 }

@@ -161,6 +161,88 @@ class TypeRegistryTest {
     }
 
     @Test
+    fun treats_interfaces_inheriting_runtime_projected_interfaces_as_runtime_projected() {
+        val runtimeRegistry = TypeRegistry(
+            WinMdModel(
+                files = emptyList(),
+                namespaces = listOf(
+                    WinMdNamespace(
+                        name = "Example.Collections",
+                        types = listOf(
+                            WinMdType(
+                                namespace = "Example.Collections",
+                                name = "VectorHost",
+                                kind = WinMdTypeKind.RuntimeClass,
+                                defaultInterface = "Example.Collections.IVectorHost",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Collections",
+                                name = "IVectorHost",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "11111111-1111-1111-1111-111111111111",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Collections",
+                                name = "ICollectionViewLike",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "22222222-2222-2222-2222-222222222222",
+                                baseInterfaces = listOf("Example.Collections.IVectorHost"),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        assertTrue(runtimeRegistry.isRuntimeProjectedInterface("IVectorHost", "Example.Collections"))
+        assertTrue(runtimeRegistry.isRuntimeProjectedInterface("ICollectionViewLike", "Example.Collections"))
+    }
+
+    @Test
+    fun treats_base_interfaces_of_runtime_projected_interfaces_as_runtime_projected() {
+        val runtimeRegistry = TypeRegistry(
+            WinMdModel(
+                files = emptyList(),
+                namespaces = listOf(
+                    WinMdNamespace(
+                        name = "Windows.Foundation.Collections",
+                        types = listOf(
+                            WinMdType(
+                                namespace = "Windows.Foundation.Collections",
+                                name = "IMapView`2",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "11111111-1111-1111-1111-111111111111",
+                                genericParameters = listOf("K", "V"),
+                            ),
+                        ),
+                    ),
+                    WinMdNamespace(
+                        name = "Example.Collections",
+                        types = listOf(
+                            WinMdType(
+                                namespace = "Example.Collections",
+                                name = "MapHost",
+                                kind = WinMdTypeKind.RuntimeClass,
+                                defaultInterface = "Example.Collections.IMapHost",
+                            ),
+                            WinMdType(
+                                namespace = "Example.Collections",
+                                name = "IMapHost",
+                                kind = WinMdTypeKind.Interface,
+                                guid = "22222222-2222-2222-2222-222222222222",
+                                baseInterfaces = listOf("Windows.Foundation.Collections.IMapView<String, Object>"),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        assertTrue(runtimeRegistry.isRuntimeProjectedInterface("IMapHost", "Example.Collections"))
+        assertTrue(runtimeRegistry.isRuntimeProjectedInterface("IMapView", "Windows.Foundation.Collections"))
+    }
+
+    @Test
     fun orders_versioned_runtime_class_helper_types_by_numeric_suffix() {
         val runtimeRegistry = TypeRegistry(
             WinMdModel(

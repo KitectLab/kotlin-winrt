@@ -8,7 +8,9 @@ import dev.winrt.core.WinRtActivationKind
 import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
+import dev.winrt.core.projectedObjectArgumentPointer
 import dev.winrt.kom.ComPtr
+import dev.winrt.kom.ComStructValue
 import dev.winrt.kom.PlatformComInterop
 import kotlin.String
 import microsoft.ui.xaml.DataTemplate
@@ -218,39 +220,48 @@ public open class ToggleSwitch(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeUnitMethodWithTwoObjectArgs(pointer, 7, oldContent.pointer,
-        newContent.pointer).getOrThrow()
+    PlatformComInterop.invokeUnitMethodWithTwoObjectArgs(pointer, 7,
+        projectedObjectArgumentPointer(oldContent, "Object", "cinterface(IInspectable)"),
+        projectedObjectArgumentPointer(newContent, "Object",
+        "cinterface(IInspectable)")).getOrThrow()
   }
 
   public fun onOffContentChanged(oldContent: Inspectable, newContent: Inspectable) {
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeUnitMethodWithTwoObjectArgs(pointer, 8, oldContent.pointer,
-        newContent.pointer).getOrThrow()
+    PlatformComInterop.invokeUnitMethodWithTwoObjectArgs(pointer, 8,
+        projectedObjectArgumentPointer(oldContent, "Object", "cinterface(IInspectable)"),
+        projectedObjectArgumentPointer(newContent, "Object",
+        "cinterface(IInspectable)")).getOrThrow()
   }
 
   public fun onHeaderChanged(oldContent: Inspectable, newContent: Inspectable) {
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeUnitMethodWithTwoObjectArgs(pointer, 9, oldContent.pointer,
-        newContent.pointer).getOrThrow()
+    PlatformComInterop.invokeUnitMethodWithTwoObjectArgs(pointer, 9,
+        projectedObjectArgumentPointer(oldContent, "Object", "cinterface(IInspectable)"),
+        projectedObjectArgumentPointer(newContent, "Object",
+        "cinterface(IInspectable)")).getOrThrow()
   }
 
   public fun add_Toggled(handler: RoutedEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
-      return EventRegistrationToken(0)
+      return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
+          ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
     }
-    return EventRegistrationToken(PlatformComInterop.invokeInt64MethodWithObjectArg(pointer, 21,
-        handler.pointer).getOrThrow())
+    return EventRegistrationToken.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(pointer, 21,
+        EventRegistrationToken.ABI_LAYOUT, projectedObjectArgumentPointer(handler,
+        "Microsoft.UI.Xaml.RoutedEventHandler",
+        "delegate({dae23d85-69ca-5bdf-805b-6161a3a215cc})")).getOrThrow())
   }
 
   public fun remove_Toggled(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 22, token.value).getOrThrow()
+    PlatformComInterop.invokeUnitMethodWithArgs(pointer, 22, token.toAbi()).getOrThrow()
   }
 
   public companion object : WinRtRuntimeClassMetadata {
