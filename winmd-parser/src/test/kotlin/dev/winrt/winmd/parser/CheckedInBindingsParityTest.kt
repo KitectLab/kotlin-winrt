@@ -53,11 +53,7 @@ class CheckedInBindingsParityTest {
         "windows/foundation/IStringable.kt",
         "windows/foundation/Point.kt",
     )
-    private val exactParityRelativePaths = listOf(
-        "windows/foundation/AsyncStatus.kt",
-        "windows/foundation/Point.kt",
-        "windows/data/json/JsonValueType.kt",
-    )
+    private val exactParityRelativePaths = trackedRelativePaths
     private val trackedTypes = mapOf(
         "Windows.Foundation" to setOf(
             "AsyncStatus",
@@ -138,7 +134,7 @@ class CheckedInBindingsParityTest {
     }
 
     @Test
-    fun generated_foundation_subset_matches_checked_in_content() {
+    fun generated_tracked_subset_matches_checked_in_content() {
         val inputs = WinMdParserInputResolver.resolve(
             arrayOf(
                 "build/generated/checkedInBindings",
@@ -175,7 +171,7 @@ class CheckedInBindingsParityTest {
 
         assertTrue(
             buildString {
-                appendLine("Foundation checked-in bindings are out of date.")
+                appendLine("Tracked checked-in bindings are out of date.")
                 mismatches.forEach { appendLine(it) }
             },
             mismatches.isEmpty(),
