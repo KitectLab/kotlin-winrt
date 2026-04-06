@@ -2,6 +2,7 @@ package dev.winrt.projection
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class WinRtMapProjectionTest {
     @Test
@@ -20,8 +21,8 @@ class WinRtMapProjectionTest {
     }
 
     @Test
-    fun splits_map_into_two_views() {
-        val backing = linkedMapOf("a" to 1, "b" to 2, "c" to 3)
+    fun splits_map_into_sorted_partitions_like_cswinrt() {
+        val backing = linkedMapOf("c" to 3, "a" to 1, "b" to 2)
         val map = WinRtMapProjection(
             sizeProvider = { backing.size },
             lookupFn = { key -> backing.getValue(key) },
@@ -31,7 +32,25 @@ class WinRtMapProjectionTest {
 
         val (first, second) = map.split()
 
-        assertEquals(mapOf("a" to 1), first)
-        assertEquals(mapOf("b" to 2, "c" to 3), second)
+        assertEquals(listOf("a", "b"), first?.keys?.toList())
+        assertEquals(listOf("c"), second?.keys?.toList())
+        assertEquals(mapOf("a" to 1, "b" to 2), first)
+        assertEquals(mapOf("c" to 3), second)
+    }
+
+    @Test
+    fun split_returns_null_partitions_for_single_item_map() {
+        val backing = linkedMapOf("a" to 1)
+        val map = WinRtMapProjection(
+            sizeProvider = { backing.size },
+            lookupFn = { key -> backing.getValue(key) },
+            containsKeyFn = { key -> backing.containsKey(key) },
+            entriesProvider = { backing.entries },
+        )
+
+        val (first, second) = map.split()
+
+        assertNull(first)
+        assertNull(second)
     }
 }
