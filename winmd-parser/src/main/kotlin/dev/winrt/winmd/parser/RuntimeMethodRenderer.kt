@@ -255,15 +255,9 @@ internal class RuntimeMethodRenderer(
             parameterTypes = parameterTypes.map { signatureParameterType(it, currentNamespace) },
             supportsParameterObjectType = { type -> supportsRuntimeObjectType(type, currentNamespace) },
         )
-        return when {
-            signatureKey != null && MethodRuleRegistry.sharedMethodRuleFamily(signatureKey) != null -> runtimeMethodPlanForKey(signatureKey)
-            signatureKey == MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.EMPTY) -> runtimeMethodPlanForKey(signatureKey)
-            signatureKey == MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.EMPTY) -> runtimeMethodPlanForKey(signatureKey)
-            signatureKey == MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.EMPTY) -> runtimeMethodPlanForKey(signatureKey)
-            signatureKey == MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.EMPTY) -> runtimeMethodPlanForKey(signatureKey)
-            signatureKey == MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.EMPTY) -> runtimeMethodPlanForKey(signatureKey)
-            else -> null
-        }
+        return signatureKey
+            ?.takeIf { MethodRuleRegistry.sharedMethodRuleFamily(it) != null }
+            ?.let(::runtimeMethodPlanForKey)
     }
 
     private fun plannedInt32FillArrayRuntimeMethod(
@@ -1462,700 +1456,7 @@ internal class RuntimeMethodRenderer(
                     },
                 )
             }
-        return when (signatureKey) {
-            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T.FALSE", arrayOf(PoetSymbols.winRtBooleanClass)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, _ ->
-                    arrayOf(PoetSymbols.winRtBooleanClass, AbiCallCatalog.booleanMethod(method.vtableIndex!!))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T.FALSE", arrayOf(PoetSymbols.winRtBooleanClass)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.winRtBooleanClass, AbiCallCatalog.booleanMethodWithString(method.vtableIndex!!, parameterBindings.single().name))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.UINT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T.FALSE", arrayOf(PoetSymbols.winRtBooleanClass)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.winRtBooleanClass, AbiCallCatalog.booleanMethodWithUInt32(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.INT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T.FALSE", arrayOf(PoetSymbols.winRtBooleanClass)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(
-                        PoetSymbols.winRtBooleanClass,
-                        AbiCallCatalog.booleanMethodWithInt32(
-                            method.vtableIndex!!,
-                            int64AbiArgumentExpression(parameterBindings.single().name, parameterBindings.single().type),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.BOOLEAN) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T.FALSE", arrayOf(PoetSymbols.winRtBooleanClass)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    val argumentName = parameterBindings.single().name
-                    arrayOf(PoetSymbols.winRtBooleanClass, AbiCallCatalog.booleanMethodWithBoolean(method.vtableIndex!!, "${argumentName}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.INT64) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T.FALSE", arrayOf(PoetSymbols.winRtBooleanClass)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(
-                        PoetSymbols.winRtBooleanClass,
-                        AbiCallCatalog.booleanMethodWithInt64(
-                            method.vtableIndex!!,
-                            int64AbiArgumentExpression(parameterBindings.single().name, parameterBindings.single().type),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.BOOLEAN, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T.FALSE", arrayOf(PoetSymbols.winRtBooleanClass)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(
-                        PoetSymbols.winRtBooleanClass,
-                        AbiCallCatalog.booleanMethodWithObject(
-                            method.vtableIndex!!,
-                            runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> int32NullReturn(method.returnType) },
-                returnStatement = "return %L",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(
-                        int32ReturnCode(
-                            method.returnType,
-                            AbiCallCatalog.int32MethodWithString(method.vtableIndex!!, parameterBindings.single().name),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.INT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> int32NullReturn(method.returnType) },
-                returnStatement = "return %L",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(
-                        int32ReturnCode(
-                            method.returnType,
-                            AbiCallCatalog.int32MethodWithInt32(
-                                method.vtableIndex!!,
-                                int64AbiArgumentExpression(parameterBindings.single().name, parameterBindings.single().type),
-                            ),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.UINT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> int32NullReturn(method.returnType) },
-                returnStatement = "return %L",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(
-                        int32ReturnCode(
-                            method.returnType,
-                            AbiCallCatalog.int32MethodWithUInt32(
-                                method.vtableIndex!!,
-                                int64AbiArgumentExpression(parameterBindings.single().name, parameterBindings.single().type),
-                            ),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.BOOLEAN) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> int32NullReturn(method.returnType) },
-                returnStatement = "return %L",
-                statementArgs = { method, _, parameterBindings ->
-                    val argumentName = parameterBindings.single().name
-                    arrayOf(
-                        int32ReturnCode(
-                            method.returnType,
-                            AbiCallCatalog.int32MethodWithBoolean(
-                                method.vtableIndex!!,
-                                int64AbiArgumentExpression(argumentName, parameterBindings.single().type),
-                            ),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.INT64) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> int32NullReturn(method.returnType) },
-                returnStatement = "return %L",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(
-                        int32ReturnCode(
-                            method.returnType,
-                            AbiCallCatalog.int32MethodWithInt64(
-                                method.vtableIndex!!,
-                                int64AbiArgumentExpression(parameterBindings.single().name, parameterBindings.single().type),
-                            ),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> int32NullReturn(method.returnType) },
-                returnStatement = "return %L",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(
-                        int32ReturnCode(
-                            method.returnType,
-                            AbiCallCatalog.int32MethodWithObject(
-                                method.vtableIndex!!,
-                                runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
-                            ),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0L)", arrayOf(PoetSymbols.int64Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.int64Class, AbiCallCatalog.int64MethodWithString(method.vtableIndex!!, parameterBindings.single().name))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.INT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0L)", arrayOf(PoetSymbols.int64Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(
-                        PoetSymbols.int64Class,
-                        AbiCallCatalog.int64MethodWithInt32(
-                            method.vtableIndex!!,
-                            int64AbiArgumentExpression(parameterBindings.single().name, parameterBindings.single().type),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.UINT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0L)", arrayOf(PoetSymbols.int64Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.int64Class, AbiCallCatalog.int64MethodWithUInt32(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.BOOLEAN) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0L)", arrayOf(PoetSymbols.int64Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    val argumentName = parameterBindings.single().name
-                    arrayOf(PoetSymbols.int64Class, AbiCallCatalog.int64MethodWithBoolean(method.vtableIndex!!, "${argumentName}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0L)", arrayOf(PoetSymbols.int64Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(
-                        PoetSymbols.int64Class,
-                        AbiCallCatalog.int64MethodWithObject(
-                            method.vtableIndex!!,
-                            runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0uL)", arrayOf(PoetSymbols.uint64Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithString(method.vtableIndex!!, parameterBindings.single().name))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.INT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0uL)", arrayOf(PoetSymbols.uint64Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(
-                        PoetSymbols.uint64Class,
-                        AbiCallCatalog.uint64MethodWithInt32(
-                            method.vtableIndex!!,
-                            int64AbiArgumentExpression(parameterBindings.single().name, parameterBindings.single().type),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.UINT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0uL)", arrayOf(PoetSymbols.uint64Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithUInt32(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.BOOLEAN) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0uL)", arrayOf(PoetSymbols.uint64Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    val argumentName = parameterBindings.single().name
-                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithBoolean(method.vtableIndex!!, "${argumentName}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0uL)", arrayOf(PoetSymbols.uint64Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(
-                        PoetSymbols.uint64Class,
-                        AbiCallCatalog.uint64MethodWithObject(
-                            method.vtableIndex!!,
-                            runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0u)", arrayOf(PoetSymbols.uint32Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.uint32Class, AbiCallCatalog.uint32MethodWithString(method.vtableIndex!!, parameterBindings.single().name))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.INT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0u)", arrayOf(PoetSymbols.uint32Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(
-                        PoetSymbols.uint32Class,
-                        AbiCallCatalog.uint32MethodWithInt32(
-                            method.vtableIndex!!,
-                            int64AbiArgumentExpression(parameterBindings.single().name, parameterBindings.single().type),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.UINT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0u)", arrayOf(PoetSymbols.uint32Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.uint32Class, AbiCallCatalog.uint32MethodWithUInt32(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.BOOLEAN) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0u)", arrayOf(PoetSymbols.uint32Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    val argumentName = parameterBindings.single().name
-                    arrayOf(PoetSymbols.uint32Class, AbiCallCatalog.uint32MethodWithBoolean(method.vtableIndex!!, "${argumentName}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.INT64) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0u)", arrayOf(PoetSymbols.uint32Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(
-                        PoetSymbols.uint32Class,
-                        AbiCallCatalog.uint32MethodWithInt64(
-                            method.vtableIndex!!,
-                            int64AbiArgumentExpression(parameterBindings.single().name, parameterBindings.single().type),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0u)", arrayOf(PoetSymbols.uint32Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(
-                        PoetSymbols.uint32Class,
-                        AbiCallCatalog.uint32MethodWithObject(
-                            method.vtableIndex!!,
-                            runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0L)", arrayOf(PoetSymbols.int64Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(
-                        PoetSymbols.int64Class,
-                        AbiCallCatalog.int64MethodWithObject(
-                            method.vtableIndex!!,
-                            runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0uL)", arrayOf(PoetSymbols.uint64Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithString(method.vtableIndex!!, parameterBindings.single().name))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.INT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0uL)", arrayOf(PoetSymbols.uint64Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(
-                        PoetSymbols.uint64Class,
-                        AbiCallCatalog.uint64MethodWithInt32(
-                            method.vtableIndex!!,
-                            int64AbiArgumentExpression(parameterBindings.single().name, parameterBindings.single().type),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.UINT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0uL)", arrayOf(PoetSymbols.uint64Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithUInt32(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.BOOLEAN) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0uL)", arrayOf(PoetSymbols.uint64Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, parameterBindings ->
-                    val argumentName = parameterBindings.single().name
-                    arrayOf(PoetSymbols.uint64Class, AbiCallCatalog.uint64MethodWithBoolean(method.vtableIndex!!, "${argumentName}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0uL)", arrayOf(PoetSymbols.uint64Class)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(
-                        PoetSymbols.uint64Class,
-                        AbiCallCatalog.uint64MethodWithObject(
-                            method.vtableIndex!!,
-                            runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.EVENT_REGISTRATION_TOKEN, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0)", arrayOf(PoetSymbols.eventRegistrationTokenClass)) },
-                returnStatement = "return %T(%L)",
-                statementArgs = { method, _, _ ->
-                    arrayOf(PoetSymbols.eventRegistrationTokenClass, AbiCallCatalog.int64Getter(method.vtableIndex!!))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> int32NullReturn(method.returnType) },
-                returnStatement = "return %L",
-                statementArgs = { method, _, _ ->
-                    arrayOf(
-                        int32ReturnCode(
-                            method.returnType,
-                            CodeBlock.of("%T.invokeInt32Method(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, method.vtableIndex!!),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UINT32, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0u)", arrayOf(PoetSymbols.uint32Class)) },
-                returnStatement = "return %T(%T.invokeUInt32Method(pointer, %L).getOrThrow())",
-                statementArgs = { method, _, _ ->
-                    arrayOf(PoetSymbols.uint32Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!)
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0L)", arrayOf(PoetSymbols.int64Class)) },
-                returnStatement = "return %T(%T.invokeInt64Getter(pointer, %L).getOrThrow())",
-                statementArgs = { method, _, _ ->
-                    arrayOf(PoetSymbols.int64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!)
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UINT64, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T(0uL)", arrayOf(PoetSymbols.uint64Class)) },
-                returnStatement = "return %T(%T.invokeInt64Getter(pointer, %L).getOrThrow().toULong())",
-                statementArgs = { method, _, _ ->
-                    arrayOf(PoetSymbols.uint64Class, PoetSymbols.platformComInteropClass, method.vtableIndex!!)
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
-                returnStatement = "return %T.parse(%T.invokeGuidGetter(pointer, %L).getOrThrow().toString())",
-                statementArgs = { method, _, _ ->
-                    arrayOf(PoetSymbols.guidValueClass, PoetSymbols.platformComInteropClass, method.vtableIndex!!)
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
-                returnStatement = "return %T.parse(%L.toString())",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.guidValueClass, AbiCallCatalog.guidMethodWithString(method.vtableIndex!!, parameterBindings.single().name))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.INT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
-                returnStatement = "return %T.parse(%L.toString())",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(
-                        PoetSymbols.guidValueClass,
-                        AbiCallCatalog.guidMethodWithInt32(
-                            method.vtableIndex!!,
-                            int64AbiArgumentExpression(parameterBindings.single().name, parameterBindings.single().type),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.UINT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
-                returnStatement = "return %T.parse(%L.toString())",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.guidValueClass, AbiCallCatalog.guidMethodWithUInt32(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.BOOLEAN) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
-                returnStatement = "return %T.parse(%L.toString())",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(PoetSymbols.guidValueClass, AbiCallCatalog.guidMethodWithBoolean(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.INT64) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
-                returnStatement = "return %T.parse(%L.toString())",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(
-                        PoetSymbols.guidValueClass,
-                        AbiCallCatalog.guidMethodWithInt64(
-                            method.vtableIndex!!,
-                            int64AbiArgumentExpression(parameterBindings.single().name, parameterBindings.single().type),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.guidValueClass, "00000000000000000000000000000000")) },
-                returnStatement = "return %T.parse(%L.toString())",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(
-                        PoetSymbols.guidValueClass,
-                        AbiCallCatalog.guidMethodWithObject(
-                            method.vtableIndex!!,
-                            runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return") },
-                returnStatement = "%L",
-                statementArgs = { method, _, _ ->
-                    arrayOf(AbiCallCatalog.unitMethod(method.vtableIndex!!))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return") },
-                returnStatement = "%L",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(
-                        AbiCallCatalog.unitMethodWithInt32(
-                            method.vtableIndex!!,
-                            int64AbiArgumentExpression(parameterBindings.single().name, parameterBindings.single().type),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.UINT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return") },
-                returnStatement = "%L",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(AbiCallCatalog.unitMethodWithUInt32(method.vtableIndex!!, "${parameterBindings.single().name}.value"))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.BOOLEAN) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return") },
-                returnStatement = "%L",
-                statementArgs = { method, _, parameterBindings ->
-                    val argumentName = parameterBindings.single().name
-                    arrayOf(AbiCallCatalog.unitMethodWithInt32Expression(method.vtableIndex!!, AbiCallCatalog.booleanAsInt32Expression(argumentName)))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.INT64) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return") },
-                returnStatement = "%L",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(AbiCallCatalog.unitMethodWithInt64(method.vtableIndex!!, parameterBindings.single().name))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.EVENT_REGISTRATION_TOKEN) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return") },
-                returnStatement = "%L",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(AbiCallCatalog.unitMethodWithInt64(method.vtableIndex!!, parameterBindings.single().name))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return") },
-                returnStatement = "%L",
-                statementArgs = { method, _, parameterBindings ->
-                    arrayOf(AbiCallCatalog.unitMethodWithString(method.vtableIndex!!, parameterBindings.single().name))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return") },
-                returnStatement = "%L",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(
-                        AbiCallCatalog.objectSetterExpression(
-                            method.vtableIndex!!,
-                            runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
-                        ),
-                    )
-                },
-            )
-            else -> when (signatureKey) {
-            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.EMPTY) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
-                returnStatement = "return %L",
-                statementArgs = { method, currentNamespace, _ ->
-                    arrayOf(runtimeObjectReturnCode(method, currentNamespace, AbiCallCatalog.objectMethod(method.vtableIndex!!)))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.STRING) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
-                returnStatement = "return %L",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(
-                        runtimeObjectReturnCode(
-                            method,
-                            currentNamespace,
-                            AbiCallCatalog.objectMethodWithString(method.vtableIndex!!, parameterBindings.single().name),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.UINT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
-                returnStatement = "return %L",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(
-                        runtimeObjectReturnCode(
-                            method,
-                            currentNamespace,
-                            AbiCallCatalog.objectMethodWithUInt32(method.vtableIndex!!, "${parameterBindings.single().name}.value"),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.INT32) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
-                returnStatement = "return %L",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(
-                        runtimeObjectReturnCode(
-                            method,
-                            currentNamespace,
-                            AbiCallCatalog.objectMethodWithInt32(
-                                method.vtableIndex!!,
-                                int64AbiArgumentExpression(parameterBindings.single().name, parameterBindings.single().type),
-                            ),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.BOOLEAN) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
-                returnStatement = "return %L",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    val argumentName = parameterBindings.single().name
-                    arrayOf(runtimeObjectReturnCode(
-                        method,
-                        currentNamespace,
-                        AbiCallCatalog.objectMethodWithBoolean(method.vtableIndex!!, "${argumentName}.value"),
-                    ))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.INT64) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
-                returnStatement = "return %L",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(runtimeObjectReturnCode(
-                        method,
-                        currentNamespace,
-                        AbiCallCatalog.objectMethodWithInt64(method.vtableIndex!!, "${parameterBindings.single().name}.value"),
-                    ))
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.OBJECT) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
-                returnStatement = "return %L",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(
-                        runtimeObjectReturnCode(
-                            method,
-                            currentNamespace,
-                            AbiCallCatalog.objectMethodWithObject(
-                                method.vtableIndex!!,
-                                runtimeObjectArgumentExpression(parameterBindings.single(), currentNamespace),
-                            ),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.OBJECT_STRING) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
-                returnStatement = "return %L",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(
-                        runtimeObjectReturnCode(
-                            method,
-                            currentNamespace,
-                            AbiCallCatalog.objectMethodWithObjectAndString(
-                                method.vtableIndex!!,
-                                runtimeObjectArgumentExpression(parameterBindings[0], currentNamespace),
-                                parameterBindings[1].name,
-                            ),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.STRING_OBJECT) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
-                returnStatement = "return %L",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(
-                        runtimeObjectReturnCode(
-                            method,
-                            currentNamespace,
-                            AbiCallCatalog.objectMethodWithStringAndObject(
-                                method.vtableIndex!!,
-                                parameterBindings[0].name,
-                                runtimeObjectArgumentExpression(parameterBindings[1], currentNamespace),
-                            ),
-                        ),
-                    )
-                },
-            )
-            MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.TWO_OBJECT) -> RuntimeMethodPlan(
-                nullPointerReturn = { method -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}")) },
-                returnStatement = "return %L",
-                statementArgs = { method, currentNamespace, parameterBindings ->
-                    arrayOf(
-                        runtimeObjectReturnCode(
-                            method,
-                            currentNamespace,
-                            AbiCallCatalog.resultMethodWithTwoObject(
-                                method.vtableIndex!!,
-                                "OBJECT",
-                                PoetSymbols.requireObjectMember,
-                                runtimeObjectArgumentExpression(parameterBindings[0], currentNamespace),
-                                runtimeObjectArgumentExpression(parameterBindings[1], currentNamespace),
-                            ),
-                        ),
-                    )
-                },
-            )
-            else -> null
-        }
-        }
+        return null
     }
 
     private fun plannedUnaryRuntimeMethod(signatureKey: MethodSignatureKey): RuntimeMethodPlan? {
@@ -2168,10 +1469,15 @@ internal class RuntimeMethodRenderer(
             MethodReturnKind.FLOAT64,
             MethodReturnKind.DATE_TIME,
             MethodReturnKind.TIME_SPAN,
+            MethodReturnKind.BOOLEAN,
+            MethodReturnKind.INT32,
+            MethodReturnKind.UINT32,
+            MethodReturnKind.INT64,
+            MethodReturnKind.UINT64,
             MethodReturnKind.EVENT_REGISTRATION_TOKEN,
+            MethodReturnKind.GUID,
             MethodReturnKind.OBJECT,
             MethodReturnKind.UNIT -> plannedUnaryRuntimeMethodForReturnKind(signatureKey.returnKind, parameterCategory)
-            else -> null
         }
     }
 
@@ -2180,7 +1486,7 @@ internal class RuntimeMethodRenderer(
         parameterCategory: MethodParameterCategory?,
     ): RuntimeMethodPlan =
         RuntimeMethodPlan(
-            nullPointerReturn = { method -> unaryRuntimeNullReturn(returnKind, method.name) },
+            nullPointerReturn = { method -> unaryRuntimeNullReturn(returnKind, method.returnType, method.name) },
             returnStatement = unaryRuntimeStatement(returnKind),
             statementArgs = { method, currentNamespace, parameterBindings ->
                 val abiCall = unaryRuntimeAbiCall(
@@ -2194,29 +1500,18 @@ internal class RuntimeMethodRenderer(
             },
         )
 
-    private fun unaryRuntimeNullReturn(returnKind: MethodReturnKind, methodName: String): PlannedStatement = when (returnKind) {
-        MethodReturnKind.STRING -> PlannedStatement("return %S", arrayOf(""))
-        MethodReturnKind.FLOAT32 -> PlannedStatement("return %T(0f)", arrayOf(PoetSymbols.float32Class))
-        MethodReturnKind.FLOAT64 -> PlannedStatement("return %T(0.0)", arrayOf(PoetSymbols.float64Class))
-        MethodReturnKind.DATE_TIME -> PlannedStatement("return %T.fromEpochSeconds(0)", arrayOf(PoetSymbols.dateTimeClass))
-        MethodReturnKind.TIME_SPAN -> PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.timeSpanClass, "0s"))
-        MethodReturnKind.EVENT_REGISTRATION_TOKEN -> PlannedStatement("return %T(0)", arrayOf(PoetSymbols.eventRegistrationTokenClass))
+    private fun unaryRuntimeNullReturn(
+        returnKind: MethodReturnKind,
+        returnType: String,
+        methodName: String,
+    ): PlannedStatement = when (returnKind) {
         MethodReturnKind.OBJECT -> PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: $methodName"))
         MethodReturnKind.UNIT -> PlannedStatement("return")
-        else -> error("Unsupported unary runtime return kind: $returnKind")
+        else -> twoArgumentNullReturn(returnType, methodName)
     }
 
-    private fun unaryRuntimeStatement(returnKind: MethodReturnKind): String = when (returnKind) {
-        MethodReturnKind.STRING,
-        MethodReturnKind.OBJECT,
-        MethodReturnKind.DATE_TIME,
-        MethodReturnKind.TIME_SPAN,
-        MethodReturnKind.UNIT -> if (returnKind == MethodReturnKind.UNIT) "%L" else "return %L"
-        MethodReturnKind.FLOAT32,
-        MethodReturnKind.FLOAT64,
-        MethodReturnKind.EVENT_REGISTRATION_TOKEN -> "return %T(%L)"
-        else -> error("Unsupported unary runtime return kind: $returnKind")
-    }
+    private fun unaryRuntimeStatement(returnKind: MethodReturnKind): String =
+        if (returnKind == MethodReturnKind.UNIT) "%L" else "return %L"
 
     private fun unaryRuntimeArgs(
         method: WinMdMethod,
@@ -2224,15 +1519,9 @@ internal class RuntimeMethodRenderer(
         returnKind: MethodReturnKind,
         abiCall: CodeBlock,
     ): Array<Any> = when (returnKind) {
-        MethodReturnKind.STRING -> arrayOf(HStringSupport.fromCall(abiCall))
-        MethodReturnKind.FLOAT32 -> arrayOf(PoetSymbols.float32Class, abiCall)
-        MethodReturnKind.FLOAT64 -> arrayOf(PoetSymbols.float64Class, abiCall)
-        MethodReturnKind.DATE_TIME -> arrayOf(CodeBlock.of("%T.fromEpochSeconds((%L - %L) / 10000000L, ((%L - %L) %% 10000000L * 100).toInt())", PoetSymbols.dateTimeClass, abiCall, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET, abiCall, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET))
-        MethodReturnKind.TIME_SPAN -> arrayOf(CodeBlock.of("%T(%L)", PoetSymbols.timeSpanClass, abiCall))
-        MethodReturnKind.EVENT_REGISTRATION_TOKEN -> arrayOf(PoetSymbols.eventRegistrationTokenClass, abiCall)
         MethodReturnKind.OBJECT -> arrayOf(runtimeObjectReturnCode(method, currentNamespace, abiCall))
         MethodReturnKind.UNIT -> arrayOf(abiCall)
-        else -> error("Unsupported unary runtime return kind: $returnKind")
+        else -> arrayOf(twoArgumentReturnCode(method.returnType, abiCall))
     }
 
     private fun unaryRuntimeAbiCall(
@@ -2248,11 +1537,20 @@ internal class RuntimeMethodRenderer(
                 MethodReturnKind.FLOAT32 -> AbiCallCatalog.float32Method(vtableIndex)
                 MethodReturnKind.FLOAT64 -> AbiCallCatalog.float64Method(vtableIndex)
                 MethodReturnKind.DATE_TIME,
-                MethodReturnKind.TIME_SPAN -> AbiCallCatalog.int64Getter(vtableIndex)
+                MethodReturnKind.TIME_SPAN,
+                MethodReturnKind.INT64,
                 MethodReturnKind.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.int64Getter(vtableIndex)
+                MethodReturnKind.BOOLEAN -> AbiCallCatalog.booleanMethod(vtableIndex)
+                MethodReturnKind.INT32 -> AbiCallCatalog.int32Method(vtableIndex)
+                MethodReturnKind.UINT32 -> AbiCallCatalog.uint32Method(vtableIndex)
+                MethodReturnKind.UINT64 -> CodeBlock.of(
+                    "%T.invokeInt64Getter(pointer, %L).getOrThrow().toULong()",
+                    PoetSymbols.platformComInteropClass,
+                    vtableIndex,
+                )
+                MethodReturnKind.GUID -> AbiCallCatalog.guidGetter(vtableIndex)
                 MethodReturnKind.OBJECT -> AbiCallCatalog.objectMethod(vtableIndex)
                 MethodReturnKind.UNIT -> AbiCallCatalog.unitMethod(vtableIndex)
-                else -> error("Unsupported unary runtime return kind: $returnKind")
             }
         }
         val binding = requireNotNull(parameterBinding)
@@ -2287,15 +1585,8 @@ internal class RuntimeMethodRenderer(
                 MethodParameterCategory.OBJECT -> AbiCallCatalog.float64MethodWithObject(vtableIndex, loweredArgument)
             }
             MethodReturnKind.DATE_TIME,
-            MethodReturnKind.TIME_SPAN -> when (parameterCategory) {
-                MethodParameterCategory.STRING -> AbiCallCatalog.int64MethodWithString(vtableIndex, argumentName)
-                MethodParameterCategory.INT32 -> AbiCallCatalog.int64MethodWithInt32(vtableIndex, loweredArgument)
-                MethodParameterCategory.UINT32 -> AbiCallCatalog.int64MethodWithUInt32(vtableIndex, loweredArgument)
-                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.int64MethodWithBoolean(vtableIndex, loweredArgument)
-                MethodParameterCategory.INT64,
-                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.int64MethodWithInt64(vtableIndex, loweredArgument)
-                MethodParameterCategory.OBJECT -> AbiCallCatalog.int64MethodWithObject(vtableIndex, loweredArgument)
-            }
+            MethodReturnKind.TIME_SPAN,
+            MethodReturnKind.INT64,
             MethodReturnKind.EVENT_REGISTRATION_TOKEN -> when (parameterCategory) {
                 MethodParameterCategory.STRING -> AbiCallCatalog.int64MethodWithString(vtableIndex, argumentName)
                 MethodParameterCategory.INT32 -> AbiCallCatalog.int64MethodWithInt32(vtableIndex, loweredArgument)
@@ -2304,6 +1595,51 @@ internal class RuntimeMethodRenderer(
                 MethodParameterCategory.INT64,
                 MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.int64MethodWithInt64(vtableIndex, loweredArgument)
                 MethodParameterCategory.OBJECT -> AbiCallCatalog.int64MethodWithObject(vtableIndex, loweredArgument)
+            }
+            MethodReturnKind.BOOLEAN -> when (parameterCategory) {
+                MethodParameterCategory.STRING -> AbiCallCatalog.booleanMethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.INT32 -> AbiCallCatalog.booleanMethodWithInt32(vtableIndex, loweredArgument.toString())
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.booleanMethodWithUInt32(vtableIndex, loweredArgument.toString())
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.booleanMethodWithBoolean(vtableIndex, loweredArgument.toString())
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.booleanMethodWithInt64(vtableIndex, loweredArgument.toString())
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.booleanMethodWithObject(vtableIndex, loweredArgument)
+            }
+            MethodReturnKind.INT32 -> when (parameterCategory) {
+                MethodParameterCategory.STRING -> AbiCallCatalog.int32MethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.INT32 -> AbiCallCatalog.int32MethodWithInt32(vtableIndex, loweredArgument.toString())
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.int32MethodWithUInt32(vtableIndex, loweredArgument.toString())
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.int32MethodWithBoolean(vtableIndex, loweredArgument.toString())
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.int32MethodWithInt64(vtableIndex, loweredArgument.toString())
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.int32MethodWithObject(vtableIndex, loweredArgument)
+            }
+            MethodReturnKind.UINT32 -> when (parameterCategory) {
+                MethodParameterCategory.STRING -> AbiCallCatalog.uint32MethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.INT32 -> AbiCallCatalog.uint32MethodWithInt32(vtableIndex, loweredArgument)
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.uint32MethodWithUInt32(vtableIndex, loweredArgument.toString())
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.uint32MethodWithBoolean(vtableIndex, loweredArgument.toString())
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.uint32MethodWithInt64(vtableIndex, loweredArgument.toString())
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.uint32MethodWithObject(vtableIndex, loweredArgument)
+            }
+            MethodReturnKind.UINT64 -> when (parameterCategory) {
+                MethodParameterCategory.STRING -> AbiCallCatalog.uint64MethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.INT32 -> AbiCallCatalog.uint64MethodWithInt32(vtableIndex, loweredArgument.toString())
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.uint64MethodWithUInt32(vtableIndex, loweredArgument.toString())
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.uint64MethodWithBoolean(vtableIndex, loweredArgument.toString())
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.uint64MethodWithObject(vtableIndex, loweredArgument)
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> error("Unsupported unary runtime return kind: $returnKind")
+            }
+            MethodReturnKind.GUID -> when (parameterCategory) {
+                MethodParameterCategory.STRING -> AbiCallCatalog.guidMethodWithString(vtableIndex, argumentName)
+                MethodParameterCategory.INT32 -> AbiCallCatalog.guidMethodWithInt32(vtableIndex, loweredArgument.toString())
+                MethodParameterCategory.UINT32 -> AbiCallCatalog.guidMethodWithUInt32(vtableIndex, loweredArgument.toString())
+                MethodParameterCategory.BOOLEAN -> AbiCallCatalog.guidMethodWithBoolean(vtableIndex, loweredArgument.toString())
+                MethodParameterCategory.INT64,
+                MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.guidMethodWithInt64(vtableIndex, loweredArgument.toString())
+                MethodParameterCategory.OBJECT -> AbiCallCatalog.guidMethodWithObject(vtableIndex, loweredArgument)
             }
             MethodReturnKind.OBJECT -> when (parameterCategory) {
                 MethodParameterCategory.STRING -> AbiCallCatalog.objectMethodWithString(vtableIndex, argumentName)
@@ -2323,7 +1659,6 @@ internal class RuntimeMethodRenderer(
                 MethodParameterCategory.STRING -> AbiCallCatalog.unitMethodWithString(vtableIndex, argumentName)
                 MethodParameterCategory.OBJECT -> AbiCallCatalog.objectSetterExpression(vtableIndex, loweredArgument)
             }
-            else -> error("Unsupported unary runtime return kind: $returnKind")
         }
     }
 
@@ -2657,6 +1992,7 @@ internal class RuntimeMethodRenderer(
             "DateTime" -> CodeBlock.of("%T.fromEpochSeconds((%L - %L) / 10000000L, ((%L - %L) %% 10000000L * 100).toInt())", PoetSymbols.dateTimeClass, abiCall, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET, abiCall, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET)
             "TimeSpan" -> CodeBlock.of("%T(%L)", PoetSymbols.timeSpanClass, abiCall)
             "Boolean" -> CodeBlock.of("%T(%L)", PoetSymbols.winRtBooleanClass, abiCall)
+            "EventRegistrationToken" -> CodeBlock.of("%T(%L)", PoetSymbols.eventRegistrationTokenClass, abiCall)
             "HResult" -> CodeBlock.of("%M(%L)", PoetSymbols.exceptionFromHResultMember, abiCall)
             "Int32" -> CodeBlock.of("%T(%L)", PoetSymbols.int32Class, abiCall)
             "UInt32" -> CodeBlock.of("%T(%L)", PoetSymbols.uint32Class, abiCall)
@@ -2675,6 +2011,7 @@ internal class RuntimeMethodRenderer(
             "DateTime" -> PlannedStatement("return %T.fromEpochSeconds(0)", arrayOf(PoetSymbols.dateTimeClass))
             "TimeSpan" -> PlannedStatement("return %T.parse(%S)", arrayOf(PoetSymbols.timeSpanClass, "0s"))
             "Boolean" -> PlannedStatement("return %T.FALSE", arrayOf(PoetSymbols.winRtBooleanClass))
+            "EventRegistrationToken" -> PlannedStatement("return %T(0)", arrayOf(PoetSymbols.eventRegistrationTokenClass))
             "HResult" -> PlannedStatement("return null")
             "Int32" -> PlannedStatement("return %T(0)", arrayOf(PoetSymbols.int32Class))
             "UInt32" -> PlannedStatement("return %T(0u)", arrayOf(PoetSymbols.uint32Class))
