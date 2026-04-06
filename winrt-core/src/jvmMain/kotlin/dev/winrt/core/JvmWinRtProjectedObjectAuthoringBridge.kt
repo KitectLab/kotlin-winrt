@@ -3,6 +3,7 @@ package dev.winrt.core
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.ComStructValue
 import dev.winrt.kom.Guid
+import dev.winrt.kom.HResult
 import dev.winrt.kom.PlatformComInterop
 import java.util.IdentityHashMap
 
@@ -15,6 +16,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
     private val iReferenceIidText = "61c17706-2d65-11e0-9ae8-d48564015472"
     private val bindableIterableIidText = "036d2c08-df29-41af-8aa2-d774be62ba6f"
     private val bindableIteratorIidText = "6a1d6c07-076d-49f2-8314-f52c9c9a8331"
+    private val bindableVectorIidText = "393de7de-6fd0-4c0d-bb71-47244a113e93"
     private val bindableVectorViewIidText = "346dd6e7-976e-4bc3-815d-ece243bc0f33"
     private val hResultStructSignature = WinRtTypeSignature.struct("Windows.Foundation.HResult", "i4")
 
@@ -26,6 +28,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
     private val iReferenceIid = guidOf(iReferenceIidText)
     private val bindableIterableIid = guidOf(bindableIterableIidText)
     private val bindableIteratorIid = guidOf(bindableIteratorIidText)
+    private val bindableVectorIid = guidOf(bindableVectorIidText)
     private val bindableVectorViewIid = guidOf(bindableVectorViewIidText)
 
     private val cache = IdentityHashMap<Any, MutableMap<String, ProjectedObjectHandle>>()
@@ -89,6 +92,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         return when (iid.canonical) {
             bindableIterableIid.canonical -> createBindableIterableHandle(value, projectionTypeKey)
             bindableIteratorIid.canonical -> createBindableIteratorHandle(value, projectionTypeKey)
+            bindableVectorIid.canonical -> createBindableVectorHandle(value, projectionTypeKey)
             bindableVectorViewIid.canonical -> createBindableVectorViewHandle(value, projectionTypeKey)
             else -> null
         }
@@ -613,6 +617,100 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 },
             ),
             noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
+            objectUInt32ArgBooleanMethods = mapOf(
+                9 to { pointer, _ -> bindableIndexOf(list, pointer) >= 0 },
+            ),
+        )
+        val baseIterableSpec = JvmWinRtObjectStub.InterfaceSpec(
+            iid = bindableIterableIid,
+            noArgObjectMethods = mapOf(6 to firstMethod),
+        )
+        val stub = JvmWinRtObjectStub.create(interfaceSpec, baseIterableSpec)
+        return ProjectedObjectHandle(stub, retainedChildren)
+    }
+
+    private fun createBindableVectorHandle(
+        value: Any,
+        projectionTypeKey: ProjectionTypeKey,
+    ): ProjectedObjectHandle? {
+        @Suppress("UNCHECKED_CAST")
+        val list = value as? MutableList<Any?> ?: return null
+        val elementProjectionTypeKey = projectionTypeKey.arguments.singleOrNull() ?: "Object"
+        val retainedChildren = mutableListOf<AutoCloseable>()
+        val firstMethod: () -> ComPtr = {
+            val iteratorHandle = requireNotNull(
+                createBindableIteratorHandle(
+                    list.iterator(),
+                    ProjectionTypeKey("kotlin.collections.Iterator", listOf(elementProjectionTypeKey)),
+                ),
+            )
+            retainedChildren += iteratorHandle
+            iteratorHandle.pointer.withAddRef()
+        }
+        val getViewMethod: () -> ComPtr = {
+            val vectorViewHandle = requireNotNull(
+                createBindableVectorViewHandle(
+                    list,
+                    ProjectionTypeKey("kotlin.collections.List", listOf(elementProjectionTypeKey)),
+                ),
+            )
+            retainedChildren += vectorViewHandle
+            vectorViewHandle.pointer.withAddRef()
+        }
+        val interfaceSpec = JvmWinRtObjectStub.InterfaceSpec(
+            iid = bindableVectorIid,
+            noArgUnitMethods = mapOf(
+                15 to {
+                    if (list.isNotEmpty()) {
+                        list.removeAt(list.lastIndex)
+                    }
+                    HResult(0)
+                },
+                16 to {
+                    list.clear()
+                    HResult(0)
+                },
+            ),
+            noArgObjectMethods = mapOf(
+                6 to firstMethod,
+                9 to getViewMethod,
+            ),
+            noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
+            uint32ArgUnitMethods = mapOf(
+                13 to { index ->
+                    list.removeAt(index.toInt())
+                    HResult(0)
+                },
+            ),
+            uint32ArgObjectMethods = mapOf(
+                7 to { index ->
+                    marshalObjectResultPointer(
+                        value = list.elementAt(index.toInt()),
+                        projectionTypeKey = elementProjectionTypeKey,
+                        signature = AbiValueSignature.ObjectType(WinRtTypeSignature.object_()),
+                        retainedChildren = retainedChildren,
+                    )
+                },
+            ),
+            uint32ObjectArgUnitMethods = mapOf(
+                11 to { index, pointer ->
+                    list[index.toInt()] = bindableValueFromPointer(pointer)
+                    HResult(0)
+                },
+                12 to { index, pointer ->
+                    list.add(index.toInt(), bindableValueFromPointer(pointer))
+                    HResult(0)
+                },
+            ),
+            objectUInt32ArgBooleanMethods = mapOf(
+                10 to { pointer, _ -> bindableIndexOf(list, pointer) >= 0 },
+            ),
+            objectArgUnitMethods = mapOf(
+                14 to { pointer ->
+                    list.add(bindableValueFromPointer(pointer))
+                    HResult(0)
+                },
+            ),
         )
         val baseIterableSpec = JvmWinRtObjectStub.InterfaceSpec(
             iid = bindableIterableIid,
@@ -862,6 +960,18 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             iteratorHandle.pointer.withAddRef()
         }
     }
+
+    private fun bindableIndexOf(list: List<*>, pointer: ComPtr): Int {
+        return list.indexOfFirst { element ->
+            when (element) {
+                null -> pointer.isNull
+                is Inspectable -> element.pointer == pointer
+                else -> false
+            }
+        }
+    }
+
+    private fun bindableValueFromPointer(pointer: ComPtr): Inspectable = Inspectable(pointer)
 
     private class IteratorState(
         private val iterator: Iterator<*>,

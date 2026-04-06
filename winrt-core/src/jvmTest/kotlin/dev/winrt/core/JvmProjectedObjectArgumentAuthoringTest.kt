@@ -1,8 +1,10 @@
 package dev.winrt.core
 
+import dev.winrt.kom.ComMethodResultKind
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.KnownHResults
 import dev.winrt.kom.PlatformComInterop
+import dev.winrt.kom.requireBoolean
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -274,6 +276,15 @@ class JvmProjectedObjectArgumentAuthoringTest {
 
                 assertFalse(pointer.isNull)
                 assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
+                assertTrue(
+                    PlatformComInterop.invokeMethodWithResultKind(
+                        pointer,
+                        9,
+                        ComMethodResultKind.BOOLEAN,
+                        secondStub.primaryPointer,
+                        0u,
+                    ).getOrThrow().requireBoolean(),
+                )
 
                 val iterablePointer = PlatformComInterop.queryInterface(
                     pointer,
@@ -298,6 +309,80 @@ class JvmProjectedObjectArgumentAuthoringTest {
                     }
                 } finally {
                     PlatformComInterop.release(iterator)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun projected_object_argument_pointer_accepts_plain_mutable_list_values_for_bindable_vector_on_jvm() {
+        val forwardedIid = guidOf("12345678-1111-2222-3333-444444444444")
+
+        JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(iid = forwardedIid),
+        ).use { firstStub ->
+            JvmWinRtObjectStub.create(
+                JvmWinRtObjectStub.InterfaceSpec(iid = forwardedIid),
+            ).use { secondStub ->
+                JvmWinRtObjectStub.create(
+                    JvmWinRtObjectStub.InterfaceSpec(iid = forwardedIid),
+                ).use { replacementStub ->
+                    JvmWinRtObjectStub.create(
+                        JvmWinRtObjectStub.InterfaceSpec(iid = forwardedIid),
+                    ).use { insertedStub ->
+                        JvmWinRtObjectStub.create(
+                            JvmWinRtObjectStub.InterfaceSpec(iid = forwardedIid),
+                        ).use { appendedStub ->
+                            val values = mutableListOf(
+                                Inspectable(firstStub.primaryPointer),
+                                Inspectable(secondStub.primaryPointer),
+                            )
+                            val pointer = projectedObjectArgumentPointer(
+                                value = values,
+                                projectionTypeKey = "kotlin.collections.MutableList",
+                                signature = "{393de7de-6fd0-4c0d-bb71-47244a113e93}",
+                            )
+
+                            assertFalse(pointer.isNull)
+                            assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
+                            assertTrue(
+                                PlatformComInterop.invokeMethodWithResultKind(
+                                    pointer,
+                                    10,
+                                    ComMethodResultKind.BOOLEAN,
+                                    secondStub.primaryPointer,
+                                    0u,
+                                ).getOrThrow().requireBoolean(),
+                            )
+
+                            PlatformComInterop.invokeUnitMethodWithArgs(pointer, 11, 0u, replacementStub.primaryPointer).getOrThrow()
+                            assertEquals(replacementStub.primaryPointer.value.rawValue, values[0].pointer.value.rawValue)
+
+                            PlatformComInterop.invokeUnitMethodWithArgs(pointer, 12, 1u, insertedStub.primaryPointer).getOrThrow()
+                            assertEquals(3, values.size)
+                            assertEquals(insertedStub.primaryPointer.value.rawValue, values[1].pointer.value.rawValue)
+
+                            PlatformComInterop.invokeObjectSetter(pointer, 14, appendedStub.primaryPointer).getOrThrow()
+                            assertEquals(4, values.size)
+                            assertEquals(appendedStub.primaryPointer.value.rawValue, values.last().pointer.value.rawValue)
+
+                            PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 13, 2u).getOrThrow()
+                            assertEquals(3, values.size)
+
+                            val view = PlatformComInterop.invokeObjectMethod(pointer, 9).getOrThrow()
+                            try {
+                                assertEquals(3u, PlatformComInterop.invokeUInt32Method(view, 8).getOrThrow())
+                            } finally {
+                                PlatformComInterop.release(view)
+                            }
+
+                            PlatformComInterop.invokeUnitMethod(pointer, 15).getOrThrow()
+                            assertEquals(2, values.size)
+
+                            PlatformComInterop.invokeUnitMethod(pointer, 16).getOrThrow()
+                            assertTrue(values.isEmpty())
+                        }
+                    }
                 }
             }
         }
