@@ -57,6 +57,7 @@ class CheckedInBindingsParityTest {
         "windows/globalization/numberformatting/INumeralSystemTranslator.kt",
         "microsoft/ui/xaml/Application.kt",
         "microsoft/ui/xaml/ApplicationRequiresPointerMode.kt",
+        "microsoft/ui/xaml/IWindowStatics.kt",
         "microsoft/ui/xaml/Window.kt",
     )
     private val foundationRelativePaths = listOf(
@@ -117,7 +118,7 @@ class CheckedInBindingsParityTest {
             "IGlobalizationPreferencesStatics",
             "IGlobalizationPreferencesStatics2",
         ),
-        "Microsoft.UI.Xaml" to setOf("Application", "ApplicationRequiresPointerMode", "Window"),
+        "Microsoft.UI.Xaml" to setOf("Application", "ApplicationRequiresPointerMode", "IWindowStatics", "Window"),
     )
 
     @Test
