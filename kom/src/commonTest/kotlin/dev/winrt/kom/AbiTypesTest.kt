@@ -58,6 +58,10 @@ class AbiTypesTest {
 
         assertEquals(hString, ComMethodResult.HStringValue(hString).requireHString())
         assertEquals(objectValue, ComMethodResult.ObjectValue(objectValue).requireObject())
+        assertEquals(42u.toUByte(), ComMethodResult.UInt8Value(42u.toUByte()).requireUInt8())
+        assertEquals(42.toShort(), ComMethodResult.Int16Value(42).requireInt16())
+        assertEquals(42u.toUShort(), ComMethodResult.UInt16Value(42u).requireUInt16())
+        assertEquals('A', ComMethodResult.Char16Value('A').requireChar16())
         assertEquals(42, ComMethodResult.Int32Value(42).requireInt32())
         assertEquals(42u, ComMethodResult.UInt32Value(42u).requireUInt32())
         assertEquals(42L, ComMethodResult.Int64Value(42L).requireInt64())

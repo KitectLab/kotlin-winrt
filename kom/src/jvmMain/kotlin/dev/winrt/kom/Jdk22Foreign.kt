@@ -130,6 +130,9 @@ internal object Jdk22Foreign {
             ComStructFieldKind.UINT64 -> ValueLayout.JAVA_LONG
             ComStructFieldKind.FLOAT32 -> ValueLayout.JAVA_FLOAT
             ComStructFieldKind.FLOAT64 -> ValueLayout.JAVA_DOUBLE
+            ComStructFieldKind.HSTRING,
+            ComStructFieldKind.OBJECT,
+            -> ValueLayout.ADDRESS
             ComStructFieldKind.GUID -> MemoryLayout.structLayout(
                 ValueLayout.JAVA_INT,
                 ValueLayout.JAVA_SHORT,
