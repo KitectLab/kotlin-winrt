@@ -4,6 +4,7 @@ import dev.winrt.kom.ComPtr
 import dev.winrt.kom.ComStructValue
 import dev.winrt.kom.Guid
 import dev.winrt.kom.HResult
+import dev.winrt.kom.KnownHResults
 import dev.winrt.kom.PlatformComInterop
 import java.util.IdentityHashMap
 
@@ -432,10 +433,12 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 iid = signature.iid,
                 noArgUnitMethods = mapOf(
                     15 to {
-                        if (list.isNotEmpty()) {
+                        if (list.isEmpty()) {
+                            KnownHResults.E_BOUNDS
+                        } else {
                             list.removeAt(list.lastIndex)
+                            HResult(0)
                         }
-                        HResult(0)
                     },
                     16 to {
                         list.clear()
@@ -494,10 +497,12 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 iid = signature.iid,
                 noArgUnitMethods = mapOf(
                     15 to {
-                        if (list.isNotEmpty()) {
+                        if (list.isEmpty()) {
+                            KnownHResults.E_BOUNDS
+                        } else {
                             list.removeAt(list.lastIndex)
+                            HResult(0)
                         }
-                        HResult(0)
                     },
                     16 to {
                         list.clear()
@@ -767,10 +772,12 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
     ): JvmWinRtObjectStub.InterfaceSpec {
         val noArgUnitMethods = mapOf(
             15 to {
-                if (list.isNotEmpty()) {
+                if (list.isEmpty()) {
+                    KnownHResults.E_BOUNDS
+                } else {
                     list.removeAt(list.lastIndex)
+                    HResult(0)
                 }
-                HResult(0)
             },
             16 to {
                 list.clear()
@@ -1812,10 +1819,12 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             iid = bindableVectorIid,
             noArgUnitMethods = mapOf(
                 15 to {
-                    if (list.isNotEmpty()) {
+                    if (list.isEmpty()) {
+                        KnownHResults.E_BOUNDS
+                    } else {
                         list.removeAt(list.lastIndex)
+                        HResult(0)
                     }
-                    HResult(0)
                 },
                 16 to {
                     list.clear()

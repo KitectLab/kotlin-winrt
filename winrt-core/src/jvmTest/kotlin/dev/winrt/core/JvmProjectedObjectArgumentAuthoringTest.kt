@@ -1178,6 +1178,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
 
         PlatformComInterop.invokeUnitMethod(pointer, 16).getOrThrow()
         assertTrue(values.isEmpty())
+        assertBoundsFailure(PlatformComInterop.invokeUnitMethod(pointer, 15))
     }
 
     @Test
