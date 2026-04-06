@@ -494,6 +494,107 @@ class WinMdMetadataReaderTest {
     }
 
     @Test
+    fun metadata_model_keeps_www_form_url_decoder_surface_from_windows_sdk_contracts() {
+        val universalContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.UniversalApiContract",
+            sdkVersion = "10.0.22621.0",
+        )
+        val foundationContract = WindowsSdkReferences.findContract(
+            contractName = "Windows.Foundation.FoundationContract",
+            sdkVersion = "10.0.22621.0",
+        )
+
+        val model = WinMdModelFactory.metadataModel(
+            listOf(
+                universalContract.winmdPath,
+                foundationContract.winmdPath,
+            ),
+        )
+        val foundationTypes = model.namespaces
+            .first { it.name == "Windows.Foundation" }
+            .types
+        val iWwwFormUrlDecoderEntry = foundationTypes.filter { it.name == "IWwwFormUrlDecoderEntry" }
+        val iWwwFormUrlDecoderRuntimeClass = foundationTypes.filter { it.name == "IWwwFormUrlDecoderRuntimeClass" }
+        val wwwFormUrlDecoderEntry = foundationTypes.filter { it.name == "WwwFormUrlDecoderEntry" }
+
+        assertEquals(1, iWwwFormUrlDecoderEntry.size)
+        assertEquals(1, iWwwFormUrlDecoderRuntimeClass.size)
+        assertEquals(1, wwwFormUrlDecoderEntry.size)
+        assertTrue(
+            iWwwFormUrlDecoderEntry.single().properties.toString(),
+            iWwwFormUrlDecoderEntry.single().properties.any { property ->
+                property.name == "Name" && property.type == "String" && property.getterVtableIndex == 6
+            },
+        )
+        assertTrue(
+            iWwwFormUrlDecoderEntry.single().properties.toString(),
+            iWwwFormUrlDecoderEntry.single().properties.any { property ->
+                property.name == "Value" && property.type == "String" && property.getterVtableIndex == 7
+            },
+        )
+        assertTrue(
+            iWwwFormUrlDecoderRuntimeClass.single().methods.toString(),
+            iWwwFormUrlDecoderRuntimeClass.single().methods.any { method ->
+                method.name == "IndexOf" &&
+                    method.returnType == "Boolean" &&
+                    method.parameters.size == 2 &&
+                    method.parameters[1].type == "UInt32" &&
+                    method.parameters[1].byRef &&
+                    method.parameters[1].isOut &&
+                    method.vtableIndex == 9
+            },
+        )
+        assertEquals(
+            "Windows.Foundation.IWwwFormUrlDecoderEntry",
+            wwwFormUrlDecoderEntry.single().defaultInterface,
+        )
+    }
+
+    @Test
+    fun metadata_model_keeps_www_form_url_decoder_surface_when_windows_app_sdk_overlays_sdk_contracts() {
+        val packageSources = windowsAppSdkSourceFiles() ?: return
+        val model = WinMdModelFactory.metadataModel(windowsSdkContractSourceFiles() + packageSources)
+        val foundationTypes = model.namespaces
+            .first { it.name == "Windows.Foundation" }
+            .types
+        val iWwwFormUrlDecoderEntry = foundationTypes.filter { it.name == "IWwwFormUrlDecoderEntry" }
+        val iWwwFormUrlDecoderRuntimeClass = foundationTypes.filter { it.name == "IWwwFormUrlDecoderRuntimeClass" }
+        val wwwFormUrlDecoderEntry = foundationTypes.filter { it.name == "WwwFormUrlDecoderEntry" }
+
+        assertEquals(1, iWwwFormUrlDecoderEntry.size)
+        assertEquals(1, iWwwFormUrlDecoderRuntimeClass.size)
+        assertEquals(1, wwwFormUrlDecoderEntry.size)
+        assertTrue(
+            iWwwFormUrlDecoderEntry.single().properties.toString(),
+            iWwwFormUrlDecoderEntry.single().properties.any { property ->
+                property.name == "Name" && property.type == "String" && property.getterVtableIndex == 6
+            },
+        )
+        assertTrue(
+            iWwwFormUrlDecoderEntry.single().properties.toString(),
+            iWwwFormUrlDecoderEntry.single().properties.any { property ->
+                property.name == "Value" && property.type == "String" && property.getterVtableIndex == 7
+            },
+        )
+        assertTrue(
+            iWwwFormUrlDecoderRuntimeClass.single().methods.toString(),
+            iWwwFormUrlDecoderRuntimeClass.single().methods.any { method ->
+                method.name == "IndexOf" &&
+                    method.returnType == "Boolean" &&
+                    method.parameters.size == 2 &&
+                    method.parameters[1].type == "UInt32" &&
+                    method.parameters[1].byRef &&
+                    method.parameters[1].isOut &&
+                    method.vtableIndex == 9
+            },
+        )
+        assertEquals(
+            "Windows.Foundation.IWwwFormUrlDecoderEntry",
+            wwwFormUrlDecoderEntry.single().defaultInterface,
+        )
+    }
+
+    @Test
     fun reads_real_calendar_metadata_from_windows_sdk_winmd() {
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",
@@ -681,6 +782,30 @@ class WinMdMetadataReaderTest {
                 nugetRoots = nugetRoots,
             ).winmdFiles.filter { it.fileName.toString().equals(fileName, ignoreCase = true) }
         }.getOrDefault(emptyList())
+    }
+
+    private fun windowsSdkContractSourceFiles(): List<Path> {
+        return runCatching {
+            listOf(
+                WindowsSdkReferences.findContract("Windows.Foundation.UniversalApiContract").winmdPath,
+                WindowsSdkReferences.findContract("Windows.Foundation.FoundationContract").winmdPath,
+            )
+        }.getOrDefault(emptyList())
+    }
+
+    private fun windowsAppSdkSourceFiles(): List<Path>? {
+        val nugetRoots = buildList {
+            add(Path.of("F:/Dependencies/nuget"))
+            runCatching { NuGetPackageReferences.discoverPackagesRoot() }.getOrNull()?.let(::add)
+        }.distinct()
+
+        return runCatching {
+            NuGetPackageReferences.resolvePackageFromRoots(
+                packageId = "Microsoft.WindowsAppSDK",
+                packageVersion = windowsAppSdkVersion,
+                nugetRoots = nugetRoots,
+            ).winmdFiles
+        }.getOrNull()
     }
 
     private fun isMarkedValueType(typeName: String, expectedTypeName: String): Boolean {
