@@ -47,6 +47,50 @@ class JvmProjectedObjectArgumentAuthoringTest {
     }
 
     @Test
+    fun projected_object_argument_pointer_accepts_plain_iterable_values_for_bindable_iterable_on_jvm() {
+        val forwardedIid = guidOf("12345678-1111-2222-3333-444444444444")
+
+        JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(iid = forwardedIid),
+        ).use { firstStub ->
+            JvmWinRtObjectStub.create(
+                JvmWinRtObjectStub.InterfaceSpec(iid = forwardedIid),
+            ).use { secondStub ->
+                val values = listOf(Inspectable(firstStub.primaryPointer), Inspectable(secondStub.primaryPointer))
+                val pointer = projectedObjectArgumentPointer(
+                    value = values,
+                    projectionTypeKey = "kotlin.collections.Iterable",
+                    signature = "{036d2c08-df29-41af-8aa2-d774be62ba6f}",
+                )
+
+                assertFalse(pointer.isNull)
+
+                val iterator = PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()
+                try {
+                    val current = PlatformComInterop.invokeObjectMethod(iterator, 6).getOrThrow()
+                    try {
+                        assertEquals(firstStub.primaryPointer.value.rawValue, current.value.rawValue)
+                    } finally {
+                        PlatformComInterop.release(current)
+                    }
+                    assertTrue(PlatformComInterop.invokeBooleanGetter(iterator, 7).getOrThrow())
+                    assertTrue(PlatformComInterop.invokeBooleanGetter(iterator, 8).getOrThrow())
+                    val next = PlatformComInterop.invokeObjectMethod(iterator, 6).getOrThrow()
+                    try {
+                        assertEquals(secondStub.primaryPointer.value.rawValue, next.value.rawValue)
+                    } finally {
+                        PlatformComInterop.release(next)
+                    }
+                    assertFalse(PlatformComInterop.invokeBooleanGetter(iterator, 8).getOrThrow())
+                    assertFalse(PlatformComInterop.invokeBooleanGetter(iterator, 7).getOrThrow())
+                } finally {
+                    PlatformComInterop.release(iterator)
+                }
+            }
+        }
+    }
+
+    @Test
     fun projected_object_argument_pointer_reuses_plain_iterable_stub_for_same_object() {
         val languages = listOf("en-US", "fr-FR")
 
@@ -68,6 +112,44 @@ class JvmProjectedObjectArgumentAuthoringTest {
         )
 
         assertEquals(first, second)
+    }
+
+    @Test
+    fun projected_object_argument_pointer_accepts_plain_iterator_values_for_bindable_iterator_on_jvm() {
+        val forwardedIid = guidOf("12345678-1111-2222-3333-444444444444")
+
+        JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(iid = forwardedIid),
+        ).use { firstStub ->
+            JvmWinRtObjectStub.create(
+                JvmWinRtObjectStub.InterfaceSpec(iid = forwardedIid),
+            ).use { secondStub ->
+                val pointer = projectedObjectArgumentPointer(
+                    value = listOf(Inspectable(firstStub.primaryPointer), Inspectable(secondStub.primaryPointer)).iterator(),
+                    projectionTypeKey = "kotlin.collections.Iterator",
+                    signature = "{6a1d6c07-076d-49f2-8314-f52c9c9a8331}",
+                )
+
+                assertFalse(pointer.isNull)
+
+                val current = PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()
+                try {
+                    assertEquals(firstStub.primaryPointer.value.rawValue, current.value.rawValue)
+                } finally {
+                    PlatformComInterop.release(current)
+                }
+                assertTrue(PlatformComInterop.invokeBooleanGetter(pointer, 7).getOrThrow())
+                assertTrue(PlatformComInterop.invokeBooleanGetter(pointer, 8).getOrThrow())
+                val next = PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()
+                try {
+                    assertEquals(secondStub.primaryPointer.value.rawValue, next.value.rawValue)
+                } finally {
+                    PlatformComInterop.release(next)
+                }
+                assertFalse(PlatformComInterop.invokeBooleanGetter(pointer, 8).getOrThrow())
+                assertFalse(PlatformComInterop.invokeBooleanGetter(pointer, 7).getOrThrow())
+            }
+        }
     }
 
     @Test
@@ -170,6 +252,54 @@ class JvmProjectedObjectArgumentAuthoringTest {
             }
         } finally {
             PlatformComInterop.release(iterator)
+        }
+    }
+
+    @Test
+    fun projected_object_argument_pointer_accepts_plain_list_values_for_bindable_vector_view_on_jvm() {
+        val forwardedIid = guidOf("12345678-1111-2222-3333-444444444444")
+
+        JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(iid = forwardedIid),
+        ).use { firstStub ->
+            JvmWinRtObjectStub.create(
+                JvmWinRtObjectStub.InterfaceSpec(iid = forwardedIid),
+            ).use { secondStub ->
+                val values = listOf(Inspectable(firstStub.primaryPointer), Inspectable(secondStub.primaryPointer))
+                val pointer = projectedObjectArgumentPointer(
+                    value = values,
+                    projectionTypeKey = "kotlin.collections.List",
+                    signature = "{346dd6e7-976e-4bc3-815d-ece243bc0f33}",
+                )
+
+                assertFalse(pointer.isNull)
+                assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
+
+                val iterablePointer = PlatformComInterop.queryInterface(
+                    pointer,
+                    guidOf("036d2c08-df29-41af-8aa2-d774be62ba6f"),
+                ).getOrThrow()
+                PlatformComInterop.release(iterablePointer)
+
+                val second = PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 7, 1u).getOrThrow()
+                try {
+                    assertEquals(secondStub.primaryPointer.value.rawValue, second.value.rawValue)
+                } finally {
+                    PlatformComInterop.release(second)
+                }
+
+                val iterator = PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()
+                try {
+                    val current = PlatformComInterop.invokeObjectMethod(iterator, 6).getOrThrow()
+                    try {
+                        assertEquals(firstStub.primaryPointer.value.rawValue, current.value.rawValue)
+                    } finally {
+                        PlatformComInterop.release(current)
+                    }
+                } finally {
+                    PlatformComInterop.release(iterator)
+                }
+            }
         }
     }
 

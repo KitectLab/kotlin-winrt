@@ -15,6 +15,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
     private val iReferenceIidText = "61c17706-2d65-11e0-9ae8-d48564015472"
     private val bindableIterableIidText = "036d2c08-df29-41af-8aa2-d774be62ba6f"
     private val bindableIteratorIidText = "6a1d6c07-076d-49f2-8314-f52c9c9a8331"
+    private val bindableVectorViewIidText = "346dd6e7-976e-4bc3-815d-ece243bc0f33"
     private val hResultStructSignature = WinRtTypeSignature.struct("Windows.Foundation.HResult", "i4")
 
     private val iterableIid = guidOf(iterableIidText)
@@ -25,6 +26,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
     private val iReferenceIid = guidOf(iReferenceIidText)
     private val bindableIterableIid = guidOf(bindableIterableIidText)
     private val bindableIteratorIid = guidOf(bindableIteratorIidText)
+    private val bindableVectorViewIid = guidOf(bindableVectorViewIidText)
 
     private val cache = IdentityHashMap<Any, MutableMap<String, ProjectedObjectHandle>>()
 
@@ -33,7 +35,6 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         projectionTypeKey: String,
         signature: String,
     ): ComPtr? {
-        val parsedSignature = parseParameterizedInterfaceSignature(signature) ?: return null
         val parsedProjectionTypeKey = parseProjectionTypeKey(projectionTypeKey)
         val cacheKey = "$projectionTypeKey::$signature"
         return synchronized(cache) {
@@ -42,10 +43,24 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             if (cached != null) {
                 return@synchronized cached.pointer
             }
-            val created = createProjectedHandle(value, parsedProjectionTypeKey, parsedSignature) ?: return@synchronized null
+            val created = createProjectedHandle(value, parsedProjectionTypeKey, signature) ?: return@synchronized null
             handles[cacheKey] = created
             created.pointer
         }
+    }
+
+    private fun createProjectedHandle(
+        value: Any,
+        projectionTypeKey: ProjectionTypeKey,
+        signature: String,
+    ): ProjectedObjectHandle? {
+        parseParameterizedInterfaceSignature(signature)?.let { parsedSignature ->
+            return createProjectedHandle(value, projectionTypeKey, parsedSignature)
+        }
+        parseRawInterfaceSignature(signature)?.let { iid ->
+            return createRawInterfaceHandle(value, projectionTypeKey, iid)
+        }
+        return null
     }
 
     private fun createProjectedHandle(
@@ -62,6 +77,19 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             iReferenceIid.canonical -> createReferenceHandle(value, projectionTypeKey, signature)
             bindableIterableIid.canonical -> createBindableIterableHandle(value, projectionTypeKey)
             bindableIteratorIid.canonical -> createBindableIteratorHandle(value, projectionTypeKey)
+            else -> null
+        }
+    }
+
+    private fun createRawInterfaceHandle(
+        value: Any,
+        projectionTypeKey: ProjectionTypeKey,
+        iid: Guid,
+    ): ProjectedObjectHandle? {
+        return when (iid.canonical) {
+            bindableIterableIid.canonical -> createBindableIterableHandle(value, projectionTypeKey)
+            bindableIteratorIid.canonical -> createBindableIteratorHandle(value, projectionTypeKey)
+            bindableVectorViewIid.canonical -> createBindableVectorViewHandle(value, projectionTypeKey)
             else -> null
         }
     }
@@ -554,6 +582,46 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         return ProjectedObjectHandle(stub, retainedChildren)
     }
 
+    private fun createBindableVectorViewHandle(
+        value: Any,
+        projectionTypeKey: ProjectionTypeKey,
+    ): ProjectedObjectHandle? {
+        val list = value as? List<*> ?: return null
+        val elementProjectionTypeKey = projectionTypeKey.arguments.singleOrNull() ?: "Object"
+        val retainedChildren = mutableListOf<AutoCloseable>()
+        val firstMethod: () -> ComPtr = {
+            val iteratorHandle = requireNotNull(
+                createBindableIteratorHandle(
+                    list.iterator(),
+                    ProjectionTypeKey("kotlin.collections.Iterator", listOf(elementProjectionTypeKey)),
+                ),
+            )
+            retainedChildren += iteratorHandle
+            iteratorHandle.pointer.withAddRef()
+        }
+        val interfaceSpec = JvmWinRtObjectStub.InterfaceSpec(
+            iid = bindableVectorViewIid,
+            noArgObjectMethods = mapOf(6 to firstMethod),
+            uint32ArgObjectMethods = mapOf(
+                7 to { index ->
+                    marshalObjectResultPointer(
+                        value = list.elementAt(index.toInt()),
+                        projectionTypeKey = elementProjectionTypeKey,
+                        signature = AbiValueSignature.ObjectType(WinRtTypeSignature.object_()),
+                        retainedChildren = retainedChildren,
+                    )
+                },
+            ),
+            noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
+        )
+        val baseIterableSpec = JvmWinRtObjectStub.InterfaceSpec(
+            iid = bindableIterableIid,
+            noArgObjectMethods = mapOf(6 to firstMethod),
+        )
+        val stub = JvmWinRtObjectStub.create(interfaceSpec, baseIterableSpec)
+        return ProjectedObjectHandle(stub, retainedChildren)
+    }
+
     private fun marshalObjectResultPointer(
         value: Any?,
         projectionTypeKey: String,
@@ -723,6 +791,13 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             arguments = parts.drop(1).map(::parseAbiValueSignature),
             rawSignature = signature,
         )
+    }
+
+    private fun parseRawInterfaceSignature(signature: String): Guid? {
+        if (!signature.startsWith("{") || !signature.endsWith("}")) {
+            return null
+        }
+        return guidOf(signature.removePrefix("{").removeSuffix("}"))
     }
 
     private fun parseAbiValueSignature(signature: String): AbiValueSignature {
