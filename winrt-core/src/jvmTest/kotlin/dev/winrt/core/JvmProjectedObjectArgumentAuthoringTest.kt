@@ -9,6 +9,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import windows.foundation.IAsyncOperation
 import windows.data.json.IJsonValue
 import windows.data.json.JsonValue
 
@@ -464,6 +465,52 @@ class JvmProjectedObjectArgumentAuthoringTest {
                     replacementStub.primaryPointer.value.rawValue,
                     replacementValue.pointer.value.rawValue,
                 )
+            }
+        }
+    }
+
+    @Test
+    fun projected_object_argument_pointer_reprojects_mutable_parameterized_interface_map_values_for_imap_on_jvm() {
+        val asyncOperationSignature = WinRtTypeSignature.parameterizedInterface(
+            "9fc2b0bb-e446-44e2-aa61-9cab8f636af2",
+            WinRtTypeSignature.string(),
+        )
+        val asyncOperationIid = ParameterizedInterfaceId.createFromSignature(asyncOperationSignature)
+
+        JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(iid = asyncOperationIid),
+        ).use { firstStub ->
+            JvmWinRtObjectStub.create(
+                JvmWinRtObjectStub.InterfaceSpec(iid = asyncOperationIid),
+            ).use { replacementStub ->
+                val values = linkedMapOf(
+                    "job" to IAsyncOperation<String>(firstStub.primaryPointer, WinRtTypeSignature.string()),
+                )
+                val pointer = projectedObjectArgumentPointer(
+                    value = values,
+                    projectionTypeKey = "kotlin.collections.MutableMap<String, Windows.Foundation.IAsyncOperation<String>>",
+                    signature = WinRtTypeSignature.parameterizedInterface(
+                        "3c2925fe-8519-45c1-aa79-197b6718c1c1",
+                        WinRtTypeSignature.string(),
+                        asyncOperationSignature,
+                    ),
+                )
+
+                assertFalse(pointer.isNull)
+                assertTrue(
+                    PlatformComInterop.invokeMethodWithResultKind(
+                        pointer,
+                        11,
+                        ComMethodResultKind.BOOLEAN,
+                        "job",
+                        replacementStub.primaryPointer,
+                    ).getOrThrow().requireBoolean(),
+                )
+
+                val replacementValue: Any = values.getValue("job")
+                assertTrue(replacementValue is IAsyncOperation<*>)
+                assertEquals(WinRtTypeSignature.string(), replacementValue.resultSignature)
+                assertEquals(replacementStub.primaryPointer.value.rawValue, replacementValue.pointer.value.rawValue)
             }
         }
     }
