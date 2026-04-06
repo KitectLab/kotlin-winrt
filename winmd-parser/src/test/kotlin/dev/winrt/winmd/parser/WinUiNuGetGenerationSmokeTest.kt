@@ -4,6 +4,7 @@ import dev.winrt.winmd.plugin.WinMdModelFactory
 import dev.winrt.winmd.plugin.WinMdTypeKind
 import dev.winrt.winmd.plugin.NuGetPackageReferences
 import dev.winrt.winmd.plugin.WindowsSdkReferences
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -222,6 +223,32 @@ class WinUiNuGetGenerationSmokeTest {
         assertNotNull(generatedFiles["Windows/UI/Text/FontWeight.kt"])
         assertNotNull(generatedFiles["Windows/UI/Xaml/Interop/TypeName.kt"])
         assertNotNull(generatedFiles["Microsoft/UI/WindowId.kt"])
+    }
+
+    @Test
+    fun does_not_duplicate_vector_methods_on_collection_view_when_available() {
+        val sourceFiles = fullWindowsAppSdkSourceFiles() ?: return
+
+        val model = WinMdModelFilters.filterNamespacesWithProjectionDependencies(
+            model = WinMdModelFactory.merge(
+                primary = WinMdModelFactory.metadataModel(sourceFiles),
+                supplemental = WinMdModelFactory.sampleSupplementalModel(),
+            ),
+            namespaceFilters = listOf("Microsoft.UI.Xaml"),
+        )
+        val generatedFiles = KotlinBindingGenerator().generate(model).associateBy { it.relativePath }
+
+        val collectionViewBinding = generatedFiles["Microsoft/UI/Xaml/Data/ICollectionView.kt"]
+        assertNotNull(collectionViewBinding)
+
+        val content = collectionViewBinding!!.content.replace(Regex("\\s+"), "")
+        val occurrences = { pattern: String -> Regex(pattern).findAll(content).count() }
+
+        assertEquals(1, occurrences("funindexOf\\("))
+        assertEquals(1, occurrences("funsetAt\\("))
+        assertEquals(1, occurrences("funinsertAt\\("))
+        assertEquals(1, occurrences("funappend\\("))
+        assertEquals(1, occurrences("funreplaceAll\\("))
     }
 
     private fun localWindowsAppSdkSourceFiles(): List<Path>? {

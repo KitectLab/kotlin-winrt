@@ -227,6 +227,191 @@ class InterfaceTypeRendererTest {
     }
 
     @Test
+    fun dedupes_duplicate_collection_methods_when_rendering_interface_classes() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IVector`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            genericParameters = listOf("T"),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "IndexOf",
+                                    returnType = "Boolean",
+                                    parameters = listOf(
+                                        WinMdParameter("value", "T"),
+                                        WinMdParameter("index", "UInt32"),
+                                    ),
+                                    vtableIndex = 10,
+                                ),
+                                WinMdMethod(
+                                    name = "SetAt",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("index", "UInt32"),
+                                        WinMdParameter("value", "T"),
+                                    ),
+                                    vtableIndex = 11,
+                                ),
+                                WinMdMethod(
+                                    name = "InsertAt",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("index", "UInt32"),
+                                        WinMdParameter("value", "T"),
+                                    ),
+                                    vtableIndex = 12,
+                                ),
+                                WinMdMethod(
+                                    name = "Append",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("value", "T")),
+                                    vtableIndex = 14,
+                                ),
+                                WinMdMethod(
+                                    name = "ReplaceAll",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("items", "T[]")),
+                                    vtableIndex = 18,
+                                ),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IObservableVector`1",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            genericParameters = listOf("T"),
+                            baseInterfaces = listOf("Windows.Foundation.Collections.IVector<T>"),
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Example.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Collections",
+                            name = "ICollectionView",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "33333333-3333-3333-3333-333333333333",
+                            baseInterfaces = listOf(
+                                "Windows.Foundation.Collections.IVector<Object>",
+                                "Windows.Foundation.Collections.IObservableVector<Object>",
+                            ),
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "IndexOf",
+                                    returnType = "Boolean",
+                                    parameters = listOf(
+                                        WinMdParameter("value", "Object"),
+                                        WinMdParameter("index", "UInt32"),
+                                    ),
+                                    vtableIndex = 10,
+                                ),
+                                WinMdMethod(
+                                    name = "SetAt",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("index", "UInt32"),
+                                        WinMdParameter("value", "Object"),
+                                    ),
+                                    vtableIndex = 11,
+                                ),
+                                WinMdMethod(
+                                    name = "InsertAt",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("index", "UInt32"),
+                                        WinMdParameter("value", "Object"),
+                                    ),
+                                    vtableIndex = 12,
+                                ),
+                                WinMdMethod(
+                                    name = "Append",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("value", "Object")),
+                                    vtableIndex = 14,
+                                ),
+                                WinMdMethod(
+                                    name = "ReplaceAll",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("items", "Object[]")),
+                                    vtableIndex = 18,
+                                ),
+                                WinMdMethod(
+                                    name = "IndexOf",
+                                    returnType = "Boolean",
+                                    parameters = listOf(
+                                        WinMdParameter("value", "Object"),
+                                        WinMdParameter("index", "UInt32"),
+                                    ),
+                                    vtableIndex = 10,
+                                ),
+                                WinMdMethod(
+                                    name = "SetAt",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("index", "UInt32"),
+                                        WinMdParameter("value", "Object"),
+                                    ),
+                                    vtableIndex = 11,
+                                ),
+                                WinMdMethod(
+                                    name = "InsertAt",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("index", "UInt32"),
+                                        WinMdParameter("value", "Object"),
+                                    ),
+                                    vtableIndex = 12,
+                                ),
+                                WinMdMethod(
+                                    name = "Append",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("value", "Object")),
+                                    vtableIndex = 14,
+                                ),
+                                WinMdMethod(
+                                    name = "ReplaceAll",
+                                    returnType = "Unit",
+                                    parameters = listOf(WinMdParameter("items", "Object[]")),
+                                    vtableIndex = 18,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val typeRegistry = TypeRegistry(model)
+        val renderer = InterfaceTypeRenderer(
+            typeNameMapper = TypeNameMapper(),
+            delegateLambdaPlanResolver = DelegateLambdaPlanResolver(TypeNameMapper()),
+            eventSlotDelegatePlanResolver = EventSlotDelegatePlanResolver(TypeNameMapper(), typeRegistry),
+            typeRegistry = typeRegistry,
+            asyncMethodProjectionPlanner = AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry)),
+            asyncMethodRuleRegistry = AsyncMethodRuleRegistry(TypeNameMapper(), AsyncMethodProjectionPlanner(TypeNameMapper(), WinRtSignatureMapper(typeRegistry))),
+            winRtSignatureMapper = WinRtSignatureMapper(typeRegistry),
+            winRtProjectionTypeMapper = WinRtProjectionTypeMapper(),
+        )
+
+        val binding = renderer.render(typeRegistry.findType("ICollectionView", "Example.Collections")!!).single().toString()
+            .replace(Regex("\\s+"), "")
+        val occurrences = { pattern: String -> Regex(pattern).findAll(binding).count() }
+
+        assertEquals(1, occurrences("funindexOf\\("))
+        assertEquals(1, occurrences("funsetAt\\("))
+        assertEquals(1, occurrences("funinsertAt\\("))
+        assertEquals(1, occurrences("funappend\\("))
+    }
+
+    @Test
     fun does_not_project_enum_array_methods_as_scalar_enum_calls() {
         val model = WinMdModel(
             files = emptyList(),

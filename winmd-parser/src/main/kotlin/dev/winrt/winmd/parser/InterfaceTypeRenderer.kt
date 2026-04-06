@@ -58,7 +58,10 @@ internal class InterfaceTypeRenderer(
         val directBaseInterface = directBaseInterface(type, type.namespace)
         val inheritedSignatureKeys = inheritedSignatureKeys(directBaseInterface)
         val inheritedPropertyNames = inheritedPropertyNames(directBaseInterface)
-        val projectedProperties = declaredAndSyntheticInterfaceProperties(type, inheritedPropertyNames)
+        val projectedProperties = dedupeInterfaceProperties(
+            declaredAndSyntheticInterfaceProperties(type, inheritedPropertyNames),
+        )
+        val declaredMethods = dedupeInterfaceMethods(type.methods)
         val renderedProperties = projectedProperties.mapNotNull { property ->
             renderProperty(property, type.namespace, genericParameters)?.let { rendered -> property.name to rendered }
         }
@@ -156,13 +159,13 @@ internal class InterfaceTypeRenderer(
             )
             .addProperties(renderEventSlotProperties(type, type.namespace, genericParameters))
             .addFunctions(
-                type.methods
+                declaredMethods
                     .filterNot { interfaceMethodRenderKey(it) in inheritedSignatureKeys }
                     .filterNot { it.isProjectedPropertyAccessor(projectedPropertyNames) }
                     .flatMap { renderMethods(it, type.namespace, genericParameters) },
             )
             .addFunctions(
-                type.methods
+                declaredMethods
                     .filterNot { interfaceMethodRenderKey(it) in inheritedSignatureKeys }
                     .filterNot { it.isProjectedPropertyAccessor(projectedPropertyNames) }
                     .mapNotNull { renderLambdaOverload(it, type.namespace, genericParameters) },
@@ -229,7 +232,10 @@ internal class InterfaceTypeRenderer(
         val directBaseInterface = directBaseInterface(type, type.namespace)
         val inheritedSignatureKeys = inheritedSignatureKeys(directBaseInterface)
         val inheritedPropertyNames = inheritedPropertyNames(directBaseInterface)
-        val projectedProperties = declaredAndSyntheticInterfaceProperties(type, inheritedPropertyNames)
+        val projectedProperties = dedupeInterfaceProperties(
+            declaredAndSyntheticInterfaceProperties(type, inheritedPropertyNames),
+        )
+        val declaredMethods = dedupeInterfaceMethods(type.methods)
         val projectedPropertyNames = projectedProperties.asSequence()
             .mapNotNull { property ->
                 property.name.takeIf { renderInterfaceContractProperty(property, type.namespace, genericParameters) != null }
@@ -259,7 +265,7 @@ internal class InterfaceTypeRenderer(
                 projectedProperties.mapNotNull { renderInterfaceContractProperty(it, type.namespace, genericParameters) },
             )
             .addFunctions(
-                type.methods
+                declaredMethods
                     .filterNot { interfaceMethodRenderKey(it) in inheritedSignatureKeys }
                     .filterNot { it.isProjectedPropertyAccessor(projectedPropertyNames) }
                     .mapNotNull { renderInterfaceContractMethod(it, type.namespace, genericParameters) },
@@ -418,13 +424,13 @@ internal class InterfaceTypeRenderer(
     private fun allInterfaceMethods(type: WinMdType): List<WinMdMethod> {
         val directBaseInterface = directBaseInterface(type, type.namespace)
         val inherited = directBaseInterface?.let { typeRegistry.findType(it, type.namespace) }?.let(::allInterfaceMethods).orEmpty()
-        return (inherited + type.methods).distinctBy(::interfaceMethodRenderKey)
+        return dedupeInterfaceMethods(inherited + type.methods)
     }
 
     private fun allInterfaceProperties(type: WinMdType): List<WinMdProperty> {
         val directBaseInterface = directBaseInterface(type, type.namespace)
         val inherited = directBaseInterface?.let { typeRegistry.findType(it, type.namespace) }?.let(::allInterfaceProperties).orEmpty()
-        return (inherited + declaredAndSyntheticInterfaceProperties(type)).distinctBy { it.name }
+        return dedupeInterfaceProperties(inherited + declaredAndSyntheticInterfaceProperties(type))
     }
 
     private fun declaredAndSyntheticInterfaceProperties(
@@ -578,8 +584,9 @@ internal class InterfaceTypeRenderer(
         currentNamespace: String,
         genericParameters: Set<String>,
     ): List<InterfaceEventSlotPlan> {
-        val methodsByName = type.methods.associateBy { it.name }
-        return type.methods.mapNotNull { addMethod ->
+        val dedupedMethods = dedupeInterfaceMethods(type.methods)
+        val methodsByName = dedupedMethods.associateBy { it.name }
+        return dedupedMethods.mapNotNull { addMethod ->
             if (!addMethod.name.startsWith("add_") || addMethod.parameters.size != 1 || !isEventRegistrationTokenType(addMethod.returnType)) {
                 return@mapNotNull null
             }
@@ -4105,12 +4112,12 @@ internal class InterfaceTypeRenderer(
 
     private fun inheritedSignatureKeys(baseInterface: String?): Set<String> {
         val interfaceType = baseInterface?.let { typeRegistry.findType(it) } ?: return emptySet()
-        return interfaceType.methods.mapTo(linkedSetOf(), ::interfaceMethodRenderKey)
+        return allInterfaceMethods(interfaceType).mapTo(linkedSetOf(), ::interfaceMethodRenderKey)
     }
 
     private fun inheritedPropertyNames(baseInterface: String?): Set<String> {
         val interfaceType = baseInterface?.let { typeRegistry.findType(it) } ?: return emptySet()
-        return interfaceType.properties.mapTo(linkedSetOf(), WinMdProperty::name)
+        return allInterfaceProperties(interfaceType).mapTo(linkedSetOf(), WinMdProperty::name)
     }
 
     private fun renderDispatchQueueOverride(
@@ -4150,6 +4157,14 @@ internal class InterfaceTypeRenderer(
         val addVtableIndex: Int,
         val removeVtableIndex: Int,
     )
+
+    private fun dedupeInterfaceProperties(properties: List<WinMdProperty>): List<WinMdProperty> {
+        return properties.asReversed().distinctBy { it.name }.asReversed()
+    }
+
+    private fun dedupeInterfaceMethods(methods: List<WinMdMethod>): List<WinMdMethod> {
+        return methods.asReversed().distinctBy(::interfaceMethodRenderKey).asReversed()
+    }
 
     private fun interfaceMethodRenderKey(method: WinMdMethod): String {
         return method.overloadKey(renderedName = kotlinMethodName(method.name))
