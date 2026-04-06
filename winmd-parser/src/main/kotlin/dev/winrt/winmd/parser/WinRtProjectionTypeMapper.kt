@@ -10,7 +10,7 @@ internal class WinRtProjectionTypeMapper {
         }
 
         return scalarProjectionTypeKey(normalizedTypeName)
-            ?: interfaceProjectionTypeKey(normalizedTypeName)
+            ?: winRtCollectionProjectionTypeKey(normalizedTypeName)
             ?: normalizedTypeName
     }
 
@@ -21,7 +21,7 @@ internal class WinRtProjectionTypeMapper {
         val argumentTypeKeys = splitGenericArguments(argumentSource)
             .map { projectionTypeKeyFor(it, currentNamespace) }
 
-        val mappedRawType = interfaceProjectionTypeKey(rawTypeName) ?: rawTypeName
+        val mappedRawType = winRtCollectionProjectionTypeKey(rawTypeName) ?: rawTypeName
         return "$mappedRawType<${argumentTypeKeys.joinToString(", ")}>"
     }
 
@@ -55,35 +55,4 @@ internal class WinRtProjectionTypeMapper {
         "EventRegistrationToken" -> "EventRegistrationToken"
         else -> null
     }
-
-    private fun interfaceProjectionTypeKey(typeName: String): String? = when (typeName) {
-        "Windows.UI.Xaml.Interop.IBindableIterable" -> "kotlin.collections.Iterable"
-        "Windows.UI.Xaml.Interop.IBindableIterator" -> "kotlin.collections.Iterator"
-        "Windows.UI.Xaml.Interop.IBindableVector" -> "kotlin.collections.MutableList"
-        "Windows.UI.Xaml.Interop.IBindableVectorView" -> "kotlin.collections.List"
-        "Microsoft.UI.Xaml.Interop.IBindableIterable" -> "kotlin.collections.Iterable"
-        "Microsoft.UI.Xaml.Interop.IBindableIterator" -> "kotlin.collections.Iterator"
-        "Microsoft.UI.Xaml.Interop.IBindableVector" -> "kotlin.collections.MutableList"
-        "Microsoft.UI.Xaml.Interop.IBindableVectorView" -> "kotlin.collections.List"
-        "Windows.Foundation.Collections.IIterable" -> "kotlin.collections.Iterable"
-        "Windows.Foundation.Collections.IIterable`1" -> "kotlin.collections.Iterable"
-        "Windows.Foundation.Collections.IIterator" -> "kotlin.collections.Iterator"
-        "Windows.Foundation.Collections.IIterator`1" -> "kotlin.collections.Iterator"
-        "Windows.Foundation.Collections.IVector" -> "kotlin.collections.MutableList"
-        "Windows.Foundation.Collections.IVector`1" -> "kotlin.collections.MutableList"
-        "Windows.Foundation.Collections.IVectorView" -> "kotlin.collections.List"
-        "Windows.Foundation.Collections.IVectorView`1" -> "kotlin.collections.List"
-        "Windows.Foundation.Collections.IMap" -> "kotlin.collections.MutableMap"
-        "Windows.Foundation.Collections.IMap`2" -> "kotlin.collections.MutableMap"
-        "Windows.Foundation.Collections.IMapView" -> "kotlin.collections.Map"
-        "Windows.Foundation.Collections.IMapView`2" -> "kotlin.collections.Map"
-        "Windows.Foundation.Collections.IKeyValuePair" -> "kotlin.collections.Map.Entry"
-        "Windows.Foundation.Collections.IKeyValuePair`2" -> "kotlin.collections.Map.Entry"
-        "Windows.Foundation.Collections.IObservableVector" -> "kotlin.collections.MutableList"
-        "Windows.Foundation.Collections.IObservableVector`1" -> "kotlin.collections.MutableList"
-        "Windows.Foundation.Collections.IObservableMap" -> "kotlin.collections.MutableMap"
-        "Windows.Foundation.Collections.IObservableMap`2" -> "kotlin.collections.MutableMap"
-        else -> null
-    }
-
 }

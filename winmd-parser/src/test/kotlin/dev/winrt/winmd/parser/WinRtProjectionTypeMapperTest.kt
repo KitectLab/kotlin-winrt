@@ -44,6 +44,24 @@ class WinRtProjectionTypeMapperTest {
     }
 
     @Test
+    fun maps_xaml_bindable_projection_keys_to_kotlin_collection_interfaces() {
+        assertEquals(
+            "kotlin.collections.Iterable",
+            mapper.projectionTypeKeyFor(
+                "Microsoft.UI.Xaml.Interop.IBindableIterable",
+                "Microsoft.UI.Xaml.Interop",
+            ),
+        )
+        assertEquals(
+            "kotlin.collections.List",
+            mapper.projectionTypeKeyFor(
+                "Windows.UI.Xaml.Interop.IBindableVectorView",
+                "Windows.UI.Xaml.Interop",
+            ),
+        )
+    }
+
+    @Test
     fun preserves_scalar_arguments_in_generic_projection_keys() {
         assertEquals(
             "kotlin.collections.List<String>",

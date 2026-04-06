@@ -25,6 +25,15 @@ internal fun splitGenericArguments(source: String): List<String> {
     return arguments
 }
 
+internal fun canonicalWinRtInterfaceName(interfaceName: String): String =
+    interfaceName.substringBefore('<').substringBefore('`')
+
+internal fun winRtCollectionProjectionTypeKey(typeName: String): String? =
+    winRtCollectionProjectionTypeKeys[canonicalWinRtInterfaceName(typeName)]
+
+internal fun isWinRtCollectionInterface(typeName: String): Boolean =
+    winRtCollectionProjectionTypeKey(typeName) != null
+
 internal fun TypeRegistry.signatureParameterType(type: String, currentNamespace: String): String =
     if (isEnumType(type, currentNamespace)) {
         enumSignatureType(this, type, currentNamespace)
@@ -189,3 +198,26 @@ private fun closedGenericRawTypeName(typeName: String): String? =
     typeName
         .takeIf { '<' in it && it.endsWith(">") }
         ?.substringBefore('<')
+
+private val winRtCollectionProjectionTypeKeys = buildMap {
+    val xamlBindableProjectionTypeKeys = mapOf(
+        "IBindableIterable" to "kotlin.collections.Iterable",
+        "IBindableIterator" to "kotlin.collections.Iterator",
+        "IBindableVector" to "kotlin.collections.MutableList",
+        "IBindableVectorView" to "kotlin.collections.List",
+    )
+    listOf("Microsoft.UI.Xaml.Interop", "Windows.UI.Xaml.Interop").forEach { namespace ->
+        xamlBindableProjectionTypeKeys.forEach { (name, projectionTypeKey) ->
+            put("$namespace.$name", projectionTypeKey)
+        }
+    }
+    put("Windows.Foundation.Collections.IIterable", "kotlin.collections.Iterable")
+    put("Windows.Foundation.Collections.IIterator", "kotlin.collections.Iterator")
+    put("Windows.Foundation.Collections.IVector", "kotlin.collections.MutableList")
+    put("Windows.Foundation.Collections.IVectorView", "kotlin.collections.List")
+    put("Windows.Foundation.Collections.IMap", "kotlin.collections.MutableMap")
+    put("Windows.Foundation.Collections.IMapView", "kotlin.collections.Map")
+    put("Windows.Foundation.Collections.IKeyValuePair", "kotlin.collections.Map.Entry")
+    put("Windows.Foundation.Collections.IObservableVector", "kotlin.collections.MutableList")
+    put("Windows.Foundation.Collections.IObservableMap", "kotlin.collections.MutableMap")
+}

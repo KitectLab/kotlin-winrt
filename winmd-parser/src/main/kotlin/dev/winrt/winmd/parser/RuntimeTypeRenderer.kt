@@ -776,7 +776,7 @@ internal class RuntimeTypeRenderer(
         val defaultInterfaceType = type.defaultInterface
             ?.takeIf { typeRegistry.isRuntimeProjectedInterface(it, type.namespace) }
             ?.let { interfaceName -> typeRegistry.findType(interfaceName, type.namespace) }
-        val defaultInterfaceName = defaultInterfaceType?.let { canonicalInterfaceName("${it.namespace}.${it.name}") }
+        val defaultInterfaceName = defaultInterfaceType?.let { canonicalWinRtInterfaceName("${it.namespace}.${it.name}") }
         val inheritedByDefault = defaultInterfaceType
             ?.let(::allImplementedInterfaceNames)
             .orEmpty()
@@ -786,8 +786,7 @@ internal class RuntimeTypeRenderer(
             type.defaultInterface?.let(::add)
         }.filterTo(linkedSetOf()) { interfaceName ->
             collectionSuperinterface(interfaceName, type.namespace, emptySet()) != null ||
-                isCollectionRuntimeInterface(interfaceName) ||
-                isIterableProjectionInterface(interfaceName)
+                isWinRtCollectionInterface(interfaceName)
         }
         return buildList {
             defaultInterfaceType
@@ -797,7 +796,7 @@ internal class RuntimeTypeRenderer(
                 .filter {
                     typeRegistry.isRuntimeProjectedInterface(it, type.namespace) &&
                         it != type.defaultInterface &&
-                        canonicalInterfaceName(it) !in inheritedByDefault &&
+                        canonicalWinRtInterfaceName(it) !in inheritedByDefault &&
                         it !in collectionBackedInterfaces
                 }
                 .mapNotNull { interfaceName -> typeRegistry.findType(interfaceName, type.namespace) }
@@ -822,9 +821,9 @@ internal class RuntimeTypeRenderer(
 
     private fun allImplementedInterfaceNames(type: WinMdType): Set<String> {
         return buildSet {
-            add(canonicalInterfaceName("${type.namespace}.${type.name}"))
+            add(canonicalWinRtInterfaceName("${type.namespace}.${type.name}"))
             type.baseInterfaces.forEach { baseInterface ->
-                add(canonicalInterfaceName(baseInterface))
+                add(canonicalWinRtInterfaceName(baseInterface))
                 typeRegistry.findType(baseInterface, type.namespace)
                     ?.takeIf { it.kind == dev.winrt.winmd.plugin.WinMdTypeKind.Interface }
                     ?.let { addAll(allImplementedInterfaceNames(it)) }
@@ -846,40 +845,6 @@ internal class RuntimeTypeRenderer(
 
     private fun renderedRuntimeMethodName(method: WinMdMethod): String {
         return projectedMethodName(method)
-    }
-
-    private fun isIterableProjectionInterface(interfaceName: String): Boolean {
-        return interfaceName == "Microsoft.UI.Xaml.Interop.IBindableIterable" ||
-            interfaceName == "Microsoft.UI.Xaml.Interop.IBindableIterator" ||
-            interfaceName == "Windows.UI.Xaml.Interop.IBindableIterable" ||
-            interfaceName == "Windows.UI.Xaml.Interop.IBindableIterator" ||
-            interfaceName.startsWith("Windows.Foundation.Collections.IIterable<") ||
-            interfaceName.startsWith("Windows.Foundation.Collections.IIterator<")
-    }
-
-    private fun isCollectionRuntimeInterface(interfaceName: String): Boolean {
-        return when (canonicalInterfaceName(interfaceName).substringAfterLast('.')) {
-            "IIterable",
-            "IIterator",
-            "IVector",
-            "IVectorView",
-            "IMap",
-            "IMapView",
-            "IKeyValuePair",
-            "IObservableMap",
-            "IObservableVector",
-            "IBindableIterable",
-            "IBindableIterator",
-            "IBindableVector",
-            "IBindableVectorView",
-            -> true
-            else -> false
-        }
-    }
-
-    private fun canonicalInterfaceName(interfaceName: String): String {
-        return interfaceName.substringBefore('<')
-            .substringBefore('`')
     }
 
     private fun allInterfaceMethodKeys(type: WinMdType): Set<String> {
