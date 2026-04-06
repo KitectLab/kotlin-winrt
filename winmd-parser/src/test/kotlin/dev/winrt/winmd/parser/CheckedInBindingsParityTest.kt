@@ -307,6 +307,63 @@ class CheckedInBindingsParityTest {
     }
 
     @Test
+    fun projection_closure_retains_runtime_classes_for_projected_interface_dependencies() {
+        val model = WinMdModelFactory.sampleSupplementalModel().copy(
+            namespaces = listOf(
+                dev.winrt.winmd.plugin.WinMdNamespace(
+                    name = "Example.Xaml",
+                    types = listOf(
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "WidgetCollection",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Xaml.IWidgetCollection",
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidgetCollection",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "44444444-4444-4444-4444-444444444441",
+                            methods = listOf(
+                                dev.winrt.winmd.plugin.WinMdMethod(
+                                    name = "GetCurrent",
+                                    returnType = "Example.Xaml.IWidgetEntry",
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "WidgetEntry",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Example.Xaml.IWidgetEntry",
+                        ),
+                        dev.winrt.winmd.plugin.WinMdType(
+                            namespace = "Example.Xaml",
+                            name = "IWidgetEntry",
+                            kind = dev.winrt.winmd.plugin.WinMdTypeKind.Interface,
+                            guid = "44444444-4444-4444-4444-444444444442",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val trackedModel = WinMdProjectionModelClosure.retainTypesWithHiddenProjectionDependencies(
+            model,
+            mapOf("Example.Xaml" to setOf("WidgetCollection")),
+        )
+        val exampleTypes = trackedModel.namespaces.first { it.name == "Example.Xaml" }.types.map { it.name }.toSet()
+        val trackedTypeRegistry = TypeRegistry(trackedModel)
+
+        assertTrue(exampleTypes.contains("WidgetCollection"))
+        assertTrue(exampleTypes.contains("IWidgetCollection"))
+        assertTrue(exampleTypes.contains("IWidgetEntry"))
+        assertTrue(exampleTypes.contains("WidgetEntry"))
+        assertTrue(trackedTypeRegistry.isRuntimeProjectedInterface("IWidgetEntry", "Example.Xaml"))
+    }
+
+    @Test
     fun checked_in_json_object_retains_verified_runtime_surface() {
         val checkedIn = Path.of("../generated-winrt-bindings/src/commonMain/kotlin/windows/data/json/IJsonObject.kt").readText()
 

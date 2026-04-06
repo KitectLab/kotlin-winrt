@@ -232,6 +232,19 @@ internal class TypeRegistry(
         return findType(defaultInterfaceName, runtimeClass.namespace)
     }
 
+    fun findRuntimeClassesProjectingInterface(typeName: String, currentNamespace: String): List<WinMdType> {
+        val interfaceType = findType(typeName, currentNamespace) ?: return emptyList()
+        if (interfaceType.kind != WinMdTypeKind.Interface) {
+            return emptyList()
+        }
+        val qualifiedInterfaceName = resolveQualifiedName(typeName, currentNamespace)
+        return allTypes
+            .asSequence()
+            .filter { type -> type.kind == WinMdTypeKind.RuntimeClass }
+            .filter { runtimeClass -> qualifiedInterfaceName in associatedInterfaceNames(runtimeClass) }
+            .toList()
+    }
+
     fun findImplementedInterfaceTypes(typeName: String, currentNamespace: String): List<WinMdType> {
         val runtimeClass = findType(typeName, currentNamespace) ?: return emptyList()
         return runtimeClass.baseInterfaces
@@ -354,6 +367,39 @@ internal class TypeRegistry(
             !typeName.contains('`') &&
             !typeName.contains('<') &&
             !typeName.endsWith("[]")
+    }
+
+    private fun associatedInterfaceNames(runtimeClass: WinMdType): Set<String> {
+        val associated = linkedSetOf<String>()
+        val pending = ArrayDeque<String>()
+
+        fun retainInterface(typeName: String?) {
+            typeName ?: return
+            val qualifiedName = resolveQualifiedName(typeName, runtimeClass.namespace)
+            if (associated.add(qualifiedName)) {
+                pending.addLast(qualifiedName)
+            }
+        }
+
+        retainInterface(runtimeClass.defaultInterface)
+        runtimeClass.implementedInterfaces.forEach(::retainInterface)
+        runtimeClass.baseInterfaces.forEach(::retainInterface)
+        findRuntimeClassStaticsTypes(runtimeClass.name, runtimeClass.namespace)
+            .forEach { helperType -> retainInterface("${helperType.namespace}.${helperType.name}") }
+        findRuntimeClassFactoryTypes(runtimeClass.name, runtimeClass.namespace)
+            .forEach { helperType -> retainInterface("${helperType.namespace}.${helperType.name}") }
+        findRuntimeClassOverridesTypes(runtimeClass.name, runtimeClass.namespace)
+            .forEach { helperType -> retainInterface("${helperType.namespace}.${helperType.name}") }
+
+        while (pending.isNotEmpty()) {
+            val interfaceName = pending.removeFirst()
+            val interfaceType = typesByQualifiedName[interfaceName]
+                ?.takeIf { type -> type.kind == WinMdTypeKind.Interface }
+                ?: continue
+            interfaceType.baseInterfaces.forEach(::retainInterface)
+        }
+
+        return associated
     }
 }
 

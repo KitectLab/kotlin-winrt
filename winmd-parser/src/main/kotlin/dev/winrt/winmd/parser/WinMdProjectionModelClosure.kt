@@ -40,6 +40,9 @@ internal object WinMdProjectionModelClosure {
                     typeRegistry.findType(referencedTypeName, type.namespace)?.let(::retain)
                 }
             }
+            if (type.kind == WinMdTypeKind.Interface) {
+                typeRegistry.findRuntimeClassesProjectingInterface(type.name, type.namespace).forEach(::retain)
+            }
         }
 
         return model.copy(
