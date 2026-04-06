@@ -361,6 +361,7 @@ internal class ValueTypeProjectionSupport(
                 "Boolean",
                 "Float32",
                 "Float64",
+                "Guid",
                 "Int64",
                 "UInt64",
                 "DateTime",
@@ -401,6 +402,7 @@ internal class ValueTypeProjectionSupport(
                 "UInt16",
                 "Char16",
                 -> CodeBlock.of("%N", argumentName)
+                "Guid" -> CodeBlock.of("%M(%N.toString())", PoetSymbols.guidOfMember, argumentName)
                 "Int32",
                 "UInt32",
                 "Boolean",

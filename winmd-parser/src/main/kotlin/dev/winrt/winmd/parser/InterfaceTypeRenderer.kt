@@ -1755,18 +1755,7 @@ internal class InterfaceTypeRenderer(
         val abiArguments = int32FillArrayAbiArguments(
             parameters = method.parameters,
             lowerNonArrayArgument = { parameter ->
-                val parameterCategory = methodParameterCategory(
-                    signatureParameterType(parameter.type, currentNamespace),
-                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@int32FillArrayAbiArguments null
-                CodeBlock.of(
-                    "%L",
-                    unaryArgumentExpression(
-                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                        parameterType = parameter.type,
-                        category = parameterCategory,
-                        currentNamespace = currentNamespace,
-                    ),
-                )
+                lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@int32FillArrayAbiArguments null
             },
             lowerArrayArgument = { _ ->
                 CodeBlock.of("%N", fillArrayBufferName)
@@ -1833,18 +1822,7 @@ internal class InterfaceTypeRenderer(
             statement = "return %L",
             args = { method, currentNamespace ->
                 val abiArguments = int32ReceiveArrayAbiArguments(method.parameters) { parameter ->
-                    val parameterCategory = methodParameterCategory(
-                        signatureParameterType(parameter.type, currentNamespace),
-                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@int32ReceiveArrayAbiArguments null
-                    CodeBlock.of(
-                        "%L",
-                        unaryArgumentExpression(
-                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                            parameterType = parameter.type,
-                            category = parameterCategory,
-                            currentNamespace = currentNamespace,
-                        ),
-                    )
+                    lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@int32ReceiveArrayAbiArguments null
                 } ?: error("Unsupported Int32 receive-array interface method: ${method.name}")
                 arrayOf(
                     int32ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
@@ -1861,18 +1839,7 @@ internal class InterfaceTypeRenderer(
             statement = "return %L",
             args = { method, currentNamespace ->
                 val abiArguments = uint8ReceiveArrayAbiArguments(method.parameters) { parameter ->
-                    val parameterCategory = methodParameterCategory(
-                        signatureParameterType(parameter.type, currentNamespace),
-                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@uint8ReceiveArrayAbiArguments null
-                    CodeBlock.of(
-                        "%L",
-                        unaryArgumentExpression(
-                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                            parameterType = parameter.type,
-                            category = parameterCategory,
-                            currentNamespace = currentNamespace,
-                        ),
-                    )
+                    lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@uint8ReceiveArrayAbiArguments null
                 } ?: error("Unsupported UInt8 receive-array interface method: ${method.name}")
                 arrayOf(uint8ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
             },
@@ -1887,18 +1854,7 @@ internal class InterfaceTypeRenderer(
             statement = "return %L",
             args = { method, currentNamespace ->
                 val abiArguments = int16ReceiveArrayAbiArguments(method.parameters) { parameter ->
-                    val parameterCategory = methodParameterCategory(
-                        signatureParameterType(parameter.type, currentNamespace),
-                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@int16ReceiveArrayAbiArguments null
-                    CodeBlock.of(
-                        "%L",
-                        unaryArgumentExpression(
-                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                            parameterType = parameter.type,
-                            category = parameterCategory,
-                            currentNamespace = currentNamespace,
-                        ),
-                    )
+                    lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@int16ReceiveArrayAbiArguments null
                 } ?: error("Unsupported Int16 receive-array interface method: ${method.name}")
                 arrayOf(int16ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
             },
@@ -1913,18 +1869,7 @@ internal class InterfaceTypeRenderer(
             statement = "return %L",
             args = { method, currentNamespace ->
                 val abiArguments = uint16ReceiveArrayAbiArguments(method.parameters) { parameter ->
-                    val parameterCategory = methodParameterCategory(
-                        signatureParameterType(parameter.type, currentNamespace),
-                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@uint16ReceiveArrayAbiArguments null
-                    CodeBlock.of(
-                        "%L",
-                        unaryArgumentExpression(
-                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                            parameterType = parameter.type,
-                            category = parameterCategory,
-                            currentNamespace = currentNamespace,
-                        ),
-                    )
+                    lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@uint16ReceiveArrayAbiArguments null
                 } ?: error("Unsupported UInt16 receive-array interface method: ${method.name}")
                 arrayOf(uint16ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
             },
@@ -1939,18 +1884,7 @@ internal class InterfaceTypeRenderer(
             statement = "return %L",
             args = { method, currentNamespace ->
                 val abiArguments = char16ReceiveArrayAbiArguments(method.parameters) { parameter ->
-                    val parameterCategory = methodParameterCategory(
-                        signatureParameterType(parameter.type, currentNamespace),
-                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@char16ReceiveArrayAbiArguments null
-                    CodeBlock.of(
-                        "%L",
-                        unaryArgumentExpression(
-                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                            parameterType = parameter.type,
-                            category = parameterCategory,
-                            currentNamespace = currentNamespace,
-                        ),
-                    )
+                    lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@char16ReceiveArrayAbiArguments null
                 } ?: error("Unsupported Char16 receive-array interface method: ${method.name}")
                 arrayOf(char16ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
             },
@@ -1965,18 +1899,7 @@ internal class InterfaceTypeRenderer(
             statement = "return %L",
             args = { method, currentNamespace ->
                 val abiArguments = booleanReceiveArrayAbiArguments(method.parameters) { parameter ->
-                    val parameterCategory = methodParameterCategory(
-                        signatureParameterType(parameter.type, currentNamespace),
-                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@booleanReceiveArrayAbiArguments null
-                    CodeBlock.of(
-                        "%L",
-                        unaryArgumentExpression(
-                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                            parameterType = parameter.type,
-                            category = parameterCategory,
-                            currentNamespace = currentNamespace,
-                        ),
-                    )
+                    lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@booleanReceiveArrayAbiArguments null
                 } ?: error("Unsupported Boolean receive-array interface method: ${method.name}")
                 arrayOf(booleanReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
             },
@@ -1991,18 +1914,7 @@ internal class InterfaceTypeRenderer(
             statement = "return %L",
             args = { method, currentNamespace ->
                 val abiArguments = guidReceiveArrayAbiArguments(method.parameters) { parameter ->
-                    val parameterCategory = methodParameterCategory(
-                        signatureParameterType(parameter.type, currentNamespace),
-                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@guidReceiveArrayAbiArguments null
-                    CodeBlock.of(
-                        "%L",
-                        unaryArgumentExpression(
-                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                            parameterType = parameter.type,
-                            category = parameterCategory,
-                            currentNamespace = currentNamespace,
-                        ),
-                    )
+                    lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@guidReceiveArrayAbiArguments null
                 } ?: error("Unsupported Guid receive-array interface method: ${method.name}")
                 arrayOf(guidReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
             },
@@ -2020,18 +1932,7 @@ internal class InterfaceTypeRenderer(
         val abiArguments = guidPassArrayAbiArguments(
             parameters = method.parameters,
             lowerArgument = { parameter ->
-                val parameterCategory = methodParameterCategory(
-                    signatureParameterType(parameter.type, currentNamespace),
-                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@guidPassArrayAbiArguments null
-                CodeBlock.of(
-                    "%L",
-                    unaryArgumentExpression(
-                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                        parameterType = parameter.type,
-                        category = parameterCategory,
-                        currentNamespace = currentNamespace,
-                    ),
-                )
+                lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@guidPassArrayAbiArguments null
             },
         ) ?: return null
         return if (method.returnType == "Unit") {
@@ -2064,18 +1965,7 @@ internal class InterfaceTypeRenderer(
             statement = "return %L",
             args = { method, currentNamespace ->
                 val abiArguments = objectReceiveArrayAbiArguments(method.parameters) { parameter ->
-                    val parameterCategory = methodParameterCategory(
-                        signatureParameterType(parameter.type, currentNamespace),
-                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@objectReceiveArrayAbiArguments null
-                    CodeBlock.of(
-                        "%L",
-                        unaryArgumentExpression(
-                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                            parameterType = parameter.type,
-                            category = parameterCategory,
-                            currentNamespace = currentNamespace,
-                        ),
-                    )
+                    lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@objectReceiveArrayAbiArguments null
                 } ?: error("Unsupported Object receive-array interface method: ${method.name}")
                 arrayOf(objectReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
             },
@@ -2097,18 +1987,7 @@ internal class InterfaceTypeRenderer(
                     typeRegistry = typeRegistry,
                     expectedElementType = elementType,
                 ) { parameter ->
-                    val parameterCategory = methodParameterCategory(
-                        signatureParameterType(parameter.type, namespace),
-                    ) { typeName -> supportsInterfaceObjectInput(typeName, namespace) } ?: return@runtimeClassReceiveArrayAbiArguments null
-                    CodeBlock.of(
-                        "%L",
-                        unaryArgumentExpression(
-                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                            parameterType = parameter.type,
-                            category = parameterCategory,
-                            currentNamespace = namespace,
-                        ),
-                    )
+                    lowerInterfaceArrayMethodArgument(parameter, namespace) ?: return@runtimeClassReceiveArrayAbiArguments null
                 } ?: error("Unsupported runtime-class receive-array interface method: ${method.name}")
                 val runtimeClassType = typeNameMapper.mapTypeName(elementType, namespace, genericParameters)
                 arrayOf(runtimeClassReceiveArrayReturnExpression(method.vtableIndex!!, runtimeClassType, abiArguments))
@@ -2131,18 +2010,7 @@ internal class InterfaceTypeRenderer(
                     typeRegistry = typeRegistry,
                     expectedElementType = elementType,
                 ) { parameter ->
-                    val parameterCategory = methodParameterCategory(
-                        signatureParameterType(parameter.type, namespace),
-                    ) { typeName -> supportsInterfaceObjectInput(typeName, namespace) } ?: return@structReceiveArrayAbiArguments null
-                    CodeBlock.of(
-                        "%L",
-                        unaryArgumentExpression(
-                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                            parameterType = parameter.type,
-                            category = parameterCategory,
-                            currentNamespace = namespace,
-                        ),
-                    )
+                    lowerInterfaceArrayMethodArgument(parameter, namespace) ?: return@structReceiveArrayAbiArguments null
                 } ?: error("Unsupported struct receive-array interface method: ${method.name}")
                 val structType = typeNameMapper.mapTypeName(elementType, namespace, genericParameters)
                 arrayOf(structReceiveArrayReturnExpression(method.vtableIndex!!, structType, abiArguments))
@@ -2165,18 +2033,7 @@ internal class InterfaceTypeRenderer(
             typeRegistry = typeRegistry,
             expectedElementType = elementType,
         ) { parameter ->
-            val parameterCategory = methodParameterCategory(
-                signatureParameterType(parameter.type, currentNamespace),
-            ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@structPassArrayAbiArguments null
-            CodeBlock.of(
-                "%L",
-                unaryArgumentExpression(
-                    argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                    parameterType = parameter.type,
-                    category = parameterCategory,
-                    currentNamespace = currentNamespace,
-                ),
-            )
+            lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@structPassArrayAbiArguments null
         } ?: return null
         return if (method.returnType == "Unit") {
             PlannedInterfaceMethod(
@@ -2208,18 +2065,7 @@ internal class InterfaceTypeRenderer(
             statement = "return %L",
             args = { method, currentNamespace ->
                 val abiArguments = dateTimeReceiveArrayAbiArguments(method.parameters) { parameter ->
-                    val parameterCategory = methodParameterCategory(
-                        signatureParameterType(parameter.type, currentNamespace),
-                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@dateTimeReceiveArrayAbiArguments null
-                    CodeBlock.of(
-                        "%L",
-                        unaryArgumentExpression(
-                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                            parameterType = parameter.type,
-                            category = parameterCategory,
-                            currentNamespace = currentNamespace,
-                        ),
-                    )
+                    lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@dateTimeReceiveArrayAbiArguments null
                 } ?: error("Unsupported DateTime receive-array interface method: ${method.name}")
                 arrayOf(dateTimeReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
             },
@@ -2234,18 +2080,7 @@ internal class InterfaceTypeRenderer(
             statement = "return %L",
             args = { method, currentNamespace ->
                 val abiArguments = timeSpanReceiveArrayAbiArguments(method.parameters) { parameter ->
-                    val parameterCategory = methodParameterCategory(
-                        signatureParameterType(parameter.type, currentNamespace),
-                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@timeSpanReceiveArrayAbiArguments null
-                    CodeBlock.of(
-                        "%L",
-                        unaryArgumentExpression(
-                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                            parameterType = parameter.type,
-                            category = parameterCategory,
-                            currentNamespace = currentNamespace,
-                        ),
-                    )
+                    lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@timeSpanReceiveArrayAbiArguments null
                 } ?: error("Unsupported TimeSpan receive-array interface method: ${method.name}")
                 arrayOf(timeSpanReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments))
             },
@@ -2260,18 +2095,7 @@ internal class InterfaceTypeRenderer(
             statement = "return %L",
             args = { method, currentNamespace ->
                 val abiArguments = uint32ReceiveArrayAbiArguments(method.parameters) { parameter ->
-                    val parameterCategory = methodParameterCategory(
-                        signatureParameterType(parameter.type, currentNamespace),
-                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@uint32ReceiveArrayAbiArguments null
-                    CodeBlock.of(
-                        "%L",
-                        unaryArgumentExpression(
-                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                            parameterType = parameter.type,
-                            category = parameterCategory,
-                            currentNamespace = currentNamespace,
-                        ),
-                    )
+                    lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@uint32ReceiveArrayAbiArguments null
                 } ?: error("Unsupported UInt32 receive-array interface method: ${method.name}")
                 arrayOf(
                     uint32ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
@@ -2288,18 +2112,7 @@ internal class InterfaceTypeRenderer(
             statement = "return %L",
             args = { method, currentNamespace ->
                 val abiArguments = int64ReceiveArrayAbiArguments(method.parameters) { parameter ->
-                    val parameterCategory = methodParameterCategory(
-                        signatureParameterType(parameter.type, currentNamespace),
-                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@int64ReceiveArrayAbiArguments null
-                    CodeBlock.of(
-                        "%L",
-                        unaryArgumentExpression(
-                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                            parameterType = parameter.type,
-                            category = parameterCategory,
-                            currentNamespace = currentNamespace,
-                        ),
-                    )
+                    lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@int64ReceiveArrayAbiArguments null
                 } ?: error("Unsupported Int64 receive-array interface method: ${method.name}")
                 arrayOf(
                     int64ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
@@ -2316,18 +2129,7 @@ internal class InterfaceTypeRenderer(
             statement = "return %L",
             args = { method, currentNamespace ->
                 val abiArguments = uint64ReceiveArrayAbiArguments(method.parameters) { parameter ->
-                    val parameterCategory = methodParameterCategory(
-                        signatureParameterType(parameter.type, currentNamespace),
-                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@uint64ReceiveArrayAbiArguments null
-                    CodeBlock.of(
-                        "%L",
-                        unaryArgumentExpression(
-                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                            parameterType = parameter.type,
-                            category = parameterCategory,
-                            currentNamespace = currentNamespace,
-                        ),
-                    )
+                    lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@uint64ReceiveArrayAbiArguments null
                 } ?: error("Unsupported UInt64 receive-array interface method: ${method.name}")
                 arrayOf(
                     uint64ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
@@ -2344,18 +2146,7 @@ internal class InterfaceTypeRenderer(
             statement = "return %L",
             args = { method, currentNamespace ->
                 val abiArguments = float32ReceiveArrayAbiArguments(method.parameters) { parameter ->
-                    val parameterCategory = methodParameterCategory(
-                        signatureParameterType(parameter.type, currentNamespace),
-                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@float32ReceiveArrayAbiArguments null
-                    CodeBlock.of(
-                        "%L",
-                        unaryArgumentExpression(
-                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                            parameterType = parameter.type,
-                            category = parameterCategory,
-                            currentNamespace = currentNamespace,
-                        ),
-                    )
+                    lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@float32ReceiveArrayAbiArguments null
                 } ?: error("Unsupported Float32 receive-array interface method: ${method.name}")
                 arrayOf(
                     float32ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
@@ -2372,18 +2163,7 @@ internal class InterfaceTypeRenderer(
             statement = "return %L",
             args = { method, currentNamespace ->
                 val abiArguments = float64ReceiveArrayAbiArguments(method.parameters) { parameter ->
-                    val parameterCategory = methodParameterCategory(
-                        signatureParameterType(parameter.type, currentNamespace),
-                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@float64ReceiveArrayAbiArguments null
-                    CodeBlock.of(
-                        "%L",
-                        unaryArgumentExpression(
-                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                            parameterType = parameter.type,
-                            category = parameterCategory,
-                            currentNamespace = currentNamespace,
-                        ),
-                    )
+                    lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@float64ReceiveArrayAbiArguments null
                 } ?: error("Unsupported Float64 receive-array interface method: ${method.name}")
                 arrayOf(
                     float64ReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
@@ -2400,18 +2180,7 @@ internal class InterfaceTypeRenderer(
             statement = "return %L",
             args = { method, currentNamespace ->
                 val abiArguments = stringReceiveArrayAbiArguments(method.parameters) { parameter ->
-                    val parameterCategory = methodParameterCategory(
-                        signatureParameterType(parameter.type, currentNamespace),
-                    ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@stringReceiveArrayAbiArguments null
-                    CodeBlock.of(
-                        "%L",
-                        unaryArgumentExpression(
-                            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                            parameterType = parameter.type,
-                            category = parameterCategory,
-                            currentNamespace = currentNamespace,
-                        ),
-                    )
+                    lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@stringReceiveArrayAbiArguments null
                 } ?: error("Unsupported String receive-array interface method: ${method.name}")
                 arrayOf(
                     stringReceiveArrayReturnExpression(method.vtableIndex!!, abiArguments),
@@ -2429,18 +2198,7 @@ internal class InterfaceTypeRenderer(
             return null
         }
         val abiArguments = int32PassArrayAbiArguments(method.parameters) { parameter ->
-            val parameterCategory = methodParameterCategory(
-                signatureParameterType(parameter.type, currentNamespace),
-            ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@int32PassArrayAbiArguments null
-            CodeBlock.of(
-                "%L",
-                unaryArgumentExpression(
-                    argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                    parameterType = parameter.type,
-                    category = parameterCategory,
-                    currentNamespace = currentNamespace,
-                ),
-            )
+            lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@int32PassArrayAbiArguments null
         } ?: return null
         return if (method.returnType == "Unit") {
             PlannedInterfaceMethod(
@@ -2479,18 +2237,7 @@ internal class InterfaceTypeRenderer(
         val abiArguments = stringPassArrayAbiArguments(
             parameters = method.parameters,
             lowerNonArrayArgument = { parameter ->
-                val parameterCategory = methodParameterCategory(
-                    signatureParameterType(parameter.type, currentNamespace),
-                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@stringPassArrayAbiArguments null
-                CodeBlock.of(
-                    "%L",
-                    unaryArgumentExpression(
-                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                        parameterType = parameter.type,
-                        category = parameterCategory,
-                        currentNamespace = currentNamespace,
-                    ),
-                )
+                lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@stringPassArrayAbiArguments null
             },
         ) ?: return null
         return if (method.returnType == "Unit") {
@@ -2530,18 +2277,7 @@ internal class InterfaceTypeRenderer(
         val abiArguments = dateTimePassArrayAbiArguments(
             parameters = method.parameters,
             lowerArgument = { parameter ->
-                val parameterCategory = methodParameterCategory(
-                    signatureParameterType(parameter.type, currentNamespace),
-                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@dateTimePassArrayAbiArguments null
-                CodeBlock.of(
-                    "%L",
-                    unaryArgumentExpression(
-                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                        parameterType = parameter.type,
-                        category = parameterCategory,
-                        currentNamespace = currentNamespace,
-                    ),
-                )
+                lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@dateTimePassArrayAbiArguments null
             },
         ) ?: return null
         return if (method.returnType == "Unit") {
@@ -2581,18 +2317,7 @@ internal class InterfaceTypeRenderer(
         val abiArguments = uint32PassArrayAbiArguments(
             parameters = method.parameters,
             lowerNonArrayArgument = { parameter ->
-                val parameterCategory = methodParameterCategory(
-                    signatureParameterType(parameter.type, currentNamespace),
-                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@uint32PassArrayAbiArguments null
-                CodeBlock.of(
-                    "%L",
-                    unaryArgumentExpression(
-                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                        parameterType = parameter.type,
-                        category = parameterCategory,
-                        currentNamespace = currentNamespace,
-                    ),
-                )
+                lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@uint32PassArrayAbiArguments null
             },
         ) ?: return null
         return if (method.returnType == "Unit") {
@@ -2632,18 +2357,7 @@ internal class InterfaceTypeRenderer(
         val abiArguments = objectPassArrayAbiArguments(
             parameters = method.parameters,
             lowerArgument = { parameter ->
-                val parameterCategory = methodParameterCategory(
-                    signatureParameterType(parameter.type, currentNamespace),
-                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@objectPassArrayAbiArguments null
-                CodeBlock.of(
-                    "%L",
-                    unaryArgumentExpression(
-                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                        parameterType = parameter.type,
-                        category = parameterCategory,
-                        currentNamespace = currentNamespace,
-                    ),
-                )
+                lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@objectPassArrayAbiArguments null
             },
         ) ?: return null
         return if (method.returnType == "Unit") {
@@ -2683,18 +2397,7 @@ internal class InterfaceTypeRenderer(
         val abiArguments = booleanPassArrayAbiArguments(
             parameters = method.parameters,
             lowerArgument = { parameter ->
-                val parameterCategory = methodParameterCategory(
-                    signatureParameterType(parameter.type, currentNamespace),
-                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@booleanPassArrayAbiArguments null
-                CodeBlock.of(
-                    "%L",
-                    unaryArgumentExpression(
-                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                        parameterType = parameter.type,
-                        category = parameterCategory,
-                        currentNamespace = currentNamespace,
-                    ),
-                )
+                lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@booleanPassArrayAbiArguments null
             },
         ) ?: return null
         return if (method.returnType == "Unit") {
@@ -2730,18 +2433,7 @@ internal class InterfaceTypeRenderer(
         val abiArguments = uint8PassArrayAbiArguments(
             parameters = method.parameters,
             lowerArgument = { parameter ->
-                val parameterCategory = methodParameterCategory(
-                    signatureParameterType(parameter.type, currentNamespace),
-                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@uint8PassArrayAbiArguments null
-                CodeBlock.of(
-                    "%L",
-                    unaryArgumentExpression(
-                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                        parameterType = parameter.type,
-                        category = parameterCategory,
-                        currentNamespace = currentNamespace,
-                    ),
-                )
+                lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@uint8PassArrayAbiArguments null
             },
         ) ?: return null
         return if (method.returnType == "Unit") {
@@ -2777,18 +2469,7 @@ internal class InterfaceTypeRenderer(
         val abiArguments = int16PassArrayAbiArguments(
             parameters = method.parameters,
             lowerArgument = { parameter ->
-                val parameterCategory = methodParameterCategory(
-                    signatureParameterType(parameter.type, currentNamespace),
-                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@int16PassArrayAbiArguments null
-                CodeBlock.of(
-                    "%L",
-                    unaryArgumentExpression(
-                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                        parameterType = parameter.type,
-                        category = parameterCategory,
-                        currentNamespace = currentNamespace,
-                    ),
-                )
+                lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@int16PassArrayAbiArguments null
             },
         ) ?: return null
         return if (method.returnType == "Unit") {
@@ -2824,18 +2505,7 @@ internal class InterfaceTypeRenderer(
         val abiArguments = uint16PassArrayAbiArguments(
             parameters = method.parameters,
             lowerArgument = { parameter ->
-                val parameterCategory = methodParameterCategory(
-                    signatureParameterType(parameter.type, currentNamespace),
-                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@uint16PassArrayAbiArguments null
-                CodeBlock.of(
-                    "%L",
-                    unaryArgumentExpression(
-                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                        parameterType = parameter.type,
-                        category = parameterCategory,
-                        currentNamespace = currentNamespace,
-                    ),
-                )
+                lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@uint16PassArrayAbiArguments null
             },
         ) ?: return null
         return if (method.returnType == "Unit") {
@@ -2871,18 +2541,7 @@ internal class InterfaceTypeRenderer(
         val abiArguments = char16PassArrayAbiArguments(
             parameters = method.parameters,
             lowerArgument = { parameter ->
-                val parameterCategory = methodParameterCategory(
-                    signatureParameterType(parameter.type, currentNamespace),
-                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@char16PassArrayAbiArguments null
-                CodeBlock.of(
-                    "%L",
-                    unaryArgumentExpression(
-                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                        parameterType = parameter.type,
-                        category = parameterCategory,
-                        currentNamespace = currentNamespace,
-                    ),
-                )
+                lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@char16PassArrayAbiArguments null
             },
         ) ?: return null
         return if (method.returnType == "Unit") {
@@ -2918,18 +2577,7 @@ internal class InterfaceTypeRenderer(
         val abiArguments = float32PassArrayAbiArguments(
             parameters = method.parameters,
             lowerArgument = { parameter ->
-                val parameterCategory = methodParameterCategory(
-                    signatureParameterType(parameter.type, currentNamespace),
-                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@float32PassArrayAbiArguments null
-                CodeBlock.of(
-                    "%L",
-                    unaryArgumentExpression(
-                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                        parameterType = parameter.type,
-                        category = parameterCategory,
-                        currentNamespace = currentNamespace,
-                    ),
-                )
+                lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@float32PassArrayAbiArguments null
             },
         ) ?: return null
         return if (method.returnType == "Unit") {
@@ -2969,18 +2617,7 @@ internal class InterfaceTypeRenderer(
         val abiArguments = float64PassArrayAbiArguments(
             parameters = method.parameters,
             lowerArgument = { parameter ->
-                val parameterCategory = methodParameterCategory(
-                    signatureParameterType(parameter.type, currentNamespace),
-                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@float64PassArrayAbiArguments null
-                CodeBlock.of(
-                    "%L",
-                    unaryArgumentExpression(
-                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                        parameterType = parameter.type,
-                        category = parameterCategory,
-                        currentNamespace = currentNamespace,
-                    ),
-                )
+                lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@float64PassArrayAbiArguments null
             },
         ) ?: return null
         return if (method.returnType == "Unit") {
@@ -3020,18 +2657,7 @@ internal class InterfaceTypeRenderer(
         val abiArguments = int64PassArrayAbiArguments(
             parameters = method.parameters,
             lowerArgument = { parameter ->
-                val parameterCategory = methodParameterCategory(
-                    signatureParameterType(parameter.type, currentNamespace),
-                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@int64PassArrayAbiArguments null
-                CodeBlock.of(
-                    "%L",
-                    unaryArgumentExpression(
-                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                        parameterType = parameter.type,
-                        category = parameterCategory,
-                        currentNamespace = currentNamespace,
-                    ),
-                )
+                lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@int64PassArrayAbiArguments null
             },
         ) ?: return null
         return if (method.returnType == "Unit") {
@@ -3071,18 +2697,7 @@ internal class InterfaceTypeRenderer(
         val abiArguments = uint64PassArrayAbiArguments(
             parameters = method.parameters,
             lowerArgument = { parameter ->
-                val parameterCategory = methodParameterCategory(
-                    signatureParameterType(parameter.type, currentNamespace),
-                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@uint64PassArrayAbiArguments null
-                CodeBlock.of(
-                    "%L",
-                    unaryArgumentExpression(
-                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                        parameterType = parameter.type,
-                        category = parameterCategory,
-                        currentNamespace = currentNamespace,
-                    ),
-                )
+                lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@uint64PassArrayAbiArguments null
             },
         ) ?: return null
         return if (method.returnType == "Unit") {
@@ -3122,18 +2737,7 @@ internal class InterfaceTypeRenderer(
         val abiArguments = timeSpanPassArrayAbiArguments(
             parameters = method.parameters,
             lowerArgument = { parameter ->
-                val parameterCategory = methodParameterCategory(
-                    signatureParameterType(parameter.type, currentNamespace),
-                ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return@timeSpanPassArrayAbiArguments null
-                CodeBlock.of(
-                    "%L",
-                    unaryArgumentExpression(
-                        argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                        parameterType = parameter.type,
-                        category = parameterCategory,
-                        currentNamespace = currentNamespace,
-                    ),
-                )
+                lowerInterfaceArrayMethodArgument(parameter, currentNamespace) ?: return@timeSpanPassArrayAbiArguments null
             },
         ) ?: return null
         return if (method.returnType == "Unit") {
@@ -4122,6 +3726,33 @@ internal class InterfaceTypeRenderer(
         MethodParameterCategory.INT64,
         MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> int64AbiArgumentExpression(argumentName, parameterType)
         MethodParameterCategory.STRING -> argumentName
+    }
+
+    private fun lowerInterfaceArrayMethodArgument(
+        parameter: WinMdParameter,
+        currentNamespace: String,
+    ): CodeBlock? {
+        valueTypeProjectionSupport.lowerGenericAbiArgument(
+            type = parameter.type,
+            currentNamespace = currentNamespace,
+            argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+            supportsObjectType = { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) },
+            lowerObjectArgument = { argumentName, typeName ->
+                interfaceObjectArgumentExpression(argumentName, typeName, currentNamespace)
+            },
+        )?.let { return CodeBlock.of("%L", it) }
+        val parameterCategory = methodParameterCategory(
+            signatureParameterType(parameter.type, currentNamespace),
+        ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return null
+        return CodeBlock.of(
+            "%L",
+            unaryArgumentExpression(
+                argumentName = parameter.name.replaceFirstChar(Char::lowercase),
+                parameterType = parameter.type,
+                category = parameterCategory,
+                currentNamespace = currentNamespace,
+            ),
+        )
     }
 
     private fun plannedTwoArgumentReturnMethod(

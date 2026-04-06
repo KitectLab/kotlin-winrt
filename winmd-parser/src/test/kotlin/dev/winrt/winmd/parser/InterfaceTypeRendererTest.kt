@@ -428,6 +428,162 @@ class InterfaceTypeRendererTest {
     }
 
     @Test
+    fun renders_int32_pass_array_interface_methods_with_value_type_inputs() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.UI",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.UI",
+                            name = "Color",
+                            kind = WinMdTypeKind.Struct,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Devices.Lights",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Devices.Lights",
+                            name = "ILampArray",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "22222222-2222-2222-2222-222222222222",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "SetSingleColorForIndices",
+                                    returnType = "Unit",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter("desiredColor", "Windows.UI.Color"),
+                                        WinMdParameter("lampIndices", "Int32[]", isIn = true),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Devices/Lights/ILampArray.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("funsetSingleColorForIndices(desiredColor:Color,lampIndices:Array<Int32>)"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithArgs(pointer,6,desiredColor.toAbi(),lampIndices.size,IntArray(lampIndices.size){index->lampIndices[index].value}).getOrThrow()"))
+    }
+
+    @Test
+    fun renders_uint8_receive_array_interface_methods_with_value_type_inputs() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.UI",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.UI",
+                            name = "Color",
+                            kind = WinMdTypeKind.Struct,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Devices.Lights",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Devices.Lights",
+                            name = "ILampArrayDataSource",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "23232323-2323-2323-2323-232323232323",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GenerateData",
+                                    returnType = "UInt8[]",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter("desiredColor", "Windows.UI.Color"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Devices/Lights/ILampArrayDataSource.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fungenerateData(desiredColor:Color):Array<UByte>"))
+        assertTrue(binding.contains("invokeUInt8ReceiveArrayMethod(pointer,6,desiredColor.toAbi()).getOrThrow().map{it.toUByte()}.toTypedArray()"))
+    }
+
+    @Test
+    fun renders_uint8_receive_array_interface_methods_with_guid_and_encoded_enum_inputs() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation.Collections",
+                            name = "IPropertySet",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "34343434-3434-3434-3434-343434343434",
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.Media.Protection.PlayReady",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Media.Protection.PlayReady",
+                            name = "PlayReadyITADataFormat",
+                            kind = WinMdTypeKind.Enum,
+                            enumUnderlyingType = "Int32",
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Media.Protection.PlayReady",
+                            name = "IPlayReadyITADataGenerator",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "35353535-3535-3535-3535-353535353535",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "GenerateData",
+                                    returnType = "UInt8[]",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter("guidCPSystemId", encodeValueTypeName("System.Guid")),
+                                        WinMdParameter("countOfStreams", "UInt32"),
+                                        WinMdParameter("configuration", "Windows.Foundation.Collections.IPropertySet"),
+                                        WinMdParameter("format", encodeValueTypeName("Windows.Media.Protection.PlayReady.PlayReadyITADataFormat")),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Media/Protection/PlayReady/IPlayReadyITADataGenerator.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding, binding.contains("fungenerateData(guidCPSystemId:Uuid,countOfStreams:UInt32,configuration:IPropertySet,format:PlayReadyITADataFormat,):Array<UByte>"))
+        assertTrue(binding.contains("invokeUInt8ReceiveArrayMethod(pointer,6,guidOf(guidCPSystemId.toString()),countOfStreams.value,"))
+        assertTrue(binding.contains(",format.value).getOrThrow().map{it.toUByte()}.toTypedArray()"))
+    }
+
+    @Test
     fun renders_string_pass_array_interface_methods_with_count_and_buffer_arguments() {
         val model = WinMdModel(
             files = emptyList(),
