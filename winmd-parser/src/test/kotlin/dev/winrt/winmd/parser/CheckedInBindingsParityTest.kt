@@ -13,7 +13,17 @@ class CheckedInBindingsParityTest {
     private val trackedRelativePaths = listOf(
         "windows/foundation/AsyncStatus.kt",
         "windows/foundation/IStringable.kt",
+        "windows/foundation/IUriEscapeStatics.kt",
+        "windows/foundation/IUriRuntimeClass.kt",
+        "windows/foundation/IUriRuntimeClassFactory.kt",
+        "windows/foundation/IUriRuntimeClassWithAbsoluteCanonicalUri.kt",
+        "windows/foundation/IWwwFormUrlDecoderEntry.kt",
+        "windows/foundation/IWwwFormUrlDecoderRuntimeClass.kt",
+        "windows/foundation/IWwwFormUrlDecoderRuntimeClassFactory.kt",
         "windows/foundation/Point.kt",
+        "windows/foundation/Uri.kt",
+        "windows/foundation/WwwFormUrlDecoder.kt",
+        "windows/foundation/WwwFormUrlDecoderEntry.kt",
         "windows/data/json/IJsonArray.kt",
         "windows/data/json/IJsonObject.kt",
         "windows/data/json/IJsonValue.kt",
@@ -25,11 +35,13 @@ class CheckedInBindingsParityTest {
         "windows/globalization/CalendarIdentifiers.kt",
         "windows/globalization/ClockIdentifiers.kt",
         "windows/globalization/IApplicationLanguagesStatics.kt",
+        "windows/globalization/IApplicationLanguagesStatics2.kt",
         "windows/globalization/ICalendarIdentifiersStatics.kt",
         "windows/globalization/ICalendar.kt",
         "windows/globalization/IClockIdentifiersStatics.kt",
         "windows/system/userprofile/GlobalizationPreferences.kt",
         "windows/system/userprofile/IGlobalizationPreferencesStatics.kt",
+        "windows/system/userprofile/IGlobalizationPreferencesStatics2.kt",
         "windows/globalization/numberformatting/NumeralSystemTranslator.kt",
         "windows/globalization/numberformatting/INumeralSystemTranslator.kt",
         "microsoft/ui/xaml/Application.kt",
@@ -47,11 +59,40 @@ class CheckedInBindingsParityTest {
         "windows/data/json/JsonValueType.kt",
     )
     private val trackedTypes = mapOf(
-        "Windows.Foundation" to setOf("AsyncStatus", "IStringable", "Point"),
+        "Windows.Foundation" to setOf(
+            "AsyncStatus",
+            "IStringable",
+            "IUriEscapeStatics",
+            "IUriRuntimeClass",
+            "IUriRuntimeClassFactory",
+            "IUriRuntimeClassWithAbsoluteCanonicalUri",
+            "IWwwFormUrlDecoderEntry",
+            "IWwwFormUrlDecoderRuntimeClass",
+            "IWwwFormUrlDecoderRuntimeClassFactory",
+            "Point",
+            "Uri",
+            "WwwFormUrlDecoder",
+            "WwwFormUrlDecoderEntry",
+        ),
         "Windows.Data.Json" to setOf("IJsonArray", "IJsonObject", "IJsonValue", "JsonObject", "JsonValueType"),
-        "Windows.Globalization" to setOf("ApplicationLanguages", "Calendar", "CalendarIdentifiers", "ClockIdentifiers", "DayOfWeek", "IApplicationLanguagesStatics", "ICalendar", "ICalendarIdentifiersStatics", "IClockIdentifiersStatics"),
+        "Windows.Globalization" to setOf(
+            "ApplicationLanguages",
+            "Calendar",
+            "CalendarIdentifiers",
+            "ClockIdentifiers",
+            "DayOfWeek",
+            "IApplicationLanguagesStatics",
+            "IApplicationLanguagesStatics2",
+            "ICalendar",
+            "ICalendarIdentifiersStatics",
+            "IClockIdentifiersStatics",
+        ),
         "Windows.Globalization.NumberFormatting" to setOf("INumeralSystemTranslator", "NumeralSystemTranslator"),
-        "Windows.System.UserProfile" to setOf("GlobalizationPreferences", "IGlobalizationPreferencesStatics"),
+        "Windows.System.UserProfile" to setOf(
+            "GlobalizationPreferences",
+            "IGlobalizationPreferencesStatics",
+            "IGlobalizationPreferencesStatics2",
+        ),
         "Microsoft.UI.Xaml" to setOf("Application", "ApplicationRequiresPointerMode", "Window"),
     )
 
@@ -87,7 +128,10 @@ class CheckedInBindingsParityTest {
         }
 
         if (missingFiles.isNotEmpty()) {
-            File("build/winui-parity-missing.txt").writeText(missingFiles.joinToString("\n"))
+            File("build/.temp/winui-parity-missing.txt").apply {
+                parentFile.mkdirs()
+                writeText(missingFiles.joinToString("\n"))
+            }
             System.err.println("Missing generated WinUI3 files: ${missingFiles.joinToString(", ")}")
         }
         assertTrue("Missing generated WinUI3 files: ${missingFiles.joinToString(", ")}", missingFiles.isEmpty())
