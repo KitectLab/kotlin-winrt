@@ -82,8 +82,11 @@ internal fun supportsIReferenceValueProjection(
     typeRegistry: TypeRegistry,
 ): Boolean {
     val innerType = iReferenceInnerType(type) ?: return false
-    return propertyValueGetterName(innerType, currentNamespace, typeRegistry) != null &&
+    return isHResultType(innerType) ||
+        (
+            propertyValueGetterName(innerType, currentNamespace, typeRegistry) != null &&
         propertyValueFactoryMethodName(innerType, currentNamespace, typeRegistry) != null
+            )
 }
 
 internal fun supportsGenericIReferenceStructProjection(
@@ -141,6 +144,19 @@ internal class ValueTypeProjectionSupport(
         abiCall: CodeBlock,
     ): CodeBlock? {
         val innerType = iReferenceInnerType(referenceType) ?: return null
+        if (isHResultType(innerType)) {
+            return CodeBlock.of(
+                "%L.let { if (it.isNull) null else %M(%T.from<%T>(%T(it), %S, %S).let { reference -> %T.invokeInt32Method(reference.pointer, 6).getOrThrow() }) }",
+                abiCall,
+                PoetSymbols.exceptionFromHResultMember,
+                PoetSymbols.winRtIReferenceClass,
+                PoetSymbols.exceptionClass,
+                PoetSymbols.inspectableClass,
+                winRtSignatureMapper.signatureFor(innerType, currentNamespace),
+                winRtProjectionTypeMapper.projectionTypeKeyFor(innerType, currentNamespace),
+                PoetSymbols.platformComInteropClass,
+            )
+        }
         val getterName = propertyValueGetterName(innerType, currentNamespace, typeRegistry) ?: return null
         return CodeBlock.of(
             "%L.let { if (it.isNull) null else %T.from(%T(it)).%L() }",
@@ -157,6 +173,18 @@ internal class ValueTypeProjectionSupport(
         valueExpression: String,
     ): CodeBlock? {
         val innerType = iReferenceInnerType(referenceType) ?: return null
+        if (isHResultType(innerType)) {
+            return CodeBlock.of(
+                "if (%N == null) %T.NULL else %M(%T(%N), %S, %S)",
+                valueExpression,
+                PoetSymbols.comPtrClass,
+                PoetSymbols.projectedObjectArgumentPointerMember,
+                PoetSymbols.iReferenceClass,
+                valueExpression,
+                winRtProjectionTypeMapper.projectionTypeKeyFor(referenceType, currentNamespace),
+                winRtSignatureMapper.signatureFor(referenceType, currentNamespace),
+            )
+        }
         val factoryMethodName = propertyValueFactoryMethodName(innerType, currentNamespace, typeRegistry) ?: return null
         return CodeBlock.of(
             "if (%N == null) %T.NULL else %T.%L(%N).pointer",

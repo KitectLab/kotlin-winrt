@@ -1,6 +1,7 @@
 package dev.winrt.winmd.parser
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TypeNameMapperTest {
@@ -79,6 +80,22 @@ class TypeNameMapperTest {
                 "Windows.Foundation.IReference`1<Object>",
                 "Windows.Foundation",
             ).toString(),
+        )
+    }
+
+    @Test
+    fun maps_hresult_to_nullable_exception_type() {
+        assertTrue(
+            mapper.mapTypeName(
+                "Windows.Foundation.HResult",
+                "Windows.Foundation",
+            ).toString().endsWith("Exception?"),
+        )
+        assertTrue(
+            mapper.mapTypeName(
+                "Windows.Foundation.IReference`1<Windows.Foundation.HResult>",
+                "Windows.Foundation",
+            ).toString().endsWith("Exception?"),
         )
     }
 }

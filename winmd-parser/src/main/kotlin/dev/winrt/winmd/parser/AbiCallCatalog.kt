@@ -168,8 +168,8 @@ internal object AbiCallCatalog {
     fun unitMethod(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeUnitMethod(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
-    fun unitMethodWithInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.INT32, vtableIndex, "${argumentName}.value")
+    fun unitMethodWithInt32(vtableIndex: Int, argumentExpression: Any): CodeBlock =
+        unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.INT32, vtableIndex, argumentExpression)
 
     fun unitMethodWithInt32Expression(vtableIndex: Int, argumentExpression: String): CodeBlock =
         unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.INT32, vtableIndex, argumentExpression)
@@ -778,8 +778,8 @@ internal object AbiCallCatalog {
     fun uint32MethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
         unaryCall(MethodAbiToken.UINT32, MethodParameterAbiToken.STRING, vtableIndex, argumentName)
 
-    fun uint32MethodWithInt32(vtableIndex: Int, argumentName: String): CodeBlock =
-        unaryCall(MethodAbiToken.UINT32, MethodParameterAbiToken.INT32, vtableIndex, "${argumentName}.value")
+    fun uint32MethodWithInt32(vtableIndex: Int, argumentExpression: Any): CodeBlock =
+        unaryCall(MethodAbiToken.UINT32, MethodParameterAbiToken.INT32, vtableIndex, argumentExpression)
 
     fun uint32MethodWithUInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
         unaryCall(MethodAbiToken.UINT32, MethodParameterAbiToken.UINT32, vtableIndex, argumentExpression)
@@ -847,6 +847,9 @@ internal object AbiCallCatalog {
 
     fun int32Setter(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeInt32Setter(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
+
+    fun int32SetterExpression(vtableIndex: Int, argumentExpression: String): CodeBlock =
+        CodeBlock.of("%T.invokeInt32Setter(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
 
     fun uint32Setter(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeUInt32Setter(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)

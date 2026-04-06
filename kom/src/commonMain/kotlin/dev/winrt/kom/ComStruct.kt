@@ -16,6 +16,8 @@ enum class ComStructFieldKind(
     UINT64(8),
     FLOAT32(4),
     FLOAT64(8),
+    HSTRING(8),
+    OBJECT(8),
     GUID(16, 4),
 }
 
@@ -51,11 +53,16 @@ data class ComStructLayout(
 data class ComStructValue(
     val layout: ComStructLayout,
     val bytes: ByteArray,
-) {
+    val retainedResources: List<AutoCloseable> = emptyList(),
+) : AutoCloseable {
     init {
         require(bytes.size == layout.byteSize) {
             "Expected ${layout.byteSize} struct bytes for $layout, got ${bytes.size}"
         }
+    }
+
+    override fun close() {
+        retainedResources.asReversed().forEach(AutoCloseable::close)
     }
 }
 

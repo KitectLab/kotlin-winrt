@@ -4295,6 +4295,44 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun does_not_emit_hresult_value_type_projection_files() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "HResult",
+                            kind = WinMdTypeKind.Struct,
+                        ),
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IErrorHost",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "LastError",
+                                    type = "Windows.Foundation.HResult",
+                                    mutable = false,
+                                    getterVtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+
+        assertFalse(files.any { it.relativePath == "Windows/Foundation/HResult.kt" })
+        assertTrue(files.any { it.relativePath == "Windows/Foundation/IErrorHost.kt" })
+    }
+
+    @Test
     fun generates_runtime_methods_with_boolean_float64_int64_and_uint64_return_values() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),

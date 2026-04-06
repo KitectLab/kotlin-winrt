@@ -10,6 +10,7 @@ class PropertyRuleRegistryTest {
         assertEquals(RuntimePropertyGetterRuleFamily.IREFERENCE_STRING, PropertyRuleRegistry.getterRuleFamily("IReference<String>"))
         assertEquals(RuntimePropertyGetterRuleFamily.STRING, PropertyRuleRegistry.getterRuleFamily("String"))
         assertEquals(RuntimePropertyGetterRuleFamily.BOOLEAN, PropertyRuleRegistry.getterRuleFamily("Boolean"))
+        assertEquals(RuntimePropertyGetterRuleFamily.HRESULT, PropertyRuleRegistry.getterRuleFamily("Windows.Foundation.HResult"))
         assertEquals(RuntimePropertyGetterRuleFamily.GUID, PropertyRuleRegistry.getterRuleFamily("Guid"))
         assertEquals(RuntimePropertyGetterRuleFamily.DATE_TIME, PropertyRuleRegistry.getterRuleFamily("DateTime"))
         assertEquals(RuntimePropertyGetterRuleFamily.TIME_SPAN, PropertyRuleRegistry.getterRuleFamily("TimeSpan"))
@@ -27,6 +28,7 @@ class PropertyRuleRegistryTest {
         assertEquals(RuntimePropertySetterRuleFamily.BOOLEAN, PropertyRuleRegistry.setterRuleFamily("Boolean"))
         assertEquals(RuntimePropertySetterRuleFamily.FLOAT32, PropertyRuleRegistry.setterRuleFamily("Float32"))
         assertEquals(RuntimePropertySetterRuleFamily.FLOAT64, PropertyRuleRegistry.setterRuleFamily("Float64"))
+        assertEquals(RuntimePropertySetterRuleFamily.HRESULT, PropertyRuleRegistry.setterRuleFamily("Windows.Foundation.HResult"))
         assertEquals(RuntimePropertySetterRuleFamily.INT32, PropertyRuleRegistry.setterRuleFamily("Int32"))
         assertEquals(RuntimePropertySetterRuleFamily.UINT32, PropertyRuleRegistry.setterRuleFamily("UInt32"))
         assertEquals(RuntimePropertySetterRuleFamily.INT64, PropertyRuleRegistry.setterRuleFamily("Int64"))
@@ -50,6 +52,14 @@ class PropertyRuleRegistryTest {
         assertEquals(
             InterfacePropertyRuleFamily.STRING,
             PropertyRuleRegistry.interfaceSetterRuleFamily("String", isObjectType = false),
+        )
+        assertEquals(
+            InterfacePropertyRuleFamily.HRESULT,
+            PropertyRuleRegistry.interfaceGetterRuleFamily("Windows.Foundation.HResult", isEnumType = false, isObjectType = false),
+        )
+        assertEquals(
+            InterfacePropertyRuleFamily.HRESULT,
+            PropertyRuleRegistry.interfaceSetterRuleFamily("Windows.Foundation.HResult", isObjectType = false),
         )
         assertEquals(
             InterfacePropertyRuleFamily.OBJECT,

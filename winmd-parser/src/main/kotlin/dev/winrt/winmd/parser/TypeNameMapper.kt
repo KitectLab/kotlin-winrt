@@ -29,6 +29,7 @@ internal class TypeNameMapper {
             normalizedTypeName == "UInt16" || normalizedTypeName == "System.UInt16" || normalizedTypeName == "Windows.Foundation.UInt16" -> UShort::class.asTypeName()
             normalizedTypeName == "Char16" || normalizedTypeName == "System.Char" || normalizedTypeName == "Windows.Foundation.Char16" -> Char::class.asTypeName()
             normalizedTypeName == "Int" -> Int::class.asTypeName()
+            normalizedTypeName == "HResult" || normalizedTypeName == "Windows.Foundation.HResult" -> Exception::class.asTypeName().copy(nullable = true)
             normalizedTypeName == "Int32" || normalizedTypeName == "System.Int32" || normalizedTypeName == "Windows.Foundation.Int32" -> PoetSymbols.int32Class
             normalizedTypeName == "UInt32" || normalizedTypeName == "System.UInt32" || normalizedTypeName == "Windows.Foundation.UInt32" -> PoetSymbols.uint32Class
             normalizedTypeName == "Int64" || normalizedTypeName == "System.Int64" || normalizedTypeName == "Windows.Foundation.Int64" -> PoetSymbols.int64Class

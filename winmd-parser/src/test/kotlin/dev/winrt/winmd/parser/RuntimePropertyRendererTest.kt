@@ -775,6 +775,55 @@ class RuntimePropertyRendererTest {
     }
 
     @Test
+    fun renders_hresult_properties_as_exceptions() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "ErrorCarrier",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            properties = listOf(
+                                WinMdProperty(
+                                    name = "LastError",
+                                    type = "Windows.Foundation.HResult",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                                WinMdProperty(
+                                    name = "OptionalError",
+                                    type = "Windows.Foundation.IReference`1<Windows.Foundation.HResult>",
+                                    mutable = true,
+                                    getterVtableIndex = 8,
+                                    setterVtableIndex = 9,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/ErrorCarrier.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("lastError"))
+        assertTrue(binding.contains("exceptionFromHResult(PlatformComInterop.invokeInt32Method(pointer,6).getOrThrow())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt32Setter(pointer,7,hResultOfException(value)).getOrThrow()"))
+        assertTrue(binding.contains("optionalError"))
+        assertTrue(binding.contains("IReference.from<"))
+        assertTrue(binding.contains("Inspectable(it),\"struct(Windows.Foundation.HResult;i4)\""))
+        assertTrue(binding.contains("PlatformComInterop.invokeObjectSetter(pointer,9,if(value==null)ComPtr.NULLelse"))
+        assertTrue(binding.contains("\"pinterface({61c17706-2d65-11e0-9ae8-d48564015472};struct(Windows.Foundation.HResult;i4))\""))
+    }
+
+    @Test
     fun renders_event_registration_token_properties_as_token_accessors() {
         val model = WinMdModel(
             files = emptyList(),

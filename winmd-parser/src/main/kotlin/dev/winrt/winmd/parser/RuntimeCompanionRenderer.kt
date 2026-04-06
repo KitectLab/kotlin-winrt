@@ -668,13 +668,14 @@ internal class RuntimeCompanionRenderer(
                 !typeRegistry.isStructType(returnType, currentNamespace) &&
                     supportsProjectedObjectTypeName(returnType)
                 ) ||
-            when (returnType) {
+            when (canonicalWinRtSpecialType(returnType)) {
                 "String",
                 "Float32",
                 "Float64",
                 "DateTime",
                 "TimeSpan",
                 "Boolean",
+                "HResult",
                 "Int32",
                 "UInt32",
                 "Int64",

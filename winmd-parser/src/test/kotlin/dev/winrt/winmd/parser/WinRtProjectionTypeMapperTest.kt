@@ -118,4 +118,19 @@ class WinRtProjectionTypeMapperTest {
             ),
         )
     }
+
+    @Test
+    fun maps_hresult_projection_keys_to_exception() {
+        assertEquals(
+            "Exception",
+            mapper.projectionTypeKeyFor("Windows.Foundation.HResult", "Windows.Foundation"),
+        )
+        assertEquals(
+            "Windows.Foundation.IReference`1<Exception>",
+            mapper.projectionTypeKeyFor(
+                "Windows.Foundation.IReference`1<Windows.Foundation.HResult>",
+                "Windows.Foundation",
+            ),
+        )
+    }
 }

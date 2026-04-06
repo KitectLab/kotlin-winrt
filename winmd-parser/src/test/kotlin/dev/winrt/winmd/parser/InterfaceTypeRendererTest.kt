@@ -1645,6 +1645,67 @@ class InterfaceTypeRendererTest {
     }
 
     @Test
+    fun renders_hresult_interface_members_as_exceptions() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "IWidget",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "11111111-1111-1111-1111-111111111111",
+                            properties = listOf(
+                                WinMdProperty(
+                                    "LastError",
+                                    "Windows.Foundation.HResult",
+                                    mutable = true,
+                                    getterVtableIndex = 6,
+                                    setterVtableIndex = 7,
+                                ),
+                                WinMdProperty(
+                                    "OptionalError",
+                                    "Windows.Foundation.IReference`1<Windows.Foundation.HResult>",
+                                    mutable = true,
+                                    getterVtableIndex = 8,
+                                    setterVtableIndex = 9,
+                                ),
+                            ),
+                            methods = listOf(
+                                WinMdMethod("GetError", "Windows.Foundation.HResult", vtableIndex = 10),
+                                WinMdMethod(
+                                    "SetError",
+                                    "Unit",
+                                    vtableIndex = 11,
+                                    parameters = listOf(WinMdParameter("error", "Windows.Foundation.HResult")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/IWidget.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("lastError"))
+        assertTrue(binding.contains("exceptionFromHResult(PlatformComInterop.invokeInt32Method(pointer,6).getOrThrow())"))
+        assertTrue(binding.contains("PlatformComInterop.invokeInt32Setter(pointer,7,hResultOfException(value)).getOrThrow()"))
+        assertTrue(binding.contains("optionalError"))
+        assertTrue(binding.contains("IReference.from<"))
+        assertTrue(binding.contains("Inspectable(it),\"struct(Windows.Foundation.HResult;i4)\""))
+        assertTrue(binding.contains("projectedObjectArgumentPointer("))
+        assertTrue(binding.contains("\"pinterface({61c17706-2d65-11e0-9ae8-d48564015472};struct(Windows.Foundation.HResult;i4))\""))
+        assertTrue(binding.contains("funsetError("))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer,11,hResultOfException(error)).getOrThrow()"))
+    }
+
+    @Test
     fun renders_nullable_marked_external_struct_interface_properties_via_generic_ireference_projection() {
         val model = WinMdModel(
             files = emptyList(),

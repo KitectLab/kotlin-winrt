@@ -264,6 +264,7 @@ internal fun methodParameterCategory(
     val canonicalType = canonicalWinRtSpecialType(type)
     return when {
         canonicalType == "String" -> MethodParameterCategory.STRING
+        canonicalType == "HResult" -> MethodParameterCategory.INT32
         canonicalType == "Int32" -> MethodParameterCategory.INT32
         canonicalType == "Boolean" -> MethodParameterCategory.BOOLEAN
         canonicalType == "DateTime" -> MethodParameterCategory.INT64
@@ -309,6 +310,7 @@ internal fun methodSignatureKey(
         "DateTime" -> MethodReturnKind.DATE_TIME
         "TimeSpan" -> MethodReturnKind.TIME_SPAN
         "Boolean" -> MethodReturnKind.BOOLEAN
+        "HResult" -> MethodReturnKind.INT32
         "Int32" -> MethodReturnKind.INT32
         "UInt32" -> MethodReturnKind.UINT32
         "Int64" -> MethodReturnKind.INT64
@@ -322,6 +324,9 @@ internal fun methodSignatureKey(
 
 internal fun isEventRegistrationTokenType(type: String): Boolean =
     canonicalWinRtSpecialType(type) == "EventRegistrationToken"
+
+internal fun isHResultType(type: String): Boolean =
+    canonicalWinRtSpecialType(type) == "HResult"
 
 internal fun supportsProjectedObjectTypeName(type: String): Boolean =
     (canonicalWinRtSpecialType(type) == "Object" || (type.contains('.') && canonicalWinRtSpecialType(type) == type)) &&
@@ -350,6 +355,8 @@ internal fun canonicalWinRtSpecialType(type: String): String =
         "Windows.Foundation.Char16" -> "Char16"
         "System.Guid" -> "Guid"
         "Windows.Foundation.WinRtBoolean" -> "Boolean"
+        "HResult" -> "HResult"
+        "Windows.Foundation.HResult" -> "HResult"
         "Windows.Foundation.Int32" -> "Int32"
         "Windows.Foundation.UInt32" -> "UInt32"
         "Windows.Foundation.Int64" -> "Int64"

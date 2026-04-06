@@ -1258,6 +1258,61 @@ class RuntimeMethodRendererTest {
     }
 
     @Test
+    fun renders_runtime_hresult_methods_as_exceptions() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Widget",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod("GetError", "Windows.Foundation.HResult", vtableIndex = 6),
+                                WinMdMethod(
+                                    "SetError",
+                                    "Unit",
+                                    vtableIndex = 7,
+                                    parameters = listOf(WinMdParameter("error", "Windows.Foundation.HResult")),
+                                ),
+                                WinMdMethod(
+                                    "TryGetError",
+                                    "Windows.Foundation.IReference`1<Windows.Foundation.HResult>",
+                                    vtableIndex = 8,
+                                ),
+                                WinMdMethod(
+                                    "SetOptionalError",
+                                    "Unit",
+                                    vtableIndex = 9,
+                                    parameters = listOf(
+                                        WinMdParameter("error", "Windows.Foundation.IReference`1<Windows.Foundation.HResult>"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Windows/Foundation/Widget.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fungetError()"))
+        assertTrue(binding.contains("exceptionFromHResult(PlatformComInterop.invokeInt32Method(pointer,6).getOrThrow())"))
+        assertTrue(binding.contains("funsetError("))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer,7,hResultOfException(error)).getOrThrow()"))
+        assertTrue(binding.contains("IReference.from<"))
+        assertTrue(binding.contains("Inspectable(it),\"struct(Windows.Foundation.HResult;i4)\""))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithArgs(pointer,9,if(error==null)ComPtr.NULLelse"))
+        assertTrue(binding.contains("\"pinterface({61c17706-2d65-11e0-9ae8-d48564015472};struct(Windows.Foundation.HResult;i4))\""))
+    }
+
+    @Test
     fun renders_runtime_external_struct_methods_with_generic_abi_calls() {
         val model = WinMdModel(
             files = emptyList(),

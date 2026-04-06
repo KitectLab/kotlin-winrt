@@ -132,6 +132,13 @@ internal class RuntimePropertyRenderer(
                     AbiCallCatalog.int64Getter(getterVtableIndex),
                 )
             }
+            RuntimePropertyGetterRuleFamily.HRESULT -> ScalarRuntimePropertyPlan { getterVtableIndex ->
+                CodeBlock.of(
+                    "%M(%L)",
+                    PoetSymbols.exceptionFromHResultMember,
+                    AbiCallCatalog.int32Method(getterVtableIndex),
+                )
+            }
             RuntimePropertyGetterRuleFamily.STRING -> ScalarRuntimePropertyPlan { getterVtableIndex ->
                 hStringToKotlinString("pointer", getterVtableIndex)
             }
@@ -350,6 +357,17 @@ internal class RuntimePropertyRenderer(
                             valueTypeProjectionSupport.invokeUnitMethodWithArgs(
                                 vtableIndex = setterVtableIndex,
                                 arguments = listOf(CodeBlock.of("value")),
+                            ),
+                        )
+                    },
+                )
+                RuntimePropertySetterRuleFamily.HRESULT -> RuntimePropertySetterPlan(
+                    statement = "%L",
+                    args = { setterVtableIndex ->
+                        arrayOf(
+                            AbiCallCatalog.int32SetterExpression(
+                                setterVtableIndex,
+                                "hResultOfException(value)",
                             ),
                         )
                     },

@@ -1,6 +1,7 @@
 package dev.winrt.core
 
 import dev.winrt.kom.ComPtr
+import dev.winrt.kom.ComStructValue
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
 import java.util.IdentityHashMap
@@ -11,14 +12,17 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
     private val vectorViewIidText = "bbe1fa4c-b0e3-4583-baef-1f1b2e483e56"
     private val mapViewIidText = "e480ce40-a338-4ada-adcf-272272e48cb9"
     private val keyValuePairIidText = "02b51929-c1c4-4a7e-8940-0312b5c18500"
+    private val iReferenceIidText = "61c17706-2d65-11e0-9ae8-d48564015472"
     private val bindableIterableIidText = "036d2c08-df29-41af-8aa2-d774be62ba6f"
     private val bindableIteratorIidText = "6a1d6c07-076d-49f2-8314-f52c9c9a8331"
+    private val hResultStructSignature = WinRtTypeSignature.struct("Windows.Foundation.HResult", "i4")
 
     private val iterableIid = guidOf(iterableIidText)
     private val iteratorIid = guidOf(iteratorIidText)
     private val vectorViewIid = guidOf(vectorViewIidText)
     private val mapViewIid = guidOf(mapViewIidText)
     private val keyValuePairIid = guidOf(keyValuePairIidText)
+    private val iReferenceIid = guidOf(iReferenceIidText)
     private val bindableIterableIid = guidOf(bindableIterableIidText)
     private val bindableIteratorIid = guidOf(bindableIteratorIidText)
 
@@ -55,9 +59,102 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             vectorViewIid.canonical -> createVectorViewHandle(value, projectionTypeKey, signature)
             mapViewIid.canonical -> createMapViewHandle(value, projectionTypeKey, signature)
             keyValuePairIid.canonical -> createKeyValuePairHandle(value, projectionTypeKey, signature)
+            iReferenceIid.canonical -> createReferenceHandle(value, projectionTypeKey, signature)
             bindableIterableIid.canonical -> createBindableIterableHandle(value, projectionTypeKey)
             bindableIteratorIid.canonical -> createBindableIteratorHandle(value, projectionTypeKey)
             else -> null
+        }
+    }
+
+    private fun createReferenceHandle(
+        value: Any,
+        projectionTypeKey: ProjectionTypeKey,
+        signature: AbiValueSignature.ParameterizedInterface,
+    ): ProjectedObjectHandle? {
+        val reference = value as? IReference<*> ?: return null
+        val elementSignature = signature.arguments.singleOrNull() ?: return null
+        val elementProjectionTypeKey = projectionTypeKey.arguments.singleOrNull()
+            ?: inferProjectionTypeKey(elementSignature)
+        val retainedChildren = mutableListOf<AutoCloseable>()
+        val interfaceSpec = when {
+            elementSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgHStringMethods = mapOf(
+                    6 to {
+                        reference.value as? String
+                            ?: error("Expected IReference value to be String, got ${reference.value?.let { it::class.qualifiedName }}")
+                    },
+                ),
+            )
+            elementSignature is AbiValueSignature.ObjectType &&
+                elementSignature.rawSignature == hResultStructSignature -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgInt32Methods = mapOf(
+                    6 to {
+                        when (val error = reference.value) {
+                            null -> hResultOfException(null)
+                            is Exception -> hResultOfException(error)
+                            else -> error(
+                                "Expected IReference<HResult> value to be Exception?, got ${error::class.qualifiedName}",
+                            )
+                        }
+                    },
+                ),
+            )
+            elementSignature is AbiValueSignature.ObjectType &&
+                elementSignature.rawSignature.startsWith("struct(") -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgStructMethods = mapOf(
+                    6 to { marshalStructAbiValue(requireNotNull(reference.value) { "IReference struct values cannot be null" }) },
+                ),
+            )
+            elementSignature is AbiValueSignature.ObjectType &&
+                elementSignature.rawSignature.startsWith("enum(") -> createEnumReferenceInterfaceSpec(
+                signature = signature,
+                reference = reference,
+                elementSignature = elementSignature.rawSignature,
+            )
+            else -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgObjectMethods = mapOf(
+                    6 to {
+                        marshalObjectResultPointer(
+                            value = reference.value,
+                            projectionTypeKey = elementProjectionTypeKey,
+                            signature = elementSignature,
+                            retainedChildren = retainedChildren,
+                        )
+                    },
+                ),
+            )
+        }
+        val stub = JvmWinRtObjectStub.create(interfaceSpec)
+        return ProjectedObjectHandle(stub, retainedChildren)
+    }
+
+    private fun createEnumReferenceInterfaceSpec(
+        signature: AbiValueSignature.ParameterizedInterface,
+        reference: IReference<*>,
+        elementSignature: String,
+    ): JvmWinRtObjectStub.InterfaceSpec {
+        val value = requireNotNull(reference.value) { "IReference enum values cannot be null" }
+        return when (enumUnderlyingSignature(elementSignature)) {
+            "u4" -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgUInt32Methods = mapOf(6 to { marshalEnumUInt32Value(value) }),
+            )
+            "i8" -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgInt64Methods = mapOf(6 to { marshalEnumInt64Value(value) }),
+            )
+            "u8" -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgUInt64Methods = mapOf(6 to { marshalEnumUInt64Value(value) }),
+            )
+            else -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgInt32Methods = mapOf(6 to { marshalEnumInt32Value(value) }),
+            )
         }
     }
 
@@ -502,7 +599,13 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
     private fun inferProjectionTypeKey(signature: AbiValueSignature): String {
         return when (signature) {
             is AbiValueSignature.StringType -> "String"
-            is AbiValueSignature.ObjectType -> "Object"
+            is AbiValueSignature.ObjectType -> if (signature.rawSignature.startsWith("struct(")) {
+                signature.rawSignature.removePrefix("struct(").substringBefore(';')
+            } else if (signature.rawSignature.startsWith("enum(")) {
+                signature.rawSignature.removePrefix("enum(").substringBefore(';')
+            } else {
+                "Object"
+            }
             is AbiValueSignature.ParameterizedInterface -> when (signature.iid.canonical) {
                 iterableIid.canonical,
                 bindableIterableIid.canonical,
@@ -514,9 +617,95 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 mapViewIid.canonical -> "kotlin.collections.Map<${signature.arguments.joinToString(", ") { inferProjectionTypeKey(it) }}>"
                 keyValuePairIid.canonical ->
                     "kotlin.collections.Map.Entry<${signature.arguments.joinToString(", ") { inferProjectionTypeKey(it) }}>"
+                iReferenceIid.canonical -> "dev.winrt.core.IReference<${inferProjectionTypeKey(signature.arguments.single())}>"
                 else -> "Object"
             }
         }
+    }
+
+    private fun marshalStructAbiValue(value: Any): ComStructValue {
+        val toAbi = value::class.java.methods.firstOrNull { method ->
+            method.name == "toAbi" && method.parameterCount == 0
+        } ?: error("Projected struct values for ${value::class.qualifiedName} require a public toAbi() method")
+        return toAbi.invoke(value) as? ComStructValue
+            ?: error("Projected struct ${value::class.qualifiedName}.toAbi() must return ComStructValue")
+    }
+
+    private fun enumUnderlyingSignature(signature: String): String {
+        return signature.removePrefix("enum(")
+            .removeSuffix(")")
+            .substringAfter(';', "i4")
+    }
+
+    private fun marshalEnumInt32Value(value: Any): Int = when (val rawValue = readProjectedEnumValue(value)) {
+        is Int -> rawValue
+        is UInt -> rawValue.toInt()
+        is Short -> rawValue.toInt()
+        is UShort -> rawValue.toInt()
+        is Byte -> rawValue.toInt()
+        is UByte -> rawValue.toInt()
+        is Char -> rawValue.code
+        is Long -> rawValue.toInt()
+        is ULong -> rawValue.toLong().toInt()
+        else -> (rawValue as? Number)?.toInt()
+            ?: error("Unsupported projected enum backing value ${rawValue::class.qualifiedName}")
+    }
+
+    private fun marshalEnumUInt32Value(value: Any): UInt = when (val rawValue = readProjectedEnumValue(value)) {
+        is UInt -> rawValue
+        is Int -> rawValue.toUInt()
+        is Short -> rawValue.toInt().toUInt()
+        is UShort -> rawValue.toUInt()
+        is Byte -> rawValue.toInt().toUInt()
+        is UByte -> rawValue.toUInt()
+        is Char -> rawValue.code.toUInt()
+        is Long -> rawValue.toUInt()
+        is ULong -> rawValue.toUInt()
+        else -> (rawValue as? Number)?.toLong()?.toUInt()
+            ?: error("Unsupported projected enum backing value ${rawValue::class.qualifiedName}")
+    }
+
+    private fun marshalEnumInt64Value(value: Any): Long = when (val rawValue = readProjectedEnumValue(value)) {
+        is Long -> rawValue
+        is ULong -> rawValue.toLong()
+        is Int -> rawValue.toLong()
+        is UInt -> rawValue.toLong()
+        is Short -> rawValue.toLong()
+        is UShort -> rawValue.toLong()
+        is Byte -> rawValue.toLong()
+        is UByte -> rawValue.toLong()
+        is Char -> rawValue.code.toLong()
+        else -> (rawValue as? Number)?.toLong()
+            ?: error("Unsupported projected enum backing value ${rawValue::class.qualifiedName}")
+    }
+
+    private fun marshalEnumUInt64Value(value: Any): ULong = when (val rawValue = readProjectedEnumValue(value)) {
+        is ULong -> rawValue
+        is Long -> rawValue.toULong()
+        is UInt -> rawValue.toULong()
+        is Int -> rawValue.toUInt().toULong()
+        is UShort -> rawValue.toULong()
+        is Short -> rawValue.toUInt().toULong()
+        is UByte -> rawValue.toULong()
+        is Byte -> rawValue.toUInt().toULong()
+        is Char -> rawValue.code.toULong()
+        else -> (rawValue as? Number)?.toLong()?.toULong()
+            ?: error("Unsupported projected enum backing value ${rawValue::class.qualifiedName}")
+    }
+
+    private fun readProjectedEnumValue(value: Any): Any {
+        val getter = value::class.java.methods.firstOrNull { method ->
+            method.parameterCount == 0 && (method.name == "getValue" || method.name.startsWith("getValue-"))
+        }
+        if (getter != null) {
+            return getter.invoke(value)
+                ?: error("Projected enum value getter for ${value::class.qualifiedName} returned null")
+        }
+
+        val field = value::class.java.fields.firstOrNull { it.name == "value" }
+            ?: error("Projected enum values for ${value::class.qualifiedName} require a public val value")
+        return field.get(value)
+            ?: error("Projected enum value field for ${value::class.qualifiedName} returned null")
     }
 
     private fun parseParameterizedInterfaceSignature(signature: String): AbiValueSignature.ParameterizedInterface? {

@@ -101,6 +101,12 @@ internal class TypeFileEmitter(
         WinMdTypeKind.RuntimeClass -> listOf(runtimeTypeRenderer.render(type))
         WinMdTypeKind.Struct,
         WinMdTypeKind.Enum,
-        -> listOf(valueTypeRenderer.render(type))
+        -> {
+            if (type.kind == WinMdTypeKind.Struct && isHResultType("${type.namespace}.${type.name}")) {
+                emptyList()
+            } else {
+                listOf(valueTypeRenderer.render(type))
+            }
+        }
     }
 }

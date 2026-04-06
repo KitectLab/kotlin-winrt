@@ -7,6 +7,10 @@ interface ComReference {
 enum class ComMethodResultKind {
     HSTRING,
     OBJECT,
+    UINT8,
+    INT16,
+    UINT16,
+    CHAR16,
     INT32,
     UINT32,
     INT64,
@@ -20,6 +24,10 @@ enum class ComMethodResultKind {
 sealed interface ComMethodResult {
     data class HStringValue(val value: HString) : ComMethodResult
     data class ObjectValue(val value: ComPtr) : ComMethodResult
+    data class UInt8Value(val value: UByte) : ComMethodResult
+    data class Int16Value(val value: Short) : ComMethodResult
+    data class UInt16Value(val value: UShort) : ComMethodResult
+    data class Char16Value(val value: Char) : ComMethodResult
     data class Int32Value(val value: Int) : ComMethodResult
     data class UInt32Value(val value: UInt) : ComMethodResult
     data class Int64Value(val value: Long) : ComMethodResult
@@ -37,6 +45,10 @@ data class ComposableMethodResult(
 
 fun ComMethodResult.requireHString(): HString = (this as ComMethodResult.HStringValue).value
 fun ComMethodResult.requireObject(): ComPtr = (this as ComMethodResult.ObjectValue).value
+fun ComMethodResult.requireUInt8(): UByte = (this as ComMethodResult.UInt8Value).value
+fun ComMethodResult.requireInt16(): Short = (this as ComMethodResult.Int16Value).value
+fun ComMethodResult.requireUInt16(): UShort = (this as ComMethodResult.UInt16Value).value
+fun ComMethodResult.requireChar16(): Char = (this as ComMethodResult.Char16Value).value
 fun ComMethodResult.requireInt32(): Int = (this as ComMethodResult.Int32Value).value
 fun ComMethodResult.requireUInt32(): UInt = (this as ComMethodResult.UInt32Value).value
 fun ComMethodResult.requireInt64(): Long = (this as ComMethodResult.Int64Value).value

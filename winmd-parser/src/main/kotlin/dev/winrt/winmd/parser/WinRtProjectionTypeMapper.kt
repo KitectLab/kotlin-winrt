@@ -38,6 +38,7 @@ internal class WinRtProjectionTypeMapper {
         "String" -> "String"
         "Object" -> "Object"
         "Boolean" -> "Boolean"
+        "HResult" -> "Exception"
         "UInt8" -> "UInt8"
         "Int16" -> "Int16"
         "UInt16" -> "UInt16"

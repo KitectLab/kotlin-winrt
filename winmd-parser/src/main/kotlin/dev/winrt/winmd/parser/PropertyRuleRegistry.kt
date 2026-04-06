@@ -15,6 +15,7 @@ internal enum class RuntimePropertyGetterRuleFamily {
     DATE_TIME,
     TIME_SPAN,
     EVENT_REGISTRATION_TOKEN,
+    HRESULT,
     INT32,
     UINT32,
     INT64,
@@ -28,6 +29,7 @@ internal enum class RuntimePropertySetterRuleFamily {
     INT16,
     UINT16,
     CHAR16,
+    HRESULT,
     INT32,
     UINT32,
     FLOAT32,
@@ -52,6 +54,7 @@ internal enum class InterfacePropertyRuleFamily {
     DATE_TIME,
     TIME_SPAN,
     EVENT_REGISTRATION_TOKEN,
+    HRESULT,
     INT32,
     UINT32,
     INT64,
@@ -74,6 +77,7 @@ internal object PropertyRuleRegistry {
         "DateTime" to RuntimePropertyGetterRuleFamily.DATE_TIME,
         "TimeSpan" to RuntimePropertyGetterRuleFamily.TIME_SPAN,
         "EventRegistrationToken" to RuntimePropertyGetterRuleFamily.EVENT_REGISTRATION_TOKEN,
+        "HResult" to RuntimePropertyGetterRuleFamily.HRESULT,
         "Int32" to RuntimePropertyGetterRuleFamily.INT32,
         "UInt32" to RuntimePropertyGetterRuleFamily.UINT32,
         "Int64" to RuntimePropertyGetterRuleFamily.INT64,
@@ -87,6 +91,7 @@ internal object PropertyRuleRegistry {
         "Int16" to RuntimePropertySetterRuleFamily.INT16,
         "UInt16" to RuntimePropertySetterRuleFamily.UINT16,
         "Char16" to RuntimePropertySetterRuleFamily.CHAR16,
+        "HResult" to RuntimePropertySetterRuleFamily.HRESULT,
         "Int32" to RuntimePropertySetterRuleFamily.INT32,
         "UInt32" to RuntimePropertySetterRuleFamily.UINT32,
         "Float32" to RuntimePropertySetterRuleFamily.FLOAT32,
@@ -117,6 +122,7 @@ internal object PropertyRuleRegistry {
             canonicalType == "DateTime" -> InterfacePropertyRuleFamily.DATE_TIME
             canonicalType == "TimeSpan" -> InterfacePropertyRuleFamily.TIME_SPAN
             canonicalType == "EventRegistrationToken" -> InterfacePropertyRuleFamily.EVENT_REGISTRATION_TOKEN
+            canonicalType == "HResult" -> InterfacePropertyRuleFamily.HRESULT
             canonicalType == "Int32" -> InterfacePropertyRuleFamily.INT32
             canonicalType == "UInt32" -> InterfacePropertyRuleFamily.UINT32
             canonicalType == "Int64" -> InterfacePropertyRuleFamily.INT64
@@ -137,6 +143,7 @@ internal object PropertyRuleRegistry {
             canonicalType == "Float32" -> InterfacePropertyRuleFamily.FLOAT32
             canonicalType == "Boolean" -> InterfacePropertyRuleFamily.BOOLEAN
             canonicalType == "Float64" -> InterfacePropertyRuleFamily.FLOAT64
+            canonicalType == "HResult" -> InterfacePropertyRuleFamily.HRESULT
             canonicalType == "Int32" -> InterfacePropertyRuleFamily.INT32
             canonicalType == "UInt32" -> InterfacePropertyRuleFamily.UINT32
             canonicalType == "Int64" -> InterfacePropertyRuleFamily.INT64

@@ -114,6 +114,8 @@ internal class WinRtSignatureMapper(
             "Int16" to "i2",
             "UInt16" to "u2",
             "Char16" to "c2",
+            "HResult" to "struct(Windows.Foundation.HResult;i4)",
+            "Windows.Foundation.HResult" to "struct(Windows.Foundation.HResult;i4)",
             "Int32" to "i4",
             "UInt32" to "u4",
             "Int64" to "i8",

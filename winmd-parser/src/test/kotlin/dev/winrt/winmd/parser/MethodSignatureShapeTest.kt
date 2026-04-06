@@ -10,6 +10,7 @@ class MethodSignatureShapeTest {
     fun classifies_parameter_categories() {
         assertEquals(MethodParameterCategory.STRING, methodParameterCategory("String", ::supportsObjectType))
         assertEquals(MethodParameterCategory.INT32, methodParameterCategory("Int32", ::supportsObjectType))
+        assertEquals(MethodParameterCategory.INT32, methodParameterCategory("Windows.Foundation.HResult", ::supportsObjectType))
         assertEquals(MethodParameterCategory.BOOLEAN, methodParameterCategory("Boolean", ::supportsObjectType))
         assertEquals(MethodParameterCategory.INT64, methodParameterCategory("Int64", ::supportsObjectType))
         assertEquals(MethodParameterCategory.UINT32, methodParameterCategory("UInt32", ::supportsObjectType))
@@ -37,6 +38,19 @@ class MethodSignatureShapeTest {
         assertFalse(supportsProjectedObjectTypeName("Windows.Foundation.Int32"))
         assertFalse(supportsProjectedObjectTypeName("Windows.Foundation.WinRtBoolean"))
         assertTrue(supportsProjectedObjectTypeName("Windows.Foundation.Uri"))
+    }
+
+    @Test
+    fun classifies_hresult_return_kind_as_int32() {
+        assertEquals(
+            MethodSignatureKey(MethodReturnKind.INT32, MethodSignatureShape.EMPTY),
+            methodSignatureKey(
+                "Windows.Foundation.HResult",
+                emptyList(),
+                ::supportsObjectType,
+            ),
+        )
+        assertTrue(isHResultType("Windows.Foundation.HResult"))
     }
 
     @Test

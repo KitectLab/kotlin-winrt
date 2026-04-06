@@ -4,6 +4,10 @@ import dev.winrt.kom.ComStructFieldKind
 import dev.winrt.kom.ComStructLayout
 import dev.winrt.kom.ComStructValue
 import dev.winrt.kom.Guid
+import dev.winrt.kom.HString
+import dev.winrt.kom.ComPtr
+import dev.winrt.kom.AbiIntPtr
+import dev.winrt.kom.PlatformComInterop
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -12,6 +16,7 @@ class ComStructWriter(
     private val layout: ComStructLayout,
 ) {
     private val bytes = ByteArray(layout.byteSize)
+    private val retainedResources = mutableListOf<AutoCloseable>()
     private var fieldIndex = 0
 
     fun writeBoolean(value: Boolean) {
@@ -62,6 +67,19 @@ class ComStructWriter(
         writeInt64(consume(ComStructFieldKind.FLOAT64), value.toRawBits())
     }
 
+    fun writeHString(value: String) {
+        val hString = HString.fromKotlin(value)
+        retainedResources += hString
+        writeInt64(consume(ComStructFieldKind.HSTRING), hString.raw)
+    }
+
+    fun writeObjectPointer(value: ComPtr, releaseOnClose: Boolean = false) {
+        writeInt64(consume(ComStructFieldKind.OBJECT), value.value.rawValue)
+        if (releaseOnClose && !value.isNull) {
+            retainedResources += AutoCloseable { PlatformComInterop.release(value) }
+        }
+    }
+
     fun writeGuid(value: Uuid) {
         val offset = consume(ComStructFieldKind.GUID)
         val guid = guidOf(value.toString())
@@ -74,13 +92,14 @@ class ComStructWriter(
     fun writeStruct(value: ComStructValue) {
         val offset = consumeStruct(value.layout)
         value.bytes.copyInto(bytes, destinationOffset = offset)
+        retainedResources += value.retainedResources
     }
 
     fun build(): ComStructValue {
         require(fieldIndex == layout.fields.size) {
             "Expected ${layout.fields.size} fields, encoded $fieldIndex"
         }
-        return ComStructValue(layout, bytes.copyOf())
+        return ComStructValue(layout, bytes.copyOf(), retainedResources.toList())
     }
 
     private fun consume(expected: ComStructFieldKind): Int {
@@ -158,6 +177,17 @@ class ComStructReader(
     fun readFloat(): Float = Float.fromBits(readInt32(consume(ComStructFieldKind.FLOAT32)))
 
     fun readDouble(): Double = Double.fromBits(readInt64(consume(ComStructFieldKind.FLOAT64)))
+
+    fun readHString(): String {
+        val value = HString(readInt64(consume(ComStructFieldKind.HSTRING)))
+        return try {
+            value.toKotlinString()
+        } finally {
+            value.close()
+        }
+    }
+
+    fun readObjectPointer(): ComPtr = ComPtr(AbiIntPtr(readInt64(consume(ComStructFieldKind.OBJECT))))
 
     fun readGuid(): Uuid {
         val offset = consume(ComStructFieldKind.GUID)

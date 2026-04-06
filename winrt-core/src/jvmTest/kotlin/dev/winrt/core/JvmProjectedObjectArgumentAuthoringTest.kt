@@ -1,6 +1,7 @@
 package dev.winrt.core
 
 import dev.winrt.kom.ComPtr
+import dev.winrt.kom.KnownHResults
 import dev.winrt.kom.PlatformComInterop
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -8,6 +9,13 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class JvmProjectedObjectArgumentAuthoringTest {
+    private enum class ExampleMode(
+        val value: UInt,
+    ) {
+        Alpha(1u),
+        Beta(2u),
+    }
+
     @Test
     fun projected_object_argument_pointer_accepts_plain_iterable_string_values_on_jvm() {
         val pointer = projectedObjectArgumentPointer(
@@ -163,5 +171,35 @@ class JvmProjectedObjectArgumentAuthoringTest {
         } finally {
             PlatformComInterop.release(iterator)
         }
+    }
+
+    @Test
+    fun projected_object_argument_pointer_accepts_plain_ireference_enum_values_on_jvm() {
+        val pointer = projectedObjectArgumentPointer(
+            value = IReference(ExampleMode.Beta),
+            projectionTypeKey = "Windows.Foundation.IReference`1<Test.ExampleMode>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "61c17706-2d65-11e0-9ae8-d48564015472",
+                WinRtTypeSignature.enum("Test.ExampleMode", "u4"),
+            ),
+        )
+
+        assertFalse(pointer.isNull)
+        assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 6).getOrThrow())
+    }
+
+    @Test
+    fun projected_object_argument_pointer_accepts_plain_ireference_hresult_values_on_jvm() {
+        val pointer = projectedObjectArgumentPointer(
+            value = IReference(IllegalArgumentException()),
+            projectionTypeKey = "Windows.Foundation.IReference`1<Exception>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "61c17706-2d65-11e0-9ae8-d48564015472",
+                WinRtTypeSignature.struct("Windows.Foundation.HResult", "i4"),
+            ),
+        )
+
+        assertFalse(pointer.isNull)
+        assertEquals(KnownHResults.E_INVALIDARG.value, PlatformComInterop.invokeInt32Method(pointer, 6).getOrThrow())
     }
 }
