@@ -220,6 +220,139 @@ class JvmProjectedObjectArgumentAuthoringTest {
     }
 
     @Test
+    fun projected_object_argument_pointer_accepts_plain_mutable_string_map_values_for_imap_on_jvm() {
+        val values = linkedMapOf("theme" to "dark")
+        val pointer = projectedObjectArgumentPointer(
+            value = values,
+            projectionTypeKey = "kotlin.collections.MutableMap<String, String>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "3c2925fe-8519-45c1-aa79-197b6718c1c1",
+                WinRtTypeSignature.string(),
+                WinRtTypeSignature.string(),
+            ),
+        )
+
+        assertFalse(pointer.isNull)
+        assertEquals(1u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
+        assertTrue(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 9, "theme").getOrThrow())
+        PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 7, "theme").getOrThrow().use { value ->
+            assertEquals("dark", value.toKotlinString())
+        }
+
+        assertTrue(
+            PlatformComInterop.invokeMethodWithResultKind(
+                pointer,
+                11,
+                ComMethodResultKind.BOOLEAN,
+                "theme",
+                "light",
+            ).getOrThrow().requireBoolean(),
+        )
+        assertEquals("light", values["theme"])
+
+        assertFalse(
+            PlatformComInterop.invokeMethodWithResultKind(
+                pointer,
+                11,
+                ComMethodResultKind.BOOLEAN,
+                "accent",
+                "blue",
+            ).getOrThrow().requireBoolean(),
+        )
+        assertEquals("blue", values["accent"])
+
+        val mapViewPointer = PlatformComInterop.queryInterface(
+            pointer,
+            ParameterizedInterfaceId.createFromSignature(
+                WinRtTypeSignature.parameterizedInterface(
+                    "e480ce40-a338-4ada-adcf-272272e48cb9",
+                    WinRtTypeSignature.string(),
+                    WinRtTypeSignature.string(),
+                ),
+            ),
+        ).getOrThrow()
+        try {
+            assertEquals(2u, PlatformComInterop.invokeUInt32Method(mapViewPointer, 8).getOrThrow())
+        } finally {
+            PlatformComInterop.release(mapViewPointer)
+        }
+
+        PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 12, "theme").getOrThrow()
+        assertFalse(values.containsKey("theme"))
+
+        PlatformComInterop.invokeUnitMethod(pointer, 13).getOrThrow()
+        assertTrue(values.isEmpty())
+    }
+
+    @Test
+    fun projected_object_argument_pointer_accepts_plain_mutable_object_map_values_for_imap_on_jvm() {
+        val forwardedIid = guidOf("12345678-1111-2222-3333-444444444444")
+
+        JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(iid = forwardedIid),
+        ).use { firstStub ->
+            JvmWinRtObjectStub.create(
+                JvmWinRtObjectStub.InterfaceSpec(iid = forwardedIid),
+            ).use { secondStub ->
+                val values = linkedMapOf("theme" to Inspectable(firstStub.primaryPointer))
+                val pointer = projectedObjectArgumentPointer(
+                    value = values,
+                    projectionTypeKey = "kotlin.collections.MutableMap<String, Object>",
+                    signature = WinRtTypeSignature.parameterizedInterface(
+                        "3c2925fe-8519-45c1-aa79-197b6718c1c1",
+                        WinRtTypeSignature.string(),
+                        WinRtTypeSignature.object_(),
+                    ),
+                )
+
+                assertFalse(pointer.isNull)
+                assertEquals(1u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
+                assertTrue(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 9, "theme").getOrThrow())
+
+                val lookup = PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 7, "theme").getOrThrow()
+                try {
+                    assertEquals(firstStub.primaryPointer.value.rawValue, lookup.value.rawValue)
+                } finally {
+                    PlatformComInterop.release(lookup)
+                }
+
+                assertTrue(
+                    PlatformComInterop.invokeMethodWithResultKind(
+                        pointer,
+                        11,
+                        ComMethodResultKind.BOOLEAN,
+                        "theme",
+                        secondStub.primaryPointer,
+                    ).getOrThrow().requireBoolean(),
+                )
+                assertEquals(secondStub.primaryPointer.value.rawValue, values.getValue("theme").pointer.value.rawValue)
+
+                val mapViewPointer = PlatformComInterop.queryInterface(
+                    pointer,
+                    ParameterizedInterfaceId.createFromSignature(
+                        WinRtTypeSignature.parameterizedInterface(
+                            "e480ce40-a338-4ada-adcf-272272e48cb9",
+                            WinRtTypeSignature.string(),
+                            WinRtTypeSignature.object_(),
+                        ),
+                    ),
+                ).getOrThrow()
+                try {
+                    assertEquals(1u, PlatformComInterop.invokeUInt32Method(mapViewPointer, 8).getOrThrow())
+                } finally {
+                    PlatformComInterop.release(mapViewPointer)
+                }
+
+                PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 12, "theme").getOrThrow()
+                assertFalse(values.containsKey("theme"))
+
+                PlatformComInterop.invokeUnitMethod(pointer, 13).getOrThrow()
+                assertTrue(values.isEmpty())
+            }
+        }
+    }
+
+    @Test
     fun projected_object_argument_pointer_accepts_plain_list_values_for_vector_view_on_jvm() {
         val pointer = projectedObjectArgumentPointer(
             value = listOf("en-US", "fr-FR"),

@@ -405,6 +405,34 @@ class JvmWinRtObjectStub private constructor(
             ),
         )
 
+        private val stringStringArgBooleanInvokeHandle = lookup.findStatic(
+            JvmWinRtObjectStub::class.java,
+            "invokeStringStringArgBoolean",
+            MethodType.methodType(
+                Int::class.javaPrimitiveType,
+                Long::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                MemorySegment::class.java,
+                MemorySegment::class.java,
+                MemorySegment::class.java,
+                MemorySegment::class.java,
+            ),
+        )
+
+        private val stringObjectArgBooleanInvokeHandle = lookup.findStatic(
+            JvmWinRtObjectStub::class.java,
+            "invokeStringObjectArgBoolean",
+            MethodType.methodType(
+                Int::class.javaPrimitiveType,
+                Long::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                MemorySegment::class.java,
+                MemorySegment::class.java,
+                MemorySegment::class.java,
+                MemorySegment::class.java,
+            ),
+        )
+
         private val stringArgObjectInvokeHandle = lookup.findStatic(
             JvmWinRtObjectStub::class.java,
             "invokeStringArgObject",
@@ -476,6 +504,8 @@ class JvmWinRtObjectStub private constructor(
                     spec.objectArgUnitMethods.keys.maxOrNull() ?: 2,
                     spec.objectArgObjectMethods.keys.maxOrNull() ?: 2,
                     spec.stringArgUnitMethods.keys.maxOrNull() ?: 2,
+                    spec.stringStringArgBooleanMethods.keys.maxOrNull() ?: 2,
+                    spec.stringObjectArgBooleanMethods.keys.maxOrNull() ?: 2,
                     spec.stringArgObjectMethods.keys.maxOrNull() ?: 2,
                     spec.stringArgBooleanMethods.keys.maxOrNull() ?: 2,
                     spec.stringArgHStringMethods.keys.maxOrNull() ?: 2,
@@ -744,6 +774,36 @@ class JvmWinRtObjectStub private constructor(
                     )
                     vtable.setAtIndex(ValueLayout.ADDRESS, slot.toLong(), stub)
                     sharedState.stringArgUnitMethods[interfaceAddress to slot] = method
+                }
+                spec.stringStringArgBooleanMethods.forEach { (slot, method) ->
+                    val stub = linker.upcallStub(
+                        MethodHandles.insertArguments(stringStringArgBooleanInvokeHandle, 0, interfaceAddress, slot),
+                        FunctionDescriptor.of(
+                            ValueLayout.JAVA_INT,
+                            ValueLayout.ADDRESS,
+                            ValueLayout.ADDRESS,
+                            ValueLayout.ADDRESS,
+                            ValueLayout.ADDRESS,
+                        ),
+                        arena,
+                    )
+                    vtable.setAtIndex(ValueLayout.ADDRESS, slot.toLong(), stub)
+                    sharedState.stringStringArgBooleanMethods[interfaceAddress to slot] = method
+                }
+                spec.stringObjectArgBooleanMethods.forEach { (slot, method) ->
+                    val stub = linker.upcallStub(
+                        MethodHandles.insertArguments(stringObjectArgBooleanInvokeHandle, 0, interfaceAddress, slot),
+                        FunctionDescriptor.of(
+                            ValueLayout.JAVA_INT,
+                            ValueLayout.ADDRESS,
+                            ValueLayout.ADDRESS,
+                            ValueLayout.ADDRESS,
+                            ValueLayout.ADDRESS,
+                        ),
+                        arena,
+                    )
+                    vtable.setAtIndex(ValueLayout.ADDRESS, slot.toLong(), stub)
+                    sharedState.stringObjectArgBooleanMethods[interfaceAddress to slot] = method
                 }
                 spec.stringArgObjectMethods.forEach { (slot, method) ->
                     val stub = linker.upcallStub(
@@ -1226,6 +1286,64 @@ class JvmWinRtObjectStub private constructor(
         }
 
         @JvmStatic
+        private fun invokeStringStringArgBoolean(
+            interfaceAddress: Long,
+            slot: Int,
+            thisPointer: MemorySegment,
+            first: MemorySegment,
+            second: MemorySegment,
+            result: MemorySegment,
+        ): Int {
+            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
+            return runCatching {
+                val value = state.stringStringArgBooleanMethods[interfaceAddress to slot]
+                    ?.invoke(
+                        PlatformHStringBridge.toKotlinString(HString(first.address())),
+                        PlatformHStringBridge.toKotlinString(HString(second.address())),
+                    )
+                    ?: return KnownHResults.E_NOTIMPL.value
+                result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(
+                    ValueLayout.JAVA_INT,
+                    0L,
+                    if (value) 1 else 0,
+                )
+                HResult(0).value
+            }.getOrElse {
+                result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
+                HResult(0x80004005.toInt()).value
+            }
+        }
+
+        @JvmStatic
+        private fun invokeStringObjectArgBoolean(
+            interfaceAddress: Long,
+            slot: Int,
+            thisPointer: MemorySegment,
+            first: MemorySegment,
+            second: MemorySegment,
+            result: MemorySegment,
+        ): Int {
+            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
+            return runCatching {
+                val value = state.stringObjectArgBooleanMethods[interfaceAddress to slot]
+                    ?.invoke(
+                        PlatformHStringBridge.toKotlinString(HString(first.address())),
+                        ComPtr(AbiIntPtr(second.address())),
+                    )
+                    ?: return KnownHResults.E_NOTIMPL.value
+                result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(
+                    ValueLayout.JAVA_INT,
+                    0L,
+                    if (value) 1 else 0,
+                )
+                HResult(0).value
+            }.getOrElse {
+                result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
+                HResult(0x80004005.toInt()).value
+            }
+        }
+
+        @JvmStatic
         private fun invokeObjectArgObject(
             interfaceAddress: Long,
             slot: Int,
@@ -1392,6 +1510,8 @@ class JvmWinRtObjectStub private constructor(
         val objectArgObjectMethods: Map<Int, (ComPtr) -> ComPtr> = emptyMap(),
         val stringArgUnitMethods: Map<Int, (String) -> HResult> = emptyMap(),
         val stringUInt32ArgBooleanMethods: Map<Int, (String, UInt) -> Boolean> = emptyMap(),
+        val stringStringArgBooleanMethods: Map<Int, (String, String) -> Boolean> = emptyMap(),
+        val stringObjectArgBooleanMethods: Map<Int, (String, ComPtr) -> Boolean> = emptyMap(),
         val stringArgObjectMethods: Map<Int, (String) -> ComPtr> = emptyMap(),
         val stringArgBooleanMethods: Map<Int, (String) -> Boolean> = emptyMap(),
         val stringArgHStringMethods: Map<Int, (String) -> String> = emptyMap(),
@@ -1421,6 +1541,8 @@ class JvmWinRtObjectStub private constructor(
         val objectArgObjectMethods = mutableMapOf<Pair<Long, Int>, (ComPtr) -> ComPtr>()
         val stringArgUnitMethods = mutableMapOf<Pair<Long, Int>, (String) -> HResult>()
         val stringUInt32ArgBooleanMethods = mutableMapOf<Pair<Long, Int>, (String, UInt) -> Boolean>()
+        val stringStringArgBooleanMethods = mutableMapOf<Pair<Long, Int>, (String, String) -> Boolean>()
+        val stringObjectArgBooleanMethods = mutableMapOf<Pair<Long, Int>, (String, ComPtr) -> Boolean>()
         val stringArgObjectMethods = mutableMapOf<Pair<Long, Int>, (String) -> ComPtr>()
         val stringArgBooleanMethods = mutableMapOf<Pair<Long, Int>, (String) -> Boolean>()
         val stringArgHStringMethods = mutableMapOf<Pair<Long, Int>, (String) -> String>()

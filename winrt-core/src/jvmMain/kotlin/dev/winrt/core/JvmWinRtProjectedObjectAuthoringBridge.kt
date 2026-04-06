@@ -12,6 +12,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
     private val iteratorIidText = "6a79e863-4300-459a-9966-cbb660963ee1"
     private val vectorIidText = "913337e9-11a1-4345-a3a2-4e7f956e222d"
     private val vectorViewIidText = "bbe1fa4c-b0e3-4583-baef-1f1b2e483e56"
+    private val mapIidText = "3c2925fe-8519-45c1-aa79-197b6718c1c1"
     private val mapViewIidText = "e480ce40-a338-4ada-adcf-272272e48cb9"
     private val keyValuePairIidText = "02b51929-c1c4-4a7e-8940-0312b5c18500"
     private val iReferenceIidText = "61c17706-2d65-11e0-9ae8-d48564015472"
@@ -25,6 +26,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
     private val iteratorIid = guidOf(iteratorIidText)
     private val vectorIid = guidOf(vectorIidText)
     private val vectorViewIid = guidOf(vectorViewIidText)
+    private val mapIid = guidOf(mapIidText)
     private val mapViewIid = guidOf(mapViewIidText)
     private val keyValuePairIid = guidOf(keyValuePairIidText)
     private val iReferenceIid = guidOf(iReferenceIidText)
@@ -78,6 +80,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             iteratorIid.canonical -> createIteratorHandle(value, projectionTypeKey, signature)
             vectorIid.canonical -> createVectorHandle(value, projectionTypeKey, signature)
             vectorViewIid.canonical -> createVectorViewHandle(value, projectionTypeKey, signature)
+            mapIid.canonical -> createMapHandle(value, projectionTypeKey, signature)
             mapViewIid.canonical -> createMapViewHandle(value, projectionTypeKey, signature)
             keyValuePairIid.canonical -> createKeyValuePairHandle(value, projectionTypeKey, signature)
             iReferenceIid.canonical -> createReferenceHandle(value, projectionTypeKey, signature)
@@ -685,6 +688,201 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         return ProjectedObjectHandle(stub, retainedChildren)
     }
 
+    private fun createMapHandle(
+        value: Any,
+        projectionTypeKey: ProjectionTypeKey,
+        signature: AbiValueSignature.ParameterizedInterface,
+    ): ProjectedObjectHandle? {
+        @Suppress("UNCHECKED_CAST")
+        val map = value as? MutableMap<String, Any?> ?: return null
+        val keySignature = signature.arguments.getOrNull(0) ?: return null
+        val valueSignature = signature.arguments.getOrNull(1) ?: return null
+        if (keySignature !is AbiValueSignature.StringType) {
+            return null
+        }
+        val keyProjectionTypeKey = projectionTypeKey.arguments.getOrNull(0) ?: inferProjectionTypeKey(keySignature)
+        val valueProjectionTypeKey = projectionTypeKey.arguments.getOrNull(1) ?: inferProjectionTypeKey(valueSignature)
+        val keyValuePairSignature = AbiValueSignature.ParameterizedInterface(
+            iid = keyValuePairIid,
+            arguments = listOf(keySignature, valueSignature),
+            rawSignature = WinRtTypeSignature.parameterizedInterface(
+                keyValuePairIidText,
+                keySignature.rawSignature,
+                valueSignature.rawSignature,
+            ),
+        )
+        val keyValuePairProjectionTypeKey = ProjectionTypeKey(
+            rawType = "kotlin.collections.Map.Entry",
+            arguments = listOf(keyProjectionTypeKey, valueProjectionTypeKey),
+        )
+        val iterableSignature = AbiValueSignature.ParameterizedInterface(
+            iid = ParameterizedInterfaceId.createFromSignature(
+                WinRtTypeSignature.parameterizedInterface(
+                    iterableIidText,
+                    keyValuePairSignature.rawSignature,
+                ),
+            ),
+            arguments = listOf(keyValuePairSignature),
+            rawSignature = WinRtTypeSignature.parameterizedInterface(
+                iterableIidText,
+                keyValuePairSignature.rawSignature,
+            ),
+        )
+        val mapViewSignature = AbiValueSignature.ParameterizedInterface(
+            iid = ParameterizedInterfaceId.createFromSignature(
+                WinRtTypeSignature.parameterizedInterface(
+                    mapViewIidText,
+                    keySignature.rawSignature,
+                    valueSignature.rawSignature,
+                ),
+            ),
+            arguments = listOf(keySignature, valueSignature),
+            rawSignature = WinRtTypeSignature.parameterizedInterface(
+                mapViewIidText,
+                keySignature.rawSignature,
+                valueSignature.rawSignature,
+            ),
+        )
+        val retainedChildren = mutableListOf<AutoCloseable>()
+        val entries = map.entries
+        val iteratorSignature = AbiValueSignature.ParameterizedInterface(
+            iid = iteratorIid,
+            arguments = listOf(keyValuePairSignature),
+            rawSignature = WinRtTypeSignature.parameterizedInterface(
+                iteratorIidText,
+                keyValuePairSignature.rawSignature,
+            ),
+        )
+        val firstMethod: () -> ComPtr = iterableFirstMethod(
+            iterable = entries,
+            elementProjectionTypeKey = keyValuePairProjectionTypeKey.render(),
+            iteratorSignature = iteratorSignature,
+            retainedChildren = retainedChildren,
+        )
+        val interfaceSpec = when {
+            valueSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgUnitMethods = mapOf(
+                    13 to {
+                        map.clear()
+                        HResult(0)
+                    },
+                ),
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                stringArgUnitMethods = mapOf(
+                    12 to { key ->
+                        map.remove(key)
+                        HResult(0)
+                    },
+                ),
+                stringArgHStringMethods = mapOf(
+                    7 to { key ->
+                        if (!map.containsKey(key)) {
+                            error("Map does not contain key '$key'")
+                        }
+                        map[key] as? String
+                            ?: error("Expected map value for '$key' to be String, got ${map[key]?.let { it::class.qualifiedName }}")
+                    },
+                ),
+                stringArgBooleanMethods = mapOf(
+                    9 to { key -> map.containsKey(key) },
+                ),
+                stringStringArgBooleanMethods = mapOf(
+                    11 to { key, element ->
+                        val replaced = map.containsKey(key)
+                        map[key] = element
+                        replaced
+                    },
+                ),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+            )
+            valueSignature is AbiValueSignature.ObjectType &&
+                valueSignature.rawSignature == WinRtTypeSignature.object_() -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgUnitMethods = mapOf(
+                    13 to {
+                        map.clear()
+                        HResult(0)
+                    },
+                ),
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                stringArgUnitMethods = mapOf(
+                    12 to { key ->
+                        map.remove(key)
+                        HResult(0)
+                    },
+                ),
+                stringArgObjectMethods = mapOf(
+                    7 to { key ->
+                        if (!map.containsKey(key)) {
+                            error("Map does not contain key '$key'")
+                        }
+                        marshalObjectResultPointer(
+                            value = map[key],
+                            projectionTypeKey = valueProjectionTypeKey,
+                            signature = valueSignature,
+                            retainedChildren = retainedChildren,
+                        )
+                    },
+                ),
+                stringArgBooleanMethods = mapOf(
+                    9 to { key -> map.containsKey(key) },
+                ),
+                stringObjectArgBooleanMethods = mapOf(
+                    11 to { key, pointer ->
+                        val replaced = map.containsKey(key)
+                        map[key] = inspectableValueFromPointer(pointer)
+                        replaced
+                    },
+                ),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+            )
+            else -> return null
+        }
+        val mapViewSpec = when {
+            valueSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = mapViewSignature.iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                stringArgHStringMethods = mapOf(
+                    7 to { key ->
+                        if (!map.containsKey(key)) {
+                            error("Map does not contain key '$key'")
+                        }
+                        map[key] as? String
+                            ?: error("Expected map value for '$key' to be String, got ${map[key]?.let { it::class.qualifiedName }}")
+                    },
+                ),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+            )
+            else -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = mapViewSignature.iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                stringArgObjectMethods = mapOf(
+                    7 to { key ->
+                        if (!map.containsKey(key)) {
+                            error("Map does not contain key '$key'")
+                        }
+                        marshalObjectResultPointer(
+                            value = map[key],
+                            projectionTypeKey = valueProjectionTypeKey,
+                            signature = valueSignature,
+                            retainedChildren = retainedChildren,
+                        )
+                    },
+                ),
+                noArgUInt32Methods = mapOf(8 to { map.size.toUInt() }),
+                stringArgBooleanMethods = mapOf(9 to { key -> map.containsKey(key) }),
+            )
+        }
+        val baseIterableSpec = JvmWinRtObjectStub.InterfaceSpec(
+            iid = iterableSignature.iid,
+            noArgObjectMethods = mapOf(6 to firstMethod),
+        )
+        val stub = JvmWinRtObjectStub.create(interfaceSpec, mapViewSpec, baseIterableSpec)
+        return ProjectedObjectHandle(stub, retainedChildren)
+    }
+
     private fun createKeyValuePairHandle(
         value: Any,
         projectionTypeKey: ProjectionTypeKey,
@@ -1004,6 +1202,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 -> "kotlin.collections.Iterator<${inferProjectionTypeKey(signature.arguments.single())}>"
                 vectorIid.canonical -> "kotlin.collections.MutableList<${inferProjectionTypeKey(signature.arguments.single())}>"
                 vectorViewIid.canonical -> "kotlin.collections.List<${inferProjectionTypeKey(signature.arguments.single())}>"
+                mapIid.canonical -> "kotlin.collections.MutableMap<${signature.arguments.joinToString(", ") { inferProjectionTypeKey(it) }}>"
                 mapViewIid.canonical -> "kotlin.collections.Map<${signature.arguments.joinToString(", ") { inferProjectionTypeKey(it) }}>"
                 keyValuePairIid.canonical ->
                     "kotlin.collections.Map.Entry<${signature.arguments.joinToString(", ") { inferProjectionTypeKey(it) }}>"
