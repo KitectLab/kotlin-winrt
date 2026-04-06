@@ -2155,7 +2155,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 writeAddress(result, ComPtr.NULL)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2178,7 +2178,7 @@ class JvmWinRtObjectStub private constructor(
             }.getOrElse {
                 writeAddress(firstResult, ComPtr.NULL)
                 writeAddress(secondResult, ComPtr.NULL)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2197,7 +2197,7 @@ class JvmWinRtObjectStub private constructor(
                 result.reinterpret(value.layout.byteSize.toLong()).copyFrom(MemorySegment.ofArray(value.bytes))
                 HResult(0).value
             }.getOrElse {
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2221,7 +2221,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2245,7 +2245,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2269,7 +2269,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2293,7 +2293,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_LONG.byteSize().toLong()).set(ValueLayout.JAVA_LONG, 0L, 0L)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2317,7 +2317,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_LONG.byteSize().toLong()).set(ValueLayout.JAVA_LONG, 0L, 0L)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2341,7 +2341,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_FLOAT.byteSize().toLong()).set(ValueLayout.JAVA_FLOAT, 0L, 0f)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2365,7 +2365,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_DOUBLE.byteSize().toLong()).set(ValueLayout.JAVA_DOUBLE, 0L, 0.0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2386,7 +2386,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 writeAddress(result, ComPtr.NULL)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -3502,6 +3502,17 @@ class JvmWinRtObjectStub private constructor(
         }
 
         private fun hResultValue(error: Throwable): Int {
+            var current: Throwable? = error
+            while (current != null) {
+                when (current) {
+                    is WinRtException -> return current.hResult.value
+                    is IllegalArgumentException -> return KnownHResults.E_INVALIDARG.value
+                    is IndexOutOfBoundsException -> return KnownHResults.E_BOUNDS.value
+                    is NullPointerException -> return KnownHResults.E_POINTER.value
+                    is UnsupportedOperationException -> return KnownHResults.E_NOTIMPL.value
+                }
+                current = current.cause
+            }
             return hResultOfException(error as? Exception ?: Exception(error))
         }
 

@@ -97,6 +97,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
         assertTrue(result.isFailure)
         assertTrue(
             result.exceptionOrNull()?.message?.contains("0x${KnownHResults.E_BOUNDS.value.toUInt().toString(16)}") == true,
+            result.exceptionOrNull()?.toString(),
         )
     }
 
@@ -289,6 +290,36 @@ class JvmProjectedObjectArgumentAuthoringTest {
     }
 
     @Test
+    fun projected_object_argument_pointer_iiiterator_move_next_from_fresh_state_matches_cswinrt_on_jvm() {
+        val pointer = projectedObjectArgumentPointer(
+            value = listOf("en-US", "fr-FR"),
+            projectionTypeKey = "kotlin.collections.Iterable<String>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "faa585ea-6214-4217-afda-7f46de5869b3",
+                WinRtTypeSignature.string(),
+            ),
+        )
+
+        assertFalse(pointer.isNull)
+
+        val iterator = PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()
+        try {
+            assertTrue(PlatformComInterop.invokeBooleanGetter(iterator, 8).getOrThrow())
+            PlatformComInterop.invokeHStringMethod(iterator, 6).getOrThrow().use { current ->
+                assertEquals("en-US", current.toKotlinString())
+            }
+            assertTrue(PlatformComInterop.invokeBooleanGetter(iterator, 8).getOrThrow())
+            PlatformComInterop.invokeHStringMethod(iterator, 6).getOrThrow().use { current ->
+                assertEquals("fr-FR", current.toKotlinString())
+            }
+            assertFalse(PlatformComInterop.invokeBooleanGetter(iterator, 8).getOrThrow())
+            assertBoundsFailure(PlatformComInterop.invokeHStringMethod(iterator, 6))
+        } finally {
+            PlatformComInterop.release(iterator)
+        }
+    }
+
+    @Test
     fun projected_object_argument_pointer_accepts_plain_iterable_values_for_bindable_iterable_on_jvm() {
         val forwardedIid = guidOf("12345678-1111-2222-3333-444444444444")
 
@@ -390,6 +421,44 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 }
                 assertFalse(PlatformComInterop.invokeBooleanGetter(pointer, 8).getOrThrow())
                 assertFalse(PlatformComInterop.invokeBooleanGetter(pointer, 7).getOrThrow())
+            }
+        }
+    }
+
+    @Test
+    fun projected_object_argument_pointer_bindable_iterator_move_next_from_fresh_state_matches_cswinrt_on_jvm() {
+        val forwardedIid = guidOf("12345678-1111-2222-3333-444444444444")
+
+        JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(iid = forwardedIid),
+        ).use { firstStub ->
+            JvmWinRtObjectStub.create(
+                JvmWinRtObjectStub.InterfaceSpec(iid = forwardedIid),
+            ).use { secondStub ->
+                val pointer = projectedObjectArgumentPointer(
+                    value = listOf(Inspectable(firstStub.primaryPointer), Inspectable(secondStub.primaryPointer)).iterator(),
+                    projectionTypeKey = "kotlin.collections.Iterator",
+                    signature = "{6a1d6c07-076d-49f2-8314-f52c9c9a8331}",
+                )
+
+                assertFalse(pointer.isNull)
+
+                assertTrue(PlatformComInterop.invokeBooleanGetter(pointer, 8).getOrThrow())
+                val current = PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()
+                try {
+                    assertEquals(firstStub.primaryPointer.value.rawValue, current.value.rawValue)
+                } finally {
+                    PlatformComInterop.release(current)
+                }
+                assertTrue(PlatformComInterop.invokeBooleanGetter(pointer, 8).getOrThrow())
+                val next = PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()
+                try {
+                    assertEquals(secondStub.primaryPointer.value.rawValue, next.value.rawValue)
+                } finally {
+                    PlatformComInterop.release(next)
+                }
+                assertFalse(PlatformComInterop.invokeBooleanGetter(pointer, 8).getOrThrow())
+                assertBoundsFailure(PlatformComInterop.invokeObjectMethod(pointer, 6))
             }
         }
     }

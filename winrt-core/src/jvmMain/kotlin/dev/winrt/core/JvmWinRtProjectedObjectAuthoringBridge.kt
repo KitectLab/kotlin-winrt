@@ -250,9 +250,9 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 iid = signature.iid,
                 noArgHStringMethods = mapOf(
                     6 to {
-                        val current = state.currentValue ?: error("IIterator.Current was requested without a current value")
+                        val current = state.requireCurrentValue("IIterator")
                         current as? String
-                            ?: error("Expected iterator element to be String, got ${current::class.qualifiedName}")
+                            ?: error("Expected iterator element to be String, got ${current?.let { it::class.qualifiedName }}")
                     },
                 ),
                 noArgBooleanMethods = mapOf(
@@ -265,9 +265,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 iid = signature.iid,
                 noArgObjectMethods = mapOf(
                     6 to {
-                        val current = state.currentValue ?: error("IIterator.Current was requested without a current value")
                         marshalObjectResultPointer(
-                            value = current,
+                            value = state.requireCurrentValue("IIterator"),
                             projectionTypeKey = elementProjectionTypeKey,
                             signature = elementSignature,
                             retainedChildren = retainedChildren,
@@ -1682,9 +1681,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 iid = bindableIteratorIid,
                 noArgObjectMethods = mapOf(
                     6 to {
-                        val current = state.currentValue ?: error("IBindableIterator.Current was requested without a current value")
                         marshalObjectResultPointer(
-                            value = current,
+                            value = state.requireCurrentValue("IBindableIterator"),
                             projectionTypeKey = elementProjectionTypeKey,
                             signature = AbiValueSignature.ObjectType(WinRtTypeSignature.object_()),
                             retainedChildren = retainedChildren,
@@ -1935,8 +1933,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         }
     }
 
-    private fun currentIteratorValue(state: IteratorState): Any {
-        return state.currentValue ?: error("IIterator.Current was requested without a current value")
+    private fun currentIteratorValue(state: IteratorState): Any? {
+        return state.requireCurrentValue("IIterator")
     }
 
     private fun splitStringKeyedMapView(map: Map<String, Any?>): Pair<Map<String, Any?>?, Map<String, Any?>?> {
@@ -2377,32 +2375,49 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
     private class IteratorState(
         private val iterator: Iterator<*>,
     ) {
-        var currentValue: Any? = null
-            private set
+        private var initialStatePending = true
+        private var currentValue: Any? = null
+        private var hasCurrentValue: Boolean = false
 
-        var hasCurrent: Boolean = false
-            private set
-
-        init {
-            advanceInitial()
-        }
+        val hasCurrent: Boolean
+            get() {
+                ensureInitialized()
+                return hasCurrentValue
+            }
 
         fun moveNext(): Boolean {
+            if (initialStatePending) {
+                initialStatePending = false
+                return advance()
+            }
+            return advance()
+        }
+
+        fun requireCurrentValue(iteratorInterfaceName: String): Any? {
+            ensureInitialized()
+            if (!hasCurrentValue) {
+                throw WinRtException(KnownHResults.E_BOUNDS)
+            }
+            return currentValue
+        }
+
+        private fun ensureInitialized() {
+            if (!initialStatePending) {
+                return
+            }
+            initialStatePending = false
+            advance()
+        }
+
+        private fun advance(): Boolean {
             if (iterator.hasNext()) {
                 currentValue = iterator.next()
-                hasCurrent = true
+                hasCurrentValue = true
                 return true
             }
             currentValue = null
-            hasCurrent = false
+            hasCurrentValue = false
             return false
-        }
-
-        private fun advanceInitial() {
-            if (iterator.hasNext()) {
-                currentValue = iterator.next()
-                hasCurrent = true
-            }
         }
     }
 
