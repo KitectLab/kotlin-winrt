@@ -360,6 +360,77 @@ internal class KotlinCollectionProjectionMapper {
             .build()
     }
 
+    private val commonMapDelegateArguments = listOf(
+        ProjectionDelegateArgument<MapProjectionContext>("sizeProvider") {
+            CodeBlock.of("{ winRtSize.value.toInt() }")
+        },
+        ProjectionDelegateArgument("lookupFn") {
+            CodeBlock.of("{ key -> lookup(key) }")
+        },
+        ProjectionDelegateArgument("containsKeyFn") {
+            CodeBlock.of("{ key -> hasKey(key).value }")
+        },
+        ProjectionDelegateArgument("entriesProvider") { context ->
+            CodeBlock.of("{ %L.asSequence().toList() }", context.entriesExpression)
+        },
+    )
+
+    private val mutableMapDelegateArguments = listOf(
+        ProjectionDelegateArgument<MapProjectionContext>("putValueFn") {
+            CodeBlock.of("{ key, value -> insert(key, value).value }")
+        },
+        ProjectionDelegateArgument("removeKeyFn") {
+            CodeBlock.of("{ key -> winRtRemoveKey(key); true }")
+        },
+        ProjectionDelegateArgument("clearerFn") {
+            CodeBlock.of("{ clear() }")
+        },
+    )
+
+    private val commonMapOperations = listOf(
+        ProjectionOperation<MapProjectionContext>(
+            name = "lookup",
+            parameters = { context -> mapParameters(context, listOf(MapParameter.KEY)) },
+            returnType = { context -> context.valueTypeName },
+            body = { context -> mapProjectedResultBody(context, "Lookup", 6, 1, listOf(MapParameter.KEY)) },
+        ),
+        ProjectionOperation(
+            name = "hasKey",
+            parameters = { context -> mapParameters(context, listOf(MapParameter.KEY)) },
+            returnType = { PoetSymbols.winRtBooleanClass },
+            body = { context -> mapBooleanResultBody(context, "HasKey", 8, listOf(MapParameter.KEY)) },
+        ),
+    )
+
+    private val mutableMapOperations = listOf(
+        ProjectionOperation<MapProjectionContext>(
+            name = "getView",
+            returnType = { context ->
+                projectedDeclarationClassName(context.type.namespace, "IMapView")
+                    .parameterizedBy(context.keyTypeName, context.valueTypeName)
+            },
+            body = { context -> objectFactoryBody(context.type, "IMapView", "GetView", 9, listOf(0, 1)) },
+        ),
+        ProjectionOperation(
+            name = "insert",
+            parameters = { context -> mapParameters(context, listOf(MapParameter.KEY, MapParameter.VALUE)) },
+            returnType = { PoetSymbols.winRtBooleanClass },
+            body = { context ->
+                mapBooleanResultBody(context, "Insert", 10, listOf(MapParameter.KEY, MapParameter.VALUE))
+            },
+        ),
+        ProjectionOperation(
+            name = "winRtRemoveKey",
+            modifiers = listOf(KModifier.PROTECTED),
+            parameters = { context -> mapParameters(context, listOf(MapParameter.KEY)) },
+            body = { context -> mapUnitBody(context, "Remove", 11, listOf(MapParameter.KEY)) },
+        ),
+        ProjectionOperation(
+            name = "clear",
+            body = { context -> unitBody(context.type, "Clear", 12) },
+        ),
+    )
+
     private val readOnlyMapProjectionDescriptor = MapProjectionDescriptor(
         superinterface = { context ->
             PoetSymbols.mapClass.parameterizedBy(context.keyTypeName, context.valueTypeName)
@@ -367,34 +438,8 @@ internal class KotlinCollectionProjectionMapper {
         delegateProjection = { context ->
             PoetSymbols.winRtMapProjectionClass.parameterizedBy(context.keyTypeName, context.valueTypeName)
         },
-        delegateArguments = listOf(
-            ProjectionDelegateArgument("sizeProvider") {
-                CodeBlock.of("{ winRtSize.value.toInt() }")
-            },
-            ProjectionDelegateArgument("lookupFn") {
-                CodeBlock.of("{ key -> lookup(key) }")
-            },
-            ProjectionDelegateArgument("containsKeyFn") {
-                CodeBlock.of("{ key -> hasKey(key).value }")
-            },
-            ProjectionDelegateArgument("entriesProvider") { context ->
-                CodeBlock.of("{ %L.asSequence().toList() }", context.entriesExpression)
-            },
-        ),
-        operations = listOf(
-            ProjectionOperation(
-                name = "lookup",
-                parameters = { context -> mapParameters(context, listOf(MapParameter.KEY)) },
-                returnType = { context -> context.valueTypeName },
-                body = { context -> mapProjectedResultBody(context, "Lookup", 6, 1, listOf(MapParameter.KEY)) },
-            ),
-            ProjectionOperation(
-                name = "hasKey",
-                parameters = { context -> mapParameters(context, listOf(MapParameter.KEY)) },
-                returnType = { PoetSymbols.winRtBooleanClass },
-                body = { context -> mapBooleanResultBody(context, "HasKey", 8, listOf(MapParameter.KEY)) },
-            ),
-        ),
+        delegateArguments = commonMapDelegateArguments,
+        operations = commonMapOperations,
     )
 
     private val mutableMapProjectionDescriptor = MapProjectionDescriptor(
@@ -404,68 +449,79 @@ internal class KotlinCollectionProjectionMapper {
         delegateProjection = { context ->
             PoetSymbols.winRtMutableMapProjectionClass.parameterizedBy(context.keyTypeName, context.valueTypeName)
         },
-        delegateArguments = listOf(
-            ProjectionDelegateArgument("sizeProvider") {
-                CodeBlock.of("{ winRtSize.value.toInt() }")
-            },
-            ProjectionDelegateArgument("lookupFn") {
-                CodeBlock.of("{ key -> lookup(key) }")
-            },
-            ProjectionDelegateArgument("containsKeyFn") {
-                CodeBlock.of("{ key -> hasKey(key).value }")
-            },
-            ProjectionDelegateArgument("putValueFn") {
-                CodeBlock.of("{ key, value -> insert(key, value).value }")
-            },
-            ProjectionDelegateArgument("removeKeyFn") {
-                CodeBlock.of("{ key -> winRtRemoveKey(key); true }")
-            },
-            ProjectionDelegateArgument("clearerFn") {
-                CodeBlock.of("{ clear() }")
-            },
-            ProjectionDelegateArgument("entriesProvider") { context ->
-                CodeBlock.of("{ %L.asSequence().toList() }", context.entriesExpression)
-            },
+        delegateArguments = commonMapDelegateArguments + mutableMapDelegateArguments,
+        operations = commonMapOperations + mutableMapOperations,
+    )
+
+    private val commonVectorDelegateArguments = listOf(
+        ProjectionDelegateArgument<VectorProjectionContext>("sizeProvider") {
+            CodeBlock.of("{ winRtSize.value.toInt() }")
+        },
+        ProjectionDelegateArgument("getter") {
+            CodeBlock.of("{ index -> getAt(%T(index.toUInt())) }", PoetSymbols.uint32Class)
+        },
+    )
+
+    private val mutableVectorDelegateArguments = listOf(
+        ProjectionDelegateArgument<VectorProjectionContext>("append") {
+            CodeBlock.of("{ value -> append(value) }")
+        },
+        ProjectionDelegateArgument("clearer") {
+            CodeBlock.of("{ clear() }")
+        },
+    )
+
+    private val commonVectorOperations = listOf(
+        ProjectionOperation<VectorProjectionContext>(
+            name = "getAt",
+            parameters = { context -> vectorParameters(context, listOf(VectorParameter.INDEX)) },
+            returnType = { context -> context.elementTypeName },
+            body = { context -> vectorProjectedResultBody(context, "GetAt", 6, listOf(VectorParameter.INDEX)) },
         ),
-        operations = listOf(
-            ProjectionOperation(
-                name = "lookup",
-                parameters = { context -> mapParameters(context, listOf(MapParameter.KEY)) },
-                returnType = { context -> context.valueTypeName },
-                body = { context -> mapProjectedResultBody(context, "Lookup", 6, 1, listOf(MapParameter.KEY)) },
-            ),
-            ProjectionOperation(
-                name = "hasKey",
-                parameters = { context -> mapParameters(context, listOf(MapParameter.KEY)) },
-                returnType = { PoetSymbols.winRtBooleanClass },
-                body = { context -> mapBooleanResultBody(context, "HasKey", 8, listOf(MapParameter.KEY)) },
-            ),
-            ProjectionOperation(
-                name = "getView",
-                returnType = { context ->
-                    projectedDeclarationClassName(context.type.namespace, "IMapView")
-                        .parameterizedBy(context.keyTypeName, context.valueTypeName)
-                },
-                body = { context -> objectFactoryBody(context.type, "IMapView", "GetView", 9, listOf(0, 1)) },
-            ),
-            ProjectionOperation(
-                name = "insert",
-                parameters = { context -> mapParameters(context, listOf(MapParameter.KEY, MapParameter.VALUE)) },
-                returnType = { PoetSymbols.winRtBooleanClass },
-                body = { context ->
-                    mapBooleanResultBody(context, "Insert", 10, listOf(MapParameter.KEY, MapParameter.VALUE))
-                },
-            ),
-            ProjectionOperation(
-                name = "winRtRemoveKey",
-                modifiers = listOf(KModifier.PROTECTED),
-                parameters = { context -> mapParameters(context, listOf(MapParameter.KEY)) },
-                body = { context -> mapUnitBody(context, "Remove", 11, listOf(MapParameter.KEY)) },
-            ),
-            ProjectionOperation(
-                name = "clear",
-                body = { context -> unitBody(context.type, "Clear", 12) },
-            ),
+        ProjectionOperation(
+            name = "winRtIndexOf",
+            parameters = { context -> vectorParameters(context, listOf(VectorParameter.VALUE)) },
+            returnType = { PoetSymbols.uint32Class.copy(nullable = true) },
+            body = { context -> vectorIndexOfBody(context, "IndexOf") },
+        ),
+    )
+
+    private val mutableVectorOperations = listOf(
+        ProjectionOperation<VectorProjectionContext>(
+            name = "getView",
+            returnType = { context ->
+                projectedDeclarationClassName(context.type.namespace, "IVectorView")
+                    .parameterizedBy(context.elementTypeName)
+            },
+            body = { context -> objectFactoryBody(context.type, "IVectorView", "GetView", 8, listOf(0)) },
+        ),
+        ProjectionOperation(
+            name = "setAt",
+            parameters = { context -> vectorParameters(context, listOf(VectorParameter.INDEX, VectorParameter.VALUE)) },
+            body = { context -> vectorUnitBody(context, "SetAt", 10, listOf(VectorParameter.INDEX, VectorParameter.VALUE)) },
+        ),
+        ProjectionOperation(
+            name = "insertAt",
+            parameters = { context -> vectorParameters(context, listOf(VectorParameter.INDEX, VectorParameter.VALUE)) },
+            body = { context -> vectorUnitBody(context, "InsertAt", 11, listOf(VectorParameter.INDEX, VectorParameter.VALUE)) },
+        ),
+        ProjectionOperation(
+            name = "removeAt",
+            parameters = { context -> vectorParameters(context, listOf(VectorParameter.INDEX)) },
+            body = { context -> vectorRemoveAtBody(context, "RemoveAt", 12) },
+        ),
+        ProjectionOperation(
+            name = "append",
+            parameters = { context -> vectorParameters(context, listOf(VectorParameter.VALUE)) },
+            body = { context -> vectorUnitBody(context, "Append", 13, listOf(VectorParameter.VALUE)) },
+        ),
+        ProjectionOperation(
+            name = "removeAtEnd",
+            body = { context -> unitBody(context.type, "RemoveAtEnd", 14) },
+        ),
+        ProjectionOperation(
+            name = "clear",
+            body = { context -> unitBody(context.type, "Clear", 15) },
         ),
     )
 
@@ -477,28 +533,8 @@ internal class KotlinCollectionProjectionMapper {
         delegateProjection = { context ->
             PoetSymbols.winRtListProjectionClass.parameterizedBy(context.elementTypeName)
         },
-        delegateArguments = listOf(
-            ProjectionDelegateArgument("sizeProvider") {
-                CodeBlock.of("{ winRtSize.value.toInt() }")
-            },
-            ProjectionDelegateArgument("getter") {
-                CodeBlock.of("{ index -> getAt(%T(index.toUInt())) }", PoetSymbols.uint32Class)
-            },
-        ),
-        operations = listOf(
-            ProjectionOperation(
-                name = "getAt",
-                parameters = { context -> vectorParameters(context, listOf(VectorParameter.INDEX)) },
-                returnType = { context -> context.elementTypeName },
-                body = { context -> vectorProjectedResultBody(context, "GetAt", 6, listOf(VectorParameter.INDEX)) },
-            ),
-            ProjectionOperation(
-                name = "winRtIndexOf",
-                parameters = { context -> vectorParameters(context, listOf(VectorParameter.VALUE)) },
-                returnType = { PoetSymbols.uint32Class.copy(nullable = true) },
-                body = { context -> vectorIndexOfBody(context, "IndexOf") },
-            ),
-        ),
+        delegateArguments = commonVectorDelegateArguments,
+        operations = commonVectorOperations,
     )
 
     private val mutableVectorProjectionDescriptor = VectorProjectionDescriptor(
@@ -509,70 +545,8 @@ internal class KotlinCollectionProjectionMapper {
         delegateProjection = { context ->
             PoetSymbols.winRtMutableListProjectionClass.parameterizedBy(context.elementTypeName)
         },
-        delegateArguments = listOf(
-            ProjectionDelegateArgument("sizeProvider") {
-                CodeBlock.of("{ winRtSize.value.toInt() }")
-            },
-            ProjectionDelegateArgument("getter") {
-                CodeBlock.of("{ index -> getAt(%T(index.toUInt())) }", PoetSymbols.uint32Class)
-            },
-            ProjectionDelegateArgument("append") {
-                CodeBlock.of("{ value -> append(value) }")
-            },
-            ProjectionDelegateArgument("clearer") {
-                CodeBlock.of("{ clear() }")
-            },
-        ),
-        operations = listOf(
-            ProjectionOperation(
-                name = "getAt",
-                parameters = { context -> vectorParameters(context, listOf(VectorParameter.INDEX)) },
-                returnType = { context -> context.elementTypeName },
-                body = { context -> vectorProjectedResultBody(context, "GetAt", 6, listOf(VectorParameter.INDEX)) },
-            ),
-            ProjectionOperation(
-                name = "winRtIndexOf",
-                parameters = { context -> vectorParameters(context, listOf(VectorParameter.VALUE)) },
-                returnType = { PoetSymbols.uint32Class.copy(nullable = true) },
-                body = { context -> vectorIndexOfBody(context, "IndexOf") },
-            ),
-            ProjectionOperation(
-                name = "getView",
-                returnType = { context ->
-                    projectedDeclarationClassName(context.type.namespace, "IVectorView")
-                        .parameterizedBy(context.elementTypeName)
-                },
-                body = { context -> objectFactoryBody(context.type, "IVectorView", "GetView", 8, listOf(0)) },
-            ),
-            ProjectionOperation(
-                name = "setAt",
-                parameters = { context -> vectorParameters(context, listOf(VectorParameter.INDEX, VectorParameter.VALUE)) },
-                body = { context -> vectorUnitBody(context, "SetAt", 10, listOf(VectorParameter.INDEX, VectorParameter.VALUE)) },
-            ),
-            ProjectionOperation(
-                name = "insertAt",
-                parameters = { context -> vectorParameters(context, listOf(VectorParameter.INDEX, VectorParameter.VALUE)) },
-                body = { context -> vectorUnitBody(context, "InsertAt", 11, listOf(VectorParameter.INDEX, VectorParameter.VALUE)) },
-            ),
-            ProjectionOperation(
-                name = "removeAt",
-                parameters = { context -> vectorParameters(context, listOf(VectorParameter.INDEX)) },
-                body = { context -> vectorRemoveAtBody(context, "RemoveAt", 12) },
-            ),
-            ProjectionOperation(
-                name = "append",
-                parameters = { context -> vectorParameters(context, listOf(VectorParameter.VALUE)) },
-                body = { context -> vectorUnitBody(context, "Append", 13, listOf(VectorParameter.VALUE)) },
-            ),
-            ProjectionOperation(
-                name = "removeAtEnd",
-                body = { context -> unitBody(context.type, "RemoveAtEnd", 14) },
-            ),
-            ProjectionOperation(
-                name = "clear",
-                body = { context -> unitBody(context.type, "Clear", 15) },
-            ),
-        ),
+        delegateArguments = commonVectorDelegateArguments + mutableVectorDelegateArguments,
+        operations = commonVectorOperations + mutableVectorOperations,
     )
 
     private fun mapParameters(
