@@ -110,7 +110,7 @@ internal class InterfaceTypeRenderer(
                     projection.extraFunctions.forEach(::addFunction)
                     addProperty(kotlinCollectionProjectionMapper.buildWinRtSizeProperty(projection.winRtSizeSlot))
                 }
-                if (type.namespace == "Microsoft.UI.Xaml.Interop" && type.name == "IBindableIterable") {
+                if (isXamlBindableInteropType(type.namespace, type.name, "IBindableIterable")) {
                     addSuperinterface(PoetSymbols.iterableClass.parameterizedBy(PoetSymbols.inspectableClass))
                     addFunction(
                         FunSpec.builder("iterator")
@@ -120,7 +120,7 @@ internal class InterfaceTypeRenderer(
                             .build(),
                     )
                 }
-                if (type.namespace == "Microsoft.UI.Xaml.Interop" && type.name == "IBindableIterator") {
+                if (isXamlBindableInteropType(type.namespace, type.name, "IBindableIterator")) {
                     addSuperinterface(PoetSymbols.iteratorClass.parameterizedBy(PoetSymbols.inspectableClass))
                     addProperty(
                         PropertySpec.builder("winRtCurrent", PoetSymbols.inspectableClass)
@@ -4225,6 +4225,15 @@ internal class InterfaceTypeRenderer(
 
     private fun interfaceMethodRenderKey(method: WinMdMethod): String {
         return method.overloadKey(renderedName = kotlinMethodName(method.name))
+    }
+
+    private fun isXamlBindableInteropType(
+        namespace: String,
+        name: String,
+        expectedName: String,
+    ): Boolean {
+        return (namespace == "Microsoft.UI.Xaml.Interop" || namespace == "Windows.UI.Xaml.Interop") &&
+            name == expectedName
     }
 
 }

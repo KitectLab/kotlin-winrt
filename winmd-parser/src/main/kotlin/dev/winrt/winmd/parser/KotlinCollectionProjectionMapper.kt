@@ -94,24 +94,30 @@ internal class KotlinCollectionProjectionMapper {
             .firstOrNull {
                 it == "Microsoft.UI.Xaml.Interop.IBindableIterable" ||
                     it == "Microsoft.UI.Xaml.Interop.IBindableIterator" ||
+                    it == "Windows.UI.Xaml.Interop.IBindableIterable" ||
+                    it == "Windows.UI.Xaml.Interop.IBindableIterator" ||
                     it.startsWith("Windows.Foundation.Collections.IIterable<") ||
                     it.startsWith("Windows.Foundation.Collections.IIterator<")
             }
             ?: return null
         return when (iterableInterface) {
-            "Microsoft.UI.Xaml.Interop.IBindableIterable" -> RuntimeIterableProjection(
+            "Microsoft.UI.Xaml.Interop.IBindableIterable",
+            "Windows.UI.Xaml.Interop.IBindableIterable",
+            -> RuntimeIterableProjection(
                 superinterface = PoetSymbols.iterableClass.parameterizedBy(PoetSymbols.inspectableClass),
                 delegateFactory = CodeBlock.of(
                     "%T.from(%T(pointer))",
-                    typeNameMapper.mapTypeName(iterableInterface, "Microsoft.UI.Xaml.Interop") as ClassName,
+                    typeNameMapper.mapTypeName(iterableInterface, iterableInterface.substringBeforeLast('.')) as ClassName,
                     PoetSymbols.inspectableClass,
                 ),
             )
-            "Microsoft.UI.Xaml.Interop.IBindableIterator" -> RuntimeIterableProjection(
+            "Microsoft.UI.Xaml.Interop.IBindableIterator",
+            "Windows.UI.Xaml.Interop.IBindableIterator",
+            -> RuntimeIterableProjection(
                 superinterface = PoetSymbols.iteratorClass.parameterizedBy(PoetSymbols.inspectableClass),
                 delegateFactory = CodeBlock.of(
                     "%T.from(%T(pointer))",
-                    typeNameMapper.mapTypeName(iterableInterface, "Microsoft.UI.Xaml.Interop") as ClassName,
+                    typeNameMapper.mapTypeName(iterableInterface, iterableInterface.substringBeforeLast('.')) as ClassName,
                     PoetSymbols.inspectableClass,
                 ),
             )
@@ -125,7 +131,7 @@ internal class KotlinCollectionProjectionMapper {
     }
 
     fun interfaceProjection(type: WinMdType): InterfaceCollectionProjection? {
-        if (type.namespace == "Microsoft.UI.Xaml.Interop" && type.name == "IBindableVector") {
+        if (isXamlBindableInteropNamespace(type.namespace) && type.name == "IBindableVector") {
             return InterfaceCollectionProjection(
                 superinterface = PoetSymbols.mutableListClass.parameterizedBy(PoetSymbols.inspectableClass),
                 delegateFactory = CodeBlock.of(
@@ -188,7 +194,7 @@ internal class KotlinCollectionProjectionMapper {
                 winRtSizeSlot = 7,
             )
         }
-        if (type.namespace == "Microsoft.UI.Xaml.Interop" && type.name == "IBindableVectorView") {
+        if (isXamlBindableInteropNamespace(type.namespace) && type.name == "IBindableVectorView") {
             return InterfaceCollectionProjection(
                 superinterface = PoetSymbols.listClass.parameterizedBy(PoetSymbols.inspectableClass),
                 delegateFactory = CodeBlock.of(
@@ -358,11 +364,13 @@ internal class KotlinCollectionProjectionMapper {
             )
         }
         return when (qualifiedName) {
-            "Microsoft.UI.Xaml.Interop.IBindableVector" -> CollectionInterfaceMetadata(
+            "Microsoft.UI.Xaml.Interop.IBindableVector",
+            "Windows.UI.Xaml.Interop.IBindableVector",
+            -> CollectionInterfaceMetadata(
                 collectionSuperinterface = PoetSymbols.mutableListClass.parameterizedBy(PoetSymbols.inspectableClass),
                 delegateFactory = CodeBlock.of(
                     "%T.from(%T(pointer))",
-                    typeNameMapper.mapTypeName(qualifiedName, "Microsoft.UI.Xaml.Interop") as ClassName,
+                    typeNameMapper.mapTypeName(qualifiedName, qualifiedName.substringBeforeLast('.')) as ClassName,
                     PoetSymbols.inspectableClass,
                 ),
                 winRtSizeSlot = 8,
@@ -379,11 +387,13 @@ internal class KotlinCollectionProjectionMapper {
                         .build(),
                 ),
             )
-            "Microsoft.UI.Xaml.Interop.IBindableVectorView" -> CollectionInterfaceMetadata(
+            "Microsoft.UI.Xaml.Interop.IBindableVectorView",
+            "Windows.UI.Xaml.Interop.IBindableVectorView",
+            -> CollectionInterfaceMetadata(
                 collectionSuperinterface = PoetSymbols.listClass.parameterizedBy(PoetSymbols.inspectableClass),
                 delegateFactory = CodeBlock.of(
                     "%T.from(%T(pointer))",
-                    typeNameMapper.mapTypeName(qualifiedName, "Microsoft.UI.Xaml.Interop") as ClassName,
+                    typeNameMapper.mapTypeName(qualifiedName, qualifiedName.substringBeforeLast('.')) as ClassName,
                     PoetSymbols.inspectableClass,
                 ),
                 winRtSizeSlot = 8,
@@ -522,6 +532,10 @@ internal class KotlinCollectionProjectionMapper {
 
     private fun supportsClosedGenericVectorElement(typeName: String): Boolean {
         return supportsClosedGenericIterableElement(typeName)
+    }
+
+    private fun isXamlBindableInteropNamespace(namespace: String): Boolean {
+        return namespace == "Microsoft.UI.Xaml.Interop" || namespace == "Windows.UI.Xaml.Interop"
     }
 
     private fun splitGenericArguments(source: String): List<String> {

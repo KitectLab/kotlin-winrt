@@ -181,6 +181,10 @@ class RuntimePropertyTest {
             "kotlin.collections.MutableList",
             WinRtProjectionRegistry.projectionTypeKeyFor("Microsoft.UI.Xaml.Interop.IBindableVector"),
         )
+        assertEquals(
+            "kotlin.collections.MutableList",
+            WinRtProjectionRegistry.projectionTypeKeyFor("Windows.UI.Xaml.Interop.IBindableVector"),
+        )
         assertNull(WinRtProjectionRegistry.findProjectionTypeKey("Windows.Foundation.Collections.IVector<String>"))
         assertEquals(
             "ABI.System.Collections.IList",

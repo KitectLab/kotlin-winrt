@@ -218,6 +218,17 @@ class WinRtSignatureMapperTest {
     }
 
     @Test
+    fun maps_windows_ui_bindable_vector_to_cswinrt_projection_type_key() {
+        assertEquals(
+            "kotlin.collections.MutableList",
+            projectionTypeMapper.projectionTypeKeyFor(
+                "Windows.UI.Xaml.Interop.IBindableVector",
+                "Windows.UI.Xaml.Interop",
+            ),
+        )
+    }
+
+    @Test
     fun maps_specialized_vector_to_generic_list_projection_type_key() {
         assertEquals(
             "kotlin.collections.MutableList<Microsoft.UI.Xaml.UIElement>",

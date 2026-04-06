@@ -57,6 +57,10 @@ internal class WinRtProjectionTypeMapper {
     }
 
     private fun interfaceProjectionTypeKey(typeName: String): String? = when (typeName) {
+        "Windows.UI.Xaml.Interop.IBindableIterable" -> "kotlin.collections.Iterable"
+        "Windows.UI.Xaml.Interop.IBindableIterator" -> "kotlin.collections.Iterator"
+        "Windows.UI.Xaml.Interop.IBindableVector" -> "kotlin.collections.MutableList"
+        "Windows.UI.Xaml.Interop.IBindableVectorView" -> "kotlin.collections.List"
         "Microsoft.UI.Xaml.Interop.IBindableIterable" -> "kotlin.collections.Iterable"
         "Microsoft.UI.Xaml.Interop.IBindableIterator" -> "kotlin.collections.Iterator"
         "Microsoft.UI.Xaml.Interop.IBindableVector" -> "kotlin.collections.MutableList"

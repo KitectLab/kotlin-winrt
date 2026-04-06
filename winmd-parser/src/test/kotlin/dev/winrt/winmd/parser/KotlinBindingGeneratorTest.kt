@@ -2508,6 +2508,32 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_projection_type_keys_for_windows_ui_bindable_interface_metadata() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.UI.Xaml.Interop",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.UI.Xaml.Interop",
+                            name = "IBindableVector",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "393de7de-6fd0-4c0d-bb71-47244a113e93",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Windows/UI/Xaml/Interop/IBindableVector.kt" }.content
+
+        assertTrue(binding.contains("override val qualifiedName: String = \"Windows.UI.Xaml.Interop.IBindableVector\""))
+        assertTrue(binding.contains("override val projectionTypeKey: String = \"kotlin.collections.MutableList\""))
+    }
+
+    @Test
     fun generates_kotlin_mutable_list_shape_for_bindable_vector() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
@@ -2603,6 +2629,42 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_kotlin_iterable_shape_for_windows_ui_bindable_iterable() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.UI.Xaml.Interop",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.UI.Xaml.Interop",
+                            name = "IBindableIterable",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "036d2c08-df29-41af-8aa2-d774be62ba6f",
+                            methods = listOf(
+                                WinMdMethod(name = "First", returnType = "Windows.UI.Xaml.Interop.IBindableIterator", vtableIndex = 6),
+                            ),
+                        ),
+                        WinMdType(
+                            namespace = "Windows.UI.Xaml.Interop",
+                            name = "IBindableIterator",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "6a1d6c07-076d-49f2-8314-f52c9c9a8331",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Windows/UI/Xaml/Interop/IBindableIterable.kt" }.content
+
+        assertTrue(binding.contains("Iterable<Inspectable>"))
+        assertTrue(binding.contains("override fun iterator(): Iterator<Inspectable>"))
+        assertTrue(binding.contains("first()"))
+    }
+
+    @Test
     fun generates_kotlin_iterator_shape_for_bindable_iterator() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
@@ -2628,6 +2690,41 @@ class KotlinBindingGeneratorTest {
 
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first { it.relativePath == "Microsoft/UI/Xaml/Interop/IBindableIterator.kt" }.content
+
+        assertTrue(binding.contains("Iterator<Inspectable>"))
+        assertTrue(binding.contains("val winRtCurrent: Inspectable"))
+        assertTrue(binding.contains("val winRtHasCurrent: WinRtBoolean"))
+        assertTrue(binding.contains("override fun hasNext(): Boolean"))
+        assertTrue(binding.contains("override fun next(): Inspectable"))
+        assertTrue(binding.contains("throw NoSuchElementException()"))
+    }
+
+    @Test
+    fun generates_kotlin_iterator_shape_for_windows_ui_bindable_iterator() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.UI.Xaml.Interop",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.UI.Xaml.Interop",
+                            name = "IBindableIterator",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "6a1d6c07-076d-49f2-8314-f52c9c9a8331",
+                            methods = listOf(
+                                WinMdMethod(name = "get_Current", returnType = "Object", vtableIndex = 6),
+                                WinMdMethod(name = "get_HasCurrent", returnType = "Boolean", vtableIndex = 7),
+                                WinMdMethod(name = "MoveNext", returnType = "Boolean", vtableIndex = 8),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Windows/UI/Xaml/Interop/IBindableIterator.kt" }.content
 
         assertTrue(binding.contains("Iterator<Inspectable>"))
         assertTrue(binding.contains("val winRtCurrent: Inspectable"))
@@ -3091,6 +3188,46 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val binding = files.first {
             it.relativePath == "Microsoft/UI/Xaml/Controls/UIElementCollection.kt"
+        }.content
+
+        assertTrue(binding.contains("MutableList<Inspectable> by IBindableVector.from(Inspectable(pointer))"))
+        assertTrue(binding.contains("val winRtSize: UInt32"))
+    }
+
+    @Test
+    fun generates_kotlin_mutable_list_shape_for_runtime_class_implementing_windows_ui_bindable_vector() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.UI.Xaml.Interop",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.UI.Xaml.Interop",
+                            name = "IBindableVector",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "393de7de-6fd0-4c0d-bb71-47244a113e93",
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Windows.UI.Xaml.Controls",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.UI.Xaml.Controls",
+                            name = "UIElementCollection",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            defaultInterface = "Windows.UI.Xaml.Interop.IBindableVector",
+                            implementedInterfaces = listOf("Windows.UI.Xaml.Interop.IBindableVector"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first {
+            it.relativePath == "Windows/UI/Xaml/Controls/UIElementCollection.kt"
         }.content
 
         assertTrue(binding.contains("MutableList<Inspectable> by IBindableVector.from(Inspectable(pointer))"))

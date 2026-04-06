@@ -852,6 +852,8 @@ internal class RuntimeTypeRenderer(
     private fun isIterableProjectionInterface(interfaceName: String): Boolean {
         return interfaceName == "Microsoft.UI.Xaml.Interop.IBindableIterable" ||
             interfaceName == "Microsoft.UI.Xaml.Interop.IBindableIterator" ||
+            interfaceName == "Windows.UI.Xaml.Interop.IBindableIterable" ||
+            interfaceName == "Windows.UI.Xaml.Interop.IBindableIterator" ||
             interfaceName.startsWith("Windows.Foundation.Collections.IIterable<") ||
             interfaceName.startsWith("Windows.Foundation.Collections.IIterator<")
     }

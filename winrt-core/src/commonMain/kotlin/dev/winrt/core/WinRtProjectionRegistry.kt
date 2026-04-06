@@ -2,6 +2,10 @@ package dev.winrt.core
 
 object WinRtProjectionRegistry {
     private val defaultProjectionTypeMappings: Map<String, String> = linkedMapOf(
+        "Windows.UI.Xaml.Interop.IBindableIterable" to "kotlin.collections.Iterable",
+        "Windows.UI.Xaml.Interop.IBindableIterator" to "kotlin.collections.Iterator",
+        "Windows.UI.Xaml.Interop.IBindableVector" to "kotlin.collections.MutableList",
+        "Windows.UI.Xaml.Interop.IBindableVectorView" to "kotlin.collections.List",
         "Microsoft.UI.Xaml.Interop.IBindableIterable" to "kotlin.collections.Iterable",
         "Microsoft.UI.Xaml.Interop.IBindableIterator" to "kotlin.collections.Iterator",
         "Microsoft.UI.Xaml.Interop.IBindableVector" to "kotlin.collections.MutableList",
