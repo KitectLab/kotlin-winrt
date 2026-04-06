@@ -1039,7 +1039,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         val primitiveKind = primitiveAbiKind(valueSignature)
         val lookupValue: (String) -> Any? = { key ->
             if (!map.containsKey(key)) {
-                error("Map does not contain key '$key'")
+                throw IndexOutOfBoundsException("Map does not contain key '$key'")
             }
             map[key]
         }
@@ -1204,7 +1204,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         val primitiveKind = primitiveAbiKind(valueSignature)
         val lookupValue: (String) -> Any? = { key ->
             if (!map.containsKey(key)) {
-                error("Map does not contain key '$key'")
+                throw IndexOutOfBoundsException("Map does not contain key '$key'")
             }
             map[key]
         }

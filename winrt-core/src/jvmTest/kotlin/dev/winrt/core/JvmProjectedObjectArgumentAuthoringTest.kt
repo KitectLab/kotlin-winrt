@@ -93,6 +93,13 @@ class JvmProjectedObjectArgumentAuthoringTest {
         }
     }
 
+    private fun assertBoundsFailure(result: Result<*>) {
+        assertTrue(result.isFailure)
+        assertTrue(
+            result.exceptionOrNull()?.message?.contains("0x${KnownHResults.E_BOUNDS.value.toUInt().toString(16)}") == true,
+        )
+    }
+
     private fun <T : Any> assertPrimitiveVectorViewCase(case: PrimitiveVectorCase<T>) {
         val pointer = projectedObjectArgumentPointer(
             value = case.initial,
@@ -415,6 +422,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
             } finally {
                 PlatformComInterop.release(lookup)
             }
+            assertBoundsFailure(PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 6, "accent"))
 
             val iterator = invokeStringKeyedMapIterator(pointer, WinRtTypeSignature.object_())
             try {
@@ -461,6 +469,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
         PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 6, "theme").getOrThrow().use { value ->
             assertEquals("dark", value.toKotlinString())
         }
+        assertBoundsFailure(PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 6, "accent"))
 
         assertTrue(
             PlatformComInterop.invokeMethodWithResultKind(
@@ -724,6 +733,17 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 unwrap = { value -> (value as Float64).value },
             ),
         )
+
+        val int32MapViewPointer = projectedObjectArgumentPointer(
+            value = linkedMapOf("theme" to Int32(7)),
+            projectionTypeKey = "kotlin.collections.Map<String, dev.winrt.core.Int32>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "e480ce40-a338-4ada-adcf-272272e48cb9",
+                WinRtTypeSignature.string(),
+                "i4",
+            ),
+        )
+        assertBoundsFailure(PlatformComInterop.invokeInt32MethodWithStringArg(int32MapViewPointer, 6, "accent"))
     }
 
     @Test
