@@ -39,6 +39,13 @@ internal class DelegateTypeRenderer(
                             .initializer("%M(%S)", PoetSymbols.guidOfMember, type.guid ?: "00000000-0000-0000-0000-000000000000")
                             .build(),
                     )
+                    .addInitializerBlock(
+                        com.squareup.kotlinpoet.CodeBlock.of(
+                            "%T.registerFactory(%S) { inspectable -> from(inspectable) }\n",
+                            PoetSymbols.winRtProjectionFactoryRegistryClass,
+                            "${type.namespace}.${type.name}",
+                        ),
+                    )
                     .addFunction(
                         FunSpec.builder("from")
                             .apply {

@@ -203,7 +203,7 @@ class KotlinCollectionProjectionMapperTest {
         assertEquals("kotlin.collections.MutableMap<kotlin.String, windows.globalization.Calendar>", mutableMapProjection.superinterface.toString())
         assertEquals(
             true,
-            mutableMapProjection.delegateFactory.toString().contains("WinRtMutableMapProjection"),
+            mutableMapProjection.delegateFactory.toString().contains("IMap.from"),
         )
 
         val mapProjection = mapper.runtimeClassInterfaceProjection(
@@ -216,7 +216,7 @@ class KotlinCollectionProjectionMapperTest {
         assertEquals("kotlin.collections.Map<kotlin.String, windows.globalization.Calendar>", mapProjection.superinterface.toString())
         assertEquals(
             true,
-            mapProjection.delegateFactory.toString().contains("WinRtMapProjection"),
+            mapProjection.delegateFactory.toString().contains("IMapView.from"),
         )
     }
 
@@ -322,7 +322,7 @@ class KotlinCollectionProjectionMapperTest {
         )
         requireNotNull(projection)
         assertEquals("kotlin.collections.Map<kotlin.String, windows.foundation.collections.IVectorView<microsoft.ui.xaml.UIElement>>", projection.superinterface.toString())
-        assertTrue(projection.delegateFactory.toString().contains("WinRtMapProjection"))
+        assertTrue(projection.delegateFactory.toString().contains("IMapView.from"))
     }
 
     @Test

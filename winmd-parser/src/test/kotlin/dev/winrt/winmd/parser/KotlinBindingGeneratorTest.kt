@@ -5969,9 +5969,9 @@ class KotlinBindingGeneratorTest {
         }.content
 
         assertTrue(binding.contains("MutableMap<String, UIElement>"))
-        assertTrue(binding.contains("WinRtMutableMapProjection<String, UIElement>"))
-        assertFalse(binding.contains("Map<String, UIElement> by WinRtMapProjection<String, UIElement>"))
-        assertTrue(binding.contains("entriesProvider = { first().asSequence().toList() }"))
+        assertTrue(binding.contains("IMap.from(Inspectable(pointer), \"string\""))
+        assertFalse(binding.contains("WinRtMutableMapProjection<String, UIElement>"))
+        assertFalse(binding.contains("Map<String, UIElement> by IMapView.from"))
     }
 
     @Test
@@ -6038,8 +6038,9 @@ class KotlinBindingGeneratorTest {
         }.content
 
         assertTrue(binding.contains("Map<String, UIElement>"))
-        assertTrue(binding.contains("WinRtMapProjection<String, UIElement>"))
-        assertFalse(binding.contains("WinRtMutableMapProjection<String, UIElement>"))
+        assertTrue(binding.contains("IMapView.from(Inspectable(pointer), \"string\""))
+        assertFalse(binding.contains("WinRtMapProjection<String, UIElement>"))
+        assertFalse(binding.contains("IMap.from(Inspectable(pointer), \"string\""))
     }
 
     @Test

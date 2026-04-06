@@ -69,6 +69,7 @@ internal class InterfaceTypeRenderer(
             declaredAndSyntheticInterfaceProperties(type, inheritedPropertyNames),
         )
         val declaredMethods = dedupeInterfaceMethods(type.methods)
+        val collectionProjection = kotlinCollectionProjectionMapper.interfaceProjection(type)
         val renderedProperties = projectedProperties.mapNotNull { property ->
             renderProperty(property, type.namespace, genericParameters)?.let { rendered -> property.name to rendered }
         }
@@ -97,15 +98,14 @@ internal class InterfaceTypeRenderer(
                 directBaseInterfaceType
                     ?.takeIf { directBaseIsRuntimeProjected }
                     ?.let(::addSuperinterface)
-                type.baseInterfaces.mapNotNull { baseInterface ->
-                    collectionSuperinterface(baseInterface, type.namespace, genericParameters)
-                }.forEach { addSuperinterface(it) }
-                kotlinCollectionProjectionMapper.interfaceProjection(type)?.let { projection ->
-                    if (projection.delegateFactory != null) {
-                        addSuperinterface(projection.superinterface, projection.delegateFactory)
-                    } else {
-                        addSuperinterface(projection.superinterface)
-                    }
+                addCollectionSuperinterfaces(
+                    baseInterfaces = type.baseInterfaces,
+                    currentNamespace = type.namespace,
+                    genericParameters = genericParameters,
+                    projection = collectionProjection,
+                    preferProjectionDelegate = true,
+                )
+                collectionProjection?.let { projection ->
                     projection.extraProperties.forEach(::addProperty)
                     projection.extraFunctions.forEach(::addFunction)
                     projection.winRtSizeSlot
@@ -201,6 +201,7 @@ internal class InterfaceTypeRenderer(
                             .build(),
                     )
                     .apply {
+                        addProjectionFactoryRegistration(type)
                         if (type.genericParameters.isEmpty()) {
                             addFunction(
                                 FunSpec.builder("from")
@@ -256,6 +257,7 @@ internal class InterfaceTypeRenderer(
                 property.name.takeIf { renderInterfaceContractProperty(property, type.namespace, genericParameters) != null }
             }
             .toSet()
+        val collectionProjection = kotlinCollectionProjectionMapper.interfaceProjection(type)
         return TypeSpec.interfaceBuilder(declarationName)
             .apply {
                 if (typeRegistry.isVersionedRuntimeClassInterface(type.name, type.namespace)) {
@@ -263,15 +265,13 @@ internal class InterfaceTypeRenderer(
                 }
                 typeVariables.forEach(::addTypeVariable)
                 directBaseInterfaceType?.let(::addSuperinterface)
-                type.baseInterfaces
-                    .filterNot { it == directBaseInterface }
-                    .mapNotNull { baseInterface ->
-                        collectionSuperinterface(baseInterface, type.namespace, genericParameters)
-                    }
-                    .forEach(::addSuperinterface)
-                kotlinCollectionProjectionMapper.interfaceProjection(type)?.let { projection ->
-                    addSuperinterface(projection.superinterface)
-                }
+                addCollectionSuperinterfaces(
+                    baseInterfaces = type.baseInterfaces,
+                    currentNamespace = type.namespace,
+                    genericParameters = genericParameters,
+                    projection = collectionProjection,
+                    excludedBaseInterface = directBaseInterface,
+                )
                 renderDispatchQueueOverride(type, type.namespace, genericParameters)?.let { dispatchOverride ->
                     addSuperinterface(PoetSymbols.dispatchQueueClass)
                     addFunction(dispatchOverride)
@@ -369,6 +369,7 @@ internal class InterfaceTypeRenderer(
                     .build(),
             )
             .apply {
+                addProjectionFactoryRegistration(type)
                 if (type.genericParameters.isEmpty()) {
                     addFunction(
                         FunSpec.builder("from")
@@ -403,6 +404,50 @@ internal class InterfaceTypeRenderer(
                 }
             }
             .build()
+    }
+
+    private fun TypeSpec.Builder.addProjectionFactoryRegistration(type: WinMdType) {
+        val projectionTypeKey = winRtProjectionTypeMapper.projectionTypeKeyFor("${type.namespace}.${type.name}", type.namespace)
+        if (type.genericParameters.isEmpty()) {
+            addInitializerBlock(
+                CodeBlock.of(
+                    "%T.registerFactory(%S) { inspectable -> from(inspectable) }\n",
+                    PoetSymbols.winRtProjectionFactoryRegistryClass,
+                    projectionTypeKey,
+                ),
+            )
+            return
+        }
+
+        val builder = CodeBlock.builder()
+            .add(
+                "%T.registerOpenFactory(%S) { inspectable, argumentSignatures, argumentProjectionTypeKeys ->\n",
+                PoetSymbols.winRtProjectionFactoryRegistryClass,
+                projectionTypeKey,
+            )
+            .indent()
+            .addStatement(
+                "require(argumentSignatures.size == %L) { %S }",
+                type.genericParameters.size,
+                "Expected ${type.genericParameters.size} generic signatures for ${type.namespace}.${type.name}",
+            )
+            .addStatement(
+                "require(argumentProjectionTypeKeys.size == %L) { %S }",
+                type.genericParameters.size,
+                "Expected ${type.genericParameters.size} projection type keys for ${type.namespace}.${type.name}",
+            )
+            .add("from(inspectable")
+        type.genericParameters.indices.forEach { index ->
+            builder.add(", argumentSignatures[%L]", index)
+        }
+        type.genericParameters.indices.forEach { index ->
+            builder.add(", argumentProjectionTypeKeys[%L]", index)
+        }
+        builder
+            .add(")\n")
+            .unindent()
+            .add("}\n")
+        addInitializerBlock(builder.build())
     }
 
     private fun renderInterfaceContractProperty(
@@ -4012,11 +4057,35 @@ internal class InterfaceTypeRenderer(
         genericParameters: Set<String>,
     ): TypeName? {
         val mapped = typeNameMapper.mapTypeName(baseInterface, currentNamespace, genericParameters)
-        return when (mapped.toString().substringBefore('<')) {
-            "kotlin.collections.Iterable",
-            "kotlin.collections.Iterator",
-            -> mapped
-            else -> null
+        return if (mapped.toString().startsWith("kotlin.collections.")) mapped else null
+    }
+
+    private fun TypeSpec.Builder.addCollectionSuperinterfaces(
+        baseInterfaces: List<String>,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+        projection: InterfaceCollectionProjection?,
+        excludedBaseInterface: String? = null,
+        preferProjectionDelegate: Boolean = false,
+    ) {
+        val projectionKey = projection?.superinterface?.toString()
+        val inheritedCollections = baseInterfaces.asSequence()
+            .filterNot { it == excludedBaseInterface }
+            .mapNotNull { baseInterface ->
+                collectionSuperinterface(baseInterface, currentNamespace, genericParameters)
+            }
+            .distinctBy { typeName -> typeName.toString() }
+            .filterNot { typeName ->
+                preferProjectionDelegate && typeName.toString() == projectionKey
+            }
+            .toList()
+        inheritedCollections.forEach(::addSuperinterface)
+        projection?.let {
+            if (preferProjectionDelegate && it.delegateFactory != null) {
+                addSuperinterface(it.superinterface, it.delegateFactory)
+            } else if (inheritedCollections.none { inherited -> inherited.toString() == projectionKey }) {
+                addSuperinterface(it.superinterface)
+            }
         }
     }
 

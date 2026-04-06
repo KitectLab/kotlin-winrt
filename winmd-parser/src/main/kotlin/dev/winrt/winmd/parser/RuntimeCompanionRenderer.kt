@@ -36,6 +36,14 @@ internal class RuntimeCompanionRenderer(
         val builder = TypeSpec.companionObjectBuilder()
             .addSuperinterface(PoetSymbols.winRtRuntimeClassMetadataClass)
             .addProperty(overrideStringProperty("qualifiedName", "${type.namespace}.${type.name}"))
+            .addInitializerBlock(
+                CodeBlock.of(
+                    "%T.registerFactory(%S) { inspectable -> %T(inspectable.pointer) }\n",
+                    PoetSymbols.winRtProjectionFactoryRegistryClass,
+                    winRtProjectionTypeMapper.projectionTypeKeyFor("${type.namespace}.${type.name}", type.namespace),
+                    typeClass,
+                ),
+            )
             .addProperty(
                 PropertySpec.builder("classId", PoetSymbols.runtimeClassIdClass)
                     .addModifiers(KModifier.OVERRIDE)
