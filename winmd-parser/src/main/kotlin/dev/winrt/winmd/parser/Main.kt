@@ -10,7 +10,7 @@ fun main(args: Array<String>) {
     val outputDir = inputs.outputDir
     val sources = inputs.sources
 
-    val model = WinMdModelFilters.filterNamespaces(
+    val model = WinMdModelFilters.filterNamespacesWithProjectionDependencies(
         model = WinMdModelFactory.merge(
             primary = WinMdModelFactory.metadataModel(sources),
             supplemental = WinMdModelFactory.sampleSupplementalModel(),

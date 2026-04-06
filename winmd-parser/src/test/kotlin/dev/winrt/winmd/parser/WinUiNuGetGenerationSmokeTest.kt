@@ -18,7 +18,7 @@ class WinUiNuGetGenerationSmokeTest {
     fun generates_application_and_window_from_local_windows_app_sdk_winmd_when_available() {
         val sourceFiles = localWindowsAppSdkSourceFiles() ?: return
 
-        val model = WinMdModelFilters.filterNamespaces(
+        val model = WinMdModelFilters.filterNamespacesWithProjectionDependencies(
             model = WinMdModelFactory.merge(
                 primary = WinMdModelFactory.metadataModel(sourceFiles),
                 supplemental = WinMdModelFactory.sampleSupplementalModel(),
@@ -37,7 +37,7 @@ class WinUiNuGetGenerationSmokeTest {
     fun generates_additional_application_surface_from_local_windows_app_sdk_winmd_when_available() {
         val sourceFiles = localWindowsAppSdkSourceFiles() ?: return
 
-        val model = WinMdModelFilters.filterNamespaces(
+        val model = WinMdModelFilters.filterNamespacesWithProjectionDependencies(
             model = WinMdModelFactory.merge(
                 primary = WinMdModelFactory.metadataModel(sourceFiles),
                 supplemental = WinMdModelFactory.sampleSupplementalModel(),
@@ -56,7 +56,7 @@ class WinUiNuGetGenerationSmokeTest {
     fun generates_toggle_switch_surface_from_local_windows_app_sdk_winmd_when_available() {
         val sourceFiles = localWindowsAppSdkSourceFiles() ?: return
 
-        val model = WinMdModelFilters.filterNamespaces(
+        val model = WinMdModelFilters.filterNamespacesWithProjectionDependencies(
             model = WinMdModelFactory.merge(
                 primary = WinMdModelFactory.metadataModel(sourceFiles),
                 supplemental = WinMdModelFactory.sampleSupplementalModel(),
@@ -119,7 +119,7 @@ class WinUiNuGetGenerationSmokeTest {
     fun generates_external_struct_members_from_local_windows_app_sdk_winmd_when_available() {
         val sourceFiles = localWindowsAppSdkSourceFiles() ?: return
 
-        val model = WinMdModelFilters.filterNamespaces(
+        val model = WinMdModelFilters.filterNamespacesWithProjectionDependencies(
             model = WinMdModelFactory.merge(
                 primary = WinMdModelFactory.metadataModel(sourceFiles),
                 supplemental = WinMdModelFactory.sampleSupplementalModel(),
@@ -202,6 +202,26 @@ class WinUiNuGetGenerationSmokeTest {
         assertNotNull(keyStatus)
         assertTrue(windowId!!.toString(), windowId.kind == WinMdTypeKind.Struct)
         assertTrue(keyStatus!!.toString(), keyStatus.kind == WinMdTypeKind.Struct)
+    }
+
+    @Test
+    fun namespace_filtered_generation_retains_external_projection_dependencies_when_available() {
+        val sourceFiles = fullWindowsAppSdkSourceFiles() ?: return
+
+        val model = WinMdModelFilters.filterNamespacesWithProjectionDependencies(
+            model = WinMdModelFactory.merge(
+                primary = WinMdModelFactory.metadataModel(sourceFiles),
+                supplemental = WinMdModelFactory.sampleSupplementalModel(),
+            ),
+            namespaceFilters = listOf("Microsoft.UI.Xaml"),
+        )
+        val generatedFiles = KotlinBindingGenerator().generate(model).associateBy { it.relativePath }
+
+        assertNotNull(generatedFiles["Windows/UI/Color.kt"])
+        assertNotNull(generatedFiles["Windows/UI/Core/CorePhysicalKeyStatus.kt"])
+        assertNotNull(generatedFiles["Windows/UI/Text/FontWeight.kt"])
+        assertNotNull(generatedFiles["Windows/UI/Xaml/Interop/TypeName.kt"])
+        assertNotNull(generatedFiles["Microsoft/UI/WindowId.kt"])
     }
 
     private fun localWindowsAppSdkSourceFiles(): List<Path>? {
