@@ -28,7 +28,9 @@ class CheckedInBindingsParityTest {
         "windows/data/json/IJsonArray.kt",
         "windows/data/json/IJsonObject.kt",
         "windows/data/json/IJsonValue.kt",
+        "windows/data/json/JsonArray.kt",
         "windows/data/json/JsonObject.kt",
+        "windows/data/json/JsonValue.kt",
         "windows/data/json/JsonValueType.kt",
         "windows/globalization/Calendar.kt",
         "windows/globalization/DayOfWeek.kt",
@@ -72,7 +74,7 @@ class CheckedInBindingsParityTest {
             "WwwFormUrlDecoderEntry",
         ),
         "Windows.Foundation.Collections" to setOf("StringVectorView"),
-        "Windows.Data.Json" to setOf("IJsonArray", "IJsonObject", "IJsonValue", "JsonObject", "JsonValueType"),
+        "Windows.Data.Json" to setOf("IJsonArray", "IJsonObject", "IJsonValue", "JsonArray", "JsonObject", "JsonValue", "JsonValueType"),
         "Windows.Globalization" to setOf(
             "ApplicationLanguages",
             "Calendar",
