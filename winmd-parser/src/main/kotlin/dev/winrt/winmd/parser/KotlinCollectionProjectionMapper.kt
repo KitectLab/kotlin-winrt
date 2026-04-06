@@ -332,7 +332,7 @@ internal class KotlinCollectionProjectionMapper {
                 },
             ),
             winRtSizeSlot = 7,
-            extraFunctions = descriptor.methodBuilders.map { builder -> builder(context) },
+            extraFunctions = descriptor.operations.map { operation -> projectionOperation(context, operation) },
         )
     }
 
@@ -356,7 +356,7 @@ internal class KotlinCollectionProjectionMapper {
                 },
             ),
             winRtSizeSlot = 7,
-            extraFunctions = descriptor.methodBuilders.map { builder -> builder(context) },
+            extraFunctions = descriptor.operations.map { operation -> projectionOperation(context, operation) },
         )
     }
 
@@ -404,6 +404,22 @@ internal class KotlinCollectionProjectionMapper {
             ?.map { parameter -> TypeVariableName(parameter) }
     }
 
+    private fun <C> projectionOperation(
+        context: C,
+        operation: ProjectionOperation<C>,
+    ): FunSpec {
+        return FunSpec.builder(operation.name)
+            .apply {
+                if (operation.modifiers.isNotEmpty()) {
+                    addModifiers(*operation.modifiers.toTypedArray())
+                }
+                operation.parameters(context).forEach(::addParameter)
+                operation.returnType?.invoke(context)?.let(::returns)
+                addCode(operation.body(context))
+            }
+            .build()
+    }
+
     private val readOnlyMapProjectionDescriptor = MapProjectionDescriptor(
         superinterface = { context ->
             PoetSymbols.mapClass.parameterizedBy(context.keyTypeName, context.valueTypeName)
@@ -425,9 +441,19 @@ internal class KotlinCollectionProjectionMapper {
                 CodeBlock.of("{ %L.asSequence().toList() }", context.entriesExpression)
             },
         ),
-        methodBuilders = listOf(
-            ::buildMapLookupFunction,
-            ::buildMapHasKeyFunction,
+        operations = listOf(
+            ProjectionOperation(
+                name = "lookup",
+                parameters = { context -> mapParameters(context, listOf(MapParameter.KEY)) },
+                returnType = { context -> context.valueTypeName },
+                body = { context -> mapProjectedResultBody(context, "Lookup", 6, 1, listOf(MapParameter.KEY)) },
+            ),
+            ProjectionOperation(
+                name = "hasKey",
+                parameters = { context -> mapParameters(context, listOf(MapParameter.KEY)) },
+                returnType = { PoetSymbols.winRtBooleanClass },
+                body = { context -> mapBooleanResultBody(context, "HasKey", 8, listOf(MapParameter.KEY)) },
+            ),
         ),
     )
 
@@ -461,13 +487,45 @@ internal class KotlinCollectionProjectionMapper {
                 CodeBlock.of("{ %L.asSequence().toList() }", context.entriesExpression)
             },
         ),
-        methodBuilders = listOf(
-            ::buildMapLookupFunction,
-            ::buildMapHasKeyFunction,
-            ::buildMapGetViewFunction,
-            ::buildMapInsertFunction,
-            ::buildMapRemoveKeyFunction,
-            ::buildMapClearFunction,
+        operations = listOf(
+            ProjectionOperation(
+                name = "lookup",
+                parameters = { context -> mapParameters(context, listOf(MapParameter.KEY)) },
+                returnType = { context -> context.valueTypeName },
+                body = { context -> mapProjectedResultBody(context, "Lookup", 6, 1, listOf(MapParameter.KEY)) },
+            ),
+            ProjectionOperation(
+                name = "hasKey",
+                parameters = { context -> mapParameters(context, listOf(MapParameter.KEY)) },
+                returnType = { PoetSymbols.winRtBooleanClass },
+                body = { context -> mapBooleanResultBody(context, "HasKey", 8, listOf(MapParameter.KEY)) },
+            ),
+            ProjectionOperation(
+                name = "getView",
+                returnType = { context ->
+                    projectedDeclarationClassName(context.type.namespace, "IMapView")
+                        .parameterizedBy(context.keyTypeName, context.valueTypeName)
+                },
+                body = { context -> objectFactoryBody(context.type, "IMapView", "GetView", 9, listOf(0, 1)) },
+            ),
+            ProjectionOperation(
+                name = "insert",
+                parameters = { context -> mapParameters(context, listOf(MapParameter.KEY, MapParameter.VALUE)) },
+                returnType = { PoetSymbols.winRtBooleanClass },
+                body = { context ->
+                    mapBooleanResultBody(context, "Insert", 10, listOf(MapParameter.KEY, MapParameter.VALUE))
+                },
+            ),
+            ProjectionOperation(
+                name = "winRtRemoveKey",
+                modifiers = listOf(KModifier.PROTECTED),
+                parameters = { context -> mapParameters(context, listOf(MapParameter.KEY)) },
+                body = { context -> mapUnitBody(context, "Remove", 11, listOf(MapParameter.KEY)) },
+            ),
+            ProjectionOperation(
+                name = "clear",
+                body = { context -> unitBody(context.type, "Clear", 12) },
+            ),
         ),
     )
 
@@ -487,9 +545,19 @@ internal class KotlinCollectionProjectionMapper {
                 CodeBlock.of("{ index -> getAt(%T(index.toUInt())) }", PoetSymbols.uint32Class)
             },
         ),
-        methodBuilders = listOf(
-            ::buildVectorGetAtFunction,
-            ::buildVectorIndexOfFunction,
+        operations = listOf(
+            ProjectionOperation(
+                name = "getAt",
+                parameters = { context -> vectorParameters(context, listOf(VectorParameter.INDEX)) },
+                returnType = { context -> context.elementTypeName },
+                body = { context -> vectorProjectedResultBody(context, "GetAt", 6, listOf(VectorParameter.INDEX)) },
+            ),
+            ProjectionOperation(
+                name = "winRtIndexOf",
+                parameters = { context -> vectorParameters(context, listOf(VectorParameter.VALUE)) },
+                returnType = { PoetSymbols.uint32Class.copy(nullable = true) },
+                body = { context -> vectorIndexOfBody(context, "IndexOf") },
+            ),
         ),
     )
 
@@ -515,203 +583,308 @@ internal class KotlinCollectionProjectionMapper {
                 CodeBlock.of("{ clear() }")
             },
         ),
-        methodBuilders = listOf(
-            ::buildVectorGetAtFunction,
-            ::buildVectorIndexOfFunction,
-            ::buildVectorGetViewFunction,
-            ::buildVectorSetAtFunction,
-            ::buildVectorInsertAtFunction,
-            ::buildVectorRemoveAtFunction,
-            ::buildVectorAppendFunction,
-            ::buildVectorRemoveAtEndFunction,
-            ::buildVectorClearFunction,
+        operations = listOf(
+            ProjectionOperation(
+                name = "getAt",
+                parameters = { context -> vectorParameters(context, listOf(VectorParameter.INDEX)) },
+                returnType = { context -> context.elementTypeName },
+                body = { context -> vectorProjectedResultBody(context, "GetAt", 6, listOf(VectorParameter.INDEX)) },
+            ),
+            ProjectionOperation(
+                name = "winRtIndexOf",
+                parameters = { context -> vectorParameters(context, listOf(VectorParameter.VALUE)) },
+                returnType = { PoetSymbols.uint32Class.copy(nullable = true) },
+                body = { context -> vectorIndexOfBody(context, "IndexOf") },
+            ),
+            ProjectionOperation(
+                name = "getView",
+                returnType = { context ->
+                    projectedDeclarationClassName(context.type.namespace, "IVectorView")
+                        .parameterizedBy(context.elementTypeName)
+                },
+                body = { context -> objectFactoryBody(context.type, "IVectorView", "GetView", 8, listOf(0)) },
+            ),
+            ProjectionOperation(
+                name = "setAt",
+                parameters = { context -> vectorParameters(context, listOf(VectorParameter.INDEX, VectorParameter.VALUE)) },
+                body = { context -> vectorUnitBody(context, "SetAt", 10, listOf(VectorParameter.INDEX, VectorParameter.VALUE)) },
+            ),
+            ProjectionOperation(
+                name = "insertAt",
+                parameters = { context -> vectorParameters(context, listOf(VectorParameter.INDEX, VectorParameter.VALUE)) },
+                body = { context -> vectorUnitBody(context, "InsertAt", 11, listOf(VectorParameter.INDEX, VectorParameter.VALUE)) },
+            ),
+            ProjectionOperation(
+                name = "removeAt",
+                parameters = { context -> vectorParameters(context, listOf(VectorParameter.INDEX)) },
+                body = { context -> vectorRemoveAtBody(context, "RemoveAt", 12) },
+            ),
+            ProjectionOperation(
+                name = "append",
+                parameters = { context -> vectorParameters(context, listOf(VectorParameter.VALUE)) },
+                body = { context -> vectorUnitBody(context, "Append", 13, listOf(VectorParameter.VALUE)) },
+            ),
+            ProjectionOperation(
+                name = "removeAtEnd",
+                body = { context -> unitBody(context.type, "RemoveAtEnd", 14) },
+            ),
+            ProjectionOperation(
+                name = "clear",
+                body = { context -> unitBody(context.type, "Clear", 15) },
+            ),
         ),
     )
 
-    private fun buildMapLookupFunction(context: MapProjectionContext): FunSpec {
-        return FunSpec.builder("lookup")
-            .addParameter("key", context.keyTypeName)
-            .returns(context.valueTypeName)
-            .addStatement(
-                "return projectedGenericMethodResult(%L, genericArg1Signature, genericArg1ProjectionTypeKey, projectedGenericArgument(key, genericArg0Signature, genericArg0ProjectionTypeKey)) as %T",
-                methodSlot(context.type, "Lookup", 6),
-                context.valueTypeName,
-            )
-            .build()
+    private fun mapParameters(
+        context: MapProjectionContext,
+        parameters: List<MapParameter>,
+    ): List<ParameterSpec> {
+        return parameters.map { parameter ->
+            ParameterSpec.builder(parameter.parameterName, parameter.typeName(context)).build()
+        }
     }
 
-    private fun buildMapHasKeyFunction(context: MapProjectionContext): FunSpec {
-        return FunSpec.builder("hasKey")
-            .addParameter("key", context.keyTypeName)
-            .returns(PoetSymbols.winRtBooleanClass)
-            .addStatement(
-                "return %M(projectedGenericMethodResult(%L, %S, %S, projectedGenericArgument(key, genericArg0Signature, genericArg0ProjectionTypeKey)) as Boolean)",
+    private fun vectorParameters(
+        context: VectorProjectionContext,
+        parameters: List<VectorParameter>,
+    ): List<ParameterSpec> {
+        return parameters.map { parameter ->
+            ParameterSpec.builder(parameter.parameterName, parameter.typeName(context)).build()
+        }
+    }
+
+    private fun mapProjectedResultBody(
+        context: MapProjectionContext,
+        slotName: String,
+        defaultSlot: Int,
+        returnArgIndex: Int,
+        parameters: List<MapParameter>,
+    ): CodeBlock {
+        val call = CodeBlock.builder()
+            .add(
+                "projectedGenericMethodResult(%L, %L, %L",
+                methodSlot(context.type, slotName, defaultSlot),
+                genericArgSignature(returnArgIndex),
+                genericArgProjectionTypeKey(returnArgIndex),
+            )
+            .apply {
+                mapAbiArguments(parameters).forEach { argument ->
+                    add(", %L", argument)
+                }
+            }
+            .add(")")
+            .build()
+        return CodeBlock.of("return %L as %T\n", call, context.valueTypeName)
+    }
+
+    private fun mapBooleanResultBody(
+        context: MapProjectionContext,
+        slotName: String,
+        defaultSlot: Int,
+        parameters: List<MapParameter>,
+    ): CodeBlock {
+        val call = CodeBlock.builder()
+            .add(
+                "%M(projectedGenericMethodResult(%L, %S, %S",
                 PoetSymbols.winRtBooleanMember,
-                methodSlot(context.type, "HasKey", 8),
+                methodSlot(context.type, slotName, defaultSlot),
                 "b1",
                 "Boolean",
             )
+            .apply {
+                mapAbiArguments(parameters).forEach { argument ->
+                    add(", %L", argument)
+                }
+            }
+            .add(") as Boolean)")
             .build()
+        return CodeBlock.of("return %L\n", call)
     }
 
-    private fun buildMapGetViewFunction(context: MapProjectionContext): FunSpec {
-        return FunSpec.builder("getView")
-            .returns(projectedDeclarationClassName(context.type.namespace, "IMapView").parameterizedBy(context.keyTypeName, context.valueTypeName))
-            .addStatement(
-                "return %T.from(%T(%T.invokeObjectMethod(pointer, %L).getOrThrow()), genericArg0Signature, genericArg1Signature, genericArg0ProjectionTypeKey, genericArg1ProjectionTypeKey)",
-                projectedDeclarationClassName(context.type.namespace, "IMapView"),
+    private fun objectFactoryBody(
+        type: WinMdType,
+        projectionName: String,
+        slotName: String,
+        defaultSlot: Int,
+        genericArgumentIndexes: List<Int>,
+    ): CodeBlock {
+        val projectionClass = projectedDeclarationClassName(type.namespace, projectionName)
+        val call = CodeBlock.builder()
+            .add(
+                "%T.from(%T(%T.invokeObjectMethod(pointer, %L).getOrThrow())",
+                projectionClass,
                 PoetSymbols.inspectableClass,
                 PoetSymbols.platformComInteropClass,
-                methodSlot(context.type, "GetView", 9),
+                methodSlot(type, slotName, defaultSlot),
             )
+            .apply {
+                genericArgumentIndexes.forEach { index ->
+                    add(", %L", genericArgSignature(index))
+                }
+                genericArgumentIndexes.forEach { index ->
+                    add(", %L", genericArgProjectionTypeKey(index))
+                }
+            }
+            .add(")")
             .build()
+        return CodeBlock.of("return %L\n", call)
     }
 
-    private fun buildMapInsertFunction(context: MapProjectionContext): FunSpec {
-        return FunSpec.builder("insert")
-            .addParameter("key", context.keyTypeName)
-            .addParameter("value", context.valueTypeName)
-            .returns(PoetSymbols.winRtBooleanClass)
-            .addStatement(
-                "return %M(projectedGenericMethodResult(%L, %S, %S, projectedGenericArgument(key, genericArg0Signature, genericArg0ProjectionTypeKey), projectedGenericArgument(value, genericArg1Signature, genericArg1ProjectionTypeKey)) as Boolean)",
-                PoetSymbols.winRtBooleanMember,
-                methodSlot(context.type, "Insert", 10),
-                "b1",
-                "Boolean",
-            )
-            .build()
-    }
-
-    private fun buildMapRemoveKeyFunction(context: MapProjectionContext): FunSpec {
-        return FunSpec.builder("winRtRemoveKey")
-            .addModifiers(KModifier.PROTECTED)
-            .addParameter("key", context.keyTypeName)
-            .addStatement(
-                "%T.invokeUnitMethodWithArgs(pointer, %L, projectedGenericArgument(key, genericArg0Signature, genericArg0ProjectionTypeKey)).getOrThrow()",
+    private fun mapUnitBody(
+        context: MapProjectionContext,
+        slotName: String,
+        defaultSlot: Int,
+        parameters: List<MapParameter>,
+    ): CodeBlock {
+        return CodeBlock.builder()
+            .add(
+                "%T.invokeUnitMethodWithArgs(pointer, %L",
                 PoetSymbols.platformComInteropClass,
-                methodSlot(context.type, "Remove", 11),
+                methodSlot(context.type, slotName, defaultSlot),
             )
+            .apply {
+                mapAbiArguments(parameters).forEach { argument ->
+                    add(", %L", argument)
+                }
+            }
+            .add(").getOrThrow()\n")
             .build()
     }
 
-    private fun buildMapClearFunction(context: MapProjectionContext): FunSpec {
-        return FunSpec.builder("clear")
+    private fun vectorProjectedResultBody(
+        context: VectorProjectionContext,
+        slotName: String,
+        defaultSlot: Int,
+        parameters: List<VectorParameter>,
+    ): CodeBlock {
+        val call = CodeBlock.builder()
+            .add(
+                "projectedGenericMethodResult(%L, %L, %L",
+                methodSlot(context.type, slotName, defaultSlot),
+                genericArgSignature(0),
+                genericArgProjectionTypeKey(0),
+            )
+            .apply {
+                vectorAbiArguments(parameters).forEach { argument ->
+                    add(", %L", argument)
+                }
+            }
+            .add(")")
+            .build()
+        return CodeBlock.of("return %L as %T\n", call, context.elementTypeName)
+    }
+
+    private fun vectorIndexOfBody(
+        context: VectorProjectionContext,
+        slotName: String,
+    ): CodeBlock {
+        return CodeBlock.builder()
             .addStatement(
-                "%T.invokeUnitMethod(pointer, %L).getOrThrow()",
+                "val (found, index) = %T.invokeIndexOfMethod(pointer, %L, %L).getOrThrow()",
                 PoetSymbols.platformComInteropClass,
-                methodSlot(context.type, "Clear", 12),
-            )
-            .build()
-    }
-
-    private fun buildVectorGetAtFunction(context: VectorProjectionContext): FunSpec {
-        return FunSpec.builder("getAt")
-            .addParameter("index", PoetSymbols.uint32Class)
-            .returns(context.elementTypeName)
-            .addStatement(
-                "return projectedGenericMethodResult(%L, genericArg0Signature, genericArg0ProjectionTypeKey, index.value) as %T",
-                methodSlot(context.type, "GetAt", 6),
-                context.elementTypeName,
-            )
-            .build()
-    }
-
-    private fun buildVectorIndexOfFunction(context: VectorProjectionContext): FunSpec {
-        return FunSpec.builder("winRtIndexOf")
-            .addParameter("value", context.elementTypeName)
-            .returns(PoetSymbols.uint32Class.copy(nullable = true))
-            .addStatement(
-                "val (found, index) = %T.invokeIndexOfMethod(pointer, %L, projectedGenericArgument(value, genericArg0Signature, genericArg0ProjectionTypeKey)).getOrThrow()",
-                PoetSymbols.platformComInteropClass,
-                methodSlot(context.type, "IndexOf", context.indexOfDefaultSlot),
+                methodSlot(context.type, slotName, context.indexOfDefaultSlot),
+                vectorAbiArguments(listOf(VectorParameter.VALUE)).single(),
             )
             .addStatement("return if (found) %T(index) else null", PoetSymbols.uint32Class)
             .build()
     }
 
-    private fun buildVectorGetViewFunction(context: VectorProjectionContext): FunSpec {
-        return FunSpec.builder("getView")
-            .returns(projectedDeclarationClassName(context.type.namespace, "IVectorView").parameterizedBy(context.elementTypeName))
-            .addStatement(
-                "return %T.from(%T(%T.invokeObjectMethod(pointer, %L).getOrThrow()), genericArg0Signature, genericArg0ProjectionTypeKey)",
-                projectedDeclarationClassName(context.type.namespace, "IVectorView"),
-                PoetSymbols.inspectableClass,
+    private fun vectorUnitBody(
+        context: VectorProjectionContext,
+        slotName: String,
+        defaultSlot: Int,
+        parameters: List<VectorParameter>,
+    ): CodeBlock {
+        return CodeBlock.builder()
+            .add(
+                "%T.invokeUnitMethodWithArgs(pointer, %L",
                 PoetSymbols.platformComInteropClass,
-                methodSlot(context.type, "GetView", 8),
+                methodSlot(context.type, slotName, defaultSlot),
             )
+            .apply {
+                vectorAbiArguments(parameters).forEach { argument ->
+                    add(", %L", argument)
+                }
+            }
+            .add(").getOrThrow()\n")
             .build()
     }
 
-    private fun buildVectorSetAtFunction(context: VectorProjectionContext): FunSpec {
-        return FunSpec.builder("setAt")
-            .addParameter("index", PoetSymbols.uint32Class)
-            .addParameter("value", context.elementTypeName)
-            .addStatement(
-                "%T.invokeUnitMethodWithArgs(pointer, %L, index.value, projectedGenericArgument(value, genericArg0Signature, genericArg0ProjectionTypeKey)).getOrThrow()",
-                PoetSymbols.platformComInteropClass,
-                methodSlot(context.type, "SetAt", 10),
-            )
-            .build()
+    private fun vectorRemoveAtBody(
+        context: VectorProjectionContext,
+        slotName: String,
+        defaultSlot: Int,
+    ): CodeBlock {
+        return CodeBlock.of(
+            "%T.invokeUnitMethodWithUInt32Arg(pointer, %L, index.value).getOrThrow()\n",
+            PoetSymbols.platformComInteropClass,
+            methodSlot(context.type, slotName, defaultSlot),
+        )
     }
 
-    private fun buildVectorInsertAtFunction(context: VectorProjectionContext): FunSpec {
-        return FunSpec.builder("insertAt")
-            .addParameter("index", PoetSymbols.uint32Class)
-            .addParameter("value", context.elementTypeName)
-            .addStatement(
-                "%T.invokeUnitMethodWithArgs(pointer, %L, index.value, projectedGenericArgument(value, genericArg0Signature, genericArg0ProjectionTypeKey)).getOrThrow()",
-                PoetSymbols.platformComInteropClass,
-                methodSlot(context.type, "InsertAt", 11),
-            )
-            .build()
+    private fun unitBody(
+        type: WinMdType,
+        slotName: String,
+        defaultSlot: Int,
+    ): CodeBlock {
+        return CodeBlock.of(
+            "%T.invokeUnitMethod(pointer, %L).getOrThrow()\n",
+            PoetSymbols.platformComInteropClass,
+            methodSlot(type, slotName, defaultSlot),
+        )
     }
 
-    private fun buildVectorRemoveAtFunction(context: VectorProjectionContext): FunSpec {
-        return FunSpec.builder("removeAt")
-            .addParameter("index", PoetSymbols.uint32Class)
-            .addStatement(
-                "%T.invokeUnitMethodWithUInt32Arg(pointer, %L, index.value).getOrThrow()",
-                PoetSymbols.platformComInteropClass,
-                methodSlot(context.type, "RemoveAt", 12),
-            )
-            .build()
+    private fun mapAbiArguments(parameters: List<MapParameter>): List<CodeBlock> {
+        return parameters.map { parameter ->
+            when (parameter) {
+                MapParameter.KEY -> CodeBlock.of(
+                    "projectedGenericArgument(key, genericArg0Signature, genericArg0ProjectionTypeKey)",
+                )
+                MapParameter.VALUE -> CodeBlock.of(
+                    "projectedGenericArgument(value, genericArg1Signature, genericArg1ProjectionTypeKey)",
+                )
+            }
+        }
     }
 
-    private fun buildVectorAppendFunction(context: VectorProjectionContext): FunSpec {
-        return FunSpec.builder("append")
-            .addParameter("value", context.elementTypeName)
-            .addStatement(
-                "%T.invokeUnitMethodWithArgs(pointer, %L, projectedGenericArgument(value, genericArg0Signature, genericArg0ProjectionTypeKey)).getOrThrow()",
-                PoetSymbols.platformComInteropClass,
-                methodSlot(context.type, "Append", 13),
-            )
-            .build()
-    }
-
-    private fun buildVectorRemoveAtEndFunction(context: VectorProjectionContext): FunSpec {
-        return FunSpec.builder("removeAtEnd")
-            .addStatement(
-                "%T.invokeUnitMethod(pointer, %L).getOrThrow()",
-                PoetSymbols.platformComInteropClass,
-                methodSlot(context.type, "RemoveAtEnd", 14),
-            )
-            .build()
-    }
-
-    private fun buildVectorClearFunction(context: VectorProjectionContext): FunSpec {
-        return FunSpec.builder("clear")
-            .addStatement(
-                "%T.invokeUnitMethod(pointer, %L).getOrThrow()",
-                PoetSymbols.platformComInteropClass,
-                methodSlot(context.type, "Clear", 15),
-            )
-            .build()
+    private fun vectorAbiArguments(parameters: List<VectorParameter>): List<CodeBlock> {
+        return parameters.map { parameter ->
+            when (parameter) {
+                VectorParameter.INDEX -> CodeBlock.of("index.value")
+                VectorParameter.VALUE -> CodeBlock.of(
+                    "projectedGenericArgument(value, genericArg0Signature, genericArg0ProjectionTypeKey)",
+                )
+            }
+        }
     }
 
     private data class ProjectionDelegateArgument<C>(
         val name: String,
         val expression: (C) -> CodeBlock,
     )
+
+    private data class ProjectionOperation<C>(
+        val name: String,
+        val modifiers: List<KModifier> = emptyList(),
+        val parameters: (C) -> List<ParameterSpec> = { emptyList() },
+        val returnType: ((C) -> TypeName)? = null,
+        val body: (C) -> CodeBlock,
+    )
+
+    private enum class MapParameter(
+        val parameterName: String,
+    ) {
+        KEY("key"),
+        VALUE("value"),
+        ;
+
+        fun typeName(context: MapProjectionContext): TypeName {
+            return when (this) {
+                KEY -> context.keyTypeName
+                VALUE -> context.valueTypeName
+            }
+        }
+    }
 
     private data class MapProjectionContext(
         val type: WinMdType,
@@ -724,8 +897,23 @@ internal class KotlinCollectionProjectionMapper {
         val superinterface: (MapProjectionContext) -> TypeName,
         val delegateProjection: (MapProjectionContext) -> TypeName,
         val delegateArguments: List<ProjectionDelegateArgument<MapProjectionContext>>,
-        val methodBuilders: List<(MapProjectionContext) -> FunSpec>,
+        val operations: List<ProjectionOperation<MapProjectionContext>>,
     )
+
+    private enum class VectorParameter(
+        val parameterName: String,
+    ) {
+        INDEX("index"),
+        VALUE("value"),
+        ;
+
+        fun typeName(context: VectorProjectionContext): TypeName {
+            return when (this) {
+                INDEX -> PoetSymbols.uint32Class
+                VALUE -> context.elementTypeName
+            }
+        }
+    }
 
     private data class VectorProjectionContext(
         val type: WinMdType,
@@ -738,7 +926,7 @@ internal class KotlinCollectionProjectionMapper {
         val superinterface: (VectorProjectionContext) -> TypeName,
         val delegateProjection: (VectorProjectionContext) -> TypeName,
         val delegateArguments: List<ProjectionDelegateArgument<VectorProjectionContext>>,
-        val methodBuilders: List<(VectorProjectionContext) -> FunSpec>,
+        val operations: List<ProjectionOperation<VectorProjectionContext>>,
     )
 
     fun buildWinRtSizeProperty(slot: Int): PropertySpec {
