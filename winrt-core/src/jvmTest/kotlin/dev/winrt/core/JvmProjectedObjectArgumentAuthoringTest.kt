@@ -470,6 +470,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
             assertEquals("dark", value.toKotlinString())
         }
         assertBoundsFailure(PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 6, "accent"))
+        assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 11, "accent"))
 
         assertTrue(
             PlatformComInterop.invokeMethodWithResultKind(

@@ -1226,6 +1226,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             retainedChildren += viewHandle
             viewHandle.pointer.withAddRef()
         }
+        val removeMethod: (String) -> HResult = { key -> removeStringKeyedMapEntry(map, key) }
         val splitMethod = mapViewSplitMethod(
             map = map,
             projectionTypeKey = ProjectionTypeKey("kotlin.collections.Map", listOf(keyProjectionTypeKey, valueProjectionTypeKey)),
@@ -1244,12 +1245,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgObjectMethods = mapOf(
                     9 to getViewMethod,
                 ),
-                stringArgUnitMethods = mapOf(
-                    11 to { key ->
-                        map.remove(key)
-                        HResult(0)
-                    },
-                ),
+                stringArgUnitMethods = mapOf(11 to removeMethod),
                 stringArgHStringMethods = mapOf(
                     6 to {
                         val result = lookupValue(it)
@@ -1278,12 +1274,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgObjectMethods = mapOf(
                     9 to getViewMethod,
                 ),
-                stringArgUnitMethods = mapOf(
-                    11 to { key ->
-                        map.remove(key)
-                        HResult(0)
-                    },
-                ),
+                stringArgUnitMethods = mapOf(11 to removeMethod),
                 stringArgBooleanMethods = mapOf(
                     6 to { key -> marshalPrimitiveBooleanValue(lookupValue(key)) },
                     8 to { key -> map.containsKey(key) },
@@ -1308,12 +1299,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgObjectMethods = mapOf(
                     9 to getViewMethod,
                 ),
-                stringArgUnitMethods = mapOf(
-                    11 to { key ->
-                        map.remove(key)
-                        HResult(0)
-                    },
-                ),
+                stringArgUnitMethods = mapOf(11 to removeMethod),
                 stringArgInt32Methods = mapOf(6 to { key -> marshalPrimitiveInt32Value(lookupValue(key)) }),
                 stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
                 stringInt32ArgBooleanMethods = mapOf(
@@ -1336,12 +1322,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgObjectMethods = mapOf(
                     9 to getViewMethod,
                 ),
-                stringArgUnitMethods = mapOf(
-                    11 to { key ->
-                        map.remove(key)
-                        HResult(0)
-                    },
-                ),
+                stringArgUnitMethods = mapOf(11 to removeMethod),
                 stringArgUInt32Methods = mapOf(6 to { key -> marshalPrimitiveUInt32Value(lookupValue(key)) }),
                 stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
                 stringUInt32ArgBooleanMethods = mapOf(
@@ -1364,12 +1345,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgObjectMethods = mapOf(
                     9 to getViewMethod,
                 ),
-                stringArgUnitMethods = mapOf(
-                    11 to { key ->
-                        map.remove(key)
-                        HResult(0)
-                    },
-                ),
+                stringArgUnitMethods = mapOf(11 to removeMethod),
                 stringArgInt64Methods = mapOf(6 to { key -> marshalPrimitiveInt64Value(lookupValue(key)) }),
                 stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
                 stringInt64ArgBooleanMethods = mapOf(
@@ -1392,12 +1368,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgObjectMethods = mapOf(
                     9 to getViewMethod,
                 ),
-                stringArgUnitMethods = mapOf(
-                    11 to { key ->
-                        map.remove(key)
-                        HResult(0)
-                    },
-                ),
+                stringArgUnitMethods = mapOf(11 to removeMethod),
                 stringArgUInt64Methods = mapOf(6 to { key -> marshalPrimitiveUInt64Value(lookupValue(key)) }),
                 stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
                 stringUInt64ArgBooleanMethods = mapOf(
@@ -1420,12 +1391,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgObjectMethods = mapOf(
                     9 to getViewMethod,
                 ),
-                stringArgUnitMethods = mapOf(
-                    11 to { key ->
-                        map.remove(key)
-                        HResult(0)
-                    },
-                ),
+                stringArgUnitMethods = mapOf(11 to removeMethod),
                 stringArgFloat32Methods = mapOf(6 to { key -> marshalPrimitiveFloat32Value(lookupValue(key)) }),
                 stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
                 stringFloat32ArgBooleanMethods = mapOf(
@@ -1448,12 +1414,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgObjectMethods = mapOf(
                     9 to getViewMethod,
                 ),
-                stringArgUnitMethods = mapOf(
-                    11 to { key ->
-                        map.remove(key)
-                        HResult(0)
-                    },
-                ),
+                stringArgUnitMethods = mapOf(11 to removeMethod),
                 stringArgFloat64Methods = mapOf(6 to { key -> marshalPrimitiveFloat64Value(lookupValue(key)) }),
                 stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
                 stringFloat64ArgBooleanMethods = mapOf(
@@ -1476,12 +1437,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgObjectMethods = mapOf(
                     9 to getViewMethod,
                 ),
-                stringArgUnitMethods = mapOf(
-                    11 to { key ->
-                        map.remove(key)
-                        HResult(0)
-                    },
-                ),
+                stringArgUnitMethods = mapOf(11 to removeMethod),
                 stringArgObjectMethods = mapOf(
                     6 to { key ->
                         marshalObjectResultPointer(
@@ -2016,6 +1972,14 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             }
             createPartitionPointer(firstPartition) to createPartitionPointer(secondPartition)
         }
+    }
+
+    private fun removeStringKeyedMapEntry(map: MutableMap<String, Any?>, key: String): HResult {
+        if (!map.containsKey(key)) {
+            return KnownHResults.E_BOUNDS
+        }
+        map.remove(key)
+        return HResult(0)
     }
 
     private fun primitiveIndexOf(list: List<*>, primitiveKind: PrimitiveAbiKind, value: Any): Int {
