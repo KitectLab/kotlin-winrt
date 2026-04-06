@@ -49,6 +49,27 @@ class JvmProjectedObjectArgumentAuthoringTest {
         val unwrap: (Any?) -> T,
     )
 
+    private fun invokeStringKeyedMapIterator(pointer: ComPtr, valueSignature: String): ComPtr {
+        val iterablePointer = PlatformComInterop.queryInterface(
+            pointer,
+            ParameterizedInterfaceId.createFromSignature(
+                WinRtTypeSignature.parameterizedInterface(
+                    "faa585ea-6214-4217-afda-7f46de5869b3",
+                    WinRtTypeSignature.parameterizedInterface(
+                        "02b51929-c1c4-4a7e-8940-0312b5c18500",
+                        WinRtTypeSignature.string(),
+                        valueSignature,
+                    ),
+                ),
+            ),
+        ).getOrThrow()
+        try {
+            return PlatformComInterop.invokeObjectMethod(iterablePointer, 6).getOrThrow()
+        } finally {
+            PlatformComInterop.release(iterablePointer)
+        }
+    }
+
     private fun <T : Any> assertPrimitiveVectorViewCase(case: PrimitiveVectorCase<T>) {
         val pointer = projectedObjectArgumentPointer(
             value = case.initial,
@@ -133,11 +154,11 @@ class JvmProjectedObjectArgumentAuthoringTest {
         )
 
         assertFalse(pointer.isNull)
-        assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
-        assertTrue(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 9, "accent").getOrThrow())
+        assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow())
+        assertTrue(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 8, "accent").getOrThrow())
         assertEquals(case.second, case.lookup(pointer, "accent"))
 
-        val iterator = PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()
+        val iterator = invokeStringKeyedMapIterator(pointer, case.signature)
         try {
             val current = PlatformComInterop.invokeObjectMethod(iterator, 6).getOrThrow()
             try {
@@ -166,14 +187,14 @@ class JvmProjectedObjectArgumentAuthoringTest {
         )
 
         assertFalse(pointer.isNull)
-        assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
-        assertTrue(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 9, "accent").getOrThrow())
+        assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow())
+        assertTrue(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 8, "accent").getOrThrow())
         assertEquals(case.second, case.lookup(pointer, "accent"))
 
         assertTrue(
             PlatformComInterop.invokeMethodWithResultKind(
                 pointer,
-                11,
+                10,
                 ComMethodResultKind.BOOLEAN,
                 "accent",
                 case.replacement,
@@ -184,7 +205,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
         assertFalse(
             PlatformComInterop.invokeMethodWithResultKind(
                 pointer,
-                11,
+                10,
                 ComMethodResultKind.BOOLEAN,
                 "language",
                 case.inserted,
@@ -192,18 +213,18 @@ class JvmProjectedObjectArgumentAuthoringTest {
         )
         assertEquals(case.inserted, case.unwrap(values.getValue("language")))
 
-        val view = PlatformComInterop.invokeObjectMethod(pointer, 10).getOrThrow()
+        val view = PlatformComInterop.invokeObjectMethod(pointer, 9).getOrThrow()
         try {
-            assertEquals(3u, PlatformComInterop.invokeUInt32Method(view, 8).getOrThrow())
+            assertEquals(3u, PlatformComInterop.invokeUInt32Method(view, 7).getOrThrow())
             assertEquals(case.inserted, case.lookup(view, "language"))
         } finally {
             PlatformComInterop.release(view)
         }
 
-        PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 12, "theme").getOrThrow()
+        PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 11, "theme").getOrThrow()
         assertFalse(values.containsKey("theme"))
 
-        PlatformComInterop.invokeUnitMethod(pointer, 13).getOrThrow()
+        PlatformComInterop.invokeUnitMethod(pointer, 12).getOrThrow()
         assertTrue(values.isEmpty())
     }
 
@@ -362,31 +383,17 @@ class JvmProjectedObjectArgumentAuthoringTest {
             )
 
             assertFalse(pointer.isNull)
-            assertEquals(1u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
-            assertTrue(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 9, "theme").getOrThrow())
-            val iterablePointer = PlatformComInterop.queryInterface(
-                pointer,
-                ParameterizedInterfaceId.createFromSignature(
-                    WinRtTypeSignature.parameterizedInterface(
-                        "faa585ea-6214-4217-afda-7f46de5869b3",
-                        WinRtTypeSignature.parameterizedInterface(
-                            "02b51929-c1c4-4a7e-8940-0312b5c18500",
-                            WinRtTypeSignature.string(),
-                            WinRtTypeSignature.object_(),
-                        ),
-                    ),
-                ),
-            ).getOrThrow()
-            PlatformComInterop.release(iterablePointer)
+            assertEquals(1u, PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow())
+            assertTrue(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 8, "theme").getOrThrow())
 
-            val lookup = PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 7, "theme").getOrThrow()
+            val lookup = PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 6, "theme").getOrThrow()
             try {
                 assertEquals(valueStub.primaryPointer.value.rawValue, lookup.value.rawValue)
             } finally {
                 PlatformComInterop.release(lookup)
             }
 
-            val iterator = PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()
+            val iterator = invokeStringKeyedMapIterator(pointer, WinRtTypeSignature.object_())
             try {
                 val current = PlatformComInterop.invokeObjectMethod(iterator, 6).getOrThrow()
                 try {
@@ -422,16 +429,16 @@ class JvmProjectedObjectArgumentAuthoringTest {
         )
 
         assertFalse(pointer.isNull)
-        assertEquals(1u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
-        assertTrue(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 9, "theme").getOrThrow())
-        PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 7, "theme").getOrThrow().use { value ->
+        assertEquals(1u, PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow())
+        assertTrue(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 8, "theme").getOrThrow())
+        PlatformComInterop.invokeHStringMethodWithStringArg(pointer, 6, "theme").getOrThrow().use { value ->
             assertEquals("dark", value.toKotlinString())
         }
 
         assertTrue(
             PlatformComInterop.invokeMethodWithResultKind(
                 pointer,
-                11,
+                10,
                 ComMethodResultKind.BOOLEAN,
                 "theme",
                 "light",
@@ -442,7 +449,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
         assertFalse(
             PlatformComInterop.invokeMethodWithResultKind(
                 pointer,
-                11,
+                10,
                 ComMethodResultKind.BOOLEAN,
                 "accent",
                 "blue",
@@ -461,15 +468,15 @@ class JvmProjectedObjectArgumentAuthoringTest {
             ),
         ).getOrThrow()
         try {
-            assertEquals(2u, PlatformComInterop.invokeUInt32Method(mapViewPointer, 8).getOrThrow())
+            assertEquals(2u, PlatformComInterop.invokeUInt32Method(mapViewPointer, 7).getOrThrow())
         } finally {
             PlatformComInterop.release(mapViewPointer)
         }
 
-        PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 12, "theme").getOrThrow()
+        PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 11, "theme").getOrThrow()
         assertFalse(values.containsKey("theme"))
 
-        PlatformComInterop.invokeUnitMethod(pointer, 13).getOrThrow()
+        PlatformComInterop.invokeUnitMethod(pointer, 12).getOrThrow()
         assertTrue(values.isEmpty())
     }
 
@@ -495,10 +502,10 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 )
 
                 assertFalse(pointer.isNull)
-                assertEquals(1u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
-                assertTrue(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 9, "theme").getOrThrow())
+                assertEquals(1u, PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow())
+                assertTrue(PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 8, "theme").getOrThrow())
 
-                val lookup = PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 7, "theme").getOrThrow()
+                val lookup = PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 6, "theme").getOrThrow()
                 try {
                     assertEquals(firstStub.primaryPointer.value.rawValue, lookup.value.rawValue)
                 } finally {
@@ -508,7 +515,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 assertTrue(
                     PlatformComInterop.invokeMethodWithResultKind(
                         pointer,
-                        11,
+                        10,
                         ComMethodResultKind.BOOLEAN,
                         "theme",
                         secondStub.primaryPointer,
@@ -527,15 +534,15 @@ class JvmProjectedObjectArgumentAuthoringTest {
                     ),
                 ).getOrThrow()
                 try {
-                    assertEquals(1u, PlatformComInterop.invokeUInt32Method(mapViewPointer, 8).getOrThrow())
+                    assertEquals(1u, PlatformComInterop.invokeUInt32Method(mapViewPointer, 7).getOrThrow())
                 } finally {
                     PlatformComInterop.release(mapViewPointer)
                 }
 
-                PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 12, "theme").getOrThrow()
+                PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 11, "theme").getOrThrow()
                 assertFalse(values.containsKey("theme"))
 
-                PlatformComInterop.invokeUnitMethod(pointer, 13).getOrThrow()
+                PlatformComInterop.invokeUnitMethod(pointer, 12).getOrThrow()
                 assertTrue(values.isEmpty())
             }
         }
@@ -553,7 +560,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 second = true,
                 replacement = true,
                 inserted = false,
-                lookup = { pointer, key -> PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 7, key).getOrThrow() },
+                lookup = { pointer, key -> PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 6, key).getOrThrow() },
                 currentValue = { pointer -> PlatformComInterop.invokeBooleanGetter(pointer, 7).getOrThrow() },
                 unwrap = { value -> (value as WinRtBoolean).value },
             ),
@@ -568,7 +575,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 second = 2,
                 replacement = 7,
                 inserted = 9,
-                lookup = { pointer, key -> PlatformComInterop.invokeInt32MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                lookup = { pointer, key -> PlatformComInterop.invokeInt32MethodWithStringArg(pointer, 6, key).getOrThrow() },
                 currentValue = { pointer -> PlatformComInterop.invokeInt32Method(pointer, 7).getOrThrow() },
                 unwrap = { value -> (value as Int32).value },
             ),
@@ -583,7 +590,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 second = 2u,
                 replacement = 7u,
                 inserted = 9u,
-                lookup = { pointer, key -> PlatformComInterop.invokeUInt32MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                lookup = { pointer, key -> PlatformComInterop.invokeUInt32MethodWithStringArg(pointer, 6, key).getOrThrow() },
                 currentValue = { pointer -> PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow() },
                 unwrap = { value -> (value as UInt32).value },
             ),
@@ -598,7 +605,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 second = 2L,
                 replacement = 7L,
                 inserted = 9L,
-                lookup = { pointer, key -> PlatformComInterop.invokeInt64MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                lookup = { pointer, key -> PlatformComInterop.invokeInt64MethodWithStringArg(pointer, 6, key).getOrThrow() },
                 currentValue = { pointer -> PlatformComInterop.invokeInt64Method(pointer, 7).getOrThrow() },
                 unwrap = { value -> (value as Int64).value },
             ),
@@ -613,7 +620,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 second = 2uL,
                 replacement = 7uL,
                 inserted = 9uL,
-                lookup = { pointer, key -> PlatformComInterop.invokeUInt64MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                lookup = { pointer, key -> PlatformComInterop.invokeUInt64MethodWithStringArg(pointer, 6, key).getOrThrow() },
                 currentValue = { pointer -> PlatformComInterop.invokeUInt64Method(pointer, 7).getOrThrow() },
                 unwrap = { value -> (value as UInt64).value },
             ),
@@ -628,7 +635,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 second = 2.5f,
                 replacement = 7.5f,
                 inserted = 9.5f,
-                lookup = { pointer, key -> PlatformComInterop.invokeFloat32MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                lookup = { pointer, key -> PlatformComInterop.invokeFloat32MethodWithStringArg(pointer, 6, key).getOrThrow() },
                 currentValue = { pointer -> PlatformComInterop.invokeFloat32Method(pointer, 7).getOrThrow() },
                 unwrap = { value -> (value as Float32).value },
             ),
@@ -643,7 +650,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 second = 2.5,
                 replacement = 7.5,
                 inserted = 9.5,
-                lookup = { pointer, key -> PlatformComInterop.invokeFloat64MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                lookup = { pointer, key -> PlatformComInterop.invokeFloat64MethodWithStringArg(pointer, 6, key).getOrThrow() },
                 currentValue = { pointer -> PlatformComInterop.invokeFloat64Method(pointer, 7).getOrThrow() },
                 unwrap = { value -> (value as Float64).value },
             ),
@@ -662,7 +669,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 second = true,
                 replacement = true,
                 inserted = false,
-                lookup = { pointer, key -> PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 7, key).getOrThrow() },
+                lookup = { pointer, key -> PlatformComInterop.invokeBooleanMethodWithStringArg(pointer, 6, key).getOrThrow() },
                 currentValue = { pointer -> PlatformComInterop.invokeBooleanGetter(pointer, 7).getOrThrow() },
                 unwrap = { value -> (value as WinRtBoolean).value },
             ),
@@ -677,7 +684,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 second = 2,
                 replacement = 7,
                 inserted = 9,
-                lookup = { pointer, key -> PlatformComInterop.invokeInt32MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                lookup = { pointer, key -> PlatformComInterop.invokeInt32MethodWithStringArg(pointer, 6, key).getOrThrow() },
                 currentValue = { pointer -> PlatformComInterop.invokeInt32Method(pointer, 7).getOrThrow() },
                 unwrap = { value -> (value as Int32).value },
             ),
@@ -692,7 +699,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 second = 2u,
                 replacement = 7u,
                 inserted = 9u,
-                lookup = { pointer, key -> PlatformComInterop.invokeUInt32MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                lookup = { pointer, key -> PlatformComInterop.invokeUInt32MethodWithStringArg(pointer, 6, key).getOrThrow() },
                 currentValue = { pointer -> PlatformComInterop.invokeUInt32Method(pointer, 7).getOrThrow() },
                 unwrap = { value -> (value as UInt32).value },
             ),
@@ -707,7 +714,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 second = 2L,
                 replacement = 7L,
                 inserted = 9L,
-                lookup = { pointer, key -> PlatformComInterop.invokeInt64MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                lookup = { pointer, key -> PlatformComInterop.invokeInt64MethodWithStringArg(pointer, 6, key).getOrThrow() },
                 currentValue = { pointer -> PlatformComInterop.invokeInt64Method(pointer, 7).getOrThrow() },
                 unwrap = { value -> (value as Int64).value },
             ),
@@ -722,7 +729,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 second = 2uL,
                 replacement = 7uL,
                 inserted = 9uL,
-                lookup = { pointer, key -> PlatformComInterop.invokeUInt64MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                lookup = { pointer, key -> PlatformComInterop.invokeUInt64MethodWithStringArg(pointer, 6, key).getOrThrow() },
                 currentValue = { pointer -> PlatformComInterop.invokeUInt64Method(pointer, 7).getOrThrow() },
                 unwrap = { value -> (value as UInt64).value },
             ),
@@ -737,7 +744,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 second = 2.5f,
                 replacement = 7.5f,
                 inserted = 9.5f,
-                lookup = { pointer, key -> PlatformComInterop.invokeFloat32MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                lookup = { pointer, key -> PlatformComInterop.invokeFloat32MethodWithStringArg(pointer, 6, key).getOrThrow() },
                 currentValue = { pointer -> PlatformComInterop.invokeFloat32Method(pointer, 7).getOrThrow() },
                 unwrap = { value -> (value as Float32).value },
             ),
@@ -752,7 +759,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 second = 2.5,
                 replacement = 7.5,
                 inserted = 9.5,
-                lookup = { pointer, key -> PlatformComInterop.invokeFloat64MethodWithStringArg(pointer, 7, key).getOrThrow() },
+                lookup = { pointer, key -> PlatformComInterop.invokeFloat64MethodWithStringArg(pointer, 6, key).getOrThrow() },
                 currentValue = { pointer -> PlatformComInterop.invokeFloat64Method(pointer, 7).getOrThrow() },
                 unwrap = { value -> (value as Float64).value },
             ),
@@ -856,7 +863,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 assertTrue(
                     PlatformComInterop.invokeMethodWithResultKind(
                         pointer,
-                        11,
+                        10,
                         ComMethodResultKind.BOOLEAN,
                         "theme",
                         replacementStub.primaryPointer,
@@ -904,7 +911,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 assertTrue(
                     PlatformComInterop.invokeMethodWithResultKind(
                         pointer,
-                        11,
+                        10,
                         ComMethodResultKind.BOOLEAN,
                         "job",
                         replacementStub.primaryPointer,
