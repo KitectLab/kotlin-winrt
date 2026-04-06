@@ -688,6 +688,17 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             )
         }
 
+        fun addNoArgValueMethod(
+            baseSpec: JvmWinRtObjectStub.InterfaceSpec,
+            slot: Int,
+            valueProvider: () -> Any?,
+        ): JvmWinRtObjectStub.InterfaceSpec {
+            return bindNoArgValueMethods(
+                baseSpec,
+                mapOf(slot to { marshalValue(valueProvider()) }),
+            )
+        }
+
         fun iteratorInterfaceSpec(
             signature: AbiValueSignature.ParameterizedInterface,
             state: IteratorState,
@@ -1231,7 +1242,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         val valueProjectionTypeKey = projectionTypeKey.arguments.getOrNull(1) ?: inferProjectionTypeKey(valueSignature)
         val valuePrimitiveKind = primitiveAbiKind(valueSignature)
         val retainedChildren = mutableListOf<AutoCloseable>()
-        val interfaceSpec = JvmWinRtObjectStub.InterfaceSpec(
+        val baseInterfaceSpec = JvmWinRtObjectStub.InterfaceSpec(
             iid = signature.iid,
             noArgObjectMethods = buildMap {
                 if (keySignature !is AbiValueSignature.StringType) {
@@ -1261,41 +1272,6 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                     )
                 }
             },
-            noArgBooleanMethods = buildMap {
-                if (valuePrimitiveKind == PrimitiveAbiKind.BOOLEAN) {
-                    put(7) { marshalPrimitiveBooleanValue(entry.value) }
-                }
-            },
-            noArgInt32Methods = buildMap {
-                if (valuePrimitiveKind == PrimitiveAbiKind.INT32) {
-                    put(7) { marshalPrimitiveInt32Value(entry.value) }
-                }
-            },
-            noArgUInt32Methods = buildMap {
-                if (valuePrimitiveKind == PrimitiveAbiKind.UINT32) {
-                    put(7) { marshalPrimitiveUInt32Value(entry.value) }
-                }
-            },
-            noArgInt64Methods = buildMap {
-                if (valuePrimitiveKind == PrimitiveAbiKind.INT64) {
-                    put(7) { marshalPrimitiveInt64Value(entry.value) }
-                }
-            },
-            noArgUInt64Methods = buildMap {
-                if (valuePrimitiveKind == PrimitiveAbiKind.UINT64) {
-                    put(7) { marshalPrimitiveUInt64Value(entry.value) }
-                }
-            },
-            noArgFloat32Methods = buildMap {
-                if (valuePrimitiveKind == PrimitiveAbiKind.FLOAT32) {
-                    put(7) { marshalPrimitiveFloat32Value(entry.value) }
-                }
-            },
-            noArgFloat64Methods = buildMap {
-                if (valuePrimitiveKind == PrimitiveAbiKind.FLOAT64) {
-                    put(7) { marshalPrimitiveFloat64Value(entry.value) }
-                }
-            },
             noArgHStringMethods = buildMap {
                 if (keySignature is AbiValueSignature.StringType) {
                     put(
@@ -1317,6 +1293,14 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 }
             },
         )
+        val interfaceSpec = when {
+            valuePrimitiveKind != null -> primitiveSlotBinder(valuePrimitiveKind).addNoArgValueMethod(
+                baseSpec = baseInterfaceSpec,
+                slot = 7,
+                valueProvider = { entry.value },
+            )
+            else -> baseInterfaceSpec
+        }
         val stub = JvmWinRtObjectStub.create(interfaceSpec)
         return ProjectedObjectHandle(stub, retainedChildren)
     }
