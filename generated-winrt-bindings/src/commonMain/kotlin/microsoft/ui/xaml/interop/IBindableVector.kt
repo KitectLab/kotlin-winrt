@@ -2,16 +2,13 @@ package microsoft.ui.xaml.interop
 
 import dev.winrt.core.Inspectable
 import dev.winrt.core.UInt32
-import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.guidOf
 import dev.winrt.core.projectInterface
 import dev.winrt.core.projectedObjectArgumentPointer
-import dev.winrt.kom.ComMethodResultKind
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
-import dev.winrt.kom.requireBoolean
 import dev.winrt.projection.WinRtMutableListProjection
 import kotlin.String
 import kotlin.collections.MutableList
@@ -40,10 +37,11 @@ public open class IBindableVector(
       IBindableVectorView.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer,
       9).getOrThrow()))
 
-  public fun indexOf(value: Inspectable, index: UInt32): WinRtBoolean =
-      WinRtBoolean(PlatformComInterop.invokeMethodWithObjectAndUInt32Args(pointer, 10,
-      ComMethodResultKind.BOOLEAN, projectedObjectArgumentPointer(value, "Object",
-      "cinterface(IInspectable)"), index.value).getOrThrow().requireBoolean())
+  public fun winRtIndexOf(value: Inspectable): UInt32? {
+    val (found, index) = PlatformComInterop.invokeIndexOfMethod(pointer, 10,
+        projectedObjectArgumentPointer(value, "Object", "cinterface(IInspectable)")).getOrThrow()
+    return if (found) UInt32(index) else null
+  }
 
   public fun setAt(index: UInt32, value: Inspectable) {
     PlatformComInterop.invokeUnitMethodWithUInt32AndObjectArgs(pointer, 11, index.value,

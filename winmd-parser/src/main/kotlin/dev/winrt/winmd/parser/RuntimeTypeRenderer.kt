@@ -842,11 +842,7 @@ internal class RuntimeTypeRenderer(
     }
 
     private fun renderedRuntimeMethodName(method: WinMdMethod): String {
-        return if (method.name == "ToString" && method.returnType == "String" && method.parameters.isEmpty()) {
-            "toString"
-        } else {
-            method.name.replaceFirstChar(Char::lowercase)
-        }
+        return projectedMethodName(method)
     }
 
     private fun isIterableProjectionInterface(interfaceName: String): Boolean {

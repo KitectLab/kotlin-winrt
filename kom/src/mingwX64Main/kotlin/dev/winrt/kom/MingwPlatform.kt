@@ -492,6 +492,16 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeIndexOfMethod(
+        instance: ComPtr,
+        vtableIndex: Int,
+        vararg arguments: Any,
+    ): Result<Pair<Boolean, UInt>> {
+        return Result.failure(
+            UnsupportedOperationException("Native IndexOf invocation is not wired yet"),
+        )
+    }
+
     override fun invokeComposableMethod(
         instance: ComPtr,
         vtableIndex: Int,

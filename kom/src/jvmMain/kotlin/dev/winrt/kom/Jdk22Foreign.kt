@@ -103,6 +103,16 @@ internal object Jdk22Foreign {
         ),
     )
 
+    fun methodWithArgumentsAndTwoOutHandles(arguments: List<MemoryLayout>): MethodHandle = downcallHandle(
+        FunctionDescriptor.of(
+            intLayout,
+            addressLayout,
+            *arguments.toTypedArray(),
+            addressLayout,
+            addressLayout,
+        ),
+    )
+
     fun composableMethodWithArgumentsHandle(arguments: List<MemoryLayout>): MethodHandle = downcallHandle(
         FunctionDescriptor.of(
             intLayout,

@@ -5,13 +5,10 @@ import dev.winrt.core.RuntimeClassId
 import dev.winrt.core.RuntimeProperty
 import dev.winrt.core.UInt32
 import dev.winrt.core.WinRtActivationKind
-import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.core.projectedObjectArgumentPointer
-import dev.winrt.kom.ComMethodResultKind
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
-import dev.winrt.kom.requireBoolean
 import kotlin.String
 import kotlin.collections.Iterator
 import microsoft.ui.xaml.UIElement
@@ -46,15 +43,14 @@ public open class UIElementCollection(
         9).getOrThrow()))
   }
 
-  public fun indexOf(value: UIElement, index: UInt32): WinRtBoolean {
+  public fun winRtIndexOf(value: UIElement): UInt32? {
     if (pointer.isNull) {
-      return WinRtBoolean.FALSE
+      return null
     }
-    return WinRtBoolean(PlatformComInterop.invokeMethodWithObjectAndUInt32Args(pointer, 10,
-        ComMethodResultKind.BOOLEAN, projectedObjectArgumentPointer(value,
-        "Microsoft.UI.Xaml.UIElement",
-        "rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b})"),
-        index.value).getOrThrow().requireBoolean())
+    val (found, index) = PlatformComInterop.invokeIndexOfMethod(pointer, 10,
+        projectedObjectArgumentPointer(value, "Microsoft.UI.Xaml.UIElement",
+        "rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b})")).getOrThrow()
+    return if (found) UInt32(index) else null
   }
 
   public fun setAt(index: UInt32, value: UIElement) {

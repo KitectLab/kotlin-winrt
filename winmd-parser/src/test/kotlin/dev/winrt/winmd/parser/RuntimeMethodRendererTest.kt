@@ -125,6 +125,46 @@ class RuntimeMethodRendererTest {
     }
 
     @Test
+    fun renders_runtime_index_of_out_uint32_methods_as_nullable_uint32_helpers() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Collections",
+                            name = "StringLookup",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "IndexOf",
+                                    returnType = "Boolean",
+                                    vtableIndex = 6,
+                                    parameters = listOf(
+                                        WinMdParameter("value", "String"),
+                                        WinMdParameter("index", "UInt32", byRef = true, isOut = true),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Example/Collections/StringLookup.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("funwinRtIndexOf(value:String):UInt32?"))
+        assertTrue(binding.contains("if(pointer.isNull){returnnull}"))
+        assertTrue(binding.contains("invokeIndexOfMethod(pointer,6,value).getOrThrow()"))
+        assertTrue(binding.contains("returnif(found)UInt32(index)elsenull"))
+    }
+
+    @Test
     fun renders_runtime_int32_pass_array_methods_with_count_and_buffer_arguments() {
         val model = WinMdModel(
             files = emptyList(),

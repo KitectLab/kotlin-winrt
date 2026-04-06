@@ -132,6 +132,11 @@ interface ComInterop {
         resultKind: ComMethodResultKind,
         vararg arguments: Any,
     ): Result<ComMethodResult>
+    fun invokeIndexOfMethod(
+        instance: ComPtr,
+        vtableIndex: Int,
+        vararg arguments: Any,
+    ): Result<Pair<Boolean, UInt>>
     fun invokeComposableMethod(
         instance: ComPtr,
         vtableIndex: Int,

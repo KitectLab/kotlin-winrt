@@ -5,14 +5,11 @@ import dev.winrt.core.RuntimeClassId
 import dev.winrt.core.RuntimeProperty
 import dev.winrt.core.UInt32
 import dev.winrt.core.WinRtActivationKind
-import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.core.projectedObjectArgumentPointer
-import dev.winrt.kom.ComMethodResultKind
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
-import dev.winrt.kom.requireBoolean
 import kotlin.String
 import kotlin.collections.Iterator
 
@@ -55,14 +52,14 @@ public open class WwwFormUrlDecoder(
         7, index.value).getOrThrow()))
   }
 
-  override fun indexOf(value: IWwwFormUrlDecoderEntry, index: UInt32): WinRtBoolean {
+  override fun winRtIndexOf(value: IWwwFormUrlDecoderEntry): UInt32? {
     if (pointer.isNull) {
-      return WinRtBoolean.FALSE
+      return null
     }
-    return WinRtBoolean(PlatformComInterop.invokeMethodWithObjectAndUInt32Args(pointer, 9,
-        ComMethodResultKind.BOOLEAN, projectedObjectArgumentPointer(value,
-        "Windows.Foundation.IWwwFormUrlDecoderEntry", "{125e7431-f678-4e8e-b670-20a9b06c512d}"),
-        index.value).getOrThrow().requireBoolean())
+    val (found, index) = PlatformComInterop.invokeIndexOfMethod(pointer, 9,
+        projectedObjectArgumentPointer(value, "Windows.Foundation.IWwwFormUrlDecoderEntry",
+        "{125e7431-f678-4e8e-b670-20a9b06c512d}")).getOrThrow()
+    return if (found) UInt32(index) else null
   }
 
   override fun first(): Iterator<IWwwFormUrlDecoderEntry> {

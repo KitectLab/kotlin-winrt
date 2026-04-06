@@ -10,10 +10,8 @@ import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtRuntime
 import dev.winrt.core.WinRtRuntimeClassMetadata
 import dev.winrt.core.projectedObjectArgumentPointer
-import dev.winrt.kom.ComMethodResultKind
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.PlatformComInterop
-import dev.winrt.kom.requireBoolean
 import kotlin.String
 import kotlin.collections.Iterator
 import windows.foundation.IStringable
@@ -62,14 +60,14 @@ public open class JsonArray(
         9).getOrThrow()))
   }
 
-  public fun indexOf(value: IJsonValue, index: UInt32): WinRtBoolean {
+  public fun winRtIndexOf(value: IJsonValue): UInt32? {
     if (pointer.isNull) {
-      return WinRtBoolean.FALSE
+      return null
     }
-    return WinRtBoolean(PlatformComInterop.invokeMethodWithObjectAndUInt32Args(pointer, 10,
-        ComMethodResultKind.BOOLEAN, projectedObjectArgumentPointer(value,
-        "Windows.Data.Json.IJsonValue", "{a3219ecb-f0b3-4dcd-beee-19d48cd3ed1e}"),
-        index.value).getOrThrow().requireBoolean())
+    val (found, index) = PlatformComInterop.invokeIndexOfMethod(pointer, 10,
+        projectedObjectArgumentPointer(value, "Windows.Data.Json.IJsonValue",
+        "{a3219ecb-f0b3-4dcd-beee-19d48cd3ed1e}")).getOrThrow()
+    return if (found) UInt32(index) else null
   }
 
   public fun setAt(index: UInt32, value: IJsonValue) {

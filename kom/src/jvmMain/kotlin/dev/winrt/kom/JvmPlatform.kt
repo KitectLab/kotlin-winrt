@@ -1198,6 +1198,41 @@ private object JvmComMethodExecutor {
         return invokeWithOutResultKindArguments(instance, vtableIndex, operation, handle, resultKind, arguments)
     }
 
+    fun invokeIndexOfMethod(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        vararg arguments: Any,
+    ): Result<Pair<Boolean, UInt>> {
+        return runCatching {
+            requireInstance(instance)
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            Arena.ofConfined().use { arena ->
+                val indexSegment = arena.allocate(ValueLayout.JAVA_INT)
+                val foundSegment = arena.allocate(ValueLayout.JAVA_INT)
+                val preparedArguments = prepareAbiArguments(arguments)
+                try {
+                    val hresult = HResult(
+                        handle.bindTo(function).invokeWithArguments(
+                            Jdk22Foreign.pointerOf(instance),
+                            *preparedArguments.values.toTypedArray(),
+                            indexSegment,
+                            foundSegment,
+                        ) as Int,
+                    )
+                    hresult.requireSuccess("$operation($vtableIndex)")
+                    Pair(
+                        foundSegment.get(ValueLayout.JAVA_INT, 0L) != 0,
+                        indexSegment.get(ValueLayout.JAVA_INT, 0L).toUInt(),
+                    )
+                } finally {
+                    preparedArguments.close()
+                }
+            }
+        }
+    }
+
     private fun <T> runDirectWithOut(
         instance: ComPtr,
         vtableIndex: Int,
@@ -2352,6 +2387,20 @@ private object JvmPlatformComInterop : ComInterop {
             operation = "invokeMethodWithResultKind",
             handle = Jdk22Foreign.methodWithArgumentsHandle(arguments.map(::methodArgumentLayout)),
             resultKind = resultKind,
+            *arguments,
+        )
+    }
+
+    override fun invokeIndexOfMethod(
+        instance: ComPtr,
+        vtableIndex: Int,
+        vararg arguments: Any,
+    ): Result<Pair<Boolean, UInt>> {
+        return JvmComMethodExecutor.invokeIndexOfMethod(
+            instance = instance,
+            vtableIndex = vtableIndex,
+            operation = "invokeIndexOfMethod",
+            handle = Jdk22Foreign.methodWithArgumentsAndTwoOutHandles(arguments.map(::methodArgumentLayout)),
             *arguments,
         )
     }

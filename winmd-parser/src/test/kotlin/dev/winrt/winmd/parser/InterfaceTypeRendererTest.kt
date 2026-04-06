@@ -246,7 +246,7 @@ class InterfaceTypeRendererTest {
                                     returnType = "Boolean",
                                     parameters = listOf(
                                         WinMdParameter("value", "T"),
-                                        WinMdParameter("index", "UInt32"),
+                                        WinMdParameter("index", "UInt32", byRef = true, isOut = true),
                                     ),
                                     vtableIndex = 10,
                                 ),
@@ -310,7 +310,7 @@ class InterfaceTypeRendererTest {
                                     returnType = "Boolean",
                                     parameters = listOf(
                                         WinMdParameter("value", "Object"),
-                                        WinMdParameter("index", "UInt32"),
+                                        WinMdParameter("index", "UInt32", byRef = true, isOut = true),
                                     ),
                                     vtableIndex = 10,
                                 ),
@@ -349,7 +349,7 @@ class InterfaceTypeRendererTest {
                                     returnType = "Boolean",
                                     parameters = listOf(
                                         WinMdParameter("value", "Object"),
-                                        WinMdParameter("index", "UInt32"),
+                                        WinMdParameter("index", "UInt32", byRef = true, isOut = true),
                                     ),
                                     vtableIndex = 10,
                                 ),
@@ -405,10 +405,50 @@ class InterfaceTypeRendererTest {
             .replace(Regex("\\s+"), "")
         val occurrences = { pattern: String -> Regex(pattern).findAll(binding).count() }
 
-        assertEquals(1, occurrences("funindexOf\\("))
+        assertEquals(1, occurrences("funwinRtIndexOf\\("))
         assertEquals(1, occurrences("funsetAt\\("))
         assertEquals(1, occurrences("funinsertAt\\("))
         assertEquals(1, occurrences("funappend\\("))
+    }
+
+    @Test
+    fun renders_index_of_out_uint32_interface_methods_as_nullable_uint32_helpers() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Collections",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Collections",
+                            name = "IStringLookup",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "IndexOf",
+                                    returnType = "Boolean",
+                                    parameters = listOf(
+                                        WinMdParameter("value", "String"),
+                                        WinMdParameter("index", "UInt32", byRef = true, isOut = true),
+                                    ),
+                                    vtableIndex = 6,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Example/Collections/IStringLookup.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("funwinRtIndexOf(value:String):UInt32?"))
+        assertTrue(binding.contains("invokeIndexOfMethod(pointer,6,value).getOrThrow()"))
+        assertTrue(binding.contains("returnif(found)UInt32(index)elsenull"))
     }
 
     @Test

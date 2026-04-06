@@ -37,7 +37,8 @@ internal class RuntimeMethodRenderer(
     }
 
     fun canRenderRuntimeMethod(method: WinMdMethod, currentNamespace: String): Boolean {
-        return asyncMethodRuleRegistry.plan(method, currentNamespace) != null ||
+        return supportsProjectedIndexOfRuntimeMethod(method, currentNamespace) ||
+            asyncMethodRuleRegistry.plan(method, currentNamespace) != null ||
             (typeRegistry.isEnumType(method.returnType, currentNamespace) &&
                 method.parameters.isEmpty() &&
                 method.vtableIndex != null) ||
@@ -46,12 +47,9 @@ internal class RuntimeMethodRenderer(
 
     fun renderRuntimeMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
         renderAsyncTaskMethod(method, currentNamespace)?.let { return it }
+        renderProjectedIndexOfRuntimeMethod(method, currentNamespace)?.let { return it }
         if (typeRegistry.isEnumType(method.returnType, currentNamespace) && method.parameters.isEmpty() && method.vtableIndex != null) {
-            val functionName = if (method.name == "ToString" && method.returnType == "String" && method.parameters.isEmpty()) {
-                "toString"
-            } else {
-                method.name.replaceFirstChar(Char::lowercase)
-            }
+            val functionName = projectedMethodName(method)
             val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
             val underlyingType = enumUnderlyingTypeOrDefault(typeRegistry, method.returnType, currentNamespace)
             return FunSpec.builder(functionName)
@@ -67,11 +65,7 @@ internal class RuntimeMethodRenderer(
                 .build()
         }
         val plan = runtimeMethodPlan(method, currentNamespace) ?: return null
-        val functionName = if (method.name == "ToString" && method.returnType == "String" && method.parameters.isEmpty()) {
-            "toString"
-        } else {
-            method.name.replaceFirstChar(Char::lowercase)
-        }
+        val functionName = projectedMethodName(method)
         val kotlinType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
         val builder = FunSpec.builder(functionName).returns(kotlinType)
         if (method.name == "ToString" && method.returnType == "String" && method.parameters.isEmpty()) {
@@ -91,7 +85,7 @@ internal class RuntimeMethodRenderer(
 
     private fun renderAsyncTaskMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
         val asyncPlan = asyncMethodRuleRegistry.plan(method, currentNamespace) ?: return null
-        val functionName = method.name.replaceFirstChar(Char::lowercase)
+        val functionName = projectedMethodName(method)
         val builder = FunSpec.builder(functionName).returns(asyncPlan.rawReturnType)
         method.parameters.forEach { parameter ->
             val parameterName = parameter.name.replaceFirstChar(Char::lowercase)
@@ -107,11 +101,7 @@ internal class RuntimeMethodRenderer(
 
     private fun renderAsyncAwaitMethod(method: WinMdMethod, currentNamespace: String): FunSpec? {
         val asyncPlan = asyncMethodRuleRegistry.plan(method, currentNamespace) ?: return null
-        val baseFunctionName = if (method.name == "ToString" && method.returnType == "String" && method.parameters.isEmpty()) {
-            "toString"
-        } else {
-            method.name.replaceFirstChar(Char::lowercase)
-        }
+        val baseFunctionName = projectedMethodName(method)
         val builder = FunSpec.builder("${baseFunctionName}Await")
             .addModifiers(KModifier.SUSPEND)
             .returns(asyncPlan.awaitReturnType)
@@ -137,6 +127,63 @@ internal class RuntimeMethodRenderer(
         return builder.build()
     }
 
+    private fun supportsProjectedIndexOfRuntimeMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+    ): Boolean {
+        if (!method.isIndexOfOutUInt32Method() || method.vtableIndex == null) {
+            return false
+        }
+        val valueParameter = method.parameters.first()
+        val valueBinding = RuntimeMethodParameterBinding(
+            type = valueParameter.type,
+            name = valueParameter.name.replaceFirstChar(Char::lowercase),
+        )
+        return lowerRuntimeArrayMethodArgument(
+            method = method,
+            parameter = valueParameter,
+            parameterBindings = listOf(valueBinding),
+            currentNamespace = currentNamespace,
+        ) != null
+    }
+
+    private fun renderProjectedIndexOfRuntimeMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+    ): FunSpec? {
+        if (!supportsProjectedIndexOfRuntimeMethod(method, currentNamespace)) {
+            return null
+        }
+        val valueParameter = method.parameters.first()
+        val valueBinding = RuntimeMethodParameterBinding(
+            type = valueParameter.type,
+            name = valueParameter.name.replaceFirstChar(Char::lowercase),
+        )
+        val abiArgument = lowerRuntimeArrayMethodArgument(
+            method = method,
+            parameter = valueParameter,
+            parameterBindings = listOf(valueBinding),
+            currentNamespace = currentNamespace,
+        ) ?: return null
+        return FunSpec.builder(projectedMethodName(method))
+            .returns(PoetSymbols.uint32Class.copy(nullable = true))
+            .addParameter(
+                valueBinding.name,
+                typeNameMapper.mapTypeName(valueParameter.type, currentNamespace),
+            )
+            .beginControlFlow("if (pointer.isNull)")
+            .addStatement("return null")
+            .endControlFlow()
+            .addStatement(
+                "val (found, index) = %T.invokeIndexOfMethod(pointer, %L, %L).getOrThrow()",
+                PoetSymbols.platformComInteropClass,
+                method.vtableIndex!!,
+                abiArgument,
+            )
+            .addStatement("return if (found) %T(index) else null", PoetSymbols.uint32Class)
+            .build()
+    }
+
 
     private fun bindParameters(
         builder: FunSpec.Builder,
@@ -156,6 +203,9 @@ internal class RuntimeMethodRenderer(
 
     private fun runtimeMethodPlan(method: WinMdMethod, currentNamespace: String): RuntimeMethodPlan? {
         if (!isKotlinIdentifier(method.name) || method.vtableIndex == null) {
+            return null
+        }
+        if (method.isIndexOfOutUInt32Method()) {
             return null
         }
         plannedInt32FillArrayRuntimeMethod(method, currentNamespace)?.let { return it }
@@ -2365,7 +2415,7 @@ internal class RuntimeMethodRenderer(
             return null
         }
 
-        val functionName = method.name.replaceFirstChar(Char::lowercase)
+        val functionName = projectedMethodName(method)
         val delegateClass = typeNameMapper.mapTypeName(method.parameters.single().type, currentNamespace)
         val plan = delegateLambdaPlanResolver.resolve(
             invokeMethod = invokeMethod,

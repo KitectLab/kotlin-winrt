@@ -2,17 +2,14 @@ package windows.foundation
 
 import dev.winrt.core.Inspectable
 import dev.winrt.core.UInt32
-import dev.winrt.core.WinRtBoolean
 import dev.winrt.core.WinRtInterfaceMetadata
 import dev.winrt.core.WinRtInterfaceProjection
 import dev.winrt.core.guidOf
 import dev.winrt.core.projectInterface
 import dev.winrt.core.projectedObjectArgumentPointer
-import dev.winrt.kom.ComMethodResultKind
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.Guid
 import dev.winrt.kom.PlatformComInterop
-import dev.winrt.kom.requireBoolean
 import kotlin.String
 import kotlin.collections.Iterable
 import kotlin.collections.Iterator
@@ -23,7 +20,7 @@ public interface IWwwFormUrlDecoderRuntimeClass : IVectorView<IWwwFormUrlDecoder
     Iterable<IWwwFormUrlDecoderEntry> {
   public fun getFirstValueByName(name: String): String
 
-  public fun indexOf(value: IWwwFormUrlDecoderEntry, index: UInt32): WinRtBoolean
+  public fun winRtIndexOf(value: IWwwFormUrlDecoderEntry): UInt32?
 
   public companion object : WinRtInterfaceMetadata {
     override val qualifiedName: String = "Windows.Foundation.IWwwFormUrlDecoderRuntimeClass"
@@ -60,11 +57,12 @@ private class IWwwFormUrlDecoderRuntimeClassProjection(
       IWwwFormUrlDecoderEntry.from(Inspectable(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer,
       7, index.value).getOrThrow()))
 
-  override fun indexOf(value: IWwwFormUrlDecoderEntry, index: UInt32): WinRtBoolean =
-      WinRtBoolean(PlatformComInterop.invokeMethodWithObjectAndUInt32Args(pointer, 9,
-      ComMethodResultKind.BOOLEAN, projectedObjectArgumentPointer(value,
-      "Windows.Foundation.IWwwFormUrlDecoderEntry", "{125e7431-f678-4e8e-b670-20a9b06c512d}"),
-      index.value).getOrThrow().requireBoolean())
+  override fun winRtIndexOf(value: IWwwFormUrlDecoderEntry): UInt32? {
+    val (found, index) = PlatformComInterop.invokeIndexOfMethod(pointer, 9,
+        projectedObjectArgumentPointer(value, "Windows.Foundation.IWwwFormUrlDecoderEntry",
+        "{125e7431-f678-4e8e-b670-20a9b06c512d}")).getOrThrow()
+    return if (found) UInt32(index) else null
+  }
 
   override fun first(): Iterator<IWwwFormUrlDecoderEntry> =
       IIterator.from(Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()),

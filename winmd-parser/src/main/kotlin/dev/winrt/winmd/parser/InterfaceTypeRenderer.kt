@@ -428,7 +428,8 @@ internal class InterfaceTypeRenderer(
         if (!isKotlinIdentifier(method.name) || !supportsInterfaceMethod(method, currentNamespace, genericParameters)) {
             return null
         }
-        return FunSpec.builder(kotlinMethodName(method.name))
+        renderProjectedIndexOfInterfaceContractMethod(method, currentNamespace, genericParameters)?.let { return it }
+        return FunSpec.builder(kotlinMethodName(method))
             .apply {
                 addModifiers(KModifier.ABSTRACT)
                 if (method.name == "ToString" && method.returnType == "String" && method.parameters.isEmpty()) {
@@ -442,6 +443,61 @@ internal class InterfaceTypeRenderer(
                     typeNameMapper.mapTypeName(parameter.type, currentNamespace, genericParameters),
                 ).build()
             })
+            .build()
+    }
+
+    private fun supportsProjectedIndexOfInterfaceMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+    ): Boolean {
+        return method.isIndexOfOutUInt32Method() &&
+            method.vtableIndex != null &&
+            lowerInterfaceArrayMethodArgument(method.parameters.first(), currentNamespace) != null
+    }
+
+    private fun renderProjectedIndexOfInterfaceContractMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): FunSpec? {
+        if (!supportsProjectedIndexOfInterfaceMethod(method, currentNamespace)) {
+            return null
+        }
+        val valueParameter = method.parameters.first()
+        return FunSpec.builder(kotlinMethodName(method))
+            .addModifiers(KModifier.ABSTRACT)
+            .returns(PoetSymbols.uint32Class.copy(nullable = true))
+            .addParameter(
+                valueParameter.name.replaceFirstChar(Char::lowercase),
+                typeNameMapper.mapTypeName(valueParameter.type, currentNamespace, genericParameters),
+            )
+            .build()
+    }
+
+    private fun renderProjectedIndexOfInterfaceMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String>,
+    ): FunSpec? {
+        if (!supportsProjectedIndexOfInterfaceMethod(method, currentNamespace)) {
+            return null
+        }
+        val valueParameter = method.parameters.first()
+        val valueParameterName = valueParameter.name.replaceFirstChar(Char::lowercase)
+        val abiArgument = lowerInterfaceArrayMethodArgument(valueParameter, currentNamespace) ?: return null
+        return FunSpec.builder(kotlinMethodName(method))
+            .returns(PoetSymbols.uint32Class.copy(nullable = true))
+            .addParameter(
+                valueParameterName,
+                typeNameMapper.mapTypeName(valueParameter.type, currentNamespace, genericParameters),
+            )
+            .addStatement(
+                "val (found, index) = %T.invokeIndexOfMethod(pointer, %L, %L).getOrThrow()",
+                PoetSymbols.platformComInteropClass,
+                method.vtableIndex!!,
+                abiArgument,
+            )
+            .addStatement("return if (found) %T(index) else null", PoetSymbols.uint32Class)
             .build()
     }
 
@@ -654,7 +710,7 @@ internal class InterfaceTypeRenderer(
             genericParameters,
         )
             ?: return null
-        return PropertySpec.builder("${kotlinMethodName(method.name)}ResultType", PoetSymbols.asyncResultTypeClass.parameterizedBy(resultType))
+        return PropertySpec.builder("${kotlinMethodName(method)}ResultType", PoetSymbols.asyncResultTypeClass.parameterizedBy(resultType))
             .initializer("%L", descriptorExpression)
             .build()
     }
@@ -672,7 +728,7 @@ internal class InterfaceTypeRenderer(
             genericParameters,
         )
             ?: return null
-        return PropertySpec.builder("${kotlinMethodName(method.name)}ProgressType", PoetSymbols.asyncProgressTypeClass.parameterizedBy(progressType))
+        return PropertySpec.builder("${kotlinMethodName(method)}ProgressType", PoetSymbols.asyncProgressTypeClass.parameterizedBy(progressType))
             .initializer("%L", descriptorExpression)
             .build()
     }
@@ -683,7 +739,7 @@ internal class InterfaceTypeRenderer(
         genericParameters: Set<String>,
     ): FunSpec? {
         val asyncPlan = asyncMethodRuleRegistry.plan(method, currentNamespace, genericParameters) ?: return null
-        val functionName = "${kotlinMethodName(method.name)}Task"
+        val functionName = "${kotlinMethodName(method)}Task"
         val builder = FunSpec.builder(functionName)
             .addParameter("scope", PoetSymbols.coroutineScopeClass)
             .returns(asyncPlan.rawReturnType)
@@ -711,7 +767,7 @@ internal class InterfaceTypeRenderer(
                 builder.addStatement(
                     "return scope.%M(resultType = %N, block = block)",
                     PoetSymbols.asyncOperationMember,
-                    "${kotlinMethodName(method.name)}ResultType",
+                    "${kotlinMethodName(method)}ResultType",
                 )
             }
             method.returnType.startsWith("Windows.Foundation.IAsyncActionWithProgress<") -> {
@@ -732,7 +788,7 @@ internal class InterfaceTypeRenderer(
                 builder.addStatement(
                     "return scope.%M(progressType = %N, block = block)",
                     PoetSymbols.asyncActionWithProgressMember,
-                    "${kotlinMethodName(method.name)}ProgressType",
+                    "${kotlinMethodName(method)}ProgressType",
                 )
             }
             method.returnType.startsWith("Windows.Foundation.IAsyncOperationWithProgress<") -> {
@@ -755,8 +811,8 @@ internal class InterfaceTypeRenderer(
                 builder.addStatement(
                     "return scope.%M(resultType = %N, progressType = %N, block = block)",
                     PoetSymbols.asyncOperationWithProgressMember,
-                    "${kotlinMethodName(method.name)}ResultType",
-                    "${kotlinMethodName(method.name)}ProgressType",
+                    "${kotlinMethodName(method)}ResultType",
+                    "${kotlinMethodName(method)}ProgressType",
                 )
             }
             else -> return null
@@ -1208,7 +1264,8 @@ internal class InterfaceTypeRenderer(
             return null
         }
         renderAsyncTaskMethod(method, currentNamespace, genericParameters)?.let { return it }
-        val functionName = kotlinMethodName(method.name)
+        renderProjectedIndexOfInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
+        val functionName = kotlinMethodName(method)
         val builder = FunSpec.builder(functionName)
             .apply {
                 if (method.name == "ToString" && method.returnType == "String" && method.parameters.isEmpty()) {
@@ -1494,12 +1551,12 @@ internal class InterfaceTypeRenderer(
             ).build()
         }
         val invocation = buildString {
-            append(kotlinMethodName(method.name))
+            append(kotlinMethodName(method))
             append('(')
             append(parameterSpecs.joinToString(", ") { it.name })
             append(')')
         }
-        val builder = FunSpec.builder("${kotlinMethodName(method.name)}Await")
+        val builder = FunSpec.builder("${kotlinMethodName(method)}Await")
             .addModifiers(KModifier.SUSPEND)
             .returns(asyncPlan.awaitReturnType)
             .addParameters(parameterSpecs)
@@ -1520,7 +1577,7 @@ internal class InterfaceTypeRenderer(
         genericParameters: Set<String>,
     ): FunSpec? {
         val asyncPlan = asyncMethodRuleRegistry.plan(method, currentNamespace, genericParameters) ?: return null
-        val functionName = kotlinMethodName(method.name)
+        val functionName = kotlinMethodName(method)
         val builder = FunSpec.builder(functionName)
             .returns(asyncPlan.rawReturnType)
             .addParameters(method.parameters.map { parameter ->
@@ -1551,7 +1608,7 @@ internal class InterfaceTypeRenderer(
             return null
         }
 
-        val functionName = kotlinMethodName(method.name)
+        val functionName = kotlinMethodName(method)
         val delegateClass = typeNameMapper.mapTypeName(method.parameters.single().type, currentNamespace, genericParameters)
         val lambdaParameterName = "callback"
         val plan = delegateLambdaPlanResolver.resolve(
@@ -1613,19 +1670,21 @@ internal class InterfaceTypeRenderer(
         return builder.add(")").build()
     }
 
-    private fun kotlinMethodName(methodName: String): String {
-        return when (methodName) {
+    private fun kotlinMethodName(method: WinMdMethod): String = projectedMethodName(method)
+
+    private fun kotlinMethodName(methodName: String): String =
+        when (methodName) {
             "ToString" -> "toString"
             else -> methodName.replaceFirstChar(Char::lowercase)
         }
-    }
 
     private fun supportsInterfaceMethod(
         method: WinMdMethod,
         currentNamespace: String,
         genericParameters: Set<String>,
     ): Boolean {
-        return asyncMethodRuleRegistry.plan(method, currentNamespace, genericParameters) != null ||
+        return supportsProjectedIndexOfInterfaceMethod(method, currentNamespace) ||
+            asyncMethodRuleRegistry.plan(method, currentNamespace, genericParameters) != null ||
             plannedInterfaceMethod(method, currentNamespace, genericParameters) != null ||
             (method.returnType == "String" &&
                 method.parameters.isEmpty() &&
@@ -1726,6 +1785,9 @@ internal class InterfaceTypeRenderer(
         genericParameters: Set<String>,
     ): PlannedInterfaceMethod? {
         if (method.vtableIndex == null) {
+            return null
+        }
+        if (method.isIndexOfOutUInt32Method()) {
             return null
         }
         plannedInt32FillArrayInterfaceMethod(method, currentNamespace, genericParameters)?.let { return it }
@@ -4224,7 +4286,7 @@ internal class InterfaceTypeRenderer(
     }
 
     private fun interfaceMethodRenderKey(method: WinMdMethod): String {
-        return method.overloadKey(renderedName = kotlinMethodName(method.name))
+        return method.overloadKey(renderedName = kotlinMethodName(method))
     }
 
     private fun isXamlBindableInteropType(
