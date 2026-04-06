@@ -33,11 +33,12 @@ import windows.foundation.Uri
 public open class FrameworkElement(
   pointer: ComPtr,
 ) : UIElement(pointer),
+    IFrameworkElement,
     IFrameworkElementProtected {
   private val backing_ActualHeight: RuntimeProperty<Float64> =
       RuntimeProperty<Float64>(Float64(0.0))
 
-  public val actualHeight: Float64
+  override val actualHeight: Float64
     get() {
       if (pointer.isNull) {
         return backing_ActualHeight.get()
@@ -48,7 +49,7 @@ public open class FrameworkElement(
   private val backing_ActualTheme: RuntimeProperty<ElementTheme> =
       RuntimeProperty<ElementTheme>(ElementTheme.fromValue(0))
 
-  public val actualTheme: ElementTheme
+  override val actualTheme: ElementTheme
     get() {
       if (pointer.isNull) {
         return backing_ActualTheme.get()
@@ -58,7 +59,7 @@ public open class FrameworkElement(
 
   private val backing_ActualWidth: RuntimeProperty<Float64> = RuntimeProperty<Float64>(Float64(0.0))
 
-  public val actualWidth: Float64
+  override val actualWidth: Float64
     get() {
       if (pointer.isNull) {
         return backing_ActualWidth.get()
@@ -69,7 +70,7 @@ public open class FrameworkElement(
   private val backing_AllowFocusOnInteraction: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var allowFocusOnInteraction: WinRtBoolean
+  override var allowFocusOnInteraction: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_AllowFocusOnInteraction.get()
@@ -87,7 +88,7 @@ public open class FrameworkElement(
   private val backing_AllowFocusWhenDisabled: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var allowFocusWhenDisabled: WinRtBoolean
+  override var allowFocusWhenDisabled: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_AllowFocusWhenDisabled.get()
@@ -104,7 +105,7 @@ public open class FrameworkElement(
 
   private val backing_BaseUri: RuntimeProperty<Uri> = RuntimeProperty<Uri>(Uri(ComPtr.NULL))
 
-  public val baseUri: Uri
+  override val baseUri: Uri
     get() {
       if (pointer.isNull) {
         return backing_BaseUri.get()
@@ -115,7 +116,7 @@ public open class FrameworkElement(
   private val backing_DataContext: RuntimeProperty<Inspectable> =
       RuntimeProperty<Inspectable>(Inspectable(ComPtr.NULL))
 
-  public var dataContext: Inspectable
+  override var dataContext: Inspectable
     get() {
       if (pointer.isNull) {
         return backing_DataContext.get()
@@ -134,7 +135,7 @@ public open class FrameworkElement(
   private val backing_FlowDirection: RuntimeProperty<FlowDirection> =
       RuntimeProperty<FlowDirection>(FlowDirection.fromValue(0))
 
-  public var flowDirection: FlowDirection
+  override var flowDirection: FlowDirection
     get() {
       if (pointer.isNull) {
         return backing_FlowDirection.get()
@@ -153,7 +154,7 @@ public open class FrameworkElement(
       RuntimeProperty<Thickness>(Thickness.fromAbi(ComStructValue(Thickness.ABI_LAYOUT,
       ByteArray(Thickness.ABI_LAYOUT.byteSize))))
 
-  public var focusVisualMargin: Thickness
+  override var focusVisualMargin: Thickness
     get() {
       if (pointer.isNull) {
         return backing_FocusVisualMargin.get()
@@ -172,7 +173,7 @@ public open class FrameworkElement(
   private val backing_FocusVisualPrimaryBrush: RuntimeProperty<Brush> =
       RuntimeProperty<Brush>(Brush(ComPtr.NULL))
 
-  public var focusVisualPrimaryBrush: Brush
+  override var focusVisualPrimaryBrush: Brush
     get() {
       if (pointer.isNull) {
         return backing_FocusVisualPrimaryBrush.get()
@@ -192,7 +193,7 @@ public open class FrameworkElement(
       RuntimeProperty<Thickness>(Thickness.fromAbi(ComStructValue(Thickness.ABI_LAYOUT,
       ByteArray(Thickness.ABI_LAYOUT.byteSize))))
 
-  public var focusVisualPrimaryThickness: Thickness
+  override var focusVisualPrimaryThickness: Thickness
     get() {
       if (pointer.isNull) {
         return backing_FocusVisualPrimaryThickness.get()
@@ -211,7 +212,7 @@ public open class FrameworkElement(
   private val backing_FocusVisualSecondaryBrush: RuntimeProperty<Brush> =
       RuntimeProperty<Brush>(Brush(ComPtr.NULL))
 
-  public var focusVisualSecondaryBrush: Brush
+  override var focusVisualSecondaryBrush: Brush
     get() {
       if (pointer.isNull) {
         return backing_FocusVisualSecondaryBrush.get()
@@ -231,7 +232,7 @@ public open class FrameworkElement(
       RuntimeProperty<Thickness>(Thickness.fromAbi(ComStructValue(Thickness.ABI_LAYOUT,
       ByteArray(Thickness.ABI_LAYOUT.byteSize))))
 
-  public var focusVisualSecondaryThickness: Thickness
+  override var focusVisualSecondaryThickness: Thickness
     get() {
       if (pointer.isNull) {
         return backing_FocusVisualSecondaryThickness.get()
@@ -249,7 +250,7 @@ public open class FrameworkElement(
 
   private val backing_Height: RuntimeProperty<Float64> = RuntimeProperty<Float64>(Float64(0.0))
 
-  public var height: Float64
+  override var height: Float64
     get() {
       if (pointer.isNull) {
         return backing_Height.get()
@@ -267,7 +268,7 @@ public open class FrameworkElement(
   private val backing_HorizontalAlignment: RuntimeProperty<HorizontalAlignment> =
       RuntimeProperty<HorizontalAlignment>(HorizontalAlignment.fromValue(0))
 
-  public var horizontalAlignment: HorizontalAlignment
+  override var horizontalAlignment: HorizontalAlignment
     get() {
       if (pointer.isNull) {
         return backing_HorizontalAlignment.get()
@@ -286,7 +287,7 @@ public open class FrameworkElement(
   private val backing_IsLoaded: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public val isLoaded: WinRtBoolean
+  override val isLoaded: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_IsLoaded.get()
@@ -296,7 +297,7 @@ public open class FrameworkElement(
 
   private val backing_Language: RuntimeProperty<String> = RuntimeProperty<String>("")
 
-  public var language: String
+  override var language: String
     get() {
       if (pointer.isNull) {
         return backing_Language.get()
@@ -322,7 +323,7 @@ public open class FrameworkElement(
       RuntimeProperty<Thickness>(Thickness.fromAbi(ComStructValue(Thickness.ABI_LAYOUT,
       ByteArray(Thickness.ABI_LAYOUT.byteSize))))
 
-  public var margin: Thickness
+  override var margin: Thickness
     get() {
       if (pointer.isNull) {
         return backing_Margin.get()
@@ -340,7 +341,7 @@ public open class FrameworkElement(
 
   private val backing_MaxHeight: RuntimeProperty<Float64> = RuntimeProperty<Float64>(Float64(0.0))
 
-  public var maxHeight: Float64
+  override var maxHeight: Float64
     get() {
       if (pointer.isNull) {
         return backing_MaxHeight.get()
@@ -357,7 +358,7 @@ public open class FrameworkElement(
 
   private val backing_MaxWidth: RuntimeProperty<Float64> = RuntimeProperty<Float64>(Float64(0.0))
 
-  public var maxWidth: Float64
+  override var maxWidth: Float64
     get() {
       if (pointer.isNull) {
         return backing_MaxWidth.get()
@@ -374,7 +375,7 @@ public open class FrameworkElement(
 
   private val backing_MinHeight: RuntimeProperty<Float64> = RuntimeProperty<Float64>(Float64(0.0))
 
-  public var minHeight: Float64
+  override var minHeight: Float64
     get() {
       if (pointer.isNull) {
         return backing_MinHeight.get()
@@ -391,7 +392,7 @@ public open class FrameworkElement(
 
   private val backing_MinWidth: RuntimeProperty<Float64> = RuntimeProperty<Float64>(Float64(0.0))
 
-  public var minWidth: Float64
+  override var minWidth: Float64
     get() {
       if (pointer.isNull) {
         return backing_MinWidth.get()
@@ -408,7 +409,7 @@ public open class FrameworkElement(
 
   private val backing_Name: RuntimeProperty<String> = RuntimeProperty<String>("")
 
-  public var name: String
+  override var name: String
     get() {
       if (pointer.isNull) {
         return backing_Name.get()
@@ -433,7 +434,7 @@ public open class FrameworkElement(
   private val backing_Parent: RuntimeProperty<DependencyObject> =
       RuntimeProperty<DependencyObject>(DependencyObject(ComPtr.NULL))
 
-  public val parent: DependencyObject
+  override val parent: DependencyObject
     get() {
       if (pointer.isNull) {
         return backing_Parent.get()
@@ -444,7 +445,7 @@ public open class FrameworkElement(
   private val backing_RequestedTheme: RuntimeProperty<ElementTheme> =
       RuntimeProperty<ElementTheme>(ElementTheme.fromValue(0))
 
-  public var requestedTheme: ElementTheme
+  override var requestedTheme: ElementTheme
     get() {
       if (pointer.isNull) {
         return backing_RequestedTheme.get()
@@ -462,7 +463,7 @@ public open class FrameworkElement(
   private val backing_Resources: RuntimeProperty<ResourceDictionary> =
       RuntimeProperty<ResourceDictionary>(ResourceDictionary(ComPtr.NULL))
 
-  public var resources: ResourceDictionary
+  override var resources: ResourceDictionary
     get() {
       if (pointer.isNull) {
         return backing_Resources.get()
@@ -480,7 +481,7 @@ public open class FrameworkElement(
 
   private val backing_Style: RuntimeProperty<Style> = RuntimeProperty<Style>(Style(ComPtr.NULL))
 
-  public var style: Style
+  override var style: Style
     get() {
       if (pointer.isNull) {
         return backing_Style.get()
@@ -499,7 +500,7 @@ public open class FrameworkElement(
   private val backing_Tag: RuntimeProperty<Inspectable> =
       RuntimeProperty<Inspectable>(Inspectable(ComPtr.NULL))
 
-  public var tag: Inspectable
+  override var tag: Inspectable
     get() {
       if (pointer.isNull) {
         return backing_Tag.get()
@@ -518,7 +519,7 @@ public open class FrameworkElement(
   private val backing_Triggers: RuntimeProperty<TriggerCollection> =
       RuntimeProperty<TriggerCollection>(TriggerCollection(ComPtr.NULL))
 
-  public val triggers: TriggerCollection
+  override val triggers: TriggerCollection
     get() {
       if (pointer.isNull) {
         return backing_Triggers.get()
@@ -529,7 +530,7 @@ public open class FrameworkElement(
   private val backing_VerticalAlignment: RuntimeProperty<VerticalAlignment> =
       RuntimeProperty<VerticalAlignment>(VerticalAlignment.fromValue(0))
 
-  public var verticalAlignment: VerticalAlignment
+  override var verticalAlignment: VerticalAlignment
     get() {
       if (pointer.isNull) {
         return backing_VerticalAlignment.get()
@@ -547,7 +548,7 @@ public open class FrameworkElement(
 
   private val backing_Width: RuntimeProperty<Float64> = RuntimeProperty<Float64>(Float64(0.0))
 
-  public var width: Float64
+  override var width: Float64
     get() {
       if (pointer.isNull) {
         return backing_Width.get()
@@ -628,7 +629,7 @@ public open class FrameworkElement(
         ComMethodResultKind.BOOLEAN, stateName, useTransitions.value).getOrThrow().requireBoolean())
   }
 
-  public fun add_Loaded(handler: RoutedEventHandler): EventRegistrationToken {
+  override fun add_Loaded(handler: RoutedEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -639,14 +640,14 @@ public open class FrameworkElement(
         "delegate({dae23d85-69ca-5bdf-805b-6161a3a215cc})")).getOrThrow())
   }
 
-  public fun remove_Loaded(token: EventRegistrationToken) {
+  override fun remove_Loaded(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 62, token.toAbi()).getOrThrow()
   }
 
-  public fun add_Unloaded(handler: RoutedEventHandler): EventRegistrationToken {
+  override fun add_Unloaded(handler: RoutedEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -657,14 +658,14 @@ public open class FrameworkElement(
         "delegate({dae23d85-69ca-5bdf-805b-6161a3a215cc})")).getOrThrow())
   }
 
-  public fun remove_Unloaded(token: EventRegistrationToken) {
+  override fun remove_Unloaded(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 64, token.toAbi()).getOrThrow()
   }
 
-  public
+  override
       fun add_DataContextChanged(handler: TypedEventHandler<FrameworkElement, DataContextChangedEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
@@ -677,14 +678,14 @@ public open class FrameworkElement(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.FrameworkElement;{fe08f13d-dc6a-5495-ad44-c2d8d21863b0});rc(Microsoft.UI.Xaml.DataContextChangedEventArgs;{a1be80f4-cf83-5022-b113-9233f1d4fafa}))")).getOrThrow())
   }
 
-  public fun remove_DataContextChanged(token: EventRegistrationToken) {
+  override fun remove_DataContextChanged(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 66, token.toAbi()).getOrThrow()
   }
 
-  public fun add_SizeChanged(handler: SizeChangedEventHandler): EventRegistrationToken {
+  override fun add_SizeChanged(handler: SizeChangedEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -695,14 +696,14 @@ public open class FrameworkElement(
         "delegate({8d7b1a58-14c6-51c9-892c-9fcce368e77d})")).getOrThrow())
   }
 
-  public fun remove_SizeChanged(token: EventRegistrationToken) {
+  override fun remove_SizeChanged(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 68, token.toAbi()).getOrThrow()
   }
 
-  public fun add_LayoutUpdated(handler: EventHandler<Inspectable>): EventRegistrationToken {
+  override fun add_LayoutUpdated(handler: EventHandler<Inspectable>): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -713,14 +714,14 @@ public open class FrameworkElement(
         "pinterface({9de1c535-6ae1-11e0-84e1-18a905bcc53f};cinterface(IInspectable))")).getOrThrow())
   }
 
-  public fun remove_LayoutUpdated(token: EventRegistrationToken) {
+  override fun remove_LayoutUpdated(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 70, token.toAbi()).getOrThrow()
   }
 
-  public fun add_Loading(handler: TypedEventHandler<FrameworkElement, Inspectable>):
+  override fun add_Loading(handler: TypedEventHandler<FrameworkElement, Inspectable>):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -732,14 +733,14 @@ public open class FrameworkElement(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.FrameworkElement;{fe08f13d-dc6a-5495-ad44-c2d8d21863b0});cinterface(IInspectable))")).getOrThrow())
   }
 
-  public fun remove_Loading(token: EventRegistrationToken) {
+  override fun remove_Loading(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 72, token.toAbi()).getOrThrow()
   }
 
-  public fun add_ActualThemeChanged(handler: TypedEventHandler<FrameworkElement, Inspectable>):
+  override fun add_ActualThemeChanged(handler: TypedEventHandler<FrameworkElement, Inspectable>):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -751,14 +752,14 @@ public open class FrameworkElement(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.FrameworkElement;{fe08f13d-dc6a-5495-ad44-c2d8d21863b0});cinterface(IInspectable))")).getOrThrow())
   }
 
-  public fun remove_ActualThemeChanged(token: EventRegistrationToken) {
+  override fun remove_ActualThemeChanged(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 74, token.toAbi()).getOrThrow()
   }
 
-  public
+  override
       fun add_EffectiveViewportChanged(handler: TypedEventHandler<FrameworkElement, EffectiveViewportChangedEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
@@ -771,14 +772,14 @@ public open class FrameworkElement(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.FrameworkElement;{fe08f13d-dc6a-5495-ad44-c2d8d21863b0});rc(Microsoft.UI.Xaml.EffectiveViewportChangedEventArgs;{636e8159-2d82-538a-8483-cd576e41d0df}))")).getOrThrow())
   }
 
-  public fun remove_EffectiveViewportChanged(token: EventRegistrationToken) {
+  override fun remove_EffectiveViewportChanged(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 76, token.toAbi()).getOrThrow()
   }
 
-  public fun findName(name: String): Inspectable {
+  override fun findName(name: String): Inspectable {
     if (pointer.isNull) {
       error("Null runtime object pointer: FindName")
     }
@@ -786,7 +787,7 @@ public open class FrameworkElement(
         name).getOrThrow())
   }
 
-  public fun setBinding(dp: DependencyProperty, binding: BindingBase) {
+  override fun setBinding(dp: DependencyProperty, binding: BindingBase) {
     if (pointer.isNull) {
       return
     }
@@ -797,7 +798,7 @@ public open class FrameworkElement(
         "rc(Microsoft.UI.Xaml.Data.BindingBase;{91ddd141-5944-50ef-b85e-218e463f7a73})")).getOrThrow()
   }
 
-  public fun getBindingExpression(dp: DependencyProperty): BindingExpression {
+  override fun getBindingExpression(dp: DependencyProperty): BindingExpression {
     if (pointer.isNull) {
       error("Null runtime object pointer: GetBindingExpression")
     }

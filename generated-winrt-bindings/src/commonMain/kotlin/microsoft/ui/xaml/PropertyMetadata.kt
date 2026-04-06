@@ -12,11 +12,12 @@ import kotlin.String
 
 public open class PropertyMetadata(
   pointer: ComPtr,
-) : Inspectable(pointer) {
+) : Inspectable(pointer),
+    IPropertyMetadata {
   private val backing_CreateDefaultValueCallback: RuntimeProperty<CreateDefaultValueCallback> =
       RuntimeProperty<CreateDefaultValueCallback>(CreateDefaultValueCallback(ComPtr.NULL))
 
-  public val createDefaultValueCallback: CreateDefaultValueCallback
+  override val createDefaultValueCallback: CreateDefaultValueCallback
     get() {
       if (pointer.isNull) {
         return backing_CreateDefaultValueCallback.get()
@@ -28,7 +29,7 @@ public open class PropertyMetadata(
   private val backing_DefaultValue: RuntimeProperty<Inspectable> =
       RuntimeProperty<Inspectable>(Inspectable(ComPtr.NULL))
 
-  public val defaultValue: Inspectable
+  override val defaultValue: Inspectable
     get() {
       if (pointer.isNull) {
         return backing_DefaultValue.get()

@@ -13,14 +13,15 @@ import windows.ui.xaml.interop.TypeName
 
 public open class DependencyProperty(
   pointer: ComPtr,
-) : Inspectable(pointer) {
+) : Inspectable(pointer),
+    IDependencyProperty {
   private val backing_UnsetValue: RuntimeProperty<Inspectable> =
       RuntimeProperty<Inspectable>(Inspectable(ComPtr.NULL))
 
   public val unsetValue: Inspectable
     get() = backing_UnsetValue.get()
 
-  public fun getMetadata(forType: TypeName): PropertyMetadata {
+  override fun getMetadata(forType: TypeName): PropertyMetadata {
     if (pointer.isNull) {
       error("Null runtime object pointer: GetMetadata")
     }

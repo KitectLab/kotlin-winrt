@@ -23,7 +23,8 @@ import windows.foundation.collections.IVector
 
 public open class ResourceDictionary(
   pointer: ComPtr,
-) : DependencyObject(pointer) {
+) : DependencyObject(pointer),
+    IResourceDictionary {
   private val backing_Size: RuntimeProperty<UInt32> = RuntimeProperty<UInt32>(UInt32(0u))
 
   public val size: UInt32
@@ -36,7 +37,7 @@ public open class ResourceDictionary(
 
   private val backing_Source: RuntimeProperty<Uri> = RuntimeProperty<Uri>(Uri(ComPtr.NULL))
 
-  public var source: Uri
+  override var source: Uri
     get() {
       if (pointer.isNull) {
         return backing_Source.get()
@@ -111,7 +112,7 @@ public open class ResourceDictionary(
         6).getOrThrow()))
   }
 
-  public fun get_MergedDictionaries(): IVector<ResourceDictionary> {
+  override fun get_MergedDictionaries(): IVector<ResourceDictionary> {
     if (pointer.isNull) {
       error("Null runtime object pointer: get_MergedDictionaries")
     }
@@ -119,7 +120,7 @@ public open class ResourceDictionary(
         8).getOrThrow()))
   }
 
-  public fun get_ThemeDictionaries(): MutableMap<Inspectable, Inspectable> {
+  override fun get_ThemeDictionaries(): MutableMap<Inspectable, Inspectable> {
     if (pointer.isNull) {
       error("Null runtime object pointer: get_ThemeDictionaries")
     }

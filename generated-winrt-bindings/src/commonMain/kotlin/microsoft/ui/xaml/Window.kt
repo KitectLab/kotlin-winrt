@@ -34,7 +34,8 @@ import windows.ui.core.CoreWindow
 
 public open class Window(
   pointer: ComPtr,
-) : Inspectable(pointer) {
+) : Inspectable(pointer),
+    IWindow {
   private val backing_AppWindow: RuntimeProperty<AppWindow> =
       RuntimeProperty<AppWindow>(AppWindow(ComPtr.NULL))
 
@@ -69,7 +70,7 @@ public open class Window(
       RuntimeProperty<Rect>(Rect.fromAbi(ComStructValue(Rect.ABI_LAYOUT,
       ByteArray(Rect.ABI_LAYOUT.byteSize))))
 
-  public val bounds: Rect
+  override val bounds: Rect
     get() {
       if (pointer.isNull) {
         return backing_Bounds.get()
@@ -81,7 +82,7 @@ public open class Window(
   private val backing_Compositor: RuntimeProperty<Compositor> =
       RuntimeProperty<Compositor>(Compositor(ComPtr.NULL))
 
-  public val compositor: Compositor
+  override val compositor: Compositor
     get() {
       if (pointer.isNull) {
         return backing_Compositor.get()
@@ -92,7 +93,7 @@ public open class Window(
   private val backing_Content: RuntimeProperty<UIElement> =
       RuntimeProperty<UIElement>(UIElement(ComPtr.NULL))
 
-  public var content: UIElement
+  override var content: UIElement
     get() {
       if (pointer.isNull) {
         return backing_Content.get()
@@ -111,7 +112,7 @@ public open class Window(
   private val backing_CoreWindow: RuntimeProperty<CoreWindow> =
       RuntimeProperty<CoreWindow>(CoreWindow(ComPtr.NULL))
 
-  public val coreWindow: CoreWindow
+  override val coreWindow: CoreWindow
     get() {
       if (pointer.isNull) {
         return backing_CoreWindow.get()
@@ -122,7 +123,7 @@ public open class Window(
   private val backing_Dispatcher: RuntimeProperty<CoreDispatcher> =
       RuntimeProperty<CoreDispatcher>(CoreDispatcher(ComPtr.NULL))
 
-  public val dispatcher: CoreDispatcher
+  override val dispatcher: CoreDispatcher
     get() {
       if (pointer.isNull) {
         return backing_Dispatcher.get()
@@ -133,7 +134,7 @@ public open class Window(
   private val backing_DispatcherQueue: RuntimeProperty<DispatcherQueue> =
       RuntimeProperty<DispatcherQueue>(DispatcherQueue(ComPtr.NULL))
 
-  public val dispatcherQueue: DispatcherQueue
+  override val dispatcherQueue: DispatcherQueue
     get() {
       if (pointer.isNull) {
         return backing_DispatcherQueue.get()
@@ -144,7 +145,7 @@ public open class Window(
   private val backing_ExtendsContentIntoTitleBar: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var extendsContentIntoTitleBar: WinRtBoolean
+  override var extendsContentIntoTitleBar: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_ExtendsContentIntoTitleBar.get()
@@ -161,7 +162,7 @@ public open class Window(
 
   private val backing_Title: RuntimeProperty<String> = RuntimeProperty<String>("")
 
-  public var title: String
+  override var title: String
     get() {
       if (pointer.isNull) {
         return backing_Title.get()
@@ -186,7 +187,7 @@ public open class Window(
   private val backing_Visible: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public val visible: WinRtBoolean
+  override val visible: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_Visible.get()
@@ -292,7 +293,7 @@ public open class Window(
 
   public constructor() : this(Companion.factoryCreateInstance().pointer)
 
-  public fun add_Activated(handler: TypedEventHandler<Inspectable, WindowActivatedEventArgs>):
+  override fun add_Activated(handler: TypedEventHandler<Inspectable, WindowActivatedEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -304,14 +305,14 @@ public open class Window(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};cinterface(IInspectable);rc(Microsoft.UI.Xaml.WindowActivatedEventArgs;{c723a5ea-82c4-5dd6-861b-70ef573b88d6}))")).getOrThrow())
   }
 
-  public fun remove_Activated(token: EventRegistrationToken) {
+  override fun remove_Activated(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 19, token.toAbi()).getOrThrow()
   }
 
-  public fun add_Closed(handler: TypedEventHandler<Inspectable, WindowEventArgs>):
+  override fun add_Closed(handler: TypedEventHandler<Inspectable, WindowEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -323,14 +324,14 @@ public open class Window(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};cinterface(IInspectable);rc(Microsoft.UI.Xaml.WindowEventArgs;{1140827c-fe0a-5268-bc2b-f4492c2ccb49}))")).getOrThrow())
   }
 
-  public fun remove_Closed(token: EventRegistrationToken) {
+  override fun remove_Closed(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 21, token.toAbi()).getOrThrow()
   }
 
-  public fun add_SizeChanged(handler: TypedEventHandler<Inspectable, WindowSizeChangedEventArgs>):
+  override fun add_SizeChanged(handler: TypedEventHandler<Inspectable, WindowSizeChangedEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -342,14 +343,14 @@ public open class Window(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};cinterface(IInspectable);rc(Microsoft.UI.Xaml.WindowSizeChangedEventArgs;{542f6f2c-4b64-5c72-a7a5-3a7e0664b8ff}))")).getOrThrow())
   }
 
-  public fun remove_SizeChanged(token: EventRegistrationToken) {
+  override fun remove_SizeChanged(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 23, token.toAbi()).getOrThrow()
   }
 
-  public
+  override
       fun add_VisibilityChanged(handler: TypedEventHandler<Inspectable, WindowVisibilityChangedEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
@@ -362,28 +363,28 @@ public open class Window(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};cinterface(IInspectable);rc(Microsoft.UI.Xaml.WindowVisibilityChangedEventArgs;{7bb24a6d-070c-5cb6-8e9c-547905be8265}))")).getOrThrow())
   }
 
-  public fun remove_VisibilityChanged(token: EventRegistrationToken) {
+  override fun remove_VisibilityChanged(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 25, token.toAbi()).getOrThrow()
   }
 
-  public fun activate() {
+  override fun activate() {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethod(pointer, 26).getOrThrow()
   }
 
-  public fun close() {
+  override fun close() {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethod(pointer, 27).getOrThrow()
   }
 
-  public fun setTitleBar(titleBar: UIElement) {
+  override fun setTitleBar(titleBar: UIElement) {
     if (pointer.isNull) {
       return
     }

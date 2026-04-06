@@ -16,11 +16,12 @@ import microsoft.ui.xaml.controls.primitives.FlyoutBase
 
 public open class Button(
   pointer: ComPtr,
-) : ButtonBase(pointer) {
+) : ButtonBase(pointer),
+    IButton {
   private val backing_Flyout: RuntimeProperty<FlyoutBase> =
       RuntimeProperty<FlyoutBase>(FlyoutBase(ComPtr.NULL))
 
-  public var flyout: FlyoutBase
+  override var flyout: FlyoutBase
     get() {
       if (pointer.isNull) {
         return backing_Flyout.get()

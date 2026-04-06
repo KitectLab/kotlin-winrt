@@ -11,10 +11,11 @@ import kotlin.String
 
 public open class WwwFormUrlDecoderEntry(
   pointer: ComPtr,
-) : Inspectable(pointer) {
+) : Inspectable(pointer),
+    IWwwFormUrlDecoderEntry {
   private val backing_Name: RuntimeProperty<String> = RuntimeProperty<String>("")
 
-  public val name: String
+  override val name: String
     get() {
       if (pointer.isNull) {
         return backing_Name.get()
@@ -31,7 +32,7 @@ public open class WwwFormUrlDecoderEntry(
 
   private val backing_Value: RuntimeProperty<String> = RuntimeProperty<String>("")
 
-  public val value: String
+  override val value: String
     get() {
       if (pointer.isNull) {
         return backing_Value.get()

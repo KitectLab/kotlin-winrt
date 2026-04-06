@@ -49,11 +49,12 @@ import windows.ui.text.TextDecorations
 
 public open class TextBlock(
   pointer: ComPtr,
-) : FrameworkElement(pointer) {
+) : FrameworkElement(pointer),
+    ITextBlock {
   private val backing_BaselineOffset: RuntimeProperty<Float64> =
       RuntimeProperty<Float64>(Float64(0.0))
 
-  public val baselineOffset: Float64
+  override val baselineOffset: Float64
     get() {
       if (pointer.isNull) {
         return backing_BaselineOffset.get()
@@ -63,7 +64,7 @@ public open class TextBlock(
 
   private val backing_CharacterSpacing: RuntimeProperty<Int32> = RuntimeProperty<Int32>(Int32(0))
 
-  public var characterSpacing: Int32
+  override var characterSpacing: Int32
     get() {
       if (pointer.isNull) {
         return backing_CharacterSpacing.get()
@@ -81,7 +82,7 @@ public open class TextBlock(
   private val backing_ContentEnd: RuntimeProperty<TextPointer> =
       RuntimeProperty<TextPointer>(TextPointer(ComPtr.NULL))
 
-  public val contentEnd: TextPointer
+  override val contentEnd: TextPointer
     get() {
       if (pointer.isNull) {
         return backing_ContentEnd.get()
@@ -92,7 +93,7 @@ public open class TextBlock(
   private val backing_ContentStart: RuntimeProperty<TextPointer> =
       RuntimeProperty<TextPointer>(TextPointer(ComPtr.NULL))
 
-  public val contentStart: TextPointer
+  override val contentStart: TextPointer
     get() {
       if (pointer.isNull) {
         return backing_ContentStart.get()
@@ -103,7 +104,7 @@ public open class TextBlock(
   private val backing_FontFamily: RuntimeProperty<FontFamily> =
       RuntimeProperty<FontFamily>(FontFamily(ComPtr.NULL))
 
-  public var fontFamily: FontFamily
+  override var fontFamily: FontFamily
     get() {
       if (pointer.isNull) {
         return backing_FontFamily.get()
@@ -121,7 +122,7 @@ public open class TextBlock(
 
   private val backing_FontSize: RuntimeProperty<Float64> = RuntimeProperty<Float64>(Float64(0.0))
 
-  public var fontSize: Float64
+  override var fontSize: Float64
     get() {
       if (pointer.isNull) {
         return backing_FontSize.get()
@@ -139,7 +140,7 @@ public open class TextBlock(
   private val backing_FontStretch: RuntimeProperty<FontStretch> =
       RuntimeProperty<FontStretch>(FontStretch.fromValue(0))
 
-  public var fontStretch: FontStretch
+  override var fontStretch: FontStretch
     get() {
       if (pointer.isNull) {
         return backing_FontStretch.get()
@@ -157,7 +158,7 @@ public open class TextBlock(
   private val backing_FontStyle: RuntimeProperty<FontStyle> =
       RuntimeProperty<FontStyle>(FontStyle.fromValue(0))
 
-  public var fontStyle: FontStyle
+  override var fontStyle: FontStyle
     get() {
       if (pointer.isNull) {
         return backing_FontStyle.get()
@@ -176,7 +177,7 @@ public open class TextBlock(
       RuntimeProperty<FontWeight>(FontWeight.fromAbi(ComStructValue(FontWeight.ABI_LAYOUT,
       ByteArray(FontWeight.ABI_LAYOUT.byteSize))))
 
-  public var fontWeight: FontWeight
+  override var fontWeight: FontWeight
     get() {
       if (pointer.isNull) {
         return backing_FontWeight.get()
@@ -195,7 +196,7 @@ public open class TextBlock(
   private val backing_Foreground: RuntimeProperty<Brush> =
       RuntimeProperty<Brush>(Brush(ComPtr.NULL))
 
-  public var foreground: Brush
+  override var foreground: Brush
     get() {
       if (pointer.isNull) {
         return backing_Foreground.get()
@@ -214,7 +215,7 @@ public open class TextBlock(
   private val backing_HorizontalTextAlignment: RuntimeProperty<TextAlignment> =
       RuntimeProperty<TextAlignment>(TextAlignment.fromValue(0))
 
-  public var horizontalTextAlignment: TextAlignment
+  override var horizontalTextAlignment: TextAlignment
     get() {
       if (pointer.isNull) {
         return backing_HorizontalTextAlignment.get()
@@ -232,7 +233,7 @@ public open class TextBlock(
   private val backing_Inlines: RuntimeProperty<InlineCollection> =
       RuntimeProperty<InlineCollection>(InlineCollection(ComPtr.NULL))
 
-  public val inlines: InlineCollection
+  override val inlines: InlineCollection
     get() {
       if (pointer.isNull) {
         return backing_Inlines.get()
@@ -243,7 +244,7 @@ public open class TextBlock(
   private val backing_IsColorFontEnabled: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var isColorFontEnabled: WinRtBoolean
+  override var isColorFontEnabled: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_IsColorFontEnabled.get()
@@ -261,7 +262,7 @@ public open class TextBlock(
   private val backing_IsTextScaleFactorEnabled: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var isTextScaleFactorEnabled: WinRtBoolean
+  override var isTextScaleFactorEnabled: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_IsTextScaleFactorEnabled.get()
@@ -279,7 +280,7 @@ public open class TextBlock(
   private val backing_IsTextSelectionEnabled: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var isTextSelectionEnabled: WinRtBoolean
+  override var isTextSelectionEnabled: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_IsTextSelectionEnabled.get()
@@ -297,7 +298,7 @@ public open class TextBlock(
   private val backing_IsTextTrimmed: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public val isTextTrimmed: WinRtBoolean
+  override val isTextTrimmed: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_IsTextTrimmed.get()
@@ -307,7 +308,7 @@ public open class TextBlock(
 
   private val backing_LineHeight: RuntimeProperty<Float64> = RuntimeProperty<Float64>(Float64(0.0))
 
-  public var lineHeight: Float64
+  override var lineHeight: Float64
     get() {
       if (pointer.isNull) {
         return backing_LineHeight.get()
@@ -325,7 +326,7 @@ public open class TextBlock(
   private val backing_LineStackingStrategy: RuntimeProperty<LineStackingStrategy> =
       RuntimeProperty<LineStackingStrategy>(LineStackingStrategy.fromValue(0))
 
-  public var lineStackingStrategy: LineStackingStrategy
+  override var lineStackingStrategy: LineStackingStrategy
     get() {
       if (pointer.isNull) {
         return backing_LineStackingStrategy.get()
@@ -343,7 +344,7 @@ public open class TextBlock(
 
   private val backing_MaxLines: RuntimeProperty<Int32> = RuntimeProperty<Int32>(Int32(0))
 
-  public var maxLines: Int32
+  override var maxLines: Int32
     get() {
       if (pointer.isNull) {
         return backing_MaxLines.get()
@@ -361,7 +362,7 @@ public open class TextBlock(
   private val backing_OpticalMarginAlignment: RuntimeProperty<OpticalMarginAlignment> =
       RuntimeProperty<OpticalMarginAlignment>(OpticalMarginAlignment.fromValue(0))
 
-  public var opticalMarginAlignment: OpticalMarginAlignment
+  override var opticalMarginAlignment: OpticalMarginAlignment
     get() {
       if (pointer.isNull) {
         return backing_OpticalMarginAlignment.get()
@@ -381,7 +382,7 @@ public open class TextBlock(
       RuntimeProperty<Thickness>(Thickness.fromAbi(ComStructValue(Thickness.ABI_LAYOUT,
       ByteArray(Thickness.ABI_LAYOUT.byteSize))))
 
-  public var padding: Thickness
+  override var padding: Thickness
     get() {
       if (pointer.isNull) {
         return backing_Padding.get()
@@ -399,7 +400,7 @@ public open class TextBlock(
 
   private val backing_SelectedText: RuntimeProperty<String> = RuntimeProperty<String>("")
 
-  public val selectedText: String
+  override val selectedText: String
     get() {
       if (pointer.isNull) {
         return backing_SelectedText.get()
@@ -417,7 +418,7 @@ public open class TextBlock(
   private val backing_SelectionEnd: RuntimeProperty<TextPointer> =
       RuntimeProperty<TextPointer>(TextPointer(ComPtr.NULL))
 
-  public val selectionEnd: TextPointer
+  override val selectionEnd: TextPointer
     get() {
       if (pointer.isNull) {
         return backing_SelectionEnd.get()
@@ -428,7 +429,7 @@ public open class TextBlock(
   private val backing_SelectionFlyout: RuntimeProperty<FlyoutBase> =
       RuntimeProperty<FlyoutBase>(FlyoutBase(ComPtr.NULL))
 
-  public var selectionFlyout: FlyoutBase
+  override var selectionFlyout: FlyoutBase
     get() {
       if (pointer.isNull) {
         return backing_SelectionFlyout.get()
@@ -447,7 +448,7 @@ public open class TextBlock(
   private val backing_SelectionHighlightColor: RuntimeProperty<SolidColorBrush> =
       RuntimeProperty<SolidColorBrush>(SolidColorBrush(ComPtr.NULL))
 
-  public var selectionHighlightColor: SolidColorBrush
+  override var selectionHighlightColor: SolidColorBrush
     get() {
       if (pointer.isNull) {
         return backing_SelectionHighlightColor.get()
@@ -466,7 +467,7 @@ public open class TextBlock(
   private val backing_SelectionStart: RuntimeProperty<TextPointer> =
       RuntimeProperty<TextPointer>(TextPointer(ComPtr.NULL))
 
-  public val selectionStart: TextPointer
+  override val selectionStart: TextPointer
     get() {
       if (pointer.isNull) {
         return backing_SelectionStart.get()
@@ -476,7 +477,7 @@ public open class TextBlock(
 
   private val backing_Text: RuntimeProperty<String> = RuntimeProperty<String>("")
 
-  public var text: String
+  override var text: String
     get() {
       if (pointer.isNull) {
         return backing_Text.get()
@@ -501,7 +502,7 @@ public open class TextBlock(
   private val backing_TextAlignment: RuntimeProperty<TextAlignment> =
       RuntimeProperty<TextAlignment>(TextAlignment.fromValue(0))
 
-  public var textAlignment: TextAlignment
+  override var textAlignment: TextAlignment
     get() {
       if (pointer.isNull) {
         return backing_TextAlignment.get()
@@ -519,7 +520,7 @@ public open class TextBlock(
   private val backing_TextDecorations: RuntimeProperty<TextDecorations> =
       RuntimeProperty<TextDecorations>(TextDecorations.fromValue(0u))
 
-  public var textDecorations: TextDecorations
+  override var textDecorations: TextDecorations
     get() {
       if (pointer.isNull) {
         return backing_TextDecorations.get()
@@ -538,7 +539,7 @@ public open class TextBlock(
   private val backing_TextLineBounds: RuntimeProperty<TextLineBounds> =
       RuntimeProperty<TextLineBounds>(TextLineBounds.fromValue(0))
 
-  public var textLineBounds: TextLineBounds
+  override var textLineBounds: TextLineBounds
     get() {
       if (pointer.isNull) {
         return backing_TextLineBounds.get()
@@ -557,7 +558,7 @@ public open class TextBlock(
   private val backing_TextReadingOrder: RuntimeProperty<TextReadingOrder> =
       RuntimeProperty<TextReadingOrder>(TextReadingOrder.fromValue(0))
 
-  public var textReadingOrder: TextReadingOrder
+  override var textReadingOrder: TextReadingOrder
     get() {
       if (pointer.isNull) {
         return backing_TextReadingOrder.get()
@@ -576,7 +577,7 @@ public open class TextBlock(
   private val backing_TextTrimming: RuntimeProperty<TextTrimming> =
       RuntimeProperty<TextTrimming>(TextTrimming.fromValue(0))
 
-  public var textTrimming: TextTrimming
+  override var textTrimming: TextTrimming
     get() {
       if (pointer.isNull) {
         return backing_TextTrimming.get()
@@ -594,7 +595,7 @@ public open class TextBlock(
   private val backing_TextWrapping: RuntimeProperty<TextWrapping> =
       RuntimeProperty<TextWrapping>(TextWrapping.fromValue(0))
 
-  public var textWrapping: TextWrapping
+  override var textWrapping: TextWrapping
     get() {
       if (pointer.isNull) {
         return backing_TextWrapping.get()
@@ -778,7 +779,7 @@ public open class TextBlock(
 
   public constructor() : this(Companion.activate().pointer)
 
-  public fun get_TextHighlighters(): IVector<TextHighlighter> {
+  override fun get_TextHighlighters(): IVector<TextHighlighter> {
     if (pointer.isNull) {
       error("Null runtime object pointer: get_TextHighlighters")
     }
@@ -786,7 +787,7 @@ public open class TextBlock(
         62).getOrThrow()))
   }
 
-  public fun add_SelectionChanged(handler: RoutedEventHandler): EventRegistrationToken {
+  override fun add_SelectionChanged(handler: RoutedEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -797,14 +798,14 @@ public open class TextBlock(
         "delegate({dae23d85-69ca-5bdf-805b-6161a3a215cc})")).getOrThrow())
   }
 
-  public fun remove_SelectionChanged(token: EventRegistrationToken) {
+  override fun remove_SelectionChanged(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 66, token.toAbi()).getOrThrow()
   }
 
-  public fun add_ContextMenuOpening(handler: ContextMenuOpeningEventHandler):
+  override fun add_ContextMenuOpening(handler: ContextMenuOpeningEventHandler):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -816,14 +817,14 @@ public open class TextBlock(
         "delegate({d010ff61-4067-526a-95a3-517577bc5273})")).getOrThrow())
   }
 
-  public fun remove_ContextMenuOpening(token: EventRegistrationToken) {
+  override fun remove_ContextMenuOpening(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 68, token.toAbi()).getOrThrow()
   }
 
-  public
+  override
       fun add_IsTextTrimmedChanged(handler: TypedEventHandler<TextBlock, IsTextTrimmedChangedEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
@@ -836,21 +837,21 @@ public open class TextBlock(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.Controls.TextBlock;{1ac8d84f-392c-5c7e-83f5-a53e3bf0abb0});rc(Microsoft.UI.Xaml.Controls.IsTextTrimmedChangedEventArgs;{3c709b2f-16ba-55d2-b6f6-dfc54a1ed021}))")).getOrThrow())
   }
 
-  public fun remove_IsTextTrimmedChanged(token: EventRegistrationToken) {
+  override fun remove_IsTextTrimmedChanged(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 70, token.toAbi()).getOrThrow()
   }
 
-  public fun selectAll() {
+  override fun selectAll() {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethod(pointer, 71).getOrThrow()
   }
 
-  public fun select(start: TextPointer, end: TextPointer) {
+  override fun select(start: TextPointer, end: TextPointer) {
     if (pointer.isNull) {
       return
     }
@@ -861,14 +862,14 @@ public open class TextBlock(
         "rc(Microsoft.UI.Xaml.Documents.TextPointer;{842eb385-ee41-5930-979b-438fa7525a51})")).getOrThrow()
   }
 
-  public fun getAlphaMask(): CompositionBrush {
+  override fun getAlphaMask(): CompositionBrush {
     if (pointer.isNull) {
       error("Null runtime object pointer: GetAlphaMask")
     }
     return CompositionBrush(PlatformComInterop.invokeObjectMethod(pointer, 73).getOrThrow())
   }
 
-  public fun copySelectionToClipboard() {
+  override fun copySelectionToClipboard() {
     if (pointer.isNull) {
       return
     }

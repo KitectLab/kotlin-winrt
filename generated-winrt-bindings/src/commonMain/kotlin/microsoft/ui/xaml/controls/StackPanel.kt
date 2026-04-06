@@ -37,6 +37,7 @@ import windows.foundation.collections.IVectorView
 public open class StackPanel(
   pointer: ComPtr,
 ) : Panel(pointer),
+    IStackPanel,
     IScrollSnapPointsInfo,
     IInsertionPanel {
   private val backing_AreHorizontalSnapPointsRegular: RuntimeProperty<WinRtBoolean> =
@@ -64,7 +65,7 @@ public open class StackPanel(
   private val backing_AreScrollSnapPointsRegular: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var areScrollSnapPointsRegular: WinRtBoolean
+  override var areScrollSnapPointsRegular: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_AreScrollSnapPointsRegular.get()
@@ -82,7 +83,7 @@ public open class StackPanel(
   private val backing_BackgroundSizing: RuntimeProperty<BackgroundSizing> =
       RuntimeProperty<BackgroundSizing>(BackgroundSizing.fromValue(0))
 
-  public var backgroundSizing: BackgroundSizing
+  override var backgroundSizing: BackgroundSizing
     get() {
       if (pointer.isNull) {
         return backing_BackgroundSizing.get()
@@ -101,7 +102,7 @@ public open class StackPanel(
   private val backing_BorderBrush: RuntimeProperty<Brush> =
       RuntimeProperty<Brush>(Brush(ComPtr.NULL))
 
-  public var borderBrush: Brush
+  override var borderBrush: Brush
     get() {
       if (pointer.isNull) {
         return backing_BorderBrush.get()
@@ -121,7 +122,7 @@ public open class StackPanel(
       RuntimeProperty<Thickness>(Thickness.fromAbi(ComStructValue(Thickness.ABI_LAYOUT,
       ByteArray(Thickness.ABI_LAYOUT.byteSize))))
 
-  public var borderThickness: Thickness
+  override var borderThickness: Thickness
     get() {
       if (pointer.isNull) {
         return backing_BorderThickness.get()
@@ -141,7 +142,7 @@ public open class StackPanel(
       RuntimeProperty<CornerRadius>(CornerRadius.fromAbi(ComStructValue(CornerRadius.ABI_LAYOUT,
       ByteArray(CornerRadius.ABI_LAYOUT.byteSize))))
 
-  public var cornerRadius: CornerRadius
+  override var cornerRadius: CornerRadius
     get() {
       if (pointer.isNull) {
         return backing_CornerRadius.get()
@@ -160,7 +161,7 @@ public open class StackPanel(
   private val backing_Orientation: RuntimeProperty<Orientation> =
       RuntimeProperty<Orientation>(Orientation.fromValue(0))
 
-  public var orientation: Orientation
+  override var orientation: Orientation
     get() {
       if (pointer.isNull) {
         return backing_Orientation.get()
@@ -179,7 +180,7 @@ public open class StackPanel(
       RuntimeProperty<Thickness>(Thickness.fromAbi(ComStructValue(Thickness.ABI_LAYOUT,
       ByteArray(Thickness.ABI_LAYOUT.byteSize))))
 
-  public var padding: Thickness
+  override var padding: Thickness
     get() {
       if (pointer.isNull) {
         return backing_Padding.get()
@@ -197,7 +198,7 @@ public open class StackPanel(
 
   private val backing_Spacing: RuntimeProperty<Float64> = RuntimeProperty<Float64>(Float64(0.0))
 
-  public var spacing: Float64
+  override var spacing: Float64
     get() {
       if (pointer.isNull) {
         return backing_Spacing.get()

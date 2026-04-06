@@ -16,11 +16,12 @@ import windows.foundation.IStringable
 public open class JsonValue(
   pointer: ComPtr,
 ) : Inspectable(pointer),
+    IJsonValue,
     IStringable {
   private val backing_ValueType: RuntimeProperty<JsonValueType> =
       RuntimeProperty<JsonValueType>(JsonValueType.fromValue(0))
 
-  public val valueType: JsonValueType
+  override val valueType: JsonValueType
     get() {
       if (pointer.isNull) {
         return backing_ValueType.get()
@@ -42,14 +43,14 @@ public open class JsonValue(
         }
   }
 
-  public fun get_ValueType(): JsonValueType {
+  override fun get_ValueType(): JsonValueType {
     if (pointer.isNull) {
       error("Null runtime object pointer: Get_ValueType")
     }
     return JsonValueType.fromValue(PlatformComInterop.invokeInt32Method(pointer, 6).getOrThrow())
   }
 
-  public fun stringify(): String {
+  override fun stringify(): String {
     if (pointer.isNull) {
       return ""
     }
@@ -63,7 +64,7 @@ public open class JsonValue(
         }
   }
 
-  public fun getString(): String {
+  override fun getString(): String {
     if (pointer.isNull) {
       return ""
     }
@@ -77,28 +78,28 @@ public open class JsonValue(
         }
   }
 
-  public fun getNumber(): Float64 {
+  override fun getNumber(): Float64 {
     if (pointer.isNull) {
       return Float64(0.0)
     }
     return Float64(PlatformComInterop.invokeFloat64Method(pointer, 9).getOrThrow())
   }
 
-  public fun getBoolean(): WinRtBoolean {
+  override fun getBoolean(): WinRtBoolean {
     if (pointer.isNull) {
       return WinRtBoolean.FALSE
     }
     return WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 10).getOrThrow())
   }
 
-  public fun getObject(): JsonObject {
+  override fun getObject(): JsonObject {
     if (pointer.isNull) {
       error("Null runtime object pointer: GetObject")
     }
     return JsonObject(PlatformComInterop.invokeObjectMethod(pointer, 12).getOrThrow())
   }
 
-  public fun getArray(): JsonArray {
+  override fun getArray(): JsonArray {
     if (pointer.isNull) {
       error("Null runtime object pointer: GetArray")
     }

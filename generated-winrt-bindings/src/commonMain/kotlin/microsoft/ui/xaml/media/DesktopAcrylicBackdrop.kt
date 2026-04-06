@@ -10,7 +10,8 @@ import kotlin.String
 
 public open class DesktopAcrylicBackdrop(
   pointer: ComPtr,
-) : SystemBackdrop(pointer) {
+) : SystemBackdrop(pointer),
+    IDesktopAcrylicBackdrop {
   public constructor() : this(Companion.factoryCreateInstance().pointer)
 
   public companion object : WinRtRuntimeClassMetadata {

@@ -16,11 +16,12 @@ import microsoft.ui.xaml.media.Brush
 
 public open class XamlControlsResources(
   pointer: ComPtr,
-) : ResourceDictionary(pointer) {
+) : ResourceDictionary(pointer),
+    IXamlControlsResources {
   private val backing_UseCompactResources: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var useCompactResources: WinRtBoolean
+  override var useCompactResources: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_UseCompactResources.get()

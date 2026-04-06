@@ -11,11 +11,12 @@ import kotlin.String
 
 public open class DependencyPropertyChangedEventArgs(
   pointer: ComPtr,
-) : Inspectable(pointer) {
+) : Inspectable(pointer),
+    IDependencyPropertyChangedEventArgs {
   private val backing_NewValue: RuntimeProperty<Inspectable> =
       RuntimeProperty<Inspectable>(Inspectable(ComPtr.NULL))
 
-  public val newValue: Inspectable
+  override val newValue: Inspectable
     get() {
       if (pointer.isNull) {
         return backing_NewValue.get()
@@ -26,7 +27,7 @@ public open class DependencyPropertyChangedEventArgs(
   private val backing_OldValue: RuntimeProperty<Inspectable> =
       RuntimeProperty<Inspectable>(Inspectable(ComPtr.NULL))
 
-  public val oldValue: Inspectable
+  override val oldValue: Inspectable
     get() {
       if (pointer.isNull) {
         return backing_OldValue.get()
@@ -37,7 +38,7 @@ public open class DependencyPropertyChangedEventArgs(
   private val backing_Property: RuntimeProperty<DependencyProperty> =
       RuntimeProperty<DependencyProperty>(DependencyProperty(ComPtr.NULL))
 
-  public val property: DependencyProperty
+  override val property: DependencyProperty
     get() {
       if (pointer.isNull) {
         return backing_Property.get()

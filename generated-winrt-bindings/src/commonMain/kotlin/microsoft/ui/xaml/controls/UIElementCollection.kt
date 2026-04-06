@@ -16,7 +16,8 @@ import windows.foundation.collections.IVectorView
 
 public open class UIElementCollection(
   pointer: ComPtr,
-) : Inspectable(pointer) {
+) : Inspectable(pointer),
+    IUIElementCollection {
   private val backing_Size: RuntimeProperty<UInt32> = RuntimeProperty<UInt32>(UInt32(0u))
 
   public val size: UInt32
@@ -109,7 +110,7 @@ public open class UIElementCollection(
         6).getOrThrow()))
   }
 
-  public fun move(oldIndex: UInt32, newIndex: UInt32) {
+  override fun move(oldIndex: UInt32, newIndex: UInt32) {
     if (pointer.isNull) {
       return
     }

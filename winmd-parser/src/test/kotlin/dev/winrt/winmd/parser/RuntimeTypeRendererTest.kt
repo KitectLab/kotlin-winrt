@@ -81,9 +81,10 @@ class RuntimeTypeRendererTest {
         )
 
         val binding = renderer.render(typeRegistry.findType("Widget", "Example.Xaml")!!).toString()
+            .replace(Regex("\\s+"), "")
 
-        assertTrue(binding.contains("IWidget"))
-        assertFalse(binding.contains("IWidgetOverrides"))
+        assertTrue(binding.contains(":dev.winrt.core.Inspectable(pointer),example.xaml.IWidget"))
+        assertFalse(binding.contains("example.xaml.IWidgetOverrides"))
     }
 
     @Test

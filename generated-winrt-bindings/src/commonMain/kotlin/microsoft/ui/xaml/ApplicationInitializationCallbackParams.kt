@@ -9,7 +9,8 @@ import kotlin.String
 
 public open class ApplicationInitializationCallbackParams(
   pointer: ComPtr,
-) : Inspectable(pointer) {
+) : Inspectable(pointer),
+    IApplicationInitializationCallbackParams {
   public companion object : WinRtRuntimeClassMetadata {
     override val qualifiedName: String = "Microsoft.UI.Xaml.ApplicationInitializationCallbackParams"
 

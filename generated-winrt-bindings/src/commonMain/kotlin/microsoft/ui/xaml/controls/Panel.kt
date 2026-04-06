@@ -19,11 +19,12 @@ import microsoft.ui.xaml.media.animation.TransitionCollection
 
 public open class Panel(
   pointer: ComPtr,
-) : FrameworkElement(pointer) {
+) : FrameworkElement(pointer),
+    IPanel {
   private val backing_Background: RuntimeProperty<Brush> =
       RuntimeProperty<Brush>(Brush(ComPtr.NULL))
 
-  public var background: Brush
+  override var background: Brush
     get() {
       if (pointer.isNull) {
         return backing_Background.get()
@@ -42,7 +43,7 @@ public open class Panel(
   private val backing_BackgroundTransition: RuntimeProperty<BrushTransition> =
       RuntimeProperty<BrushTransition>(BrushTransition(ComPtr.NULL))
 
-  public var backgroundTransition: BrushTransition
+  override var backgroundTransition: BrushTransition
     get() {
       if (pointer.isNull) {
         return backing_BackgroundTransition.get()
@@ -61,7 +62,7 @@ public open class Panel(
   private val backing_Children: RuntimeProperty<UIElementCollection> =
       RuntimeProperty<UIElementCollection>(UIElementCollection(ComPtr.NULL))
 
-  public val children: UIElementCollection
+  override val children: UIElementCollection
     get() {
       if (pointer.isNull) {
         return backing_Children.get()
@@ -72,7 +73,7 @@ public open class Panel(
   private val backing_ChildrenTransitions: RuntimeProperty<TransitionCollection> =
       RuntimeProperty<TransitionCollection>(TransitionCollection(ComPtr.NULL))
 
-  public var childrenTransitions: TransitionCollection
+  override var childrenTransitions: TransitionCollection
     get() {
       if (pointer.isNull) {
         return backing_ChildrenTransitions.get()
@@ -91,7 +92,7 @@ public open class Panel(
   private val backing_IsItemsHost: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public val isItemsHost: WinRtBoolean
+  override val isItemsHost: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_IsItemsHost.get()

@@ -87,6 +87,7 @@ import windows.foundation.numerics.Vector3
 public open class UIElement(
   pointer: ComPtr,
 ) : DependencyObject(pointer),
+    IUIElement,
     IUIElementProtected,
     IAnimationObject,
     IVisualElement,
@@ -112,7 +113,7 @@ public open class UIElement(
 
   private val backing_AccessKey: RuntimeProperty<String> = RuntimeProperty<String>("")
 
-  public var accessKey: String
+  override var accessKey: String
     get() {
       if (pointer.isNull) {
         return backing_AccessKey.get()
@@ -137,7 +138,7 @@ public open class UIElement(
   private val backing_AccessKeyScopeOwner: RuntimeProperty<DependencyObject> =
       RuntimeProperty<DependencyObject>(DependencyObject(ComPtr.NULL))
 
-  public var accessKeyScopeOwner: DependencyObject
+  override var accessKeyScopeOwner: DependencyObject
     get() {
       if (pointer.isNull) {
         return backing_AccessKeyScopeOwner.get()
@@ -157,7 +158,7 @@ public open class UIElement(
       RuntimeProperty<Vector3>(Vector3.fromAbi(ComStructValue(Vector3.ABI_LAYOUT,
       ByteArray(Vector3.ABI_LAYOUT.byteSize))))
 
-  public val actualOffset: Vector3
+  override val actualOffset: Vector3
     get() {
       if (pointer.isNull) {
         return backing_ActualOffset.get()
@@ -170,7 +171,7 @@ public open class UIElement(
       RuntimeProperty<Vector2>(Vector2.fromAbi(ComStructValue(Vector2.ABI_LAYOUT,
       ByteArray(Vector2.ABI_LAYOUT.byteSize))))
 
-  public val actualSize: Vector2
+  override val actualSize: Vector2
     get() {
       if (pointer.isNull) {
         return backing_ActualSize.get()
@@ -182,7 +183,7 @@ public open class UIElement(
   private val backing_AllowDrop: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var allowDrop: WinRtBoolean
+  override var allowDrop: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_AllowDrop.get()
@@ -200,7 +201,7 @@ public open class UIElement(
   private val backing_CacheMode: RuntimeProperty<CacheMode> =
       RuntimeProperty<CacheMode>(CacheMode(ComPtr.NULL))
 
-  public var cacheMode: CacheMode
+  override var cacheMode: CacheMode
     get() {
       if (pointer.isNull) {
         return backing_CacheMode.get()
@@ -219,7 +220,7 @@ public open class UIElement(
   private val backing_CanBeScrollAnchor: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var canBeScrollAnchor: WinRtBoolean
+  override var canBeScrollAnchor: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_CanBeScrollAnchor.get()
@@ -237,7 +238,7 @@ public open class UIElement(
   private val backing_CanDrag: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var canDrag: WinRtBoolean
+  override var canDrag: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_CanDrag.get()
@@ -256,7 +257,7 @@ public open class UIElement(
       RuntimeProperty<Vector3>(Vector3.fromAbi(ComStructValue(Vector3.ABI_LAYOUT,
       ByteArray(Vector3.ABI_LAYOUT.byteSize))))
 
-  public var centerPoint: Vector3
+  override var centerPoint: Vector3
     get() {
       if (pointer.isNull) {
         return backing_CenterPoint.get()
@@ -275,7 +276,7 @@ public open class UIElement(
   private val backing_Clip: RuntimeProperty<RectangleGeometry> =
       RuntimeProperty<RectangleGeometry>(RectangleGeometry(ComPtr.NULL))
 
-  public var clip: RectangleGeometry
+  override var clip: RectangleGeometry
     get() {
       if (pointer.isNull) {
         return backing_Clip.get()
@@ -294,7 +295,7 @@ public open class UIElement(
   private val backing_CompositeMode: RuntimeProperty<ElementCompositeMode> =
       RuntimeProperty<ElementCompositeMode>(ElementCompositeMode.fromValue(0))
 
-  public var compositeMode: ElementCompositeMode
+  override var compositeMode: ElementCompositeMode
     get() {
       if (pointer.isNull) {
         return backing_CompositeMode.get()
@@ -313,7 +314,7 @@ public open class UIElement(
   private val backing_ContextFlyout: RuntimeProperty<FlyoutBase> =
       RuntimeProperty<FlyoutBase>(FlyoutBase(ComPtr.NULL))
 
-  public var contextFlyout: FlyoutBase
+  override var contextFlyout: FlyoutBase
     get() {
       if (pointer.isNull) {
         return backing_ContextFlyout.get()
@@ -333,7 +334,7 @@ public open class UIElement(
       RuntimeProperty<Size>(Size.fromAbi(ComStructValue(Size.ABI_LAYOUT,
       ByteArray(Size.ABI_LAYOUT.byteSize))))
 
-  public val desiredSize: Size
+  override val desiredSize: Size
     get() {
       if (pointer.isNull) {
         return backing_DesiredSize.get()
@@ -345,7 +346,7 @@ public open class UIElement(
   private val backing_ExitDisplayModeOnAccessKeyInvoked: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var exitDisplayModeOnAccessKeyInvoked: WinRtBoolean
+  override var exitDisplayModeOnAccessKeyInvoked: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_ExitDisplayModeOnAccessKeyInvoked.get()
@@ -363,7 +364,7 @@ public open class UIElement(
   private val backing_FocusState: RuntimeProperty<FocusState> =
       RuntimeProperty<FocusState>(FocusState.fromValue(0))
 
-  public val focusState: FocusState
+  override val focusState: FocusState
     get() {
       if (pointer.isNull) {
         return backing_FocusState.get()
@@ -374,7 +375,7 @@ public open class UIElement(
   private val backing_HighContrastAdjustment: RuntimeProperty<ElementHighContrastAdjustment> =
       RuntimeProperty<ElementHighContrastAdjustment>(ElementHighContrastAdjustment.fromValue(0u))
 
-  public var highContrastAdjustment: ElementHighContrastAdjustment
+  override var highContrastAdjustment: ElementHighContrastAdjustment
     get() {
       if (pointer.isNull) {
         return backing_HighContrastAdjustment.get()
@@ -393,7 +394,7 @@ public open class UIElement(
   private val backing_IsAccessKeyScope: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var isAccessKeyScope: WinRtBoolean
+  override var isAccessKeyScope: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_IsAccessKeyScope.get()
@@ -411,7 +412,7 @@ public open class UIElement(
   private val backing_IsDoubleTapEnabled: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var isDoubleTapEnabled: WinRtBoolean
+  override var isDoubleTapEnabled: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_IsDoubleTapEnabled.get()
@@ -429,7 +430,7 @@ public open class UIElement(
   private val backing_IsHitTestVisible: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var isHitTestVisible: WinRtBoolean
+  override var isHitTestVisible: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_IsHitTestVisible.get()
@@ -447,7 +448,7 @@ public open class UIElement(
   private val backing_IsHoldingEnabled: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var isHoldingEnabled: WinRtBoolean
+  override var isHoldingEnabled: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_IsHoldingEnabled.get()
@@ -465,7 +466,7 @@ public open class UIElement(
   private val backing_IsRightTapEnabled: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var isRightTapEnabled: WinRtBoolean
+  override var isRightTapEnabled: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_IsRightTapEnabled.get()
@@ -483,7 +484,7 @@ public open class UIElement(
   private val backing_IsTabStop: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var isTabStop: WinRtBoolean
+  override var isTabStop: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_IsTabStop.get()
@@ -501,7 +502,7 @@ public open class UIElement(
   private val backing_IsTapEnabled: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var isTapEnabled: WinRtBoolean
+  override var isTapEnabled: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_IsTapEnabled.get()
@@ -519,7 +520,7 @@ public open class UIElement(
   private val backing_KeyTipHorizontalOffset: RuntimeProperty<Float64> =
       RuntimeProperty<Float64>(Float64(0.0))
 
-  public var keyTipHorizontalOffset: Float64
+  override var keyTipHorizontalOffset: Float64
     get() {
       if (pointer.isNull) {
         return backing_KeyTipHorizontalOffset.get()
@@ -537,7 +538,7 @@ public open class UIElement(
   private val backing_KeyTipPlacementMode: RuntimeProperty<KeyTipPlacementMode> =
       RuntimeProperty<KeyTipPlacementMode>(KeyTipPlacementMode.fromValue(0))
 
-  public var keyTipPlacementMode: KeyTipPlacementMode
+  override var keyTipPlacementMode: KeyTipPlacementMode
     get() {
       if (pointer.isNull) {
         return backing_KeyTipPlacementMode.get()
@@ -556,7 +557,7 @@ public open class UIElement(
   private val backing_KeyTipTarget: RuntimeProperty<DependencyObject> =
       RuntimeProperty<DependencyObject>(DependencyObject(ComPtr.NULL))
 
-  public var keyTipTarget: DependencyObject
+  override var keyTipTarget: DependencyObject
     get() {
       if (pointer.isNull) {
         return backing_KeyTipTarget.get()
@@ -575,7 +576,7 @@ public open class UIElement(
   private val backing_KeyTipVerticalOffset: RuntimeProperty<Float64> =
       RuntimeProperty<Float64>(Float64(0.0))
 
-  public var keyTipVerticalOffset: Float64
+  override var keyTipVerticalOffset: Float64
     get() {
       if (pointer.isNull) {
         return backing_KeyTipVerticalOffset.get()
@@ -594,7 +595,7 @@ public open class UIElement(
       RuntimeProperty<KeyboardAcceleratorPlacementMode> =
       RuntimeProperty<KeyboardAcceleratorPlacementMode>(KeyboardAcceleratorPlacementMode.fromValue(0))
 
-  public var keyboardAcceleratorPlacementMode: KeyboardAcceleratorPlacementMode
+  override var keyboardAcceleratorPlacementMode: KeyboardAcceleratorPlacementMode
     get() {
       if (pointer.isNull) {
         return backing_KeyboardAcceleratorPlacementMode.get()
@@ -613,7 +614,7 @@ public open class UIElement(
   private val backing_KeyboardAcceleratorPlacementTarget: RuntimeProperty<DependencyObject> =
       RuntimeProperty<DependencyObject>(DependencyObject(ComPtr.NULL))
 
-  public var keyboardAcceleratorPlacementTarget: DependencyObject
+  override var keyboardAcceleratorPlacementTarget: DependencyObject
     get() {
       if (pointer.isNull) {
         return backing_KeyboardAcceleratorPlacementTarget.get()
@@ -632,7 +633,7 @@ public open class UIElement(
   private val backing_ManipulationMode: RuntimeProperty<ManipulationModes> =
       RuntimeProperty<ManipulationModes>(ManipulationModes.fromValue(0u))
 
-  public var manipulationMode: ManipulationModes
+  override var manipulationMode: ManipulationModes
     get() {
       if (pointer.isNull) {
         return backing_ManipulationMode.get()
@@ -650,7 +651,7 @@ public open class UIElement(
 
   private val backing_Opacity: RuntimeProperty<Float64> = RuntimeProperty<Float64>(Float64(0.0))
 
-  public var opacity: Float64
+  override var opacity: Float64
     get() {
       if (pointer.isNull) {
         return backing_Opacity.get()
@@ -668,7 +669,7 @@ public open class UIElement(
   private val backing_OpacityTransition: RuntimeProperty<ScalarTransition> =
       RuntimeProperty<ScalarTransition>(ScalarTransition(ComPtr.NULL))
 
-  public var opacityTransition: ScalarTransition
+  override var opacityTransition: ScalarTransition
     get() {
       if (pointer.isNull) {
         return backing_OpacityTransition.get()
@@ -687,7 +688,7 @@ public open class UIElement(
   private val backing_Projection: RuntimeProperty<Projection> =
       RuntimeProperty<Projection>(Projection(ComPtr.NULL))
 
-  public var projection: Projection
+  override var projection: Projection
     get() {
       if (pointer.isNull) {
         return backing_Projection.get()
@@ -706,7 +707,7 @@ public open class UIElement(
   private val backing_RasterizationScale: RuntimeProperty<Float64> =
       RuntimeProperty<Float64>(Float64(0.0))
 
-  public var rasterizationScale: Float64
+  override var rasterizationScale: Float64
     get() {
       if (pointer.isNull) {
         return backing_RasterizationScale.get()
@@ -725,7 +726,7 @@ public open class UIElement(
       RuntimeProperty<Size>(Size.fromAbi(ComStructValue(Size.ABI_LAYOUT,
       ByteArray(Size.ABI_LAYOUT.byteSize))))
 
-  public val renderSize: Size
+  override val renderSize: Size
     get() {
       if (pointer.isNull) {
         return backing_RenderSize.get()
@@ -737,7 +738,7 @@ public open class UIElement(
   private val backing_RenderTransform: RuntimeProperty<Transform> =
       RuntimeProperty<Transform>(Transform(ComPtr.NULL))
 
-  public var renderTransform: Transform
+  override var renderTransform: Transform
     get() {
       if (pointer.isNull) {
         return backing_RenderTransform.get()
@@ -757,7 +758,7 @@ public open class UIElement(
       RuntimeProperty<Point>(Point.fromAbi(ComStructValue(Point.ABI_LAYOUT,
       ByteArray(Point.ABI_LAYOUT.byteSize))))
 
-  public var renderTransformOrigin: Point
+  override var renderTransformOrigin: Point
     get() {
       if (pointer.isNull) {
         return backing_RenderTransformOrigin.get()
@@ -775,7 +776,7 @@ public open class UIElement(
 
   private val backing_Rotation: RuntimeProperty<Float32> = RuntimeProperty<Float32>(Float32(0f))
 
-  public var rotation: Float32
+  override var rotation: Float32
     get() {
       if (pointer.isNull) {
         return backing_Rotation.get()
@@ -794,7 +795,7 @@ public open class UIElement(
       RuntimeProperty<Vector3>(Vector3.fromAbi(ComStructValue(Vector3.ABI_LAYOUT,
       ByteArray(Vector3.ABI_LAYOUT.byteSize))))
 
-  public var rotationAxis: Vector3
+  override var rotationAxis: Vector3
     get() {
       if (pointer.isNull) {
         return backing_RotationAxis.get()
@@ -813,7 +814,7 @@ public open class UIElement(
   private val backing_RotationTransition: RuntimeProperty<ScalarTransition> =
       RuntimeProperty<ScalarTransition>(ScalarTransition(ComPtr.NULL))
 
-  public var rotationTransition: ScalarTransition
+  override var rotationTransition: ScalarTransition
     get() {
       if (pointer.isNull) {
         return backing_RotationTransition.get()
@@ -833,7 +834,7 @@ public open class UIElement(
       RuntimeProperty<Vector3>(Vector3.fromAbi(ComStructValue(Vector3.ABI_LAYOUT,
       ByteArray(Vector3.ABI_LAYOUT.byteSize))))
 
-  public var scale: Vector3
+  override var scale: Vector3
     get() {
       if (pointer.isNull) {
         return backing_Scale.get()
@@ -852,7 +853,7 @@ public open class UIElement(
   private val backing_ScaleTransition: RuntimeProperty<Vector3Transition> =
       RuntimeProperty<Vector3Transition>(Vector3Transition(ComPtr.NULL))
 
-  public var scaleTransition: Vector3Transition
+  override var scaleTransition: Vector3Transition
     get() {
       if (pointer.isNull) {
         return backing_ScaleTransition.get()
@@ -870,7 +871,7 @@ public open class UIElement(
 
   private val backing_Shadow: RuntimeProperty<Shadow> = RuntimeProperty<Shadow>(Shadow(ComPtr.NULL))
 
-  public var shadow: Shadow
+  override var shadow: Shadow
     get() {
       if (pointer.isNull) {
         return backing_Shadow.get()
@@ -889,7 +890,7 @@ public open class UIElement(
   private val backing_TabFocusNavigation: RuntimeProperty<KeyboardNavigationMode> =
       RuntimeProperty<KeyboardNavigationMode>(KeyboardNavigationMode.fromValue(0))
 
-  public var tabFocusNavigation: KeyboardNavigationMode
+  override var tabFocusNavigation: KeyboardNavigationMode
     get() {
       if (pointer.isNull) {
         return backing_TabFocusNavigation.get()
@@ -907,7 +908,7 @@ public open class UIElement(
 
   private val backing_TabIndex: RuntimeProperty<Int32> = RuntimeProperty<Int32>(Int32(0))
 
-  public var tabIndex: Int32
+  override var tabIndex: Int32
     get() {
       if (pointer.isNull) {
         return backing_TabIndex.get()
@@ -925,7 +926,7 @@ public open class UIElement(
   private val backing_Transform3D: RuntimeProperty<Transform3D> =
       RuntimeProperty<Transform3D>(Transform3D(ComPtr.NULL))
 
-  public var transform3D: Transform3D
+  override var transform3D: Transform3D
     get() {
       if (pointer.isNull) {
         return backing_Transform3D.get()
@@ -945,7 +946,7 @@ public open class UIElement(
       RuntimeProperty<Matrix4x4>(Matrix4x4.fromAbi(ComStructValue(Matrix4x4.ABI_LAYOUT,
       ByteArray(Matrix4x4.ABI_LAYOUT.byteSize))))
 
-  public var transformMatrix: Matrix4x4
+  override var transformMatrix: Matrix4x4
     get() {
       if (pointer.isNull) {
         return backing_TransformMatrix.get()
@@ -964,7 +965,7 @@ public open class UIElement(
   private val backing_Transitions: RuntimeProperty<TransitionCollection> =
       RuntimeProperty<TransitionCollection>(TransitionCollection(ComPtr.NULL))
 
-  public var transitions: TransitionCollection
+  override var transitions: TransitionCollection
     get() {
       if (pointer.isNull) {
         return backing_Transitions.get()
@@ -984,7 +985,7 @@ public open class UIElement(
       RuntimeProperty<Vector3>(Vector3.fromAbi(ComStructValue(Vector3.ABI_LAYOUT,
       ByteArray(Vector3.ABI_LAYOUT.byteSize))))
 
-  public var translation: Vector3
+  override var translation: Vector3
     get() {
       if (pointer.isNull) {
         return backing_Translation.get()
@@ -1003,7 +1004,7 @@ public open class UIElement(
   private val backing_TranslationTransition: RuntimeProperty<Vector3Transition> =
       RuntimeProperty<Vector3Transition>(Vector3Transition(ComPtr.NULL))
 
-  public var translationTransition: Vector3Transition
+  override var translationTransition: Vector3Transition
     get() {
       if (pointer.isNull) {
         return backing_TranslationTransition.get()
@@ -1022,7 +1023,7 @@ public open class UIElement(
   private val backing_UseLayoutRounding: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var useLayoutRounding: WinRtBoolean
+  override var useLayoutRounding: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_UseLayoutRounding.get()
@@ -1040,7 +1041,7 @@ public open class UIElement(
   private val backing_UseSystemFocusVisuals: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var useSystemFocusVisuals: WinRtBoolean
+  override var useSystemFocusVisuals: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_UseSystemFocusVisuals.get()
@@ -1058,7 +1059,7 @@ public open class UIElement(
   private val backing_Visibility: RuntimeProperty<Visibility> =
       RuntimeProperty<Visibility>(Visibility.fromValue(0))
 
-  public var visibility: Visibility
+  override var visibility: Visibility
     get() {
       if (pointer.isNull) {
         return backing_Visibility.get()
@@ -1076,7 +1077,7 @@ public open class UIElement(
   private val backing_XYFocusDown: RuntimeProperty<DependencyObject> =
       RuntimeProperty<DependencyObject>(DependencyObject(ComPtr.NULL))
 
-  public var xYFocusDown: DependencyObject
+  override var xYFocusDown: DependencyObject
     get() {
       if (pointer.isNull) {
         return backing_XYFocusDown.get()
@@ -1095,7 +1096,7 @@ public open class UIElement(
   private val backing_XYFocusDownNavigationStrategy: RuntimeProperty<XYFocusNavigationStrategy> =
       RuntimeProperty<XYFocusNavigationStrategy>(XYFocusNavigationStrategy.fromValue(0))
 
-  public var xYFocusDownNavigationStrategy: XYFocusNavigationStrategy
+  override var xYFocusDownNavigationStrategy: XYFocusNavigationStrategy
     get() {
       if (pointer.isNull) {
         return backing_XYFocusDownNavigationStrategy.get()
@@ -1114,7 +1115,7 @@ public open class UIElement(
   private val backing_XYFocusKeyboardNavigation: RuntimeProperty<XYFocusKeyboardNavigationMode> =
       RuntimeProperty<XYFocusKeyboardNavigationMode>(XYFocusKeyboardNavigationMode.fromValue(0))
 
-  public var xYFocusKeyboardNavigation: XYFocusKeyboardNavigationMode
+  override var xYFocusKeyboardNavigation: XYFocusKeyboardNavigationMode
     get() {
       if (pointer.isNull) {
         return backing_XYFocusKeyboardNavigation.get()
@@ -1133,7 +1134,7 @@ public open class UIElement(
   private val backing_XYFocusLeft: RuntimeProperty<DependencyObject> =
       RuntimeProperty<DependencyObject>(DependencyObject(ComPtr.NULL))
 
-  public var xYFocusLeft: DependencyObject
+  override var xYFocusLeft: DependencyObject
     get() {
       if (pointer.isNull) {
         return backing_XYFocusLeft.get()
@@ -1152,7 +1153,7 @@ public open class UIElement(
   private val backing_XYFocusLeftNavigationStrategy: RuntimeProperty<XYFocusNavigationStrategy> =
       RuntimeProperty<XYFocusNavigationStrategy>(XYFocusNavigationStrategy.fromValue(0))
 
-  public var xYFocusLeftNavigationStrategy: XYFocusNavigationStrategy
+  override var xYFocusLeftNavigationStrategy: XYFocusNavigationStrategy
     get() {
       if (pointer.isNull) {
         return backing_XYFocusLeftNavigationStrategy.get()
@@ -1171,7 +1172,7 @@ public open class UIElement(
   private val backing_XYFocusRight: RuntimeProperty<DependencyObject> =
       RuntimeProperty<DependencyObject>(DependencyObject(ComPtr.NULL))
 
-  public var xYFocusRight: DependencyObject
+  override var xYFocusRight: DependencyObject
     get() {
       if (pointer.isNull) {
         return backing_XYFocusRight.get()
@@ -1190,7 +1191,7 @@ public open class UIElement(
   private val backing_XYFocusRightNavigationStrategy: RuntimeProperty<XYFocusNavigationStrategy> =
       RuntimeProperty<XYFocusNavigationStrategy>(XYFocusNavigationStrategy.fromValue(0))
 
-  public var xYFocusRightNavigationStrategy: XYFocusNavigationStrategy
+  override var xYFocusRightNavigationStrategy: XYFocusNavigationStrategy
     get() {
       if (pointer.isNull) {
         return backing_XYFocusRightNavigationStrategy.get()
@@ -1209,7 +1210,7 @@ public open class UIElement(
   private val backing_XYFocusUp: RuntimeProperty<DependencyObject> =
       RuntimeProperty<DependencyObject>(DependencyObject(ComPtr.NULL))
 
-  public var xYFocusUp: DependencyObject
+  override var xYFocusUp: DependencyObject
     get() {
       if (pointer.isNull) {
         return backing_XYFocusUp.get()
@@ -1228,7 +1229,7 @@ public open class UIElement(
   private val backing_XYFocusUpNavigationStrategy: RuntimeProperty<XYFocusNavigationStrategy> =
       RuntimeProperty<XYFocusNavigationStrategy>(XYFocusNavigationStrategy.fromValue(0))
 
-  public var xYFocusUpNavigationStrategy: XYFocusNavigationStrategy
+  override var xYFocusUpNavigationStrategy: XYFocusNavigationStrategy
     get() {
       if (pointer.isNull) {
         return backing_XYFocusUpNavigationStrategy.get()
@@ -1247,7 +1248,7 @@ public open class UIElement(
   private val backing_XamlRoot: RuntimeProperty<XamlRoot> =
       RuntimeProperty<XamlRoot>(XamlRoot(ComPtr.NULL))
 
-  public var xamlRoot: XamlRoot
+  override var xamlRoot: XamlRoot
     get() {
       if (pointer.isNull) {
         return backing_XamlRoot.get()
@@ -1419,7 +1420,7 @@ public open class UIElement(
     return Visual(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
   }
 
-  public fun get_PointerCaptures(): IVectorView<Pointer> {
+  override fun get_PointerCaptures(): IVectorView<Pointer> {
     if (pointer.isNull) {
       error("Null runtime object pointer: get_PointerCaptures")
     }
@@ -1427,7 +1428,7 @@ public open class UIElement(
         44).getOrThrow()))
   }
 
-  public fun get_Lights(): IVector<XamlLight> {
+  override fun get_Lights(): IVector<XamlLight> {
     if (pointer.isNull) {
       error("Null runtime object pointer: get_Lights")
     }
@@ -1435,7 +1436,7 @@ public open class UIElement(
         49).getOrThrow()))
   }
 
-  public fun get_KeyboardAccelerators(): IVector<KeyboardAccelerator> {
+  override fun get_KeyboardAccelerators(): IVector<KeyboardAccelerator> {
     if (pointer.isNull) {
       error("Null runtime object pointer: get_KeyboardAccelerators")
     }
@@ -1443,7 +1444,7 @@ public open class UIElement(
         78).getOrThrow()))
   }
 
-  public fun add_KeyUp(handler: KeyEventHandler): EventRegistrationToken {
+  override fun add_KeyUp(handler: KeyEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1454,14 +1455,14 @@ public open class UIElement(
         "delegate({db68e7cc-9a2b-527d-9989-25284daccc03})")).getOrThrow())
   }
 
-  public fun remove_KeyUp(token: EventRegistrationToken) {
+  override fun remove_KeyUp(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 131, token.toAbi()).getOrThrow()
   }
 
-  public fun add_KeyDown(handler: KeyEventHandler): EventRegistrationToken {
+  override fun add_KeyDown(handler: KeyEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1472,14 +1473,14 @@ public open class UIElement(
         "delegate({db68e7cc-9a2b-527d-9989-25284daccc03})")).getOrThrow())
   }
 
-  public fun remove_KeyDown(token: EventRegistrationToken) {
+  override fun remove_KeyDown(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 133, token.toAbi()).getOrThrow()
   }
 
-  public fun add_GotFocus(handler: RoutedEventHandler): EventRegistrationToken {
+  override fun add_GotFocus(handler: RoutedEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1490,14 +1491,14 @@ public open class UIElement(
         "delegate({dae23d85-69ca-5bdf-805b-6161a3a215cc})")).getOrThrow())
   }
 
-  public fun remove_GotFocus(token: EventRegistrationToken) {
+  override fun remove_GotFocus(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 135, token.toAbi()).getOrThrow()
   }
 
-  public fun add_LostFocus(handler: RoutedEventHandler): EventRegistrationToken {
+  override fun add_LostFocus(handler: RoutedEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1508,14 +1509,14 @@ public open class UIElement(
         "delegate({dae23d85-69ca-5bdf-805b-6161a3a215cc})")).getOrThrow())
   }
 
-  public fun remove_LostFocus(token: EventRegistrationToken) {
+  override fun remove_LostFocus(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 137, token.toAbi()).getOrThrow()
   }
 
-  public fun add_DragStarting(handler: TypedEventHandler<UIElement, DragStartingEventArgs>):
+  override fun add_DragStarting(handler: TypedEventHandler<UIElement, DragStartingEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -1527,14 +1528,14 @@ public open class UIElement(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b});rc(Microsoft.UI.Xaml.DragStartingEventArgs;{ad17bace-9613-5666-a31b-79a73fba77cf}))")).getOrThrow())
   }
 
-  public fun remove_DragStarting(token: EventRegistrationToken) {
+  override fun remove_DragStarting(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 139, token.toAbi()).getOrThrow()
   }
 
-  public fun add_DropCompleted(handler: TypedEventHandler<UIElement, DropCompletedEventArgs>):
+  override fun add_DropCompleted(handler: TypedEventHandler<UIElement, DropCompletedEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -1546,14 +1547,14 @@ public open class UIElement(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b});rc(Microsoft.UI.Xaml.DropCompletedEventArgs;{e700082d-c640-5d44-b23a-f213dfbeb245}))")).getOrThrow())
   }
 
-  public fun remove_DropCompleted(token: EventRegistrationToken) {
+  override fun remove_DropCompleted(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 141, token.toAbi()).getOrThrow()
   }
 
-  public
+  override
       fun add_CharacterReceived(handler: TypedEventHandler<UIElement, CharacterReceivedRoutedEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
@@ -1566,14 +1567,14 @@ public open class UIElement(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b});rc(Microsoft.UI.Xaml.Input.CharacterReceivedRoutedEventArgs;{e26ca5bb-34c3-5c1e-9a16-00b80b07a899}))")).getOrThrow())
   }
 
-  public fun remove_CharacterReceived(token: EventRegistrationToken) {
+  override fun remove_CharacterReceived(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 143, token.toAbi()).getOrThrow()
   }
 
-  public fun add_DragEnter(handler: DragEventHandler): EventRegistrationToken {
+  override fun add_DragEnter(handler: DragEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1584,14 +1585,14 @@ public open class UIElement(
         "delegate({277afc83-cb67-56c8-b601-1b9c0f1c3d32})")).getOrThrow())
   }
 
-  public fun remove_DragEnter(token: EventRegistrationToken) {
+  override fun remove_DragEnter(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 145, token.toAbi()).getOrThrow()
   }
 
-  public fun add_DragLeave(handler: DragEventHandler): EventRegistrationToken {
+  override fun add_DragLeave(handler: DragEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1602,14 +1603,14 @@ public open class UIElement(
         "delegate({277afc83-cb67-56c8-b601-1b9c0f1c3d32})")).getOrThrow())
   }
 
-  public fun remove_DragLeave(token: EventRegistrationToken) {
+  override fun remove_DragLeave(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 147, token.toAbi()).getOrThrow()
   }
 
-  public fun add_DragOver(handler: DragEventHandler): EventRegistrationToken {
+  override fun add_DragOver(handler: DragEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1620,14 +1621,14 @@ public open class UIElement(
         "delegate({277afc83-cb67-56c8-b601-1b9c0f1c3d32})")).getOrThrow())
   }
 
-  public fun remove_DragOver(token: EventRegistrationToken) {
+  override fun remove_DragOver(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 149, token.toAbi()).getOrThrow()
   }
 
-  public fun add_Drop(handler: DragEventHandler): EventRegistrationToken {
+  override fun add_Drop(handler: DragEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1638,14 +1639,14 @@ public open class UIElement(
         "delegate({277afc83-cb67-56c8-b601-1b9c0f1c3d32})")).getOrThrow())
   }
 
-  public fun remove_Drop(token: EventRegistrationToken) {
+  override fun remove_Drop(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 151, token.toAbi()).getOrThrow()
   }
 
-  public fun add_PointerPressed(handler: PointerEventHandler): EventRegistrationToken {
+  override fun add_PointerPressed(handler: PointerEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1656,14 +1657,14 @@ public open class UIElement(
         "delegate({a48a71e1-8bb4-5597-9e31-903a3f6a04fb})")).getOrThrow())
   }
 
-  public fun remove_PointerPressed(token: EventRegistrationToken) {
+  override fun remove_PointerPressed(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 153, token.toAbi()).getOrThrow()
   }
 
-  public fun add_PointerMoved(handler: PointerEventHandler): EventRegistrationToken {
+  override fun add_PointerMoved(handler: PointerEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1674,14 +1675,14 @@ public open class UIElement(
         "delegate({a48a71e1-8bb4-5597-9e31-903a3f6a04fb})")).getOrThrow())
   }
 
-  public fun remove_PointerMoved(token: EventRegistrationToken) {
+  override fun remove_PointerMoved(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 155, token.toAbi()).getOrThrow()
   }
 
-  public fun add_PointerReleased(handler: PointerEventHandler): EventRegistrationToken {
+  override fun add_PointerReleased(handler: PointerEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1692,14 +1693,14 @@ public open class UIElement(
         "delegate({a48a71e1-8bb4-5597-9e31-903a3f6a04fb})")).getOrThrow())
   }
 
-  public fun remove_PointerReleased(token: EventRegistrationToken) {
+  override fun remove_PointerReleased(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 157, token.toAbi()).getOrThrow()
   }
 
-  public fun add_PointerEntered(handler: PointerEventHandler): EventRegistrationToken {
+  override fun add_PointerEntered(handler: PointerEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1710,14 +1711,14 @@ public open class UIElement(
         "delegate({a48a71e1-8bb4-5597-9e31-903a3f6a04fb})")).getOrThrow())
   }
 
-  public fun remove_PointerEntered(token: EventRegistrationToken) {
+  override fun remove_PointerEntered(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 159, token.toAbi()).getOrThrow()
   }
 
-  public fun add_PointerExited(handler: PointerEventHandler): EventRegistrationToken {
+  override fun add_PointerExited(handler: PointerEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1728,14 +1729,14 @@ public open class UIElement(
         "delegate({a48a71e1-8bb4-5597-9e31-903a3f6a04fb})")).getOrThrow())
   }
 
-  public fun remove_PointerExited(token: EventRegistrationToken) {
+  override fun remove_PointerExited(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 161, token.toAbi()).getOrThrow()
   }
 
-  public fun add_PointerCaptureLost(handler: PointerEventHandler): EventRegistrationToken {
+  override fun add_PointerCaptureLost(handler: PointerEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1746,14 +1747,14 @@ public open class UIElement(
         "delegate({a48a71e1-8bb4-5597-9e31-903a3f6a04fb})")).getOrThrow())
   }
 
-  public fun remove_PointerCaptureLost(token: EventRegistrationToken) {
+  override fun remove_PointerCaptureLost(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 163, token.toAbi()).getOrThrow()
   }
 
-  public fun add_PointerCanceled(handler: PointerEventHandler): EventRegistrationToken {
+  override fun add_PointerCanceled(handler: PointerEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1764,14 +1765,14 @@ public open class UIElement(
         "delegate({a48a71e1-8bb4-5597-9e31-903a3f6a04fb})")).getOrThrow())
   }
 
-  public fun remove_PointerCanceled(token: EventRegistrationToken) {
+  override fun remove_PointerCanceled(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 165, token.toAbi()).getOrThrow()
   }
 
-  public fun add_PointerWheelChanged(handler: PointerEventHandler): EventRegistrationToken {
+  override fun add_PointerWheelChanged(handler: PointerEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1782,14 +1783,14 @@ public open class UIElement(
         "delegate({a48a71e1-8bb4-5597-9e31-903a3f6a04fb})")).getOrThrow())
   }
 
-  public fun remove_PointerWheelChanged(token: EventRegistrationToken) {
+  override fun remove_PointerWheelChanged(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 167, token.toAbi()).getOrThrow()
   }
 
-  public fun add_Tapped(handler: TappedEventHandler): EventRegistrationToken {
+  override fun add_Tapped(handler: TappedEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1800,14 +1801,14 @@ public open class UIElement(
         "delegate({b60074f3-125b-534e-8f9c-9769bd3f0f64})")).getOrThrow())
   }
 
-  public fun remove_Tapped(token: EventRegistrationToken) {
+  override fun remove_Tapped(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 169, token.toAbi()).getOrThrow()
   }
 
-  public fun add_DoubleTapped(handler: DoubleTappedEventHandler): EventRegistrationToken {
+  override fun add_DoubleTapped(handler: DoubleTappedEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1818,14 +1819,14 @@ public open class UIElement(
         "delegate({f7a501b9-e277-5611-87b0-0e0607622183})")).getOrThrow())
   }
 
-  public fun remove_DoubleTapped(token: EventRegistrationToken) {
+  override fun remove_DoubleTapped(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 171, token.toAbi()).getOrThrow()
   }
 
-  public fun add_Holding(handler: HoldingEventHandler): EventRegistrationToken {
+  override fun add_Holding(handler: HoldingEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1836,14 +1837,15 @@ public open class UIElement(
         "delegate({fe23c5bd-4984-56b6-b92b-fc9d1216b24e})")).getOrThrow())
   }
 
-  public fun remove_Holding(token: EventRegistrationToken) {
+  override fun remove_Holding(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 173, token.toAbi()).getOrThrow()
   }
 
-  public fun add_ContextRequested(handler: TypedEventHandler<UIElement, ContextRequestedEventArgs>):
+  override
+      fun add_ContextRequested(handler: TypedEventHandler<UIElement, ContextRequestedEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -1855,14 +1857,14 @@ public open class UIElement(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b});rc(Microsoft.UI.Xaml.Input.ContextRequestedEventArgs;{bcedcb98-77b5-53c0-802e-fd52f3806e51}))")).getOrThrow())
   }
 
-  public fun remove_ContextRequested(token: EventRegistrationToken) {
+  override fun remove_ContextRequested(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 175, token.toAbi()).getOrThrow()
   }
 
-  public fun add_ContextCanceled(handler: TypedEventHandler<UIElement, RoutedEventArgs>):
+  override fun add_ContextCanceled(handler: TypedEventHandler<UIElement, RoutedEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -1874,14 +1876,14 @@ public open class UIElement(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b});rc(Microsoft.UI.Xaml.RoutedEventArgs;{0908c407-1c7d-5de3-9c50-d971c62ec8ec}))")).getOrThrow())
   }
 
-  public fun remove_ContextCanceled(token: EventRegistrationToken) {
+  override fun remove_ContextCanceled(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 177, token.toAbi()).getOrThrow()
   }
 
-  public fun add_RightTapped(handler: RightTappedEventHandler): EventRegistrationToken {
+  override fun add_RightTapped(handler: RightTappedEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1892,14 +1894,14 @@ public open class UIElement(
         "delegate({5070e32f-3dc7-56cf-8fdd-de1b40d0b472})")).getOrThrow())
   }
 
-  public fun remove_RightTapped(token: EventRegistrationToken) {
+  override fun remove_RightTapped(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 179, token.toAbi()).getOrThrow()
   }
 
-  public fun add_ManipulationStarting(handler: ManipulationStartingEventHandler):
+  override fun add_ManipulationStarting(handler: ManipulationStartingEventHandler):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -1911,14 +1913,14 @@ public open class UIElement(
         "delegate({44f528f1-f0e4-505c-a0bb-0c4839b29df5})")).getOrThrow())
   }
 
-  public fun remove_ManipulationStarting(token: EventRegistrationToken) {
+  override fun remove_ManipulationStarting(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 181, token.toAbi()).getOrThrow()
   }
 
-  public fun add_ManipulationInertiaStarting(handler: ManipulationInertiaStartingEventHandler):
+  override fun add_ManipulationInertiaStarting(handler: ManipulationInertiaStartingEventHandler):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -1930,14 +1932,14 @@ public open class UIElement(
         "delegate({5de296bd-6f1c-5f60-9180-10705282576c})")).getOrThrow())
   }
 
-  public fun remove_ManipulationInertiaStarting(token: EventRegistrationToken) {
+  override fun remove_ManipulationInertiaStarting(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 183, token.toAbi()).getOrThrow()
   }
 
-  public fun add_ManipulationStarted(handler: ManipulationStartedEventHandler):
+  override fun add_ManipulationStarted(handler: ManipulationStartedEventHandler):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -1949,14 +1951,15 @@ public open class UIElement(
         "delegate({41060669-304c-53ac-9d43-bc311235aae4})")).getOrThrow())
   }
 
-  public fun remove_ManipulationStarted(token: EventRegistrationToken) {
+  override fun remove_ManipulationStarted(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 185, token.toAbi()).getOrThrow()
   }
 
-  public fun add_ManipulationDelta(handler: ManipulationDeltaEventHandler): EventRegistrationToken {
+  override fun add_ManipulationDelta(handler: ManipulationDeltaEventHandler):
+      EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -1967,14 +1970,14 @@ public open class UIElement(
         "delegate({83f2d4ce-105f-5392-a38a-b7467b7c2ea5})")).getOrThrow())
   }
 
-  public fun remove_ManipulationDelta(token: EventRegistrationToken) {
+  override fun remove_ManipulationDelta(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 187, token.toAbi()).getOrThrow()
   }
 
-  public fun add_ManipulationCompleted(handler: ManipulationCompletedEventHandler):
+  override fun add_ManipulationCompleted(handler: ManipulationCompletedEventHandler):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -1986,14 +1989,14 @@ public open class UIElement(
         "delegate({d51df8db-71cd-5bfd-8426-767218ee55ec})")).getOrThrow())
   }
 
-  public fun remove_ManipulationCompleted(token: EventRegistrationToken) {
+  override fun remove_ManipulationCompleted(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 189, token.toAbi()).getOrThrow()
   }
 
-  public
+  override
       fun add_AccessKeyDisplayRequested(handler: TypedEventHandler<UIElement, AccessKeyDisplayRequestedEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
@@ -2006,14 +2009,14 @@ public open class UIElement(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b});rc(Microsoft.UI.Xaml.Input.AccessKeyDisplayRequestedEventArgs;{c4ed84d8-2b27-59b1-9cf0-7f9164de58cb}))")).getOrThrow())
   }
 
-  public fun remove_AccessKeyDisplayRequested(token: EventRegistrationToken) {
+  override fun remove_AccessKeyDisplayRequested(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 191, token.toAbi()).getOrThrow()
   }
 
-  public
+  override
       fun add_AccessKeyDisplayDismissed(handler: TypedEventHandler<UIElement, AccessKeyDisplayDismissedEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
@@ -2026,14 +2029,15 @@ public open class UIElement(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b});rc(Microsoft.UI.Xaml.Input.AccessKeyDisplayDismissedEventArgs;{125a83d8-7f86-5ea9-9063-b9407e644587}))")).getOrThrow())
   }
 
-  public fun remove_AccessKeyDisplayDismissed(token: EventRegistrationToken) {
+  override fun remove_AccessKeyDisplayDismissed(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 193, token.toAbi()).getOrThrow()
   }
 
-  public fun add_AccessKeyInvoked(handler: TypedEventHandler<UIElement, AccessKeyInvokedEventArgs>):
+  override
+      fun add_AccessKeyInvoked(handler: TypedEventHandler<UIElement, AccessKeyInvokedEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -2045,14 +2049,14 @@ public open class UIElement(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b});rc(Microsoft.UI.Xaml.Input.AccessKeyInvokedEventArgs;{d00c11a4-f9fb-5707-9692-98b80bb8546d}))")).getOrThrow())
   }
 
-  public fun remove_AccessKeyInvoked(token: EventRegistrationToken) {
+  override fun remove_AccessKeyInvoked(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 195, token.toAbi()).getOrThrow()
   }
 
-  public
+  override
       fun add_ProcessKeyboardAccelerators(handler: TypedEventHandler<UIElement, ProcessKeyboardAcceleratorEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
@@ -2065,14 +2069,14 @@ public open class UIElement(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b});rc(Microsoft.UI.Xaml.Input.ProcessKeyboardAcceleratorEventArgs;{9be0d058-3d26-5811-b50a-3bb80ca766c9}))")).getOrThrow())
   }
 
-  public fun remove_ProcessKeyboardAccelerators(token: EventRegistrationToken) {
+  override fun remove_ProcessKeyboardAccelerators(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 197, token.toAbi()).getOrThrow()
   }
 
-  public fun add_GettingFocus(handler: TypedEventHandler<UIElement, GettingFocusEventArgs>):
+  override fun add_GettingFocus(handler: TypedEventHandler<UIElement, GettingFocusEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -2084,14 +2088,14 @@ public open class UIElement(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b});rc(Microsoft.UI.Xaml.Input.GettingFocusEventArgs;{37fd3af0-bd3c-5bf5-a9cd-71a1e87af950}))")).getOrThrow())
   }
 
-  public fun remove_GettingFocus(token: EventRegistrationToken) {
+  override fun remove_GettingFocus(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 199, token.toAbi()).getOrThrow()
   }
 
-  public fun add_LosingFocus(handler: TypedEventHandler<UIElement, LosingFocusEventArgs>):
+  override fun add_LosingFocus(handler: TypedEventHandler<UIElement, LosingFocusEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -2103,14 +2107,14 @@ public open class UIElement(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b});rc(Microsoft.UI.Xaml.Input.LosingFocusEventArgs;{fa0e5ffa-2b1b-52f8-bb66-e35f51e73cf3}))")).getOrThrow())
   }
 
-  public fun remove_LosingFocus(token: EventRegistrationToken) {
+  override fun remove_LosingFocus(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 201, token.toAbi()).getOrThrow()
   }
 
-  public
+  override
       fun add_NoFocusCandidateFound(handler: TypedEventHandler<UIElement, NoFocusCandidateFoundEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
@@ -2123,14 +2127,14 @@ public open class UIElement(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b});rc(Microsoft.UI.Xaml.Input.NoFocusCandidateFoundEventArgs;{a2d7153a-cd2a-59cb-a574-ac82e30b9201}))")).getOrThrow())
   }
 
-  public fun remove_NoFocusCandidateFound(token: EventRegistrationToken) {
+  override fun remove_NoFocusCandidateFound(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 203, token.toAbi()).getOrThrow()
   }
 
-  public fun add_PreviewKeyDown(handler: KeyEventHandler): EventRegistrationToken {
+  override fun add_PreviewKeyDown(handler: KeyEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -2141,14 +2145,14 @@ public open class UIElement(
         "delegate({db68e7cc-9a2b-527d-9989-25284daccc03})")).getOrThrow())
   }
 
-  public fun remove_PreviewKeyDown(token: EventRegistrationToken) {
+  override fun remove_PreviewKeyDown(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 205, token.toAbi()).getOrThrow()
   }
 
-  public fun add_PreviewKeyUp(handler: KeyEventHandler): EventRegistrationToken {
+  override fun add_PreviewKeyUp(handler: KeyEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -2159,14 +2163,14 @@ public open class UIElement(
         "delegate({db68e7cc-9a2b-527d-9989-25284daccc03})")).getOrThrow())
   }
 
-  public fun remove_PreviewKeyUp(token: EventRegistrationToken) {
+  override fun remove_PreviewKeyUp(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 207, token.toAbi()).getOrThrow()
   }
 
-  public
+  override
       fun add_BringIntoViewRequested(handler: TypedEventHandler<UIElement, BringIntoViewRequestedEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
@@ -2179,28 +2183,28 @@ public open class UIElement(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b});rc(Microsoft.UI.Xaml.BringIntoViewRequestedEventArgs;{807de8f9-b1dc-5a63-8101-5ee966841a27}))")).getOrThrow())
   }
 
-  public fun remove_BringIntoViewRequested(token: EventRegistrationToken) {
+  override fun remove_BringIntoViewRequested(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 209, token.toAbi()).getOrThrow()
   }
 
-  public fun measure(availableSize: Size) {
+  override fun measure(availableSize: Size) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 210, availableSize.toAbi()).getOrThrow()
   }
 
-  public fun arrange(finalRect: Rect) {
+  override fun arrange(finalRect: Rect) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 211, finalRect.toAbi()).getOrThrow()
   }
 
-  public fun capturePointer(value: Pointer): WinRtBoolean {
+  override fun capturePointer(value: Pointer): WinRtBoolean {
     if (pointer.isNull) {
       return WinRtBoolean.FALSE
     }
@@ -2209,7 +2213,7 @@ public open class UIElement(
         "rc(Microsoft.UI.Xaml.Input.Pointer;{1f9afbf5-11a3-5e68-aa1b-72febfa0ab23})")).getOrThrow())
   }
 
-  public fun releasePointerCapture(value: Pointer) {
+  override fun releasePointerCapture(value: Pointer) {
     if (pointer.isNull) {
       return
     }
@@ -2218,14 +2222,14 @@ public open class UIElement(
         "rc(Microsoft.UI.Xaml.Input.Pointer;{1f9afbf5-11a3-5e68-aa1b-72febfa0ab23})")).getOrThrow()
   }
 
-  public fun releasePointerCaptures() {
+  override fun releasePointerCaptures() {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethod(pointer, 214).getOrThrow()
   }
 
-  public fun removeHandler(routedEvent: RoutedEvent, handler: Inspectable) {
+  override fun removeHandler(routedEvent: RoutedEvent, handler: Inspectable) {
     if (pointer.isNull) {
       return
     }
@@ -2235,7 +2239,7 @@ public open class UIElement(
         projectedObjectArgumentPointer(handler, "Object", "cinterface(IInspectable)")).getOrThrow()
   }
 
-  public fun transformToVisual(visual: UIElement): GeneralTransform {
+  override fun transformToVisual(visual: UIElement): GeneralTransform {
     if (pointer.isNull) {
       error("Null runtime object pointer: TransformToVisual")
     }
@@ -2244,35 +2248,35 @@ public open class UIElement(
         "rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b})")).getOrThrow())
   }
 
-  public fun invalidateMeasure() {
+  override fun invalidateMeasure() {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethod(pointer, 218).getOrThrow()
   }
 
-  public fun invalidateArrange() {
+  override fun invalidateArrange() {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethod(pointer, 219).getOrThrow()
   }
 
-  public fun updateLayout() {
+  override fun updateLayout() {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethod(pointer, 220).getOrThrow()
   }
 
-  public fun cancelDirectManipulations(): WinRtBoolean {
+  override fun cancelDirectManipulations(): WinRtBoolean {
     if (pointer.isNull) {
       return WinRtBoolean.FALSE
     }
     return WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 221).getOrThrow())
   }
 
-  public fun startDragAsync(pointerPoint: PointerPoint): IAsyncOperation<DataPackageOperation> {
+  override fun startDragAsync(pointerPoint: PointerPoint): IAsyncOperation<DataPackageOperation> {
     if (pointer.isNull) {
       error("Null runtime object pointer: StartDragAsync")
     }
@@ -2281,14 +2285,14 @@ public open class UIElement(
         "rc(Microsoft.UI.Input.PointerPoint;{0d430ee6-252c-59a4-b2a2-d44264dc6a40})")).getOrThrow()))
   }
 
-  public fun startBringIntoView() {
+  override fun startBringIntoView() {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethod(pointer, 223).getOrThrow()
   }
 
-  public fun startBringIntoView(options: BringIntoViewOptions) {
+  override fun startBringIntoView(options: BringIntoViewOptions) {
     if (pointer.isNull) {
       return
     }
@@ -2297,7 +2301,7 @@ public open class UIElement(
         "rc(Microsoft.UI.Xaml.BringIntoViewOptions;{eeb4a447-eb9e-5003-a479-b9e3a886b708})")).getOrThrow()
   }
 
-  public fun tryInvokeKeyboardAccelerator(args: ProcessKeyboardAcceleratorEventArgs) {
+  override fun tryInvokeKeyboardAccelerator(args: ProcessKeyboardAcceleratorEventArgs) {
     if (pointer.isNull) {
       return
     }
@@ -2306,7 +2310,7 @@ public open class UIElement(
         "rc(Microsoft.UI.Xaml.Input.ProcessKeyboardAcceleratorEventArgs;{9be0d058-3d26-5811-b50a-3bb80ca766c9})")).getOrThrow()
   }
 
-  public fun focus(value: FocusState): WinRtBoolean {
+  override fun focus(value: FocusState): WinRtBoolean {
     if (pointer.isNull) {
       return WinRtBoolean.FALSE
     }
@@ -2314,7 +2318,7 @@ public open class UIElement(
         value.value).getOrThrow())
   }
 
-  public fun startAnimation(animation: ICompositionAnimationBase) {
+  override fun startAnimation(animation: ICompositionAnimationBase) {
     if (pointer.isNull) {
       return
     }
@@ -2323,7 +2327,7 @@ public open class UIElement(
         "{a77c0e5a-f059-4e85-bcef-c068694cec78}")).getOrThrow()
   }
 
-  public fun stopAnimation(animation: ICompositionAnimationBase) {
+  override fun stopAnimation(animation: ICompositionAnimationBase) {
     if (pointer.isNull) {
       return
     }

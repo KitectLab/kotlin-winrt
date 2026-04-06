@@ -21,11 +21,12 @@ import microsoft.ui.xaml.media.animation.TransitionCollection
 
 public open class Border(
   pointer: ComPtr,
-) : FrameworkElement(pointer) {
+) : FrameworkElement(pointer),
+    IBorder {
   private val backing_Background: RuntimeProperty<Brush> =
       RuntimeProperty<Brush>(Brush(ComPtr.NULL))
 
-  public var background: Brush
+  override var background: Brush
     get() {
       if (pointer.isNull) {
         return backing_Background.get()
@@ -44,7 +45,7 @@ public open class Border(
   private val backing_BackgroundSizing: RuntimeProperty<BackgroundSizing> =
       RuntimeProperty<BackgroundSizing>(BackgroundSizing.fromValue(0))
 
-  public var backgroundSizing: BackgroundSizing
+  override var backgroundSizing: BackgroundSizing
     get() {
       if (pointer.isNull) {
         return backing_BackgroundSizing.get()
@@ -63,7 +64,7 @@ public open class Border(
   private val backing_BackgroundTransition: RuntimeProperty<BrushTransition> =
       RuntimeProperty<BrushTransition>(BrushTransition(ComPtr.NULL))
 
-  public var backgroundTransition: BrushTransition
+  override var backgroundTransition: BrushTransition
     get() {
       if (pointer.isNull) {
         return backing_BackgroundTransition.get()
@@ -82,7 +83,7 @@ public open class Border(
   private val backing_BorderBrush: RuntimeProperty<Brush> =
       RuntimeProperty<Brush>(Brush(ComPtr.NULL))
 
-  public var borderBrush: Brush
+  override var borderBrush: Brush
     get() {
       if (pointer.isNull) {
         return backing_BorderBrush.get()
@@ -102,7 +103,7 @@ public open class Border(
       RuntimeProperty<Thickness>(Thickness.fromAbi(ComStructValue(Thickness.ABI_LAYOUT,
       ByteArray(Thickness.ABI_LAYOUT.byteSize))))
 
-  public var borderThickness: Thickness
+  override var borderThickness: Thickness
     get() {
       if (pointer.isNull) {
         return backing_BorderThickness.get()
@@ -121,7 +122,7 @@ public open class Border(
   private val backing_Child: RuntimeProperty<UIElement> =
       RuntimeProperty<UIElement>(UIElement(ComPtr.NULL))
 
-  public var child: UIElement
+  override var child: UIElement
     get() {
       if (pointer.isNull) {
         return backing_Child.get()
@@ -140,7 +141,7 @@ public open class Border(
   private val backing_ChildTransitions: RuntimeProperty<TransitionCollection> =
       RuntimeProperty<TransitionCollection>(TransitionCollection(ComPtr.NULL))
 
-  public var childTransitions: TransitionCollection
+  override var childTransitions: TransitionCollection
     get() {
       if (pointer.isNull) {
         return backing_ChildTransitions.get()
@@ -160,7 +161,7 @@ public open class Border(
       RuntimeProperty<CornerRadius>(CornerRadius.fromAbi(ComStructValue(CornerRadius.ABI_LAYOUT,
       ByteArray(CornerRadius.ABI_LAYOUT.byteSize))))
 
-  public var cornerRadius: CornerRadius
+  override var cornerRadius: CornerRadius
     get() {
       if (pointer.isNull) {
         return backing_CornerRadius.get()
@@ -180,7 +181,7 @@ public open class Border(
       RuntimeProperty<Thickness>(Thickness.fromAbi(ComStructValue(Thickness.ABI_LAYOUT,
       ByteArray(Thickness.ABI_LAYOUT.byteSize))))
 
-  public var padding: Thickness
+  override var padding: Thickness
     get() {
       if (pointer.isNull) {
         return backing_Padding.get()

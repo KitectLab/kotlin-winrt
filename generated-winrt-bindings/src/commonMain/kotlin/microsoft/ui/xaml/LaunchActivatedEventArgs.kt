@@ -11,10 +11,11 @@ import kotlin.String
 
 public open class LaunchActivatedEventArgs(
   pointer: ComPtr,
-) : Inspectable(pointer) {
+) : Inspectable(pointer),
+    ILaunchActivatedEventArgs {
   private val backing_Arguments: RuntimeProperty<String> = RuntimeProperty<String>("")
 
-  public val arguments: String
+  override val arguments: String
     get() {
       if (pointer.isNull) {
         return backing_Arguments.get()
@@ -33,7 +34,7 @@ public open class LaunchActivatedEventArgs(
       RuntimeProperty<windows.applicationmodel.activation.LaunchActivatedEventArgs> =
       RuntimeProperty<windows.applicationmodel.activation.LaunchActivatedEventArgs>(windows.applicationmodel.activation.LaunchActivatedEventArgs(ComPtr.NULL))
 
-  public val uWPLaunchActivatedEventArgs:
+  override val uWPLaunchActivatedEventArgs:
       windows.applicationmodel.activation.LaunchActivatedEventArgs
     get() {
       if (pointer.isNull) {

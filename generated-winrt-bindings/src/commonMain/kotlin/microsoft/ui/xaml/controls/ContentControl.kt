@@ -18,11 +18,12 @@ import microsoft.ui.xaml.media.animation.TransitionCollection
 
 public open class ContentControl(
   pointer: ComPtr,
-) : Control(pointer) {
+) : Control(pointer),
+    IContentControl {
   private val backing_Content: RuntimeProperty<Inspectable> =
       RuntimeProperty<Inspectable>(Inspectable(ComPtr.NULL))
 
-  public var content: Inspectable
+  override var content: Inspectable
     get() {
       if (pointer.isNull) {
         return backing_Content.get()
@@ -41,7 +42,7 @@ public open class ContentControl(
   private val backing_ContentTemplate: RuntimeProperty<DataTemplate> =
       RuntimeProperty<DataTemplate>(DataTemplate(ComPtr.NULL))
 
-  public var contentTemplate: DataTemplate
+  override var contentTemplate: DataTemplate
     get() {
       if (pointer.isNull) {
         return backing_ContentTemplate.get()
@@ -60,7 +61,7 @@ public open class ContentControl(
   private val backing_ContentTemplateRoot: RuntimeProperty<UIElement> =
       RuntimeProperty<UIElement>(UIElement(ComPtr.NULL))
 
-  public val contentTemplateRoot: UIElement
+  override val contentTemplateRoot: UIElement
     get() {
       if (pointer.isNull) {
         return backing_ContentTemplateRoot.get()
@@ -71,7 +72,7 @@ public open class ContentControl(
   private val backing_ContentTemplateSelector: RuntimeProperty<DataTemplateSelector> =
       RuntimeProperty<DataTemplateSelector>(DataTemplateSelector(ComPtr.NULL))
 
-  public var contentTemplateSelector: DataTemplateSelector
+  override var contentTemplateSelector: DataTemplateSelector
     get() {
       if (pointer.isNull) {
         return backing_ContentTemplateSelector.get()
@@ -90,7 +91,7 @@ public open class ContentControl(
   private val backing_ContentTransitions: RuntimeProperty<TransitionCollection> =
       RuntimeProperty<TransitionCollection>(TransitionCollection(ComPtr.NULL))
 
-  public var contentTransitions: TransitionCollection
+  override var contentTransitions: TransitionCollection
     get() {
       if (pointer.isNull) {
         return backing_ContentTransitions.get()

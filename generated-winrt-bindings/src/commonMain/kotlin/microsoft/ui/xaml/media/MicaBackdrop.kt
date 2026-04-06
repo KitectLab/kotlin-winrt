@@ -14,11 +14,12 @@ import microsoft.ui.xaml.DependencyProperty
 
 public open class MicaBackdrop(
   pointer: ComPtr,
-) : SystemBackdrop(pointer) {
+) : SystemBackdrop(pointer),
+    IMicaBackdrop {
   private val backing_Kind: RuntimeProperty<MicaKind> =
       RuntimeProperty<MicaKind>(MicaKind.fromValue(0))
 
-  public var kind: MicaKind
+  override var kind: MicaKind
     get() {
       if (pointer.isNull) {
         return backing_Kind.get()

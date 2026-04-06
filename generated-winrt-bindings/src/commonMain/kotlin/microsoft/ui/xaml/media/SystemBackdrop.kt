@@ -18,7 +18,8 @@ import microsoft.ui.xaml.XamlRoot
 
 public open class SystemBackdrop(
   pointer: ComPtr,
-) : DependencyObject(pointer) {
+) : DependencyObject(pointer),
+    ISystemBackdrop {
   public constructor() : this(Companion.factoryCreateInstance().pointer)
 
   public fun onTargetConnected(connectedTarget: ICompositionSupportsSystemBackdrop,
@@ -57,7 +58,7 @@ public open class SystemBackdrop(
         "rc(Microsoft.UI.Xaml.XamlRoot;{60cb215a-ad15-520a-8b01-4416824f0441})")).getOrThrow()
   }
 
-  public fun getDefaultSystemBackdropConfiguration(target: ICompositionSupportsSystemBackdrop,
+  override fun getDefaultSystemBackdropConfiguration(target: ICompositionSupportsSystemBackdrop,
       xamlRoot: XamlRoot): SystemBackdropConfiguration {
     if (pointer.isNull) {
       error("Null runtime object pointer: GetDefaultSystemBackdropConfiguration")

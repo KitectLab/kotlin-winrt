@@ -19,11 +19,12 @@ import windows.ui.core.CoreDispatcher
 
 public open class DependencyObject(
   pointer: ComPtr,
-) : Inspectable(pointer) {
+) : Inspectable(pointer),
+    IDependencyObject {
   private val backing_Dispatcher: RuntimeProperty<CoreDispatcher> =
       RuntimeProperty<CoreDispatcher>(CoreDispatcher(ComPtr.NULL))
 
-  public val dispatcher: CoreDispatcher
+  override val dispatcher: CoreDispatcher
     get() {
       if (pointer.isNull) {
         return backing_Dispatcher.get()
@@ -34,7 +35,7 @@ public open class DependencyObject(
   private val backing_DispatcherQueue: RuntimeProperty<DispatcherQueue> =
       RuntimeProperty<DispatcherQueue>(DispatcherQueue(ComPtr.NULL))
 
-  public val dispatcherQueue: DispatcherQueue
+  override val dispatcherQueue: DispatcherQueue
     get() {
       if (pointer.isNull) {
         return backing_DispatcherQueue.get()
@@ -44,7 +45,7 @@ public open class DependencyObject(
 
   public constructor() : this(Companion.factoryCreateInstance().pointer)
 
-  public fun getValue(dp: DependencyProperty): Inspectable {
+  override fun getValue(dp: DependencyProperty): Inspectable {
     if (pointer.isNull) {
       error("Null runtime object pointer: GetValue")
     }
@@ -53,7 +54,7 @@ public open class DependencyObject(
         "rc(Microsoft.UI.Xaml.DependencyProperty;{960eab49-9672-58a0-995b-3a42e5ea6278})")).getOrThrow())
   }
 
-  public fun setValue(dp: DependencyProperty, value: Inspectable) {
+  override fun setValue(dp: DependencyProperty, value: Inspectable) {
     if (pointer.isNull) {
       return
     }
@@ -63,7 +64,7 @@ public open class DependencyObject(
         projectedObjectArgumentPointer(value, "Object", "cinterface(IInspectable)")).getOrThrow()
   }
 
-  public fun clearValue(dp: DependencyProperty) {
+  override fun clearValue(dp: DependencyProperty) {
     if (pointer.isNull) {
       return
     }
@@ -72,7 +73,7 @@ public open class DependencyObject(
         "rc(Microsoft.UI.Xaml.DependencyProperty;{960eab49-9672-58a0-995b-3a42e5ea6278})")).getOrThrow()
   }
 
-  public fun readLocalValue(dp: DependencyProperty): Inspectable {
+  override fun readLocalValue(dp: DependencyProperty): Inspectable {
     if (pointer.isNull) {
       error("Null runtime object pointer: ReadLocalValue")
     }
@@ -81,7 +82,7 @@ public open class DependencyObject(
         "rc(Microsoft.UI.Xaml.DependencyProperty;{960eab49-9672-58a0-995b-3a42e5ea6278})")).getOrThrow())
   }
 
-  public fun getAnimationBaseValue(dp: DependencyProperty): Inspectable {
+  override fun getAnimationBaseValue(dp: DependencyProperty): Inspectable {
     if (pointer.isNull) {
       error("Null runtime object pointer: GetAnimationBaseValue")
     }
@@ -90,7 +91,7 @@ public open class DependencyObject(
         "rc(Microsoft.UI.Xaml.DependencyProperty;{960eab49-9672-58a0-995b-3a42e5ea6278})")).getOrThrow())
   }
 
-  public fun registerPropertyChangedCallback(dp: DependencyProperty,
+  override fun registerPropertyChangedCallback(dp: DependencyProperty,
       callback: DependencyPropertyChangedCallback): Int64 {
     if (pointer.isNull) {
       return Int64(0L)
@@ -104,7 +105,7 @@ public open class DependencyObject(
         "delegate({f055bb21-219b-5b0c-805d-bcaedae15458})")).getOrThrow().requireInt64())
   }
 
-  public fun unregisterPropertyChangedCallback(dp: DependencyProperty, token: Int64) {
+  override fun unregisterPropertyChangedCallback(dp: DependencyProperty, token: Int64) {
     if (pointer.isNull) {
       return
     }

@@ -20,11 +20,12 @@ import microsoft.ui.xaml.controls.primitives.ToggleSwitchTemplateSettings
 
 public open class ToggleSwitch(
   pointer: ComPtr,
-) : Control(pointer) {
+) : Control(pointer),
+    IToggleSwitch {
   private val backing_Header: RuntimeProperty<Inspectable> =
       RuntimeProperty<Inspectable>(Inspectable(ComPtr.NULL))
 
-  public var header: Inspectable
+  override var header: Inspectable
     get() {
       if (pointer.isNull) {
         return backing_Header.get()
@@ -43,7 +44,7 @@ public open class ToggleSwitch(
   private val backing_HeaderTemplate: RuntimeProperty<DataTemplate> =
       RuntimeProperty<DataTemplate>(DataTemplate(ComPtr.NULL))
 
-  public var headerTemplate: DataTemplate
+  override var headerTemplate: DataTemplate
     get() {
       if (pointer.isNull) {
         return backing_HeaderTemplate.get()
@@ -62,7 +63,7 @@ public open class ToggleSwitch(
   private val backing_IsOn: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var isOn: WinRtBoolean
+  override var isOn: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_IsOn.get()
@@ -80,7 +81,7 @@ public open class ToggleSwitch(
   private val backing_OffContent: RuntimeProperty<Inspectable> =
       RuntimeProperty<Inspectable>(Inspectable(ComPtr.NULL))
 
-  public var offContent: Inspectable
+  override var offContent: Inspectable
     get() {
       if (pointer.isNull) {
         return backing_OffContent.get()
@@ -99,7 +100,7 @@ public open class ToggleSwitch(
   private val backing_OffContentTemplate: RuntimeProperty<DataTemplate> =
       RuntimeProperty<DataTemplate>(DataTemplate(ComPtr.NULL))
 
-  public var offContentTemplate: DataTemplate
+  override var offContentTemplate: DataTemplate
     get() {
       if (pointer.isNull) {
         return backing_OffContentTemplate.get()
@@ -118,7 +119,7 @@ public open class ToggleSwitch(
   private val backing_OnContent: RuntimeProperty<Inspectable> =
       RuntimeProperty<Inspectable>(Inspectable(ComPtr.NULL))
 
-  public var onContent: Inspectable
+  override var onContent: Inspectable
     get() {
       if (pointer.isNull) {
         return backing_OnContent.get()
@@ -137,7 +138,7 @@ public open class ToggleSwitch(
   private val backing_OnContentTemplate: RuntimeProperty<DataTemplate> =
       RuntimeProperty<DataTemplate>(DataTemplate(ComPtr.NULL))
 
-  public var onContentTemplate: DataTemplate
+  override var onContentTemplate: DataTemplate
     get() {
       if (pointer.isNull) {
         return backing_OnContentTemplate.get()
@@ -156,7 +157,7 @@ public open class ToggleSwitch(
   private val backing_TemplateSettings: RuntimeProperty<ToggleSwitchTemplateSettings> =
       RuntimeProperty<ToggleSwitchTemplateSettings>(ToggleSwitchTemplateSettings(ComPtr.NULL))
 
-  public val templateSettings: ToggleSwitchTemplateSettings
+  override val templateSettings: ToggleSwitchTemplateSettings
     get() {
       if (pointer.isNull) {
         return backing_TemplateSettings.get()
@@ -246,7 +247,7 @@ public open class ToggleSwitch(
         "cinterface(IInspectable)")).getOrThrow()
   }
 
-  public fun add_Toggled(handler: RoutedEventHandler): EventRegistrationToken {
+  override fun add_Toggled(handler: RoutedEventHandler): EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
           ByteArray(EventRegistrationToken.ABI_LAYOUT.byteSize)))
@@ -257,7 +258,7 @@ public open class ToggleSwitch(
         "delegate({dae23d85-69ca-5bdf-805b-6161a3a215cc})")).getOrThrow())
   }
 
-  public fun remove_Toggled(token: EventRegistrationToken) {
+  override fun remove_Toggled(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }

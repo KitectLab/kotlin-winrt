@@ -38,7 +38,6 @@ internal class RuntimeTypeRenderer(
         val overrideInterfaceTypes = typeRegistry.findRuntimeClassOverridesTypes(type.name, type.namespace)
         val exposedRuntimeInterfaceTypes = runtimeInterfaceTypes.filterNot { interfaceType ->
             typeRegistry.isVersionedRuntimeClassInterface(interfaceType.name, interfaceType.namespace) ||
-                typeRegistry.isPrimaryRuntimeClassInterface(interfaceType.name, interfaceType.namespace) ||
                 typeRegistry.isRuntimeClassOverridesInterface(interfaceType.name, interfaceType.namespace)
         }
         val overridePropertyNames = exposedRuntimeInterfaceTypes.flatMapTo(linkedSetOf(), ::allInterfacePropertyNames)

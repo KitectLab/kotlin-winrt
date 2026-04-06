@@ -11,7 +11,8 @@ import microsoft.ui.xaml.controls.primitives.ToggleButton
 
 public open class CheckBox(
   pointer: ComPtr,
-) : ToggleButton(pointer) {
+) : ToggleButton(pointer),
+    ICheckBox {
   public constructor() : this(Companion.factoryCreateInstance().pointer)
 
   public companion object : WinRtRuntimeClassMetadata {

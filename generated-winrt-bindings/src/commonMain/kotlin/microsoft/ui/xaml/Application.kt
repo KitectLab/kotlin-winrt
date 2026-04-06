@@ -24,7 +24,8 @@ import windows.foundation.Uri
 
 public open class Application(
   pointer: ComPtr,
-) : Inspectable(pointer) {
+) : Inspectable(pointer),
+    IApplication {
   private val backing_DispatcherShutdownMode: RuntimeProperty<DispatcherShutdownMode> =
       RuntimeProperty<DispatcherShutdownMode>(DispatcherShutdownMode.fromValue(0))
 
@@ -47,7 +48,7 @@ public open class Application(
   private val backing_DebugSettings: RuntimeProperty<DebugSettings> =
       RuntimeProperty<DebugSettings>(DebugSettings(ComPtr.NULL))
 
-  public val debugSettings: DebugSettings
+  override val debugSettings: DebugSettings
     get() {
       if (pointer.isNull) {
         return backing_DebugSettings.get()
@@ -58,7 +59,7 @@ public open class Application(
   private val backing_FocusVisualKind: RuntimeProperty<FocusVisualKind> =
       RuntimeProperty<FocusVisualKind>(FocusVisualKind.fromValue(0))
 
-  public var focusVisualKind: FocusVisualKind
+  override var focusVisualKind: FocusVisualKind
     get() {
       if (pointer.isNull) {
         return backing_FocusVisualKind.get()
@@ -77,7 +78,7 @@ public open class Application(
   private val backing_HighContrastAdjustment: RuntimeProperty<ApplicationHighContrastAdjustment> =
       RuntimeProperty<ApplicationHighContrastAdjustment>(ApplicationHighContrastAdjustment.fromValue(0u))
 
-  public var highContrastAdjustment: ApplicationHighContrastAdjustment
+  override var highContrastAdjustment: ApplicationHighContrastAdjustment
     get() {
       if (pointer.isNull) {
         return backing_HighContrastAdjustment.get()
@@ -96,7 +97,7 @@ public open class Application(
   private val backing_RequestedTheme: RuntimeProperty<ApplicationTheme> =
       RuntimeProperty<ApplicationTheme>(ApplicationTheme.fromValue(0))
 
-  public var requestedTheme: ApplicationTheme
+  override var requestedTheme: ApplicationTheme
     get() {
       if (pointer.isNull) {
         return backing_RequestedTheme.get()
@@ -115,7 +116,7 @@ public open class Application(
   private val backing_Resources: RuntimeProperty<ResourceDictionary> =
       RuntimeProperty<ResourceDictionary>(ResourceDictionary(ComPtr.NULL))
 
-  public var resources: ResourceDictionary
+  override var resources: ResourceDictionary
     get() {
       if (pointer.isNull) {
         return backing_Resources.get()
@@ -174,7 +175,7 @@ public open class Application(
         "rc(Microsoft.UI.Xaml.LaunchActivatedEventArgs;{d505cea9-1bcb-5b29-a8be-944e00f06f78})")).getOrThrow()
   }
 
-  public fun add_UnhandledException(handler: UnhandledExceptionEventHandler):
+  override fun add_UnhandledException(handler: UnhandledExceptionEventHandler):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -186,14 +187,14 @@ public open class Application(
         "delegate({3427c1b6-5eca-5631-84b8-5bae732fb67f})")).getOrThrow())
   }
 
-  public fun remove_UnhandledException(token: EventRegistrationToken) {
+  override fun remove_UnhandledException(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 16, token.toAbi()).getOrThrow()
   }
 
-  public fun exit() {
+  override fun exit() {
     if (pointer.isNull) {
       return
     }

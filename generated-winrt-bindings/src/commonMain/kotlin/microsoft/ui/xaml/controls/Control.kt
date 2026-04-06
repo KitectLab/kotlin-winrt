@@ -56,6 +56,7 @@ import windows.ui.text.FontWeight
 public open class Control(
   pointer: ComPtr,
 ) : FrameworkElement(pointer),
+    IControl,
     IControlProtected {
   private val backing_DefaultStyleKey: RuntimeProperty<Inspectable> =
       RuntimeProperty<Inspectable>(Inspectable(ComPtr.NULL))
@@ -79,7 +80,7 @@ public open class Control(
   private val backing_Background: RuntimeProperty<Brush> =
       RuntimeProperty<Brush>(Brush(ComPtr.NULL))
 
-  public var background: Brush
+  override var background: Brush
     get() {
       if (pointer.isNull) {
         return backing_Background.get()
@@ -98,7 +99,7 @@ public open class Control(
   private val backing_BackgroundSizing: RuntimeProperty<BackgroundSizing> =
       RuntimeProperty<BackgroundSizing>(BackgroundSizing.fromValue(0))
 
-  public var backgroundSizing: BackgroundSizing
+  override var backgroundSizing: BackgroundSizing
     get() {
       if (pointer.isNull) {
         return backing_BackgroundSizing.get()
@@ -117,7 +118,7 @@ public open class Control(
   private val backing_BorderBrush: RuntimeProperty<Brush> =
       RuntimeProperty<Brush>(Brush(ComPtr.NULL))
 
-  public var borderBrush: Brush
+  override var borderBrush: Brush
     get() {
       if (pointer.isNull) {
         return backing_BorderBrush.get()
@@ -137,7 +138,7 @@ public open class Control(
       RuntimeProperty<Thickness>(Thickness.fromAbi(ComStructValue(Thickness.ABI_LAYOUT,
       ByteArray(Thickness.ABI_LAYOUT.byteSize))))
 
-  public var borderThickness: Thickness
+  override var borderThickness: Thickness
     get() {
       if (pointer.isNull) {
         return backing_BorderThickness.get()
@@ -155,7 +156,7 @@ public open class Control(
 
   private val backing_CharacterSpacing: RuntimeProperty<Int32> = RuntimeProperty<Int32>(Int32(0))
 
-  public var characterSpacing: Int32
+  override var characterSpacing: Int32
     get() {
       if (pointer.isNull) {
         return backing_CharacterSpacing.get()
@@ -174,7 +175,7 @@ public open class Control(
       RuntimeProperty<CornerRadius>(CornerRadius.fromAbi(ComStructValue(CornerRadius.ABI_LAYOUT,
       ByteArray(CornerRadius.ABI_LAYOUT.byteSize))))
 
-  public var cornerRadius: CornerRadius
+  override var cornerRadius: CornerRadius
     get() {
       if (pointer.isNull) {
         return backing_CornerRadius.get()
@@ -193,7 +194,7 @@ public open class Control(
   private val backing_DefaultStyleResourceUri: RuntimeProperty<Uri> =
       RuntimeProperty<Uri>(Uri(ComPtr.NULL))
 
-  public var defaultStyleResourceUri: Uri
+  override var defaultStyleResourceUri: Uri
     get() {
       if (pointer.isNull) {
         return backing_DefaultStyleResourceUri.get()
@@ -212,7 +213,7 @@ public open class Control(
   private val backing_ElementSoundMode: RuntimeProperty<ElementSoundMode> =
       RuntimeProperty<ElementSoundMode>(ElementSoundMode.fromValue(0))
 
-  public var elementSoundMode: ElementSoundMode
+  override var elementSoundMode: ElementSoundMode
     get() {
       if (pointer.isNull) {
         return backing_ElementSoundMode.get()
@@ -231,7 +232,7 @@ public open class Control(
   private val backing_FontFamily: RuntimeProperty<FontFamily> =
       RuntimeProperty<FontFamily>(FontFamily(ComPtr.NULL))
 
-  public var fontFamily: FontFamily
+  override var fontFamily: FontFamily
     get() {
       if (pointer.isNull) {
         return backing_FontFamily.get()
@@ -249,7 +250,7 @@ public open class Control(
 
   private val backing_FontSize: RuntimeProperty<Float64> = RuntimeProperty<Float64>(Float64(0.0))
 
-  public var fontSize: Float64
+  override var fontSize: Float64
     get() {
       if (pointer.isNull) {
         return backing_FontSize.get()
@@ -267,7 +268,7 @@ public open class Control(
   private val backing_FontStretch: RuntimeProperty<FontStretch> =
       RuntimeProperty<FontStretch>(FontStretch.fromValue(0))
 
-  public var fontStretch: FontStretch
+  override var fontStretch: FontStretch
     get() {
       if (pointer.isNull) {
         return backing_FontStretch.get()
@@ -285,7 +286,7 @@ public open class Control(
   private val backing_FontStyle: RuntimeProperty<FontStyle> =
       RuntimeProperty<FontStyle>(FontStyle.fromValue(0))
 
-  public var fontStyle: FontStyle
+  override var fontStyle: FontStyle
     get() {
       if (pointer.isNull) {
         return backing_FontStyle.get()
@@ -304,7 +305,7 @@ public open class Control(
       RuntimeProperty<FontWeight>(FontWeight.fromAbi(ComStructValue(FontWeight.ABI_LAYOUT,
       ByteArray(FontWeight.ABI_LAYOUT.byteSize))))
 
-  public var fontWeight: FontWeight
+  override var fontWeight: FontWeight
     get() {
       if (pointer.isNull) {
         return backing_FontWeight.get()
@@ -323,7 +324,7 @@ public open class Control(
   private val backing_Foreground: RuntimeProperty<Brush> =
       RuntimeProperty<Brush>(Brush(ComPtr.NULL))
 
-  public var foreground: Brush
+  override var foreground: Brush
     get() {
       if (pointer.isNull) {
         return backing_Foreground.get()
@@ -342,7 +343,7 @@ public open class Control(
   private val backing_HorizontalContentAlignment: RuntimeProperty<HorizontalAlignment> =
       RuntimeProperty<HorizontalAlignment>(HorizontalAlignment.fromValue(0))
 
-  public var horizontalContentAlignment: HorizontalAlignment
+  override var horizontalContentAlignment: HorizontalAlignment
     get() {
       if (pointer.isNull) {
         return backing_HorizontalContentAlignment.get()
@@ -361,7 +362,7 @@ public open class Control(
   private val backing_IsEnabled: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var isEnabled: WinRtBoolean
+  override var isEnabled: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_IsEnabled.get()
@@ -379,7 +380,7 @@ public open class Control(
   private val backing_IsFocusEngaged: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var isFocusEngaged: WinRtBoolean
+  override var isFocusEngaged: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_IsFocusEngaged.get()
@@ -397,7 +398,7 @@ public open class Control(
   private val backing_IsFocusEngagementEnabled: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var isFocusEngagementEnabled: WinRtBoolean
+  override var isFocusEngagementEnabled: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_IsFocusEngagementEnabled.get()
@@ -415,7 +416,7 @@ public open class Control(
   private val backing_IsTextScaleFactorEnabled: RuntimeProperty<WinRtBoolean> =
       RuntimeProperty<WinRtBoolean>(WinRtBoolean.FALSE)
 
-  public var isTextScaleFactorEnabled: WinRtBoolean
+  override var isTextScaleFactorEnabled: WinRtBoolean
     get() {
       if (pointer.isNull) {
         return backing_IsTextScaleFactorEnabled.get()
@@ -434,7 +435,7 @@ public open class Control(
       RuntimeProperty<Thickness>(Thickness.fromAbi(ComStructValue(Thickness.ABI_LAYOUT,
       ByteArray(Thickness.ABI_LAYOUT.byteSize))))
 
-  public var padding: Thickness
+  override var padding: Thickness
     get() {
       if (pointer.isNull) {
         return backing_Padding.get()
@@ -453,7 +454,7 @@ public open class Control(
   private val backing_RequiresPointer: RuntimeProperty<RequiresPointer> =
       RuntimeProperty<RequiresPointer>(RequiresPointer.fromValue(0))
 
-  public var requiresPointer: RequiresPointer
+  override var requiresPointer: RequiresPointer
     get() {
       if (pointer.isNull) {
         return backing_RequiresPointer.get()
@@ -472,7 +473,7 @@ public open class Control(
   private val backing_TabNavigation: RuntimeProperty<KeyboardNavigationMode> =
       RuntimeProperty<KeyboardNavigationMode>(KeyboardNavigationMode.fromValue(0))
 
-  public var tabNavigation: KeyboardNavigationMode
+  override var tabNavigation: KeyboardNavigationMode
     get() {
       if (pointer.isNull) {
         return backing_TabNavigation.get()
@@ -491,7 +492,7 @@ public open class Control(
   private val backing_Template: RuntimeProperty<ControlTemplate> =
       RuntimeProperty<ControlTemplate>(ControlTemplate(ComPtr.NULL))
 
-  public var template: ControlTemplate
+  override var template: ControlTemplate
     get() {
       if (pointer.isNull) {
         return backing_Template.get()
@@ -510,7 +511,7 @@ public open class Control(
   private val backing_VerticalContentAlignment: RuntimeProperty<VerticalAlignment> =
       RuntimeProperty<VerticalAlignment>(VerticalAlignment.fromValue(0))
 
-  public var verticalContentAlignment: VerticalAlignment
+  override var verticalContentAlignment: VerticalAlignment
     get() {
       if (pointer.isNull) {
         return backing_VerticalContentAlignment.get()
@@ -798,7 +799,7 @@ public open class Control(
         "rc(Microsoft.UI.Xaml.DragEventArgs;{47ac5757-e4bc-52ba-8ab9-1bf81aad7900})")).getOrThrow()
   }
 
-  public fun add_FocusEngaged(handler: TypedEventHandler<Control, FocusEngagedEventArgs>):
+  override fun add_FocusEngaged(handler: TypedEventHandler<Control, FocusEngagedEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -810,14 +811,14 @@ public open class Control(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.Controls.Control;{857d6e8a-d45a-5c69-a99c-bf6a5c54fb38});rc(Microsoft.UI.Xaml.Controls.FocusEngagedEventArgs;{1e71e8e4-74b2-50a1-8f2b-42c0118ab0ea}))")).getOrThrow())
   }
 
-  public fun remove_FocusEngaged(token: EventRegistrationToken) {
+  override fun remove_FocusEngaged(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 55, token.toAbi()).getOrThrow()
   }
 
-  public fun add_FocusDisengaged(handler: TypedEventHandler<Control, FocusDisengagedEventArgs>):
+  override fun add_FocusDisengaged(handler: TypedEventHandler<Control, FocusDisengagedEventArgs>):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -829,14 +830,14 @@ public open class Control(
         "pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f};rc(Microsoft.UI.Xaml.Controls.Control;{857d6e8a-d45a-5c69-a99c-bf6a5c54fb38});rc(Microsoft.UI.Xaml.Controls.FocusDisengagedEventArgs;{c0b4b88c-c195-5064-84c7-33cb262cb240}))")).getOrThrow())
   }
 
-  public fun remove_FocusDisengaged(token: EventRegistrationToken) {
+  override fun remove_FocusDisengaged(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 57, token.toAbi()).getOrThrow()
   }
 
-  public fun add_IsEnabledChanged(handler: DependencyPropertyChangedEventHandler):
+  override fun add_IsEnabledChanged(handler: DependencyPropertyChangedEventHandler):
       EventRegistrationToken {
     if (pointer.isNull) {
       return EventRegistrationToken.fromAbi(ComStructValue(EventRegistrationToken.ABI_LAYOUT,
@@ -848,21 +849,21 @@ public open class Control(
         "delegate({4be8dc75-373d-5f4e-a0b4-54b9eeafb4a9})")).getOrThrow())
   }
 
-  public fun remove_IsEnabledChanged(token: EventRegistrationToken) {
+  override fun remove_IsEnabledChanged(token: EventRegistrationToken) {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethodWithArgs(pointer, 59, token.toAbi()).getOrThrow()
   }
 
-  public fun removeFocusEngagement() {
+  override fun removeFocusEngagement() {
     if (pointer.isNull) {
       return
     }
     PlatformComInterop.invokeUnitMethod(pointer, 60).getOrThrow()
   }
 
-  public fun applyTemplate(): WinRtBoolean {
+  override fun applyTemplate(): WinRtBoolean {
     if (pointer.isNull) {
       return WinRtBoolean.FALSE
     }
