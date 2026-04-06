@@ -284,67 +284,67 @@ internal object Jdk22Foreign {
 
     val int64MethodHandle: MethodHandle by lazy {
         downcallHandle(
-            FunctionDescriptor.of(longLayout, addressLayout, addressLayout),
+            FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
         )
     }
 
     val int64MethodWithStringHandle: MethodHandle by lazy {
         downcallHandle(
-            FunctionDescriptor.of(longLayout, addressLayout, addressLayout, addressLayout),
+            FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout),
         )
     }
 
     val int64MethodWithInt32Handle: MethodHandle by lazy {
         downcallHandle(
-            FunctionDescriptor.of(longLayout, addressLayout, intLayout, addressLayout),
+            FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
         )
     }
 
     val int64MethodWithUInt32Handle: MethodHandle by lazy {
         downcallHandle(
-            FunctionDescriptor.of(longLayout, addressLayout, intLayout, addressLayout),
+            FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
         )
     }
 
     val int64MethodWithBooleanHandle: MethodHandle by lazy {
         downcallHandle(
-            FunctionDescriptor.of(longLayout, addressLayout, intLayout, addressLayout),
+            FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
         )
     }
 
     val uint64MethodHandle: MethodHandle by lazy {
         downcallHandle(
-            FunctionDescriptor.of(longLayout, addressLayout, addressLayout),
+            FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
         )
     }
 
     val uint64MethodWithObjectHandle: MethodHandle by lazy {
         downcallHandle(
-            FunctionDescriptor.of(longLayout, addressLayout, addressLayout, addressLayout),
+            FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout),
         )
     }
 
     val uint64MethodWithStringHandle: MethodHandle by lazy {
         downcallHandle(
-            FunctionDescriptor.of(longLayout, addressLayout, addressLayout, addressLayout),
+            FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout),
         )
     }
 
     val uint64MethodWithInt32Handle: MethodHandle by lazy {
         downcallHandle(
-            FunctionDescriptor.of(longLayout, addressLayout, intLayout, addressLayout),
+            FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
         )
     }
 
     val uint64MethodWithUInt32Handle: MethodHandle by lazy {
         downcallHandle(
-            FunctionDescriptor.of(longLayout, addressLayout, intLayout, addressLayout),
+            FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
         )
     }
 
     val uint64MethodWithBooleanHandle: MethodHandle by lazy {
         downcallHandle(
-            FunctionDescriptor.of(longLayout, addressLayout, intLayout, addressLayout),
+            FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
         )
     }
 

@@ -986,6 +986,36 @@ class JvmProjectedObjectArgumentAuthoringTest {
         )
         assertPrimitiveVectorViewCase(
             PrimitiveVectorCase(
+                projectionType = "dev.winrt.core.Int64",
+                signature = "i8",
+                initial = listOf(Int64(1L), Int64(2L)),
+                first = 1L,
+                second = 2L,
+                replacement = 7L,
+                inserted = 9L,
+                appended = 11L,
+                current = { pointer -> PlatformComInterop.invokeInt64Method(pointer, 6).getOrThrow() },
+                getAt = { pointer, index -> PlatformComInterop.invokeInt64MethodWithUInt32Arg(pointer, 7, index).getOrThrow() },
+                unwrap = { value -> (value as Int64).value },
+            ),
+        )
+        assertPrimitiveVectorViewCase(
+            PrimitiveVectorCase(
+                projectionType = "dev.winrt.core.UInt64",
+                signature = "u8",
+                initial = listOf(UInt64(1uL), UInt64(2uL)),
+                first = 1uL,
+                second = 2uL,
+                replacement = 7uL,
+                inserted = 9uL,
+                appended = 11uL,
+                current = { pointer -> PlatformComInterop.invokeUInt64Method(pointer, 6).getOrThrow() },
+                getAt = { pointer, index -> PlatformComInterop.invokeUInt64MethodWithUInt32Arg(pointer, 7, index).getOrThrow() },
+                unwrap = { value -> (value as UInt64).value },
+            ),
+        )
+        assertPrimitiveVectorViewCase(
+            PrimitiveVectorCase(
                 projectionType = "dev.winrt.core.Float32",
                 signature = "f4",
                 initial = listOf(Float32(1.5f), Float32(2.5f)),
@@ -1061,6 +1091,36 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 current = { pointer -> PlatformComInterop.invokeUInt32Method(pointer, 6).getOrThrow() },
                 getAt = { pointer, index -> PlatformComInterop.invokeUInt32MethodWithUInt32Arg(pointer, 7, index).getOrThrow() },
                 unwrap = { value -> (value as UInt32).value },
+            ),
+        )
+        assertPrimitiveVectorCase(
+            PrimitiveVectorCase(
+                projectionType = "dev.winrt.core.Int64",
+                signature = "i8",
+                initial = listOf(Int64(1L), Int64(2L)),
+                first = 1L,
+                second = 2L,
+                replacement = 7L,
+                inserted = 9L,
+                appended = 11L,
+                current = { pointer -> PlatformComInterop.invokeInt64Method(pointer, 6).getOrThrow() },
+                getAt = { pointer, index -> PlatformComInterop.invokeInt64MethodWithUInt32Arg(pointer, 7, index).getOrThrow() },
+                unwrap = { value -> (value as Int64).value },
+            ),
+        )
+        assertPrimitiveVectorCase(
+            PrimitiveVectorCase(
+                projectionType = "dev.winrt.core.UInt64",
+                signature = "u8",
+                initial = listOf(UInt64(1uL), UInt64(2uL)),
+                first = 1uL,
+                second = 2uL,
+                replacement = 7uL,
+                inserted = 9uL,
+                appended = 11uL,
+                current = { pointer -> PlatformComInterop.invokeUInt64Method(pointer, 6).getOrThrow() },
+                getAt = { pointer, index -> PlatformComInterop.invokeUInt64MethodWithUInt32Arg(pointer, 7, index).getOrThrow() },
+                unwrap = { value -> (value as UInt64).value },
             ),
         )
         assertPrimitiveVectorCase(
