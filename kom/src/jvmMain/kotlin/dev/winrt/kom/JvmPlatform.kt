@@ -2490,7 +2490,7 @@ private object JvmPlatformComInterop : ComInterop {
             handle = Jdk22Foreign.int64MethodWithUInt32Handle,
             allocator = { arena -> arena.allocate(ValueLayout.JAVA_LONG) },
             reader = { segment -> segment.get(ValueLayout.JAVA_LONG, 0L) },
-            value.toLong(),
+            value.toInt(),
         )
     }
 
@@ -2561,7 +2561,7 @@ private object JvmPlatformComInterop : ComInterop {
             handle = Jdk22Foreign.uint64MethodWithUInt32Handle,
             allocator = { arena -> arena.allocate(ValueLayout.JAVA_LONG) },
             reader = { segment -> segment.get(ValueLayout.JAVA_LONG, 0L).toULong() },
-            value.toLong(),
+            value.toInt(),
         )
     }
 

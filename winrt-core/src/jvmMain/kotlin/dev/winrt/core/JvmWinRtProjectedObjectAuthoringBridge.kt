@@ -114,6 +114,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         val elementProjectionTypeKey = projectionTypeKey.arguments.singleOrNull()
             ?: inferProjectionTypeKey(elementSignature)
         val retainedChildren = mutableListOf<AutoCloseable>()
+        val primitiveKind = primitiveAbiKind(elementSignature)
         val interfaceSpec = when {
             elementSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
@@ -124,6 +125,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                     },
                 ),
             )
+            primitiveKind != null -> createPrimitiveReferenceInterfaceSpec(signature, reference, primitiveKind)
             elementSignature is AbiValueSignature.ObjectType &&
                 elementSignature.rawSignature == hResultStructSignature -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
@@ -241,8 +243,9 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             ?: inferProjectionTypeKey(elementSignature)
         val retainedChildren = mutableListOf<AutoCloseable>()
         val state = IteratorState(iterator)
-        val interfaceSpec = when (elementSignature) {
-            is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
+        val primitiveKind = primitiveAbiKind(elementSignature)
+        val interfaceSpec = when {
+            elementSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
                 noArgHStringMethods = mapOf(
                     6 to {
@@ -256,6 +259,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                     8 to { state.moveNext() },
                 ),
             )
+            primitiveKind != null -> createPrimitiveIteratorInterfaceSpec(signature, state, primitiveKind)
             else -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
                 noArgObjectMethods = mapOf(
@@ -310,17 +314,17 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 elementSignature.rawSignature,
             ),
         )
-        val derivedSpec = when (elementSignature) {
-            is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
+        val firstMethod = iterableFirstMethod(
+            iterable = list,
+            elementProjectionTypeKey = elementProjectionTypeKey,
+            iteratorSignature = iteratorSignature,
+            retainedChildren = retainedChildren,
+        )
+        val primitiveKind = primitiveAbiKind(elementSignature)
+        val derivedSpec = when {
+            elementSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
-                noArgObjectMethods = mapOf(
-                    6 to iterableFirstMethod(
-                        iterable = list,
-                        elementProjectionTypeKey = elementProjectionTypeKey,
-                        iteratorSignature = iteratorSignature,
-                        retainedChildren = retainedChildren,
-                    ),
-                ),
+                noArgObjectMethods = mapOf(6 to firstMethod),
                 uint32ArgHStringMethods = mapOf(
                     7 to { index ->
                         val element = list.elementAt(index.toInt())
@@ -330,16 +334,15 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 ),
                 noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
             )
+            primitiveKind != null -> createPrimitiveVectorViewInterfaceSpec(
+                iid = signature.iid,
+                list = list,
+                firstMethod = firstMethod,
+                primitiveKind = primitiveKind,
+            )
             else -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
-                noArgObjectMethods = mapOf(
-                    6 to iterableFirstMethod(
-                        iterable = list,
-                        elementProjectionTypeKey = elementProjectionTypeKey,
-                        iteratorSignature = iteratorSignature,
-                        retainedChildren = retainedChildren,
-                    ),
-                ),
+                noArgObjectMethods = mapOf(6 to firstMethod),
                 uint32ArgObjectMethods = mapOf(
                     7 to { index ->
                         marshalObjectResultPointer(
@@ -355,14 +358,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         }
         val baseIterableSpec = JvmWinRtObjectStub.InterfaceSpec(
             iid = iterableSignature.iid,
-            noArgObjectMethods = mapOf(
-                6 to iterableFirstMethod(
-                    iterable = list,
-                    elementProjectionTypeKey = elementProjectionTypeKey,
-                    iteratorSignature = iteratorSignature,
-                    retainedChildren = retainedChildren,
-                ),
-            ),
+            noArgObjectMethods = mapOf(6 to firstMethod),
         )
         val stub = JvmWinRtObjectStub.create(derivedSpec, baseIterableSpec)
         return ProjectedObjectHandle(stub, retainedChildren)
@@ -430,6 +426,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             retainedChildren += vectorViewHandle
             vectorViewHandle.pointer.withAddRef()
         }
+        val primitiveKind = primitiveAbiKind(elementSignature)
         val interfaceSpec = when {
             elementSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
@@ -484,6 +481,14 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 stringUInt32ArgBooleanMethods = mapOf(
                     10 to { element, _ -> list.indexOf(element) >= 0 },
                 ),
+            )
+            primitiveKind != null -> createPrimitiveVectorInterfaceSpec(
+                iid = signature.iid,
+                list = list,
+                firstMethod = firstMethod,
+                getViewMethod = getViewMethod,
+                primitiveKind = primitiveKind,
+                elementProjectionTypeKey = elementProjectionTypeKey,
             )
             else -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
@@ -559,6 +564,12 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                     9 to { element, _ -> list.indexOf(element) >= 0 },
                 ),
             )
+            primitiveKind != null -> createPrimitiveVectorViewInterfaceSpec(
+                iid = vectorViewSignature.iid,
+                list = list,
+                firstMethod = firstMethod,
+                primitiveKind = primitiveKind,
+            )
             else -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = vectorViewSignature.iid,
                 noArgObjectMethods = mapOf(6 to firstMethod),
@@ -584,6 +595,389 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         )
         val stub = JvmWinRtObjectStub.create(interfaceSpec, vectorViewSpec, baseIterableSpec)
         return ProjectedObjectHandle(stub, retainedChildren)
+    }
+
+    private fun createPrimitiveReferenceInterfaceSpec(
+        signature: AbiValueSignature.ParameterizedInterface,
+        reference: IReference<*>,
+        primitiveKind: PrimitiveAbiKind,
+    ): JvmWinRtObjectStub.InterfaceSpec {
+        val value = requireNotNull(reference.value) { "IReference primitive values cannot be null" }
+        return when (primitiveKind) {
+            PrimitiveAbiKind.BOOLEAN -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgBooleanMethods = mapOf(6 to { marshalPrimitiveBooleanValue(value) }),
+            )
+            PrimitiveAbiKind.INT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgInt32Methods = mapOf(6 to { marshalPrimitiveInt32Value(value) }),
+            )
+            PrimitiveAbiKind.UINT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgUInt32Methods = mapOf(6 to { marshalPrimitiveUInt32Value(value) }),
+            )
+            PrimitiveAbiKind.INT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgInt64Methods = mapOf(6 to { marshalPrimitiveInt64Value(value) }),
+            )
+            PrimitiveAbiKind.UINT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgUInt64Methods = mapOf(6 to { marshalPrimitiveUInt64Value(value) }),
+            )
+            PrimitiveAbiKind.FLOAT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgFloat32Methods = mapOf(6 to { marshalPrimitiveFloat32Value(value) }),
+            )
+            PrimitiveAbiKind.FLOAT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgFloat64Methods = mapOf(6 to { marshalPrimitiveFloat64Value(value) }),
+            )
+        }
+    }
+
+    private fun createPrimitiveIteratorInterfaceSpec(
+        signature: AbiValueSignature.ParameterizedInterface,
+        state: IteratorState,
+        primitiveKind: PrimitiveAbiKind,
+    ): JvmWinRtObjectStub.InterfaceSpec {
+        val stateMethods = mapOf(
+            7 to { state.hasCurrent },
+            8 to { state.moveNext() },
+        )
+        return when (primitiveKind) {
+            PrimitiveAbiKind.BOOLEAN -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgBooleanMethods = stateMethods + mapOf(
+                    6 to { marshalPrimitiveBooleanValue(currentIteratorValue(state)) },
+                ),
+            )
+            PrimitiveAbiKind.INT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgInt32Methods = mapOf(6 to { marshalPrimitiveInt32Value(currentIteratorValue(state)) }),
+                noArgBooleanMethods = stateMethods,
+            )
+            PrimitiveAbiKind.UINT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgUInt32Methods = mapOf(6 to { marshalPrimitiveUInt32Value(currentIteratorValue(state)) }),
+                noArgBooleanMethods = stateMethods,
+            )
+            PrimitiveAbiKind.INT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgInt64Methods = mapOf(6 to { marshalPrimitiveInt64Value(currentIteratorValue(state)) }),
+                noArgBooleanMethods = stateMethods,
+            )
+            PrimitiveAbiKind.UINT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgUInt64Methods = mapOf(6 to { marshalPrimitiveUInt64Value(currentIteratorValue(state)) }),
+                noArgBooleanMethods = stateMethods,
+            )
+            PrimitiveAbiKind.FLOAT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgFloat32Methods = mapOf(6 to { marshalPrimitiveFloat32Value(currentIteratorValue(state)) }),
+                noArgBooleanMethods = stateMethods,
+            )
+            PrimitiveAbiKind.FLOAT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = signature.iid,
+                noArgFloat64Methods = mapOf(6 to { marshalPrimitiveFloat64Value(currentIteratorValue(state)) }),
+                noArgBooleanMethods = stateMethods,
+            )
+        }
+    }
+
+    private fun createPrimitiveVectorViewInterfaceSpec(
+        iid: Guid,
+        list: List<*>,
+        firstMethod: () -> ComPtr,
+        primitiveKind: PrimitiveAbiKind,
+    ): JvmWinRtObjectStub.InterfaceSpec {
+        return when (primitiveKind) {
+            PrimitiveAbiKind.BOOLEAN -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                uint32ArgBooleanMethods = mapOf(7 to { index -> marshalPrimitiveBooleanValue(list.elementAt(index.toInt())) }),
+                noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
+                booleanUInt32ArgBooleanMethods = mapOf(
+                    9 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                ),
+            )
+            PrimitiveAbiKind.INT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                uint32ArgInt32Methods = mapOf(7 to { index -> marshalPrimitiveInt32Value(list.elementAt(index.toInt())) }),
+                noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
+                int32UInt32ArgBooleanMethods = mapOf(
+                    9 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                ),
+            )
+            PrimitiveAbiKind.UINT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                uint32ArgUInt32Methods = mapOf(7 to { index -> marshalPrimitiveUInt32Value(list.elementAt(index.toInt())) }),
+                noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
+                uint32UInt32ArgBooleanMethods = mapOf(
+                    9 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                ),
+            )
+            PrimitiveAbiKind.INT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                uint32ArgInt64Methods = mapOf(7 to { index -> marshalPrimitiveInt64Value(list.elementAt(index.toInt())) }),
+                noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
+                int64UInt32ArgBooleanMethods = mapOf(
+                    9 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                ),
+            )
+            PrimitiveAbiKind.UINT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                uint32ArgUInt64Methods = mapOf(7 to { index -> marshalPrimitiveUInt64Value(list.elementAt(index.toInt())) }),
+                noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
+                uint64UInt32ArgBooleanMethods = mapOf(
+                    9 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                ),
+            )
+            PrimitiveAbiKind.FLOAT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                uint32ArgFloat32Methods = mapOf(7 to { index -> marshalPrimitiveFloat32Value(list.elementAt(index.toInt())) }),
+                noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
+                float32UInt32ArgBooleanMethods = mapOf(
+                    9 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                ),
+            )
+            PrimitiveAbiKind.FLOAT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = iid,
+                noArgObjectMethods = mapOf(6 to firstMethod),
+                uint32ArgFloat64Methods = mapOf(7 to { index -> marshalPrimitiveFloat64Value(list.elementAt(index.toInt())) }),
+                noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
+                float64UInt32ArgBooleanMethods = mapOf(
+                    9 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                ),
+            )
+        }
+    }
+
+    private fun createPrimitiveVectorInterfaceSpec(
+        iid: Guid,
+        list: MutableList<Any?>,
+        firstMethod: () -> ComPtr,
+        getViewMethod: () -> ComPtr,
+        primitiveKind: PrimitiveAbiKind,
+        elementProjectionTypeKey: String,
+    ): JvmWinRtObjectStub.InterfaceSpec {
+        val noArgUnitMethods = mapOf(
+            15 to {
+                if (list.isNotEmpty()) {
+                    list.removeAt(list.lastIndex)
+                }
+                HResult(0)
+            },
+            16 to {
+                list.clear()
+                HResult(0)
+            },
+        )
+        val noArgObjectMethods = mapOf(
+            6 to firstMethod,
+            9 to getViewMethod,
+        )
+        val noArgUInt32Methods = mapOf(8 to { list.size.toUInt() })
+        val removeAtMethods = mapOf(
+            13 to { index: UInt ->
+                list.removeAt(index.toInt())
+                HResult(0)
+            },
+        )
+        return when (primitiveKind) {
+            PrimitiveAbiKind.BOOLEAN -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = iid,
+                noArgUnitMethods = noArgUnitMethods,
+                noArgObjectMethods = noArgObjectMethods,
+                noArgUInt32Methods = noArgUInt32Methods,
+                uint32ArgUnitMethods = removeAtMethods,
+                uint32ArgBooleanMethods = mapOf(7 to { index -> marshalPrimitiveBooleanValue(list.elementAt(index.toInt())) }),
+                uint32BooleanArgUnitMethods = mapOf(
+                    11 to { index, element ->
+                        list[index.toInt()] = projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element)
+                        HResult(0)
+                    },
+                    12 to { index, element ->
+                        list.add(index.toInt(), projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element))
+                        HResult(0)
+                    },
+                ),
+                booleanUInt32ArgBooleanMethods = mapOf(
+                    10 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                ),
+                booleanArgUnitMethods = mapOf(
+                    14 to { element ->
+                        list.add(projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element))
+                        HResult(0)
+                    },
+                ),
+            )
+            PrimitiveAbiKind.INT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = iid,
+                noArgUnitMethods = noArgUnitMethods,
+                noArgObjectMethods = noArgObjectMethods,
+                noArgUInt32Methods = noArgUInt32Methods,
+                uint32ArgUnitMethods = removeAtMethods,
+                uint32ArgInt32Methods = mapOf(7 to { index -> marshalPrimitiveInt32Value(list.elementAt(index.toInt())) }),
+                uint32Int32ArgUnitMethods = mapOf(
+                    11 to { index, element ->
+                        list[index.toInt()] = projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element)
+                        HResult(0)
+                    },
+                    12 to { index, element ->
+                        list.add(index.toInt(), projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element))
+                        HResult(0)
+                    },
+                ),
+                int32UInt32ArgBooleanMethods = mapOf(
+                    10 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                ),
+                int32ArgUnitMethods = mapOf(
+                    14 to { element ->
+                        list.add(projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element))
+                        HResult(0)
+                    },
+                ),
+            )
+            PrimitiveAbiKind.UINT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = iid,
+                noArgUnitMethods = noArgUnitMethods,
+                noArgObjectMethods = noArgObjectMethods,
+                noArgUInt32Methods = noArgUInt32Methods,
+                uint32ArgUnitMethods = removeAtMethods + mapOf(
+                    14 to { element ->
+                        list.add(projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element))
+                        HResult(0)
+                    },
+                ),
+                uint32ArgUInt32Methods = mapOf(7 to { index -> marshalPrimitiveUInt32Value(list.elementAt(index.toInt())) }),
+                uint32UInt32ArgUnitMethods = mapOf(
+                    11 to { index, element ->
+                        list[index.toInt()] = projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element)
+                        HResult(0)
+                    },
+                    12 to { index, element ->
+                        list.add(index.toInt(), projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element))
+                        HResult(0)
+                    },
+                ),
+                uint32UInt32ArgBooleanMethods = mapOf(
+                    10 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                ),
+            )
+            PrimitiveAbiKind.INT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = iid,
+                noArgUnitMethods = noArgUnitMethods,
+                noArgObjectMethods = noArgObjectMethods,
+                noArgUInt32Methods = noArgUInt32Methods,
+                uint32ArgUnitMethods = removeAtMethods,
+                uint32ArgInt64Methods = mapOf(7 to { index -> marshalPrimitiveInt64Value(list.elementAt(index.toInt())) }),
+                uint32Int64ArgUnitMethods = mapOf(
+                    11 to { index, element ->
+                        list[index.toInt()] = projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element)
+                        HResult(0)
+                    },
+                    12 to { index, element ->
+                        list.add(index.toInt(), projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element))
+                        HResult(0)
+                    },
+                ),
+                int64UInt32ArgBooleanMethods = mapOf(
+                    10 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                ),
+                int64ArgUnitMethods = mapOf(
+                    14 to { element ->
+                        list.add(projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element))
+                        HResult(0)
+                    },
+                ),
+            )
+            PrimitiveAbiKind.UINT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = iid,
+                noArgUnitMethods = noArgUnitMethods,
+                noArgObjectMethods = noArgObjectMethods,
+                noArgUInt32Methods = noArgUInt32Methods,
+                uint32ArgUnitMethods = removeAtMethods,
+                uint32ArgUInt64Methods = mapOf(7 to { index -> marshalPrimitiveUInt64Value(list.elementAt(index.toInt())) }),
+                uint32UInt64ArgUnitMethods = mapOf(
+                    11 to { index, element ->
+                        list[index.toInt()] = projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element)
+                        HResult(0)
+                    },
+                    12 to { index, element ->
+                        list.add(index.toInt(), projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element))
+                        HResult(0)
+                    },
+                ),
+                uint64UInt32ArgBooleanMethods = mapOf(
+                    10 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                ),
+                uint64ArgUnitMethods = mapOf(
+                    14 to { element ->
+                        list.add(projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element))
+                        HResult(0)
+                    },
+                ),
+            )
+            PrimitiveAbiKind.FLOAT32 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = iid,
+                noArgUnitMethods = noArgUnitMethods,
+                noArgObjectMethods = noArgObjectMethods,
+                noArgUInt32Methods = noArgUInt32Methods,
+                uint32ArgUnitMethods = removeAtMethods,
+                uint32ArgFloat32Methods = mapOf(7 to { index -> marshalPrimitiveFloat32Value(list.elementAt(index.toInt())) }),
+                uint32Float32ArgUnitMethods = mapOf(
+                    11 to { index, element ->
+                        list[index.toInt()] = projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element)
+                        HResult(0)
+                    },
+                    12 to { index, element ->
+                        list.add(index.toInt(), projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element))
+                        HResult(0)
+                    },
+                ),
+                float32UInt32ArgBooleanMethods = mapOf(
+                    10 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                ),
+                float32ArgUnitMethods = mapOf(
+                    14 to { element ->
+                        list.add(projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element))
+                        HResult(0)
+                    },
+                ),
+            )
+            PrimitiveAbiKind.FLOAT64 -> JvmWinRtObjectStub.InterfaceSpec(
+                iid = iid,
+                noArgUnitMethods = noArgUnitMethods,
+                noArgObjectMethods = noArgObjectMethods,
+                noArgUInt32Methods = noArgUInt32Methods,
+                uint32ArgUnitMethods = removeAtMethods,
+                uint32ArgFloat64Methods = mapOf(7 to { index -> marshalPrimitiveFloat64Value(list.elementAt(index.toInt())) }),
+                uint32Float64ArgUnitMethods = mapOf(
+                    11 to { index, element ->
+                        list[index.toInt()] = projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element)
+                        HResult(0)
+                    },
+                    12 to { index, element ->
+                        list.add(index.toInt(), projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element))
+                        HResult(0)
+                    },
+                ),
+                float64UInt32ArgBooleanMethods = mapOf(
+                    10 to { element, _ -> primitiveIndexOf(list, primitiveKind, element) >= 0 },
+                ),
+                float64ArgUnitMethods = mapOf(
+                    14 to { element ->
+                        list.add(projectPrimitiveValueFromAbi(primitiveKind, elementProjectionTypeKey, element))
+                        HResult(0)
+                    },
+                ),
+            )
+        }
     }
 
     private fun createMapViewHandle(
@@ -1183,7 +1577,9 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                     child.pointer
                 }
             }
-            is AbiValueSignature.ObjectType -> when (value) {
+            is AbiValueSignature.ObjectType -> primitiveAbiKind(signature)?.let {
+                error("Primitive values for $projectionTypeKey must use the primitive ABI path")
+            } ?: when (value) {
                 null -> ComPtr.NULL
                 is Inspectable -> value.getInspectableArgumentPointer()
                 else -> error(
@@ -1199,7 +1595,7 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
     private fun inferProjectionTypeKey(signature: AbiValueSignature): String {
         return when (signature) {
             is AbiValueSignature.StringType -> "String"
-            is AbiValueSignature.ObjectType -> if (signature.rawSignature.startsWith("struct(")) {
+            is AbiValueSignature.ObjectType -> primitiveAbiKind(signature)?.wrapperQualifiedType ?: if (signature.rawSignature.startsWith("struct(")) {
                 signature.rawSignature.removePrefix("struct(").substringBefore(';')
             } else if (signature.rawSignature.startsWith("rc(")) {
                 signature.rawSignature.removePrefix("rc(").substringBefore(';')
@@ -1224,6 +1620,132 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 iReferenceIid.canonical -> "dev.winrt.core.IReference<${inferProjectionTypeKey(signature.arguments.single())}>"
                 else -> "Object"
             }
+        }
+    }
+
+    private fun primitiveAbiKind(signature: AbiValueSignature): PrimitiveAbiKind? {
+        return when (signature) {
+            is AbiValueSignature.ObjectType -> PrimitiveAbiKind.fromRawSignature(signature.rawSignature)
+            else -> null
+        }
+    }
+
+    private fun currentIteratorValue(state: IteratorState): Any {
+        return state.currentValue ?: error("IIterator.Current was requested without a current value")
+    }
+
+    private fun primitiveIndexOf(list: List<*>, primitiveKind: PrimitiveAbiKind, value: Any): Int {
+        return list.indexOfFirst { element ->
+            when (primitiveKind) {
+                PrimitiveAbiKind.BOOLEAN -> marshalPrimitiveBooleanValue(element) == value as Boolean
+                PrimitiveAbiKind.INT32 -> marshalPrimitiveInt32Value(element) == value as Int
+                PrimitiveAbiKind.UINT32 -> marshalPrimitiveUInt32Value(element) == value as UInt
+                PrimitiveAbiKind.INT64 -> marshalPrimitiveInt64Value(element) == value as Long
+                PrimitiveAbiKind.UINT64 -> marshalPrimitiveUInt64Value(element) == value as ULong
+                PrimitiveAbiKind.FLOAT32 -> marshalPrimitiveFloat32Value(element) == value as Float
+                PrimitiveAbiKind.FLOAT64 -> marshalPrimitiveFloat64Value(element) == value as Double
+            }
+        }
+    }
+
+    private fun projectPrimitiveValueFromAbi(
+        primitiveKind: PrimitiveAbiKind,
+        projectionTypeKey: String,
+        value: Any,
+    ): Any {
+        val rawType = parseProjectionTypeKey(projectionTypeKey).rawType
+        return when (primitiveKind) {
+            PrimitiveAbiKind.BOOLEAN -> if (matchesKotlinPrimitiveType(rawType, primitiveKind)) {
+                value as Boolean
+            } else {
+                WinRtBoolean(value as Boolean)
+            }
+            PrimitiveAbiKind.INT32 -> if (matchesKotlinPrimitiveType(rawType, primitiveKind)) {
+                value as Int
+            } else {
+                Int32(value as Int)
+            }
+            PrimitiveAbiKind.UINT32 -> if (matchesKotlinPrimitiveType(rawType, primitiveKind)) {
+                value as UInt
+            } else {
+                UInt32(value as UInt)
+            }
+            PrimitiveAbiKind.INT64 -> if (matchesKotlinPrimitiveType(rawType, primitiveKind)) {
+                value as Long
+            } else {
+                Int64(value as Long)
+            }
+            PrimitiveAbiKind.UINT64 -> if (matchesKotlinPrimitiveType(rawType, primitiveKind)) {
+                value as ULong
+            } else {
+                UInt64(value as ULong)
+            }
+            PrimitiveAbiKind.FLOAT32 -> if (matchesKotlinPrimitiveType(rawType, primitiveKind)) {
+                value as Float
+            } else {
+                Float32(value as Float)
+            }
+            PrimitiveAbiKind.FLOAT64 -> if (matchesKotlinPrimitiveType(rawType, primitiveKind)) {
+                value as Double
+            } else {
+                Float64(value as Double)
+            }
+        }
+    }
+
+    private fun marshalPrimitiveBooleanValue(value: Any?): Boolean {
+        return when (value) {
+            is WinRtBoolean -> value.value
+            is Boolean -> value
+            else -> error("Expected WinRT Boolean value, got ${value?.let { it::class.qualifiedName }}")
+        }
+    }
+
+    private fun marshalPrimitiveInt32Value(value: Any?): Int {
+        return when (value) {
+            is Int32 -> value.value
+            is Int -> value
+            else -> error("Expected WinRT Int32 value, got ${value?.let { it::class.qualifiedName }}")
+        }
+    }
+
+    private fun marshalPrimitiveUInt32Value(value: Any?): UInt {
+        return when (value) {
+            is UInt32 -> value.value
+            is UInt -> value
+            else -> error("Expected WinRT UInt32 value, got ${value?.let { it::class.qualifiedName }}")
+        }
+    }
+
+    private fun marshalPrimitiveInt64Value(value: Any?): Long {
+        return when (value) {
+            is Int64 -> value.value
+            is Long -> value
+            else -> error("Expected WinRT Int64 value, got ${value?.let { it::class.qualifiedName }}")
+        }
+    }
+
+    private fun marshalPrimitiveUInt64Value(value: Any?): ULong {
+        return when (value) {
+            is UInt64 -> value.value
+            is ULong -> value
+            else -> error("Expected WinRT UInt64 value, got ${value?.let { it::class.qualifiedName }}")
+        }
+    }
+
+    private fun marshalPrimitiveFloat32Value(value: Any?): Float {
+        return when (value) {
+            is Float32 -> value.value
+            is Float -> value
+            else -> error("Expected WinRT Float32 value, got ${value?.let { it::class.qualifiedName }}")
+        }
+    }
+
+    private fun marshalPrimitiveFloat64Value(value: Any?): Double {
+        return when (value) {
+            is Float64 -> value.value
+            is Double -> value
+            else -> error("Expected WinRT Float64 value, got ${value?.let { it::class.qualifiedName }}")
         }
     }
 
@@ -1534,6 +2056,32 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 hasCurrent = true
             }
         }
+    }
+
+    private enum class PrimitiveAbiKind(
+        val rawSignature: String,
+        val wrapperQualifiedType: String,
+        val wrapperSimpleType: String,
+        val kotlinQualifiedType: String,
+        val kotlinSimpleType: String,
+    ) {
+        BOOLEAN("b1", "dev.winrt.core.WinRtBoolean", "WinRtBoolean", "kotlin.Boolean", "Boolean"),
+        INT32("i4", "dev.winrt.core.Int32", "Int32", "kotlin.Int", "Int"),
+        UINT32("u4", "dev.winrt.core.UInt32", "UInt32", "kotlin.UInt", "UInt"),
+        INT64("i8", "dev.winrt.core.Int64", "Int64", "kotlin.Long", "Long"),
+        UINT64("u8", "dev.winrt.core.UInt64", "UInt64", "kotlin.ULong", "ULong"),
+        FLOAT32("f4", "dev.winrt.core.Float32", "Float32", "kotlin.Float", "Float"),
+        FLOAT64("f8", "dev.winrt.core.Float64", "Float64", "kotlin.Double", "Double");
+
+        companion object {
+            fun fromRawSignature(rawSignature: String): PrimitiveAbiKind? =
+                entries.firstOrNull { it.rawSignature == rawSignature }
+        }
+    }
+
+    private fun matchesKotlinPrimitiveType(rawType: String, primitiveKind: PrimitiveAbiKind): Boolean {
+        return rawType == primitiveKind.kotlinSimpleType ||
+            rawType == primitiveKind.kotlinQualifiedType
     }
 
     private data class ProjectionTypeKey(

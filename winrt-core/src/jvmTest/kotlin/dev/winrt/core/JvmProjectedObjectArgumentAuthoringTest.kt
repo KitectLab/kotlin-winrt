@@ -21,6 +21,92 @@ class JvmProjectedObjectArgumentAuthoringTest {
         Beta(2u),
     }
 
+    private data class PrimitiveVectorCase<T : Any>(
+        val projectionType: String,
+        val signature: String,
+        val initial: List<Any>,
+        val first: T,
+        val second: T,
+        val replacement: T,
+        val inserted: T,
+        val appended: T,
+        val current: (ComPtr) -> T,
+        val getAt: (ComPtr, UInt) -> T,
+        val unwrap: (Any?) -> T,
+    )
+
+    private fun <T : Any> assertPrimitiveVectorViewCase(case: PrimitiveVectorCase<T>) {
+        val pointer = projectedObjectArgumentPointer(
+            value = case.initial,
+            projectionTypeKey = "kotlin.collections.List<${case.projectionType}>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "bbe1fa4c-b0e3-4583-baef-1f1b2e483e56",
+                case.signature,
+            ),
+        )
+
+        assertFalse(pointer.isNull)
+        assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
+        assertEquals(case.second, case.getAt(pointer, 1u))
+
+        val iterator = PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()
+        try {
+            assertEquals(case.first, case.current(iterator))
+        } finally {
+            PlatformComInterop.release(iterator)
+        }
+    }
+
+    private fun <T : Any> assertPrimitiveVectorCase(case: PrimitiveVectorCase<T>) {
+        val values = case.initial.toMutableList()
+        val pointer = projectedObjectArgumentPointer(
+            value = values,
+            projectionTypeKey = "kotlin.collections.MutableList<${case.projectionType}>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "913337e9-11a1-4345-a3a2-4e7f956e222d",
+                case.signature,
+            ),
+        )
+
+        assertFalse(pointer.isNull)
+        assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
+        assertEquals(case.second, case.getAt(pointer, 1u))
+        assertTrue(
+            PlatformComInterop.invokeMethodWithResultKind(
+                pointer,
+                10,
+                ComMethodResultKind.BOOLEAN,
+                case.second,
+                0u,
+            ).getOrThrow().requireBoolean(),
+        )
+
+        PlatformComInterop.invokeUnitMethodWithArgs(pointer, 11, 0u, case.replacement).getOrThrow()
+        assertEquals(case.replacement, case.unwrap(values[0]))
+
+        PlatformComInterop.invokeUnitMethodWithArgs(pointer, 12, 1u, case.inserted).getOrThrow()
+        assertEquals(case.inserted, case.unwrap(values[1]))
+
+        PlatformComInterop.invokeUnitMethodWithArgs(pointer, 14, case.appended).getOrThrow()
+        assertEquals(case.appended, case.unwrap(values.last()))
+
+        val view = PlatformComInterop.invokeObjectMethod(pointer, 9).getOrThrow()
+        try {
+            assertEquals(case.second, case.getAt(view, 2u))
+        } finally {
+            PlatformComInterop.release(view)
+        }
+
+        PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 13, 2u).getOrThrow()
+        assertEquals(3, values.size)
+
+        PlatformComInterop.invokeUnitMethod(pointer, 15).getOrThrow()
+        assertEquals(2, values.size)
+
+        PlatformComInterop.invokeUnitMethod(pointer, 16).getOrThrow()
+        assertTrue(values.isEmpty())
+    }
+
     @Test
     fun projected_object_argument_pointer_accepts_plain_iterable_string_values_on_jvm() {
         val pointer = projectedObjectArgumentPointer(
@@ -849,6 +935,164 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 }
             }
         }
+    }
+
+    @Test
+    fun projected_object_argument_pointer_accepts_primitive_list_values_for_vector_view_on_jvm() {
+        assertPrimitiveVectorViewCase(
+            PrimitiveVectorCase(
+                projectionType = "dev.winrt.core.WinRtBoolean",
+                signature = "b1",
+                initial = listOf(WinRtBoolean(false), WinRtBoolean(true)),
+                first = false,
+                second = true,
+                replacement = true,
+                inserted = false,
+                appended = true,
+                current = { pointer -> PlatformComInterop.invokeBooleanGetter(pointer, 6).getOrThrow() },
+                getAt = { pointer, index -> PlatformComInterop.invokeBooleanMethodWithUInt32Arg(pointer, 7, index).getOrThrow() },
+                unwrap = { value -> (value as WinRtBoolean).value },
+            ),
+        )
+        assertPrimitiveVectorViewCase(
+            PrimitiveVectorCase(
+                projectionType = "dev.winrt.core.Int32",
+                signature = "i4",
+                initial = listOf(Int32(1), Int32(2)),
+                first = 1,
+                second = 2,
+                replacement = 7,
+                inserted = 9,
+                appended = 11,
+                current = { pointer -> PlatformComInterop.invokeInt32Method(pointer, 6).getOrThrow() },
+                getAt = { pointer, index -> PlatformComInterop.invokeInt32MethodWithUInt32Arg(pointer, 7, index).getOrThrow() },
+                unwrap = { value -> (value as Int32).value },
+            ),
+        )
+        assertPrimitiveVectorViewCase(
+            PrimitiveVectorCase(
+                projectionType = "dev.winrt.core.UInt32",
+                signature = "u4",
+                initial = listOf(UInt32(1u), UInt32(2u)),
+                first = 1u,
+                second = 2u,
+                replacement = 7u,
+                inserted = 9u,
+                appended = 11u,
+                current = { pointer -> PlatformComInterop.invokeUInt32Method(pointer, 6).getOrThrow() },
+                getAt = { pointer, index -> PlatformComInterop.invokeUInt32MethodWithUInt32Arg(pointer, 7, index).getOrThrow() },
+                unwrap = { value -> (value as UInt32).value },
+            ),
+        )
+        assertPrimitiveVectorViewCase(
+            PrimitiveVectorCase(
+                projectionType = "dev.winrt.core.Float32",
+                signature = "f4",
+                initial = listOf(Float32(1.5f), Float32(2.5f)),
+                first = 1.5f,
+                second = 2.5f,
+                replacement = 7.5f,
+                inserted = 9.5f,
+                appended = 11.5f,
+                current = { pointer -> PlatformComInterop.invokeFloat32Method(pointer, 6).getOrThrow() },
+                getAt = { pointer, index -> PlatformComInterop.invokeFloat32MethodWithUInt32Arg(pointer, 7, index).getOrThrow() },
+                unwrap = { value -> (value as Float32).value },
+            ),
+        )
+        assertPrimitiveVectorViewCase(
+            PrimitiveVectorCase(
+                projectionType = "dev.winrt.core.Float64",
+                signature = "f8",
+                initial = listOf(Float64(1.5), Float64(2.5)),
+                first = 1.5,
+                second = 2.5,
+                replacement = 7.5,
+                inserted = 9.5,
+                appended = 11.5,
+                current = { pointer -> PlatformComInterop.invokeFloat64Method(pointer, 6).getOrThrow() },
+                getAt = { pointer, index -> PlatformComInterop.invokeFloat64MethodWithUInt32Arg(pointer, 7, index).getOrThrow() },
+                unwrap = { value -> (value as Float64).value },
+            ),
+        )
+    }
+
+    @Test
+    fun projected_object_argument_pointer_accepts_plain_mutable_primitive_list_values_for_vector_on_jvm() {
+        assertPrimitiveVectorCase(
+            PrimitiveVectorCase(
+                projectionType = "dev.winrt.core.WinRtBoolean",
+                signature = "b1",
+                initial = listOf(WinRtBoolean(false), WinRtBoolean(true)),
+                first = false,
+                second = true,
+                replacement = true,
+                inserted = false,
+                appended = true,
+                current = { pointer -> PlatformComInterop.invokeBooleanGetter(pointer, 6).getOrThrow() },
+                getAt = { pointer, index -> PlatformComInterop.invokeBooleanMethodWithUInt32Arg(pointer, 7, index).getOrThrow() },
+                unwrap = { value -> (value as WinRtBoolean).value },
+            ),
+        )
+        assertPrimitiveVectorCase(
+            PrimitiveVectorCase(
+                projectionType = "dev.winrt.core.Int32",
+                signature = "i4",
+                initial = listOf(Int32(1), Int32(2)),
+                first = 1,
+                second = 2,
+                replacement = 7,
+                inserted = 9,
+                appended = 11,
+                current = { pointer -> PlatformComInterop.invokeInt32Method(pointer, 6).getOrThrow() },
+                getAt = { pointer, index -> PlatformComInterop.invokeInt32MethodWithUInt32Arg(pointer, 7, index).getOrThrow() },
+                unwrap = { value -> (value as Int32).value },
+            ),
+        )
+        assertPrimitiveVectorCase(
+            PrimitiveVectorCase(
+                projectionType = "dev.winrt.core.UInt32",
+                signature = "u4",
+                initial = listOf(UInt32(1u), UInt32(2u)),
+                first = 1u,
+                second = 2u,
+                replacement = 7u,
+                inserted = 9u,
+                appended = 11u,
+                current = { pointer -> PlatformComInterop.invokeUInt32Method(pointer, 6).getOrThrow() },
+                getAt = { pointer, index -> PlatformComInterop.invokeUInt32MethodWithUInt32Arg(pointer, 7, index).getOrThrow() },
+                unwrap = { value -> (value as UInt32).value },
+            ),
+        )
+        assertPrimitiveVectorCase(
+            PrimitiveVectorCase(
+                projectionType = "dev.winrt.core.Float32",
+                signature = "f4",
+                initial = listOf(Float32(1.5f), Float32(2.5f)),
+                first = 1.5f,
+                second = 2.5f,
+                replacement = 7.5f,
+                inserted = 9.5f,
+                appended = 11.5f,
+                current = { pointer -> PlatformComInterop.invokeFloat32Method(pointer, 6).getOrThrow() },
+                getAt = { pointer, index -> PlatformComInterop.invokeFloat32MethodWithUInt32Arg(pointer, 7, index).getOrThrow() },
+                unwrap = { value -> (value as Float32).value },
+            ),
+        )
+        assertPrimitiveVectorCase(
+            PrimitiveVectorCase(
+                projectionType = "dev.winrt.core.Float64",
+                signature = "f8",
+                initial = listOf(Float64(1.5), Float64(2.5)),
+                first = 1.5,
+                second = 2.5,
+                replacement = 7.5,
+                inserted = 9.5,
+                appended = 11.5,
+                current = { pointer -> PlatformComInterop.invokeFloat64Method(pointer, 6).getOrThrow() },
+                getAt = { pointer, index -> PlatformComInterop.invokeFloat64MethodWithUInt32Arg(pointer, 7, index).getOrThrow() },
+                unwrap = { value -> (value as Float64).value },
+            ),
+        )
     }
 
     @Test
