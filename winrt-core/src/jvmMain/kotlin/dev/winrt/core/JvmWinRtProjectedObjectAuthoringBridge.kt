@@ -1,11 +1,17 @@
 package dev.winrt.core
 
+import dev.winrt.kom.AbiIntPtr
 import dev.winrt.kom.ComPtr
 import dev.winrt.kom.ComStructValue
 import dev.winrt.kom.Guid
 import dev.winrt.kom.HResult
+import dev.winrt.kom.HString
+import dev.winrt.kom.JvmWinRtRuntime
 import dev.winrt.kom.KnownHResults
 import dev.winrt.kom.PlatformComInterop
+import dev.winrt.kom.PlatformHStringBridge
+import java.lang.foreign.MemorySegment
+import java.lang.foreign.ValueLayout
 import java.util.IdentityHashMap
 
 internal actual object WinRtProjectedObjectAuthoringBridge {
@@ -245,7 +251,13 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         val retainedChildren = mutableListOf<AutoCloseable>()
         val state = IteratorState(iterator)
         val primitiveKind = primitiveAbiKind(elementSignature)
-        val interfaceSpec = when {
+        val getManyMethod = iteratorGetManyMethod(
+            state = state,
+            elementProjectionTypeKey = elementProjectionTypeKey,
+            elementSignature = elementSignature,
+            retainedChildren = retainedChildren,
+        )
+        val baseSpec = when {
             elementSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
                 noArgHStringMethods = mapOf(
@@ -279,6 +291,9 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 ),
             )
         }
+        val interfaceSpec = baseSpec.copy(
+            noArgCallerAllocatedArrayMethods = mapOf(9 to getManyMethod),
+        )
         val stub = JvmWinRtObjectStub.create(interfaceSpec)
         return ProjectedObjectHandle(stub, retainedChildren)
     }
@@ -320,8 +335,14 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             iteratorSignature = iteratorSignature,
             retainedChildren = retainedChildren,
         )
+        val getManyMethod = vectorGetManyMethod(
+            list = list,
+            elementProjectionTypeKey = elementProjectionTypeKey,
+            elementSignature = elementSignature,
+            retainedChildren = retainedChildren,
+        )
         val primitiveKind = primitiveAbiKind(elementSignature)
-        val derivedSpec = when {
+        val baseSpec = when {
             elementSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
                 noArgObjectMethods = mapOf(6 to firstMethod),
@@ -356,6 +377,9 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
             )
         }
+        val derivedSpec = baseSpec.copy(
+            uint32ArgCallerAllocatedArrayMethods = mapOf(10 to getManyMethod),
+        )
         val baseIterableSpec = JvmWinRtObjectStub.InterfaceSpec(
             iid = iterableSignature.iid,
             noArgObjectMethods = mapOf(6 to firstMethod),
@@ -426,8 +450,19 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             retainedChildren += vectorViewHandle
             vectorViewHandle.pointer.withAddRef()
         }
+        val getManyMethod = vectorGetManyMethod(
+            list = list,
+            elementProjectionTypeKey = elementProjectionTypeKey,
+            elementSignature = elementSignature,
+            retainedChildren = retainedChildren,
+        )
+        val replaceAllMethod = vectorReplaceAllMethod(
+            list = list,
+            elementProjectionTypeKey = elementProjectionTypeKey,
+            elementSignature = elementSignature,
+        )
         val primitiveKind = primitiveAbiKind(elementSignature)
-        val interfaceSpec = when {
+        val baseInterfaceSpec = when {
             elementSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = signature.iid,
                 noArgUnitMethods = mapOf(
@@ -550,7 +585,11 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 ),
             )
         }
-        val vectorViewSpec = when {
+        val interfaceSpec = baseInterfaceSpec.copy(
+            uint32ArgCallerAllocatedArrayMethods = mapOf(17 to getManyMethod),
+            callerAllocatedArrayArgUnitMethods = mapOf(18 to replaceAllMethod),
+        )
+        val baseVectorViewSpec = when {
             elementSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
                 iid = vectorViewSignature.iid,
                 noArgObjectMethods = mapOf(6 to firstMethod),
@@ -593,6 +632,9 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 ),
             )
         }
+        val vectorViewSpec = baseVectorViewSpec.copy(
+            uint32ArgCallerAllocatedArrayMethods = mapOf(10 to getManyMethod),
+        )
         val baseIterableSpec = JvmWinRtObjectStub.InterfaceSpec(
             iid = iterableSignature.iid,
             noArgObjectMethods = mapOf(6 to firstMethod),
@@ -1693,6 +1735,11 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                     7 to { state.hasCurrent },
                     8 to { state.moveNext() },
                 ),
+                noArgCallerAllocatedArrayMethods = mapOf(
+                    9 to { _, _ ->
+                        throw UnsupportedOperationException("IBindableIterator.GetMany is not implemented")
+                    },
+                ),
             ),
         )
         return ProjectedObjectHandle(stub, retainedChildren)
@@ -1849,6 +1896,244 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         )
         val stub = JvmWinRtObjectStub.create(interfaceSpec, baseIterableSpec)
         return ProjectedObjectHandle(stub, retainedChildren)
+    }
+
+    private fun iteratorGetManyMethod(
+        state: IteratorState,
+        elementProjectionTypeKey: String,
+        elementSignature: AbiValueSignature,
+        retainedChildren: MutableList<AutoCloseable>,
+    ): (Int, MemorySegment) -> UInt {
+        return { itemsSize, items ->
+            require(itemsSize >= 0) { "Caller buffer size must be non-negative: $itemsSize" }
+            val buffer = callerAllocatedArrayBuffer(items, itemsSize, elementSignature)
+            var index = 0
+            while (index < itemsSize && state.hasCurrent) {
+                writeCallerAllocatedArrayElement(
+                    buffer = buffer,
+                    index = index,
+                    value = state.requireCurrentValue("IIterator"),
+                    projectionTypeKey = elementProjectionTypeKey,
+                    signature = elementSignature,
+                    retainedChildren = retainedChildren,
+                )
+                state.moveNext()
+                index += 1
+            }
+            fillRemainingStringElements(buffer, index, itemsSize, elementSignature)
+            index.toUInt()
+        }
+    }
+
+    private fun vectorGetManyMethod(
+        list: List<*>,
+        elementProjectionTypeKey: String,
+        elementSignature: AbiValueSignature,
+        retainedChildren: MutableList<AutoCloseable>,
+    ): (UInt, Int, MemorySegment) -> UInt {
+        return { startIndex, itemsSize, items ->
+            require(itemsSize >= 0) { "Caller buffer size must be non-negative: $itemsSize" }
+            if (startIndex > Int.MAX_VALUE.toUInt()) {
+                throw IndexOutOfBoundsException("Start index $startIndex exceeds Int range")
+            }
+            val start = startIndex.toInt()
+            if (start > list.size) {
+                throw IndexOutOfBoundsException("Start index $startIndex is outside vector size ${list.size}")
+            }
+            val buffer = callerAllocatedArrayBuffer(items, itemsSize, elementSignature)
+            val itemCount = minOf(itemsSize, list.size - start)
+            repeat(itemCount) { offset ->
+                writeCallerAllocatedArrayElement(
+                    buffer = buffer,
+                    index = offset,
+                    value = list[start + offset],
+                    projectionTypeKey = elementProjectionTypeKey,
+                    signature = elementSignature,
+                    retainedChildren = retainedChildren,
+                )
+            }
+            fillRemainingStringElements(buffer, itemCount, itemsSize, elementSignature)
+            itemCount.toUInt()
+        }
+    }
+
+    private fun vectorReplaceAllMethod(
+        list: MutableList<Any?>,
+        elementProjectionTypeKey: String,
+        elementSignature: AbiValueSignature,
+    ): (Int, MemorySegment) -> HResult {
+        return { itemsSize, items ->
+            require(itemsSize >= 0) { "Caller buffer size must be non-negative: $itemsSize" }
+            val buffer = callerAllocatedArrayBuffer(items, itemsSize, elementSignature)
+            list.clear()
+            repeat(itemsSize) { index ->
+                list.add(
+                    readCallerAllocatedArrayElement(
+                        buffer = buffer,
+                        index = index,
+                        projectionTypeKey = elementProjectionTypeKey,
+                        signature = elementSignature,
+                    ),
+                )
+            }
+            HResult(0)
+        }
+    }
+
+    private fun callerAllocatedArrayBuffer(
+        items: MemorySegment,
+        itemsSize: Int,
+        elementSignature: AbiValueSignature,
+    ): MemorySegment {
+        if (itemsSize == 0) {
+            return MemorySegment.NULL
+        }
+        if (items.address() == 0L) {
+            throw NullPointerException("Caller buffer was null for $itemsSize elements")
+        }
+        return items.reinterpret(callerAllocatedArrayElementSize(elementSignature) * itemsSize.toLong())
+    }
+
+    private fun callerAllocatedArrayElementSize(signature: AbiValueSignature): Long {
+        return when (primitiveAbiKind(signature)) {
+            PrimitiveAbiKind.BOOLEAN -> ValueLayout.JAVA_BYTE.byteSize()
+            PrimitiveAbiKind.INT32,
+            PrimitiveAbiKind.UINT32,
+            -> ValueLayout.JAVA_INT.byteSize()
+            PrimitiveAbiKind.INT64,
+            PrimitiveAbiKind.UINT64,
+            -> ValueLayout.JAVA_LONG.byteSize()
+            PrimitiveAbiKind.FLOAT32 -> ValueLayout.JAVA_FLOAT.byteSize()
+            PrimitiveAbiKind.FLOAT64 -> ValueLayout.JAVA_DOUBLE.byteSize()
+            null -> ValueLayout.ADDRESS.byteSize()
+        }.toLong()
+    }
+
+    private fun fillRemainingStringElements(
+        buffer: MemorySegment,
+        startIndex: Int,
+        itemsSize: Int,
+        signature: AbiValueSignature,
+    ) {
+        if (signature !is AbiValueSignature.StringType) {
+            return
+        }
+        for (index in startIndex until itemsSize) {
+            val hString = JvmWinRtRuntime.createHString("")
+            buffer.setAtIndex(ValueLayout.ADDRESS, index.toLong(), MemorySegment.ofAddress(hString.raw))
+        }
+    }
+
+    private fun writeCallerAllocatedArrayElement(
+        buffer: MemorySegment,
+        index: Int,
+        value: Any?,
+        projectionTypeKey: String,
+        signature: AbiValueSignature,
+        retainedChildren: MutableList<AutoCloseable>,
+    ) {
+        when (signature) {
+            is AbiValueSignature.StringType -> {
+                val hString = JvmWinRtRuntime.createHString(
+                    value as? String
+                        ?: error("Expected String array element, got ${value?.let { it::class.qualifiedName }}"),
+                )
+                buffer.setAtIndex(ValueLayout.ADDRESS, index.toLong(), MemorySegment.ofAddress(hString.raw))
+            }
+            is AbiValueSignature.ParameterizedInterface -> {
+                val pointer = marshalObjectResultPointer(value, projectionTypeKey, signature, retainedChildren)
+                buffer.setAtIndex(
+                    ValueLayout.ADDRESS,
+                    index.toLong(),
+                    if (pointer.isNull) MemorySegment.NULL else MemorySegment.ofAddress(pointer.value.rawValue),
+                )
+            }
+            is AbiValueSignature.ObjectType -> primitiveAbiKind(signature)?.let { primitiveKind ->
+                when (primitiveKind) {
+                    PrimitiveAbiKind.BOOLEAN -> buffer.setAtIndex(
+                        ValueLayout.JAVA_BYTE,
+                        index.toLong(),
+                        if (marshalPrimitiveBooleanValue(value)) 1 else 0,
+                    )
+                    PrimitiveAbiKind.INT32 -> buffer.setAtIndex(
+                        ValueLayout.JAVA_INT,
+                        index.toLong(),
+                        marshalPrimitiveInt32Value(value),
+                    )
+                    PrimitiveAbiKind.UINT32 -> buffer.setAtIndex(
+                        ValueLayout.JAVA_INT,
+                        index.toLong(),
+                        marshalPrimitiveUInt32Value(value).toInt(),
+                    )
+                    PrimitiveAbiKind.INT64 -> buffer.setAtIndex(
+                        ValueLayout.JAVA_LONG,
+                        index.toLong(),
+                        marshalPrimitiveInt64Value(value),
+                    )
+                    PrimitiveAbiKind.UINT64 -> buffer.setAtIndex(
+                        ValueLayout.JAVA_LONG,
+                        index.toLong(),
+                        marshalPrimitiveUInt64Value(value).toLong(),
+                    )
+                    PrimitiveAbiKind.FLOAT32 -> buffer.setAtIndex(
+                        ValueLayout.JAVA_FLOAT,
+                        index.toLong(),
+                        marshalPrimitiveFloat32Value(value),
+                    )
+                    PrimitiveAbiKind.FLOAT64 -> buffer.setAtIndex(
+                        ValueLayout.JAVA_DOUBLE,
+                        index.toLong(),
+                        marshalPrimitiveFloat64Value(value),
+                    )
+                }
+            } ?: run {
+                val pointer = marshalObjectResultPointer(value, projectionTypeKey, signature, retainedChildren)
+                buffer.setAtIndex(
+                    ValueLayout.ADDRESS,
+                    index.toLong(),
+                    if (pointer.isNull) MemorySegment.NULL else MemorySegment.ofAddress(pointer.value.rawValue),
+                )
+            }
+        }
+    }
+
+    private fun readCallerAllocatedArrayElement(
+        buffer: MemorySegment,
+        index: Int,
+        projectionTypeKey: String,
+        signature: AbiValueSignature,
+    ): Any? {
+        return when (signature) {
+            is AbiValueSignature.StringType -> {
+                val address = buffer.getAtIndex(ValueLayout.ADDRESS, index.toLong()).address()
+                if (address == 0L) {
+                    ""
+                } else {
+                    PlatformHStringBridge.toKotlinString(HString(address))
+                }
+            }
+            is AbiValueSignature.ParameterizedInterface -> projectObjectValueFromPointer(
+                ComPtr(AbiIntPtr(buffer.getAtIndex(ValueLayout.ADDRESS, index.toLong()).address())),
+                projectionTypeKey,
+                signature,
+            )
+            is AbiValueSignature.ObjectType -> primitiveAbiKind(signature)?.let { primitiveKind ->
+                val value = when (primitiveKind) {
+                    PrimitiveAbiKind.BOOLEAN -> buffer.getAtIndex(ValueLayout.JAVA_BYTE, index.toLong()).toInt() != 0
+                    PrimitiveAbiKind.INT32 -> buffer.getAtIndex(ValueLayout.JAVA_INT, index.toLong())
+                    PrimitiveAbiKind.UINT32 -> buffer.getAtIndex(ValueLayout.JAVA_INT, index.toLong()).toUInt()
+                    PrimitiveAbiKind.INT64 -> buffer.getAtIndex(ValueLayout.JAVA_LONG, index.toLong())
+                    PrimitiveAbiKind.UINT64 -> buffer.getAtIndex(ValueLayout.JAVA_LONG, index.toLong()).toULong()
+                    PrimitiveAbiKind.FLOAT32 -> buffer.getAtIndex(ValueLayout.JAVA_FLOAT, index.toLong())
+                    PrimitiveAbiKind.FLOAT64 -> buffer.getAtIndex(ValueLayout.JAVA_DOUBLE, index.toLong())
+                }
+                projectPrimitiveValueFromAbi(primitiveKind, projectionTypeKey, value)
+            } ?: projectObjectValueFromPointer(
+                ComPtr(AbiIntPtr(buffer.getAtIndex(ValueLayout.ADDRESS, index.toLong()).address())),
+                projectionTypeKey,
+                signature,
+            )
+        }
     }
 
     private fun marshalObjectResultPointer(

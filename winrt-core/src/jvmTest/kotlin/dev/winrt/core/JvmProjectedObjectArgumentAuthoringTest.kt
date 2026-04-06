@@ -2,9 +2,17 @@ package dev.winrt.core
 
 import dev.winrt.kom.ComMethodResultKind
 import dev.winrt.kom.ComPtr
+import dev.winrt.kom.AbiIntPtr
+import dev.winrt.kom.HResult
+import dev.winrt.kom.HString
 import dev.winrt.kom.KnownHResults
 import dev.winrt.kom.PlatformComInterop
 import dev.winrt.kom.requireBoolean
+import java.lang.foreign.Arena
+import java.lang.foreign.FunctionDescriptor
+import java.lang.foreign.Linker
+import java.lang.foreign.MemorySegment
+import java.lang.foreign.ValueLayout
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -48,6 +56,293 @@ class JvmProjectedObjectArgumentAuthoringTest {
         val currentValue: (ComPtr) -> T,
         val unwrap: (Any?) -> T,
     )
+
+    private data class CallerAllocatedStringArrayResult(
+        val values: List<String>,
+        val count: UInt,
+    )
+
+    private data class CallerAllocatedInt32ArrayResult(
+        val values: List<Int>,
+        val count: UInt,
+    )
+
+    private val linker = Linker.nativeLinker()
+    private val noArgCallerAllocatedArrayHandle = linker.downcallHandle(
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+        ),
+    )
+    private val uint32CallerAllocatedArrayHandle = linker.downcallHandle(
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+        ),
+    )
+    private val callerAllocatedArrayArgHandle = linker.downcallHandle(
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+        ),
+    )
+
+    private fun vtableEntry(instance: ComPtr, index: Int): MemorySegment {
+        val objectPointer = MemorySegment.ofAddress(instance.value.rawValue).reinterpret(ValueLayout.ADDRESS.byteSize())
+        val vtablePointer = objectPointer.get(ValueLayout.ADDRESS, 0L)
+        return vtablePointer
+            .reinterpret((index + 1L) * ValueLayout.ADDRESS.byteSize())
+            .getAtIndex(ValueLayout.ADDRESS, index.toLong())
+    }
+
+    private fun invokeStringGetManyNoArg(
+        instance: ComPtr,
+        vtableIndex: Int,
+        requestedSize: Int,
+    ): Result<CallerAllocatedStringArrayResult> {
+        return runCatching {
+            require(requestedSize >= 0)
+            val function = vtableEntry(instance, vtableIndex)
+            Arena.ofConfined().use { arena ->
+                val items = if (requestedSize == 0) {
+                    MemorySegment.NULL
+                } else {
+                    arena.allocate(
+                        ValueLayout.ADDRESS.byteSize() * requestedSize.toLong(),
+                        ValueLayout.ADDRESS.byteAlignment(),
+                    )
+                }
+                val resultCount = arena.allocate(ValueLayout.JAVA_INT)
+                val hResult = HResult(
+                    noArgCallerAllocatedArrayHandle.bindTo(function).invokeWithArguments(
+                        MemorySegment.ofAddress(instance.value.rawValue),
+                        requestedSize,
+                        items,
+                        resultCount,
+                    ) as Int,
+                )
+                hResult.requireSuccess("invokeStringGetManyNoArg($vtableIndex)")
+                CallerAllocatedStringArrayResult(
+                    values = readStringCallerAllocatedBuffer(items, requestedSize),
+                    count = resultCount.get(ValueLayout.JAVA_INT, 0L).toUInt(),
+                )
+            }
+        }
+    }
+
+    private fun invokeStringGetManyWithUInt32Arg(
+        instance: ComPtr,
+        vtableIndex: Int,
+        startIndex: UInt,
+        requestedSize: Int,
+    ): Result<CallerAllocatedStringArrayResult> {
+        return runCatching {
+            require(requestedSize >= 0)
+            val function = vtableEntry(instance, vtableIndex)
+            Arena.ofConfined().use { arena ->
+                val items = if (requestedSize == 0) {
+                    MemorySegment.NULL
+                } else {
+                    arena.allocate(
+                        ValueLayout.ADDRESS.byteSize() * requestedSize.toLong(),
+                        ValueLayout.ADDRESS.byteAlignment(),
+                    )
+                }
+                val resultCount = arena.allocate(ValueLayout.JAVA_INT)
+                val hResult = HResult(
+                    uint32CallerAllocatedArrayHandle.bindTo(function).invokeWithArguments(
+                        MemorySegment.ofAddress(instance.value.rawValue),
+                        startIndex.toInt(),
+                        requestedSize,
+                        items,
+                        resultCount,
+                    ) as Int,
+                )
+                hResult.requireSuccess("invokeStringGetManyWithUInt32Arg($vtableIndex)")
+                CallerAllocatedStringArrayResult(
+                    values = readStringCallerAllocatedBuffer(items, requestedSize),
+                    count = resultCount.get(ValueLayout.JAVA_INT, 0L).toUInt(),
+                )
+            }
+        }
+    }
+
+    private fun invokeInt32GetManyWithUInt32Arg(
+        instance: ComPtr,
+        vtableIndex: Int,
+        startIndex: UInt,
+        requestedSize: Int,
+    ): Result<CallerAllocatedInt32ArrayResult> {
+        return runCatching {
+            require(requestedSize >= 0)
+            val function = vtableEntry(instance, vtableIndex)
+            Arena.ofConfined().use { arena ->
+                val items = if (requestedSize == 0) {
+                    MemorySegment.NULL
+                } else {
+                    arena.allocate(
+                        ValueLayout.JAVA_INT.byteSize() * requestedSize.toLong(),
+                        ValueLayout.JAVA_INT.byteAlignment(),
+                    )
+                }
+                val resultCount = arena.allocate(ValueLayout.JAVA_INT)
+                val hResult = HResult(
+                    uint32CallerAllocatedArrayHandle.bindTo(function).invokeWithArguments(
+                        MemorySegment.ofAddress(instance.value.rawValue),
+                        startIndex.toInt(),
+                        requestedSize,
+                        items,
+                        resultCount,
+                    ) as Int,
+                )
+                hResult.requireSuccess("invokeInt32GetManyWithUInt32Arg($vtableIndex)")
+                CallerAllocatedInt32ArrayResult(
+                    values = List(requestedSize) { index ->
+                        if (requestedSize == 0) {
+                            0
+                        } else {
+                            items.getAtIndex(ValueLayout.JAVA_INT, index.toLong())
+                        }
+                    },
+                    count = resultCount.get(ValueLayout.JAVA_INT, 0L).toUInt(),
+                )
+            }
+        }
+    }
+
+    private fun invokeObjectGetManyNoArg(
+        instance: ComPtr,
+        vtableIndex: Int,
+        requestedSize: Int,
+    ): Result<UInt> {
+        return runCatching {
+            require(requestedSize >= 0)
+            val function = vtableEntry(instance, vtableIndex)
+            Arena.ofConfined().use { arena ->
+                val items = if (requestedSize == 0) {
+                    MemorySegment.NULL
+                } else {
+                    arena.allocate(
+                        ValueLayout.ADDRESS.byteSize() * requestedSize.toLong(),
+                        ValueLayout.ADDRESS.byteAlignment(),
+                    )
+                }
+                val resultCount = arena.allocate(ValueLayout.JAVA_INT)
+                val hResult = HResult(
+                    noArgCallerAllocatedArrayHandle.bindTo(function).invokeWithArguments(
+                        MemorySegment.ofAddress(instance.value.rawValue),
+                        requestedSize,
+                        items,
+                        resultCount,
+                    ) as Int,
+                )
+                hResult.requireSuccess("invokeObjectGetManyNoArg($vtableIndex)")
+                repeat(requestedSize) { index ->
+                    if (items != MemorySegment.NULL) {
+                        val address = items.getAtIndex(ValueLayout.ADDRESS, index.toLong()).address()
+                        if (address != 0L) {
+                            PlatformComInterop.release(ComPtr(AbiIntPtr(address)))
+                        }
+                    }
+                }
+                resultCount.get(ValueLayout.JAVA_INT, 0L).toUInt()
+            }
+        }
+    }
+
+    private fun invokeStringReplaceAll(
+        instance: ComPtr,
+        vtableIndex: Int,
+        values: List<String>,
+    ): Result<Unit> {
+        return runCatching {
+            val function = vtableEntry(instance, vtableIndex)
+            Arena.ofConfined().use { arena ->
+                val items = if (values.isEmpty()) {
+                    MemorySegment.NULL
+                } else {
+                    arena.allocate(
+                        ValueLayout.ADDRESS.byteSize() * values.size.toLong(),
+                        ValueLayout.ADDRESS.byteAlignment(),
+                    )
+                }
+                val hStrings = values.map(HString::fromKotlin)
+                try {
+                    hStrings.forEachIndexed { index, value ->
+                        items.setAtIndex(ValueLayout.ADDRESS, index.toLong(), MemorySegment.ofAddress(value.raw))
+                    }
+                    val hResult = HResult(
+                        callerAllocatedArrayArgHandle.bindTo(function).invokeWithArguments(
+                            MemorySegment.ofAddress(instance.value.rawValue),
+                            values.size,
+                            items,
+                        ) as Int,
+                    )
+                    hResult.requireSuccess("invokeStringReplaceAll($vtableIndex)")
+                } finally {
+                    hStrings.asReversed().forEach(HString::close)
+                }
+            }
+        }
+    }
+
+    private fun invokeInt32ReplaceAll(
+        instance: ComPtr,
+        vtableIndex: Int,
+        values: IntArray,
+    ): Result<Unit> {
+        return runCatching {
+            val function = vtableEntry(instance, vtableIndex)
+            Arena.ofConfined().use { arena ->
+                val items = if (values.isEmpty()) {
+                    MemorySegment.NULL
+                } else {
+                    arena.allocate(
+                        ValueLayout.JAVA_INT.byteSize() * values.size.toLong(),
+                        ValueLayout.JAVA_INT.byteAlignment(),
+                    ).also { buffer ->
+                        values.forEachIndexed { index, value ->
+                            buffer.setAtIndex(ValueLayout.JAVA_INT, index.toLong(), value)
+                        }
+                    }
+                }
+                val hResult = HResult(
+                    callerAllocatedArrayArgHandle.bindTo(function).invokeWithArguments(
+                        MemorySegment.ofAddress(instance.value.rawValue),
+                        values.size,
+                        items,
+                    ) as Int,
+                )
+                hResult.requireSuccess("invokeInt32ReplaceAll($vtableIndex)")
+            }
+        }
+    }
+
+    private fun readStringCallerAllocatedBuffer(
+        buffer: MemorySegment,
+        size: Int,
+    ): List<String> {
+        if (size == 0) {
+            return emptyList()
+        }
+        return List(size) { index ->
+            val address = buffer.getAtIndex(ValueLayout.ADDRESS, index.toLong()).address()
+            if (address == 0L) {
+                ""
+            } else {
+                HString(address).use(HString::toKotlinString)
+            }
+        }
+    }
 
     private fun invokeStringKeyedMapIterator(pointer: ComPtr, valueSignature: String): ComPtr {
         val iterablePointer = PlatformComInterop.queryInterface(
@@ -328,6 +623,33 @@ class JvmProjectedObjectArgumentAuthoringTest {
     }
 
     @Test
+    fun projected_object_argument_pointer_iiiterator_get_many_matches_cswinrt_on_jvm() {
+        val pointer = projectedObjectArgumentPointer(
+            value = listOf("en-US", "fr-FR"),
+            projectionTypeKey = "kotlin.collections.Iterable<String>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "faa585ea-6214-4217-afda-7f46de5869b3",
+                WinRtTypeSignature.string(),
+            ),
+        )
+
+        assertFalse(pointer.isNull)
+
+        val iterator = PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow()
+        try {
+            val firstBatch = invokeStringGetManyNoArg(iterator, 9, 3).getOrThrow()
+            assertEquals(2u, firstBatch.count)
+            assertEquals(listOf("en-US", "fr-FR", ""), firstBatch.values)
+
+            val secondBatch = invokeStringGetManyNoArg(iterator, 9, 3).getOrThrow()
+            assertEquals(0u, secondBatch.count)
+            assertEquals(listOf("", "", ""), secondBatch.values)
+        } finally {
+            PlatformComInterop.release(iterator)
+        }
+    }
+
+    @Test
     fun projected_object_argument_pointer_accepts_plain_iterable_values_for_bindable_iterable_on_jvm() {
         val forwardedIid = guidOf("12345678-1111-2222-3333-444444444444")
 
@@ -467,6 +789,31 @@ class JvmProjectedObjectArgumentAuthoringTest {
                 }
                 assertFalse(PlatformComInterop.invokeBooleanGetter(pointer, 8).getOrThrow())
                 assertBoundsFailure(PlatformComInterop.invokeObjectMethod(pointer, 6))
+            }
+        }
+    }
+
+    @Test
+    fun projected_object_argument_pointer_bindable_iterator_get_many_returns_enotimpl_on_jvm() {
+        val forwardedIid = guidOf("12345678-1111-2222-3333-444444444444")
+
+        JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(iid = forwardedIid),
+        ).use { firstStub ->
+            JvmWinRtObjectStub.create(
+                JvmWinRtObjectStub.InterfaceSpec(iid = forwardedIid),
+            ).use { secondStub ->
+                val pointer = projectedObjectArgumentPointer(
+                    value = listOf(Inspectable(firstStub.primaryPointer), Inspectable(secondStub.primaryPointer)).iterator(),
+                    projectionTypeKey = "kotlin.collections.Iterator",
+                    signature = "{6a1d6c07-076d-49f2-8314-f52c9c9a8331}",
+                )
+
+                assertFalse(pointer.isNull)
+                assertFailureHResult(
+                    invokeObjectGetManyNoArg(pointer, 9, 2),
+                    KnownHResults.E_NOTIMPL.value,
+                )
             }
         }
     }
@@ -1185,6 +1532,30 @@ class JvmProjectedObjectArgumentAuthoringTest {
     }
 
     @Test
+    fun projected_object_argument_pointer_vector_view_get_many_matches_cswinrt_on_jvm() {
+        val pointer = projectedObjectArgumentPointer(
+            value = listOf("en-US", "fr-FR"),
+            projectionTypeKey = "kotlin.collections.List<String>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "bbe1fa4c-b0e3-4583-baef-1f1b2e483e56",
+                WinRtTypeSignature.string(),
+            ),
+        )
+
+        assertFalse(pointer.isNull)
+
+        val firstBatch = invokeStringGetManyWithUInt32Arg(pointer, 10, 0u, 3).getOrThrow()
+        assertEquals(2u, firstBatch.count)
+        assertEquals(listOf("en-US", "fr-FR", ""), firstBatch.values)
+
+        val exhaustedBatch = invokeStringGetManyWithUInt32Arg(pointer, 10, 2u, 2).getOrThrow()
+        assertEquals(0u, exhaustedBatch.count)
+        assertEquals(listOf("", ""), exhaustedBatch.values)
+
+        assertBoundsFailure(invokeStringGetManyWithUInt32Arg(pointer, 10, 3u, 1))
+    }
+
+    @Test
     fun projected_object_argument_pointer_accepts_plain_mutable_string_list_values_for_vector_on_jvm() {
         val values = mutableListOf("en-US", "fr-FR")
         val pointer = projectedObjectArgumentPointer(
@@ -1257,6 +1628,38 @@ class JvmProjectedObjectArgumentAuthoringTest {
         PlatformComInterop.invokeUnitMethod(pointer, 16).getOrThrow()
         assertTrue(values.isEmpty())
         assertBoundsFailure(PlatformComInterop.invokeUnitMethod(pointer, 15))
+    }
+
+    @Test
+    fun projected_object_argument_pointer_vector_get_many_and_replace_all_match_cswinrt_on_jvm() {
+        val values = mutableListOf("en-US", "fr-FR", "ja-JP")
+        val pointer = projectedObjectArgumentPointer(
+            value = values,
+            projectionTypeKey = "kotlin.collections.MutableList<String>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "913337e9-11a1-4345-a3a2-4e7f956e222d",
+                WinRtTypeSignature.string(),
+            ),
+        )
+
+        assertFalse(pointer.isNull)
+
+        val firstBatch = invokeStringGetManyWithUInt32Arg(pointer, 17, 1u, 3).getOrThrow()
+        assertEquals(2u, firstBatch.count)
+        assertEquals(listOf("fr-FR", "ja-JP", ""), firstBatch.values)
+
+        val exhaustedBatch = invokeStringGetManyWithUInt32Arg(pointer, 17, 3u, 2).getOrThrow()
+        assertEquals(0u, exhaustedBatch.count)
+        assertEquals(listOf("", ""), exhaustedBatch.values)
+
+        assertBoundsFailure(invokeStringGetManyWithUInt32Arg(pointer, 17, 4u, 1))
+
+        invokeStringReplaceAll(pointer, 18, listOf("de-DE", "es-ES")).getOrThrow()
+        assertEquals(listOf("de-DE", "es-ES"), values)
+        assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
+        PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 7, 1u).getOrThrow().use { value ->
+            assertEquals("es-ES", value.toKotlinString())
+        }
     }
 
     @Test
@@ -1716,6 +2119,32 @@ class JvmProjectedObjectArgumentAuthoringTest {
         assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithArgs(int32VectorPointer, 11, 2u, 7))
         assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithArgs(int32VectorPointer, 12, 3u, 7))
         assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithUInt32Arg(int32VectorPointer, 13, 2u))
+    }
+
+    @Test
+    fun projected_object_argument_pointer_primitive_vector_get_many_and_replace_all_match_cswinrt_on_jvm() {
+        val values = mutableListOf(Int32(1), Int32(2), Int32(3))
+        val pointer = projectedObjectArgumentPointer(
+            value = values,
+            projectionTypeKey = "kotlin.collections.MutableList<dev.winrt.core.Int32>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "913337e9-11a1-4345-a3a2-4e7f956e222d",
+                "i4",
+            ),
+        )
+
+        assertFalse(pointer.isNull)
+
+        val firstBatch = invokeInt32GetManyWithUInt32Arg(pointer, 17, 1u, 2).getOrThrow()
+        assertEquals(2u, firstBatch.count)
+        assertEquals(listOf(2, 3), firstBatch.values)
+
+        assertBoundsFailure(invokeInt32GetManyWithUInt32Arg(pointer, 17, 4u, 1))
+
+        invokeInt32ReplaceAll(pointer, 18, intArrayOf(7, 9)).getOrThrow()
+        assertEquals(listOf(7, 9), values.map(Int32::value))
+        assertEquals(2u, PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow())
+        assertEquals(9, PlatformComInterop.invokeInt32MethodWithUInt32Arg(pointer, 7, 1u).getOrThrow())
     }
 
     @Test
