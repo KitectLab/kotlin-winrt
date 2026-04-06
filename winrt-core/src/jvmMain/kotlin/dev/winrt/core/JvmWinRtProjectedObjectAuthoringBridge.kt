@@ -669,6 +669,14 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             JvmWinRtObjectStub.InterfaceSpec,
             Map<Int, (T) -> HResult>,
         ) -> JvmWinRtObjectStub.InterfaceSpec,
+        private val bindStringArgValueMethods: (
+            JvmWinRtObjectStub.InterfaceSpec,
+            Map<Int, (String) -> T>,
+        ) -> JvmWinRtObjectStub.InterfaceSpec,
+        private val bindStringArgMutationMethods: (
+            JvmWinRtObjectStub.InterfaceSpec,
+            Map<Int, (String, T) -> Boolean>,
+        ) -> JvmWinRtObjectStub.InterfaceSpec,
     ) {
         fun referenceInterfaceSpec(
             signature: AbiValueSignature.ParameterizedInterface,
@@ -784,6 +792,38 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 ),
             )
         }
+
+        fun mapViewInterfaceSpec(
+            baseSpec: JvmWinRtObjectStub.InterfaceSpec,
+            lookupValue: (String) -> Any?,
+        ): JvmWinRtObjectStub.InterfaceSpec {
+            return bindStringArgValueMethods(
+                baseSpec,
+                mapOf(6 to { key -> marshalValue(lookupValue(key)) }),
+            )
+        }
+
+        fun mapInterfaceSpec(
+            baseSpec: JvmWinRtObjectStub.InterfaceSpec,
+            map: MutableMap<String, Any?>,
+            lookupValue: (String) -> Any?,
+            valueProjectionTypeKey: String,
+        ): JvmWinRtObjectStub.InterfaceSpec {
+            fun projectElement(element: T): Any = projectPrimitiveValueFromAbi(kind, valueProjectionTypeKey, element)
+            return bindStringArgMutationMethods(
+                bindStringArgValueMethods(
+                    baseSpec,
+                    mapOf(6 to { key -> marshalValue(lookupValue(key)) }),
+                ),
+                mapOf(
+                    10 to { key, element ->
+                        val replaced = map.containsKey(key)
+                        map[key] = projectElement(element)
+                        replaced
+                    },
+                ),
+            )
+        }
     }
 
     private val booleanPrimitiveSlotBinder = PrimitiveSlotBinder(
@@ -794,6 +834,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         bindIndexOfMethods = { spec, methods -> spec.copy(booleanArgIndexOfMethods = spec.booleanArgIndexOfMethods + methods) },
         bindIndexedMutationMethods = { spec, methods -> spec.copy(uint32BooleanArgUnitMethods = spec.uint32BooleanArgUnitMethods + methods) },
         bindAppendMethods = { spec, methods -> spec.copy(booleanArgUnitMethods = spec.booleanArgUnitMethods + methods) },
+        bindStringArgValueMethods = { spec, methods -> spec.copy(stringArgBooleanMethods = spec.stringArgBooleanMethods + methods) },
+        bindStringArgMutationMethods = { spec, methods -> spec.copy(stringBooleanArgBooleanMethods = spec.stringBooleanArgBooleanMethods + methods) },
     )
 
     private val int32PrimitiveSlotBinder = PrimitiveSlotBinder(
@@ -804,6 +846,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         bindIndexOfMethods = { spec, methods -> spec.copy(int32ArgIndexOfMethods = spec.int32ArgIndexOfMethods + methods) },
         bindIndexedMutationMethods = { spec, methods -> spec.copy(uint32Int32ArgUnitMethods = spec.uint32Int32ArgUnitMethods + methods) },
         bindAppendMethods = { spec, methods -> spec.copy(int32ArgUnitMethods = spec.int32ArgUnitMethods + methods) },
+        bindStringArgValueMethods = { spec, methods -> spec.copy(stringArgInt32Methods = spec.stringArgInt32Methods + methods) },
+        bindStringArgMutationMethods = { spec, methods -> spec.copy(stringInt32ArgBooleanMethods = spec.stringInt32ArgBooleanMethods + methods) },
     )
 
     private val uint32PrimitiveSlotBinder = PrimitiveSlotBinder(
@@ -814,6 +858,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         bindIndexOfMethods = { spec, methods -> spec.copy(uint32ArgIndexOfMethods = spec.uint32ArgIndexOfMethods + methods) },
         bindIndexedMutationMethods = { spec, methods -> spec.copy(uint32UInt32ArgUnitMethods = spec.uint32UInt32ArgUnitMethods + methods) },
         bindAppendMethods = { spec, methods -> spec.copy(uint32ArgUnitMethods = spec.uint32ArgUnitMethods + methods) },
+        bindStringArgValueMethods = { spec, methods -> spec.copy(stringArgUInt32Methods = spec.stringArgUInt32Methods + methods) },
+        bindStringArgMutationMethods = { spec, methods -> spec.copy(stringUInt32ArgBooleanMethods = spec.stringUInt32ArgBooleanMethods + methods) },
     )
 
     private val int64PrimitiveSlotBinder = PrimitiveSlotBinder(
@@ -824,6 +870,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         bindIndexOfMethods = { spec, methods -> spec.copy(int64ArgIndexOfMethods = spec.int64ArgIndexOfMethods + methods) },
         bindIndexedMutationMethods = { spec, methods -> spec.copy(uint32Int64ArgUnitMethods = spec.uint32Int64ArgUnitMethods + methods) },
         bindAppendMethods = { spec, methods -> spec.copy(int64ArgUnitMethods = spec.int64ArgUnitMethods + methods) },
+        bindStringArgValueMethods = { spec, methods -> spec.copy(stringArgInt64Methods = spec.stringArgInt64Methods + methods) },
+        bindStringArgMutationMethods = { spec, methods -> spec.copy(stringInt64ArgBooleanMethods = spec.stringInt64ArgBooleanMethods + methods) },
     )
 
     private val uint64PrimitiveSlotBinder = PrimitiveSlotBinder(
@@ -834,6 +882,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         bindIndexOfMethods = { spec, methods -> spec.copy(uint64ArgIndexOfMethods = spec.uint64ArgIndexOfMethods + methods) },
         bindIndexedMutationMethods = { spec, methods -> spec.copy(uint32UInt64ArgUnitMethods = spec.uint32UInt64ArgUnitMethods + methods) },
         bindAppendMethods = { spec, methods -> spec.copy(uint64ArgUnitMethods = spec.uint64ArgUnitMethods + methods) },
+        bindStringArgValueMethods = { spec, methods -> spec.copy(stringArgUInt64Methods = spec.stringArgUInt64Methods + methods) },
+        bindStringArgMutationMethods = { spec, methods -> spec.copy(stringUInt64ArgBooleanMethods = spec.stringUInt64ArgBooleanMethods + methods) },
     )
 
     private val float32PrimitiveSlotBinder = PrimitiveSlotBinder(
@@ -844,6 +894,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         bindIndexOfMethods = { spec, methods -> spec.copy(float32ArgIndexOfMethods = spec.float32ArgIndexOfMethods + methods) },
         bindIndexedMutationMethods = { spec, methods -> spec.copy(uint32Float32ArgUnitMethods = spec.uint32Float32ArgUnitMethods + methods) },
         bindAppendMethods = { spec, methods -> spec.copy(float32ArgUnitMethods = spec.float32ArgUnitMethods + methods) },
+        bindStringArgValueMethods = { spec, methods -> spec.copy(stringArgFloat32Methods = spec.stringArgFloat32Methods + methods) },
+        bindStringArgMutationMethods = { spec, methods -> spec.copy(stringFloat32ArgBooleanMethods = spec.stringFloat32ArgBooleanMethods + methods) },
     )
 
     private val float64PrimitiveSlotBinder = PrimitiveSlotBinder(
@@ -854,6 +906,8 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         bindIndexOfMethods = { spec, methods -> spec.copy(float64ArgIndexOfMethods = spec.float64ArgIndexOfMethods + methods) },
         bindIndexedMutationMethods = { spec, methods -> spec.copy(uint32Float64ArgUnitMethods = spec.uint32Float64ArgUnitMethods + methods) },
         bindAppendMethods = { spec, methods -> spec.copy(float64ArgUnitMethods = spec.float64ArgUnitMethods + methods) },
+        bindStringArgValueMethods = { spec, methods -> spec.copy(stringArgFloat64Methods = spec.stringArgFloat64Methods + methods) },
+        bindStringArgMutationMethods = { spec, methods -> spec.copy(stringFloat64ArgBooleanMethods = spec.stringFloat64ArgBooleanMethods + methods) },
     )
 
     private fun primitiveSlotBinder(primitiveKind: PrimitiveAbiKind): PrimitiveSlotBinder<*> {
@@ -937,9 +991,14 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             signature = signature,
             retainedChildren = retainedChildren,
         )
+        val containsKeyMethod: (String) -> Boolean = { key -> map.containsKey(key) }
+        val baseInterfaceSpec = JvmWinRtObjectStub.InterfaceSpec(
+            iid = signature.iid,
+            noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
+            stringArgBooleanMethods = mapOf(8 to containsKeyMethod),
+        )
         val interfaceSpec = when {
-            valueSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = signature.iid,
+            valueSignature is AbiValueSignature.StringType -> baseInterfaceSpec.copy(
                 stringArgHStringMethods = mapOf(
                     6 to {
                         val result = lookupValue(it)
@@ -947,55 +1006,9 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                             ?: error("Expected map value for '$it' to be String, got ${result?.let { value -> value::class.qualifiedName }}")
                     },
                 ),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
             )
-            primitiveKind == PrimitiveAbiKind.BOOLEAN -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = signature.iid,
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-                stringArgBooleanMethods = mapOf(
-                    6 to { key -> marshalPrimitiveBooleanValue(lookupValue(key)) },
-                    8 to { key -> map.containsKey(key) },
-                ),
-            )
-            primitiveKind == PrimitiveAbiKind.INT32 -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = signature.iid,
-                stringArgInt32Methods = mapOf(6 to { key -> marshalPrimitiveInt32Value(lookupValue(key)) }),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
-            )
-            primitiveKind == PrimitiveAbiKind.UINT32 -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = signature.iid,
-                stringArgUInt32Methods = mapOf(6 to { key -> marshalPrimitiveUInt32Value(lookupValue(key)) }),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
-            )
-            primitiveKind == PrimitiveAbiKind.INT64 -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = signature.iid,
-                stringArgInt64Methods = mapOf(6 to { key -> marshalPrimitiveInt64Value(lookupValue(key)) }),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
-            )
-            primitiveKind == PrimitiveAbiKind.UINT64 -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = signature.iid,
-                stringArgUInt64Methods = mapOf(6 to { key -> marshalPrimitiveUInt64Value(lookupValue(key)) }),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
-            )
-            primitiveKind == PrimitiveAbiKind.FLOAT32 -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = signature.iid,
-                stringArgFloat32Methods = mapOf(6 to { key -> marshalPrimitiveFloat32Value(lookupValue(key)) }),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
-            )
-            primitiveKind == PrimitiveAbiKind.FLOAT64 -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = signature.iid,
-                stringArgFloat64Methods = mapOf(6 to { key -> marshalPrimitiveFloat64Value(lookupValue(key)) }),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
-            )
-            else -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = signature.iid,
+            primitiveKind != null -> primitiveSlotBinder(primitiveKind).mapViewInterfaceSpec(baseInterfaceSpec, lookupValue)
+            else -> baseInterfaceSpec.copy(
                 stringArgObjectMethods = mapOf(
                     6 to { key ->
                         marshalObjectResultPointer(
@@ -1006,8 +1019,6 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                         )
                     },
                 ),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
             )
         }.copy(noArgTwoObjectMethods = mapOf(9 to splitMethod))
         val baseIterableSpec = JvmWinRtObjectStub.InterfaceSpec(
@@ -1114,19 +1125,22 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             signature = mapViewSignature,
             retainedChildren = retainedChildren,
         )
+        val containsKeyMethod: (String) -> Boolean = { key -> map.containsKey(key) }
+        val baseInterfaceSpec = JvmWinRtObjectStub.InterfaceSpec(
+            iid = signature.iid,
+            noArgUnitMethods = mapOf(
+                12 to {
+                    map.clear()
+                    HResult(0)
+                },
+            ),
+            noArgObjectMethods = mapOf(9 to getViewMethod),
+            stringArgUnitMethods = mapOf(11 to removeMethod),
+            stringArgBooleanMethods = mapOf(8 to containsKeyMethod),
+            noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
+        )
         val interfaceSpec = when {
-            valueSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = signature.iid,
-                noArgUnitMethods = mapOf(
-                    12 to {
-                        map.clear()
-                        HResult(0)
-                    },
-                ),
-                noArgObjectMethods = mapOf(
-                    9 to getViewMethod,
-                ),
-                stringArgUnitMethods = mapOf(11 to removeMethod),
+            valueSignature is AbiValueSignature.StringType -> baseInterfaceSpec.copy(
                 stringArgHStringMethods = mapOf(
                     6 to {
                         val result = lookupValue(it)
@@ -1134,7 +1148,6 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                             ?: error("Expected map value for '$it' to be String, got ${result?.let { value -> value::class.qualifiedName }}")
                     },
                 ),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
                 stringStringArgBooleanMethods = mapOf(
                     10 to { key, element ->
                         val replaced = map.containsKey(key)
@@ -1142,183 +1155,14 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                         replaced
                     },
                 ),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
             )
-            primitiveKind == PrimitiveAbiKind.BOOLEAN -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = signature.iid,
-                noArgUnitMethods = mapOf(
-                    12 to {
-                        map.clear()
-                        HResult(0)
-                    },
-                ),
-                noArgObjectMethods = mapOf(
-                    9 to getViewMethod,
-                ),
-                stringArgUnitMethods = mapOf(11 to removeMethod),
-                stringArgBooleanMethods = mapOf(
-                    6 to { key -> marshalPrimitiveBooleanValue(lookupValue(key)) },
-                    8 to { key -> map.containsKey(key) },
-                ),
-                stringBooleanArgBooleanMethods = mapOf(
-                    10 to { key, element ->
-                        val replaced = map.containsKey(key)
-                        map[key] = projectPrimitiveValueFromAbi(primitiveKind, valueProjectionTypeKey, element)
-                        replaced
-                    },
-                ),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
+            primitiveKind != null -> primitiveSlotBinder(primitiveKind).mapInterfaceSpec(
+                baseSpec = baseInterfaceSpec,
+                map = map,
+                lookupValue = lookupValue,
+                valueProjectionTypeKey = valueProjectionTypeKey,
             )
-            primitiveKind == PrimitiveAbiKind.INT32 -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = signature.iid,
-                noArgUnitMethods = mapOf(
-                    12 to {
-                        map.clear()
-                        HResult(0)
-                    },
-                ),
-                noArgObjectMethods = mapOf(
-                    9 to getViewMethod,
-                ),
-                stringArgUnitMethods = mapOf(11 to removeMethod),
-                stringArgInt32Methods = mapOf(6 to { key -> marshalPrimitiveInt32Value(lookupValue(key)) }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
-                stringInt32ArgBooleanMethods = mapOf(
-                    10 to { key, element ->
-                        val replaced = map.containsKey(key)
-                        map[key] = projectPrimitiveValueFromAbi(primitiveKind, valueProjectionTypeKey, element)
-                        replaced
-                    },
-                ),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-            )
-            primitiveKind == PrimitiveAbiKind.UINT32 -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = signature.iid,
-                noArgUnitMethods = mapOf(
-                    12 to {
-                        map.clear()
-                        HResult(0)
-                    },
-                ),
-                noArgObjectMethods = mapOf(
-                    9 to getViewMethod,
-                ),
-                stringArgUnitMethods = mapOf(11 to removeMethod),
-                stringArgUInt32Methods = mapOf(6 to { key -> marshalPrimitiveUInt32Value(lookupValue(key)) }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
-                stringUInt32ArgBooleanMethods = mapOf(
-                    10 to { key, element ->
-                        val replaced = map.containsKey(key)
-                        map[key] = projectPrimitiveValueFromAbi(primitiveKind, valueProjectionTypeKey, element)
-                        replaced
-                    },
-                ),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-            )
-            primitiveKind == PrimitiveAbiKind.INT64 -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = signature.iid,
-                noArgUnitMethods = mapOf(
-                    12 to {
-                        map.clear()
-                        HResult(0)
-                    },
-                ),
-                noArgObjectMethods = mapOf(
-                    9 to getViewMethod,
-                ),
-                stringArgUnitMethods = mapOf(11 to removeMethod),
-                stringArgInt64Methods = mapOf(6 to { key -> marshalPrimitiveInt64Value(lookupValue(key)) }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
-                stringInt64ArgBooleanMethods = mapOf(
-                    10 to { key, element ->
-                        val replaced = map.containsKey(key)
-                        map[key] = projectPrimitiveValueFromAbi(primitiveKind, valueProjectionTypeKey, element)
-                        replaced
-                    },
-                ),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-            )
-            primitiveKind == PrimitiveAbiKind.UINT64 -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = signature.iid,
-                noArgUnitMethods = mapOf(
-                    12 to {
-                        map.clear()
-                        HResult(0)
-                    },
-                ),
-                noArgObjectMethods = mapOf(
-                    9 to getViewMethod,
-                ),
-                stringArgUnitMethods = mapOf(11 to removeMethod),
-                stringArgUInt64Methods = mapOf(6 to { key -> marshalPrimitiveUInt64Value(lookupValue(key)) }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
-                stringUInt64ArgBooleanMethods = mapOf(
-                    10 to { key, element ->
-                        val replaced = map.containsKey(key)
-                        map[key] = projectPrimitiveValueFromAbi(primitiveKind, valueProjectionTypeKey, element)
-                        replaced
-                    },
-                ),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-            )
-            primitiveKind == PrimitiveAbiKind.FLOAT32 -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = signature.iid,
-                noArgUnitMethods = mapOf(
-                    12 to {
-                        map.clear()
-                        HResult(0)
-                    },
-                ),
-                noArgObjectMethods = mapOf(
-                    9 to getViewMethod,
-                ),
-                stringArgUnitMethods = mapOf(11 to removeMethod),
-                stringArgFloat32Methods = mapOf(6 to { key -> marshalPrimitiveFloat32Value(lookupValue(key)) }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
-                stringFloat32ArgBooleanMethods = mapOf(
-                    10 to { key, element ->
-                        val replaced = map.containsKey(key)
-                        map[key] = projectPrimitiveValueFromAbi(primitiveKind, valueProjectionTypeKey, element)
-                        replaced
-                    },
-                ),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-            )
-            primitiveKind == PrimitiveAbiKind.FLOAT64 -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = signature.iid,
-                noArgUnitMethods = mapOf(
-                    12 to {
-                        map.clear()
-                        HResult(0)
-                    },
-                ),
-                noArgObjectMethods = mapOf(
-                    9 to getViewMethod,
-                ),
-                stringArgUnitMethods = mapOf(11 to removeMethod),
-                stringArgFloat64Methods = mapOf(6 to { key -> marshalPrimitiveFloat64Value(lookupValue(key)) }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
-                stringFloat64ArgBooleanMethods = mapOf(
-                    10 to { key, element ->
-                        val replaced = map.containsKey(key)
-                        map[key] = projectPrimitiveValueFromAbi(primitiveKind, valueProjectionTypeKey, element)
-                        replaced
-                    },
-                ),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-            )
-            else -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = signature.iid,
-                noArgUnitMethods = mapOf(
-                    12 to {
-                        map.clear()
-                        HResult(0)
-                    },
-                ),
-                noArgObjectMethods = mapOf(
-                    9 to getViewMethod,
-                ),
-                stringArgUnitMethods = mapOf(11 to removeMethod),
+            else -> baseInterfaceSpec.copy(
                 stringArgObjectMethods = mapOf(
                     6 to { key ->
                         marshalObjectResultPointer(
@@ -1329,7 +1173,6 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                         )
                     },
                 ),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
                 stringObjectArgBooleanMethods = mapOf(
                     10 to { key, pointer ->
                         val replaced = map.containsKey(key)
@@ -1337,12 +1180,15 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                         replaced
                     },
                 ),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
             )
         }
+        val baseMapViewSpec = JvmWinRtObjectStub.InterfaceSpec(
+            iid = mapViewSignature.iid,
+            noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
+            stringArgBooleanMethods = mapOf(8 to containsKeyMethod),
+        )
         val mapViewSpec = when {
-            valueSignature is AbiValueSignature.StringType -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = mapViewSignature.iid,
+            valueSignature is AbiValueSignature.StringType -> baseMapViewSpec.copy(
                 stringArgHStringMethods = mapOf(
                     6 to {
                         val result = lookupValue(it)
@@ -1350,55 +1196,9 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                             ?: error("Expected map value for '$it' to be String, got ${result?.let { value -> value::class.qualifiedName }}")
                     },
                 ),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
             )
-            primitiveKind == PrimitiveAbiKind.BOOLEAN -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = mapViewSignature.iid,
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-                stringArgBooleanMethods = mapOf(
-                    6 to { key -> marshalPrimitiveBooleanValue(lookupValue(key)) },
-                    8 to { key -> map.containsKey(key) },
-                ),
-            )
-            primitiveKind == PrimitiveAbiKind.INT32 -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = mapViewSignature.iid,
-                stringArgInt32Methods = mapOf(6 to { key -> marshalPrimitiveInt32Value(lookupValue(key)) }),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
-            )
-            primitiveKind == PrimitiveAbiKind.UINT32 -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = mapViewSignature.iid,
-                stringArgUInt32Methods = mapOf(6 to { key -> marshalPrimitiveUInt32Value(lookupValue(key)) }),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
-            )
-            primitiveKind == PrimitiveAbiKind.INT64 -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = mapViewSignature.iid,
-                stringArgInt64Methods = mapOf(6 to { key -> marshalPrimitiveInt64Value(lookupValue(key)) }),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
-            )
-            primitiveKind == PrimitiveAbiKind.UINT64 -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = mapViewSignature.iid,
-                stringArgUInt64Methods = mapOf(6 to { key -> marshalPrimitiveUInt64Value(lookupValue(key)) }),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
-            )
-            primitiveKind == PrimitiveAbiKind.FLOAT32 -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = mapViewSignature.iid,
-                stringArgFloat32Methods = mapOf(6 to { key -> marshalPrimitiveFloat32Value(lookupValue(key)) }),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
-            )
-            primitiveKind == PrimitiveAbiKind.FLOAT64 -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = mapViewSignature.iid,
-                stringArgFloat64Methods = mapOf(6 to { key -> marshalPrimitiveFloat64Value(lookupValue(key)) }),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
-            )
-            else -> JvmWinRtObjectStub.InterfaceSpec(
-                iid = mapViewSignature.iid,
+            primitiveKind != null -> primitiveSlotBinder(primitiveKind).mapViewInterfaceSpec(baseMapViewSpec, lookupValue)
+            else -> baseMapViewSpec.copy(
                 stringArgObjectMethods = mapOf(
                     6 to { key ->
                         marshalObjectResultPointer(
@@ -1409,8 +1209,6 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                         )
                     },
                 ),
-                noArgUInt32Methods = mapOf(7 to { map.size.toUInt() }),
-                stringArgBooleanMethods = mapOf(8 to { key -> map.containsKey(key) }),
             )
         }.copy(noArgTwoObjectMethods = mapOf(9 to splitMethod))
         val baseIterableSpec = JvmWinRtObjectStub.InterfaceSpec(
