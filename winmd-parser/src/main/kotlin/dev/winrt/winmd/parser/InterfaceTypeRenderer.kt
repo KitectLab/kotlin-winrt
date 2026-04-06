@@ -32,6 +32,12 @@ internal class InterfaceTypeRenderer(
     private val valueTypeProjectionSupport: ValueTypeProjectionSupport = ValueTypeProjectionSupport(typeNameMapper, typeRegistry),
     private val kotlinCollectionProjectionMapper: KotlinCollectionProjectionMapper = KotlinCollectionProjectionMapper(),
 ) {
+    internal fun supportsForwardedMethod(
+        method: WinMdMethod,
+        currentNamespace: String,
+        genericParameters: Set<String> = emptySet(),
+    ): Boolean = supportsInterfaceMethod(method, currentNamespace, genericParameters)
+
     fun render(type: WinMdType): List<TypeSpec> {
         if (typeRegistry.isRuntimeClassOverridesInterface(type.name, type.namespace)) {
             return emptyList()

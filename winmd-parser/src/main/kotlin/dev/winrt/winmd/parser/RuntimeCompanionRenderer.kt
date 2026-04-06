@@ -25,6 +25,7 @@ internal class RuntimeCompanionRenderer(
     private val asyncMethodRuleRegistry: AsyncMethodRuleRegistry,
     private val winRtProjectionTypeMapper: WinRtProjectionTypeMapper,
     private val kotlinCollectionProjectionMapper: KotlinCollectionProjectionMapper,
+    private val supportsInterfaceMethod: (WinMdMethod, String, Set<String>) -> Boolean = { _, _, _ -> true },
     private val projectedObjectArgumentLowering: ProjectedObjectArgumentLowering =
         ProjectedObjectArgumentLowering(typeRegistry, winRtSignatureMapper, winRtProjectionTypeMapper),
 ) {
@@ -368,13 +369,17 @@ internal class RuntimeCompanionRenderer(
     }
 
     private fun canForwardStaticMethod(method: WinMdMethod, currentNamespace: String): Boolean {
-        return !method.requiresArrayMarshaling() ||
-            canForwardSupportedArrayMethod(method, currentNamespace)
+        if (!supportsInterfaceMethod(method, currentNamespace, emptySet())) {
+            return false
+        }
+        return !method.requiresArrayMarshaling() || canForwardSupportedArrayMethod(method, currentNamespace)
     }
 
     private fun canForwardFactoryMethod(method: WinMdMethod, currentNamespace: String): Boolean {
-        return !method.parameters.requiresArrayMarshaling() ||
-            canForwardSupportedArrayMethod(method, currentNamespace)
+        if (!supportsInterfaceMethod(method, currentNamespace, emptySet())) {
+            return false
+        }
+        return !method.parameters.requiresArrayMarshaling() || canForwardSupportedArrayMethod(method, currentNamespace)
     }
 
     private fun renderForwardingProperty(

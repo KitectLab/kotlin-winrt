@@ -54,6 +54,7 @@ internal class TypeFileEmitter(
         asyncMethodRuleRegistry = asyncMethodRuleRegistry,
         winRtProjectionTypeMapper = winRtProjectionTypeMapper,
         kotlinCollectionProjectionMapper = KotlinCollectionProjectionMapper(),
+        supportsInterfaceMethod = interfaceTypeRenderer::supportsForwardedMethod,
         projectedObjectArgumentLowering = projectedObjectArgumentLowering,
     )
     private val valueTypeRenderer = ValueTypeRenderer(typeNameMapper, typeRegistry)

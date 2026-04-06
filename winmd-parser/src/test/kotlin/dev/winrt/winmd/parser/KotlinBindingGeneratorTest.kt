@@ -92,6 +92,85 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun omits_unsupported_static_methods_from_runtime_companion_object() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Windows.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Windows.Foundation",
+                            name = "Uri",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml.Controls.Primitives",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml.Controls.Primitives",
+                            name = "ComponentResourceLocation",
+                            kind = WinMdTypeKind.Enum,
+                            enumUnderlyingType = "Int32",
+                        ),
+                    ),
+                ),
+                WinMdNamespace(
+                    name = "Microsoft.UI.Xaml",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "Application",
+                            kind = WinMdTypeKind.RuntimeClass,
+                        ),
+                        WinMdType(
+                            namespace = "Microsoft.UI.Xaml",
+                            name = "IApplicationStatics",
+                            kind = WinMdTypeKind.Interface,
+                            guid = "dddddddd-dddd-dddd-dddd-dddddddddddd",
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "LoadComponent",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("component", "Object"),
+                                        WinMdParameter("resourceLocator", "Windows.Foundation.Uri"),
+                                    ),
+                                    vtableIndex = 8,
+                                ),
+                                WinMdMethod(
+                                    name = "LoadComponent",
+                                    returnType = "Unit",
+                                    parameters = listOf(
+                                        WinMdParameter("component", "Object"),
+                                        WinMdParameter("resourceLocator", "Windows.Foundation.Uri"),
+                                        WinMdParameter(
+                                            "componentResourceLocation",
+                                            "Microsoft.UI.Xaml.Controls.Primitives.ComponentResourceLocation",
+                                        ),
+                                    ),
+                                    vtableIndex = 9,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val applicationBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/Application.kt" }.content
+        val staticsBinding = files.first { it.relativePath == "Microsoft/UI/Xaml/IApplicationStatics.kt" }.content
+
+        assertTrue(applicationBinding.contains("fun loadComponent(component: Inspectable, resourceLocator: Uri)"))
+        assertTrue(staticsBinding.contains("fun loadComponent(component: Inspectable, resourceLocator: Uri)"))
+        assertFalse(applicationBinding.contains("componentResourceLocation"))
+        assertFalse(staticsBinding.contains("componentResourceLocation"))
+    }
+
+    @Test
     fun folds_multi_digit_versioned_helpers_into_companion_object() {
         val model = dev.winrt.winmd.plugin.WinMdModel(
             files = emptyList(),
