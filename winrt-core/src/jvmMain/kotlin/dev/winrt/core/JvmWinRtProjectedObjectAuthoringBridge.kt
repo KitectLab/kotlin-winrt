@@ -363,23 +363,13 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 list = list,
                 firstMethod = firstMethod,
             )
-            else -> JvmWinRtObjectStub.InterfaceSpec(
+            else -> createObjectVectorViewInterfaceSpec(
                 iid = signature.iid,
-                noArgObjectMethods = mapOf(6 to firstMethod),
-                uint32ArgObjectMethods = mapOf(
-                    7 to { index ->
-                        marshalObjectResultPointer(
-                            value = list.elementAt(index.toInt()),
-                            projectionTypeKey = elementProjectionTypeKey,
-                            signature = elementSignature,
-                            retainedChildren = retainedChildren,
-                        )
-                    },
-                ),
-                noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
-                objectArgIndexOfMethods = mapOf(
-                    9 to { pointer -> indexOfOrNull(inspectableIndexOf(list, pointer)) },
-                ),
+                list = list,
+                firstMethod = firstMethod,
+                elementProjectionTypeKey = elementProjectionTypeKey,
+                elementSignature = elementSignature,
+                retainedChildren = retainedChildren,
             )
         }
         val derivedSpec = baseSpec.copy(
@@ -531,62 +521,14 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 getViewMethod = getViewMethod,
                 elementProjectionTypeKey = elementProjectionTypeKey,
             )
-            else -> JvmWinRtObjectStub.InterfaceSpec(
+            else -> createObjectVectorInterfaceSpec(
                 iid = signature.iid,
-                noArgUnitMethods = mapOf(
-                    15 to {
-                        if (list.isEmpty()) {
-                            KnownHResults.E_BOUNDS
-                        } else {
-                            list.removeAt(list.lastIndex)
-                            HResult(0)
-                        }
-                    },
-                    16 to {
-                        list.clear()
-                        HResult(0)
-                    },
-                ),
-                noArgObjectMethods = mapOf(
-                    6 to firstMethod,
-                    9 to getViewMethod,
-                ),
-                noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
-                uint32ArgUnitMethods = mapOf(
-                    13 to { index ->
-                        list.removeAt(index.toInt())
-                        HResult(0)
-                    },
-                ),
-                uint32ArgObjectMethods = mapOf(
-                    7 to { index ->
-                        marshalObjectResultPointer(
-                            value = list.elementAt(index.toInt()),
-                            projectionTypeKey = elementProjectionTypeKey,
-                            signature = elementSignature,
-                            retainedChildren = retainedChildren,
-                        )
-                    },
-                ),
-                uint32ObjectArgUnitMethods = mapOf(
-                    11 to { index, pointer ->
-                        list[index.toInt()] = projectObjectValueFromPointer(pointer, elementProjectionTypeKey, elementSignature)
-                        HResult(0)
-                    },
-                    12 to { index, pointer ->
-                        list.add(index.toInt(), projectObjectValueFromPointer(pointer, elementProjectionTypeKey, elementSignature))
-                        HResult(0)
-                    },
-                ),
-                objectArgIndexOfMethods = mapOf(
-                    10 to { pointer -> indexOfOrNull(inspectableIndexOf(list, pointer)) },
-                ),
-                objectArgUnitMethods = mapOf(
-                    14 to { pointer ->
-                        list.add(projectObjectValueFromPointer(pointer, elementProjectionTypeKey, elementSignature))
-                        HResult(0)
-                    },
-                ),
+                list = list,
+                firstMethod = firstMethod,
+                getViewMethod = getViewMethod,
+                elementProjectionTypeKey = elementProjectionTypeKey,
+                elementSignature = elementSignature,
+                retainedChildren = retainedChildren,
             )
         }
         val interfaceSpec = baseInterfaceSpec.copy(
@@ -616,23 +558,13 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
                 list = list,
                 firstMethod = firstMethod,
             )
-            else -> JvmWinRtObjectStub.InterfaceSpec(
+            else -> createObjectVectorViewInterfaceSpec(
                 iid = vectorViewSignature.iid,
-                noArgObjectMethods = mapOf(6 to firstMethod),
-                uint32ArgObjectMethods = mapOf(
-                    7 to { index ->
-                        marshalObjectResultPointer(
-                            value = list.elementAt(index.toInt()),
-                            projectionTypeKey = elementProjectionTypeKey,
-                            signature = elementSignature,
-                            retainedChildren = retainedChildren,
-                        )
-                    },
-                ),
-                noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
-                objectArgIndexOfMethods = mapOf(
-                    9 to { pointer -> indexOfOrNull(inspectableIndexOf(list, pointer)) },
-                ),
+                list = list,
+                firstMethod = firstMethod,
+                elementProjectionTypeKey = elementProjectionTypeKey,
+                elementSignature = elementSignature,
+                retainedChildren = retainedChildren,
             )
         }
         val vectorViewSpec = baseVectorViewSpec.copy(
@@ -1305,6 +1237,104 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
         return ProjectedObjectHandle(stub, retainedChildren)
     }
 
+    private fun createObjectVectorViewInterfaceSpec(
+        iid: Guid,
+        list: List<*>,
+        firstMethod: () -> ComPtr,
+        elementProjectionTypeKey: String,
+        elementSignature: AbiValueSignature,
+        retainedChildren: MutableList<AutoCloseable>,
+    ): JvmWinRtObjectStub.InterfaceSpec {
+        return JvmWinRtObjectStub.InterfaceSpec(
+            iid = iid,
+            noArgObjectMethods = mapOf(6 to firstMethod),
+            uint32ArgObjectMethods = mapOf(
+                7 to { index ->
+                    marshalObjectResultPointer(
+                        value = list.elementAt(index.toInt()),
+                        projectionTypeKey = elementProjectionTypeKey,
+                        signature = elementSignature,
+                        retainedChildren = retainedChildren,
+                    )
+                },
+            ),
+            noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
+            objectArgIndexOfMethods = mapOf(
+                9 to { pointer -> indexOfOrNull(inspectableIndexOf(list, pointer)) },
+            ),
+        )
+    }
+
+    private fun createObjectVectorInterfaceSpec(
+        iid: Guid,
+        list: MutableList<Any?>,
+        firstMethod: () -> ComPtr,
+        getViewMethod: () -> ComPtr,
+        elementProjectionTypeKey: String,
+        elementSignature: AbiValueSignature,
+        retainedChildren: MutableList<AutoCloseable>,
+    ): JvmWinRtObjectStub.InterfaceSpec {
+        fun projectElement(pointer: ComPtr): Any? =
+            projectObjectValueFromPointer(pointer, elementProjectionTypeKey, elementSignature)
+        return JvmWinRtObjectStub.InterfaceSpec(
+            iid = iid,
+            noArgUnitMethods = mapOf(
+                15 to {
+                    if (list.isEmpty()) {
+                        KnownHResults.E_BOUNDS
+                    } else {
+                        list.removeAt(list.lastIndex)
+                        HResult(0)
+                    }
+                },
+                16 to {
+                    list.clear()
+                    HResult(0)
+                },
+            ),
+            noArgObjectMethods = mapOf(
+                6 to firstMethod,
+                9 to getViewMethod,
+            ),
+            noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
+            uint32ArgUnitMethods = mapOf(
+                13 to { index ->
+                    list.removeAt(index.toInt())
+                    HResult(0)
+                },
+            ),
+            uint32ArgObjectMethods = mapOf(
+                7 to { index ->
+                    marshalObjectResultPointer(
+                        value = list.elementAt(index.toInt()),
+                        projectionTypeKey = elementProjectionTypeKey,
+                        signature = elementSignature,
+                        retainedChildren = retainedChildren,
+                    )
+                },
+            ),
+            uint32ObjectArgUnitMethods = mapOf(
+                11 to { index, pointer ->
+                    list[index.toInt()] = projectElement(pointer)
+                    HResult(0)
+                },
+                12 to { index, pointer ->
+                    list.add(index.toInt(), projectElement(pointer))
+                    HResult(0)
+                },
+            ),
+            objectArgIndexOfMethods = mapOf(
+                10 to { pointer -> indexOfOrNull(inspectableIndexOf(list, pointer)) },
+            ),
+            objectArgUnitMethods = mapOf(
+                14 to { pointer ->
+                    list.add(projectElement(pointer))
+                    HResult(0)
+                },
+            ),
+        )
+    }
+
     private fun createBindableIterableHandle(
         value: Any,
         projectionTypeKey: ProjectionTypeKey,
@@ -1384,23 +1414,13 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             retainedChildren += iteratorHandle
             iteratorHandle.pointer.withAddRef()
         }
-        val interfaceSpec = JvmWinRtObjectStub.InterfaceSpec(
+        val interfaceSpec = createObjectVectorViewInterfaceSpec(
             iid = bindableVectorViewIid,
-            noArgObjectMethods = mapOf(6 to firstMethod),
-            uint32ArgObjectMethods = mapOf(
-                7 to { index ->
-                    marshalObjectResultPointer(
-                        value = list.elementAt(index.toInt()),
-                        projectionTypeKey = elementProjectionTypeKey,
-                        signature = AbiValueSignature.ObjectType(WinRtTypeSignature.object_()),
-                        retainedChildren = retainedChildren,
-                    )
-                },
-            ),
-            noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
-            objectArgIndexOfMethods = mapOf(
-                9 to { pointer -> indexOfOrNull(inspectableIndexOf(list, pointer)) },
-            ),
+            list = list,
+            firstMethod = firstMethod,
+            elementProjectionTypeKey = elementProjectionTypeKey,
+            elementSignature = AbiValueSignature.ObjectType(WinRtTypeSignature.object_()),
+            retainedChildren = retainedChildren,
         )
         val baseIterableSpec = JvmWinRtObjectStub.InterfaceSpec(
             iid = bindableIterableIid,
@@ -1438,79 +1458,14 @@ internal actual object WinRtProjectedObjectAuthoringBridge {
             retainedChildren += vectorViewHandle
             vectorViewHandle.pointer.withAddRef()
         }
-        val interfaceSpec = JvmWinRtObjectStub.InterfaceSpec(
+        val interfaceSpec = createObjectVectorInterfaceSpec(
             iid = bindableVectorIid,
-            noArgUnitMethods = mapOf(
-                15 to {
-                    if (list.isEmpty()) {
-                        KnownHResults.E_BOUNDS
-                    } else {
-                        list.removeAt(list.lastIndex)
-                        HResult(0)
-                    }
-                },
-                16 to {
-                    list.clear()
-                    HResult(0)
-                },
-            ),
-            noArgObjectMethods = mapOf(
-                6 to firstMethod,
-                9 to getViewMethod,
-            ),
-            noArgUInt32Methods = mapOf(8 to { list.size.toUInt() }),
-            uint32ArgUnitMethods = mapOf(
-                13 to { index ->
-                    list.removeAt(index.toInt())
-                    HResult(0)
-                },
-            ),
-            uint32ArgObjectMethods = mapOf(
-                7 to { index ->
-                    marshalObjectResultPointer(
-                        value = list.elementAt(index.toInt()),
-                        projectionTypeKey = elementProjectionTypeKey,
-                        signature = AbiValueSignature.ObjectType(WinRtTypeSignature.object_()),
-                        retainedChildren = retainedChildren,
-                    )
-                },
-            ),
-            uint32ObjectArgUnitMethods = mapOf(
-                11 to { index, pointer ->
-                    list[index.toInt()] = projectObjectValueFromPointer(
-                        pointer,
-                        elementProjectionTypeKey,
-                        AbiValueSignature.ObjectType(WinRtTypeSignature.object_()),
-                    )
-                    HResult(0)
-                },
-                12 to { index, pointer ->
-                    list.add(
-                        index.toInt(),
-                        projectObjectValueFromPointer(
-                            pointer,
-                            elementProjectionTypeKey,
-                            AbiValueSignature.ObjectType(WinRtTypeSignature.object_()),
-                        ),
-                    )
-                    HResult(0)
-                },
-            ),
-            objectArgIndexOfMethods = mapOf(
-                10 to { pointer -> indexOfOrNull(inspectableIndexOf(list, pointer)) },
-            ),
-            objectArgUnitMethods = mapOf(
-                14 to { pointer ->
-                    list.add(
-                        projectObjectValueFromPointer(
-                            pointer,
-                            elementProjectionTypeKey,
-                            AbiValueSignature.ObjectType(WinRtTypeSignature.object_()),
-                        ),
-                    )
-                    HResult(0)
-                },
-            ),
+            list = list,
+            firstMethod = firstMethod,
+            getViewMethod = getViewMethod,
+            elementProjectionTypeKey = elementProjectionTypeKey,
+            elementSignature = AbiValueSignature.ObjectType(WinRtTypeSignature.object_()),
+            retainedChildren = retainedChildren,
         )
         val baseIterableSpec = JvmWinRtObjectStub.InterfaceSpec(
             iid = bindableIterableIid,
