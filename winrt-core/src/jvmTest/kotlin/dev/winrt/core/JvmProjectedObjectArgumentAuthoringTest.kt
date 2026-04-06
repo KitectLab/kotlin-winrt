@@ -101,6 +101,14 @@ class JvmProjectedObjectArgumentAuthoringTest {
         )
     }
 
+    private fun assertFailureHResult(result: Result<*>, hResult: Int) {
+        assertTrue(result.isFailure)
+        assertTrue(
+            result.exceptionOrNull()?.message?.contains("0x${hResult.toUInt().toString(16)}") == true,
+            result.exceptionOrNull()?.toString(),
+        )
+    }
+
     private fun <T : Any> assertPrimitiveVectorViewCase(case: PrimitiveVectorCase<T>) {
         val pointer = projectedObjectArgumentPointer(
             value = case.initial,
@@ -1708,6 +1716,32 @@ class JvmProjectedObjectArgumentAuthoringTest {
         assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithArgs(int32VectorPointer, 11, 2u, 7))
         assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithArgs(int32VectorPointer, 12, 3u, 7))
         assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithUInt32Arg(int32VectorPointer, 13, 2u))
+    }
+
+    @Test
+    fun projected_object_argument_pointer_propagates_hresult_from_vector_index_of_on_jvm() {
+        val values = object : MutableList<String> by mutableListOf("en-US", "fr-FR") {
+            override fun indexOf(element: String): Int = throw WinRtException(KnownHResults.E_POINTER)
+        }
+        val pointer = projectedObjectArgumentPointer(
+            value = values,
+            projectionTypeKey = "kotlin.collections.MutableList<String>",
+            signature = WinRtTypeSignature.parameterizedInterface(
+                "913337e9-11a1-4345-a3a2-4e7f956e222d",
+                WinRtTypeSignature.string(),
+            ),
+        )
+
+        assertFailureHResult(
+            PlatformComInterop.invokeMethodWithResultKind(
+                pointer,
+                10,
+                ComMethodResultKind.BOOLEAN,
+                "en-US",
+                0u,
+            ),
+            KnownHResults.E_POINTER.value,
+        )
     }
 
     @Test

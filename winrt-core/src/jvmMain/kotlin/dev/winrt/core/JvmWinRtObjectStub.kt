@@ -2122,7 +2122,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 writeAddress(className, ComPtr.NULL)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2794,7 +2794,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2820,7 +2820,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2846,7 +2846,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2872,7 +2872,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2898,7 +2898,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2924,7 +2924,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2950,7 +2950,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -2976,7 +2976,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -3002,7 +3002,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -3099,7 +3099,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -3124,7 +3124,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -3149,7 +3149,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -3174,7 +3174,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -3199,7 +3199,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -3224,7 +3224,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -3379,7 +3379,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -3408,7 +3408,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
@@ -3429,7 +3429,7 @@ class JvmWinRtObjectStub private constructor(
                 HResult(0).value
             }.getOrElse {
                 writeAddress(result, ComPtr.NULL)
-                HResult(0x80004005.toInt()).value
+                hResultValue(it)
             }
         }
 
