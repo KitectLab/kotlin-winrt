@@ -1115,6 +1115,12 @@ private object JvmComMethodExecutor {
         }
     }
 
+    private fun resultAllocator(resultKind: ComMethodResultKind): (Arena) -> MemorySegment =
+        { arena -> allocateResultSegment(arena, resultKind) }
+
+    private fun resultReader(resultKind: ComMethodResultKind): (MemorySegment) -> ComMethodResult =
+        { segment -> readResult(segment, resultKind) }
+
     fun invokeWithOutResultKind(
         instance: ComPtr,
         vtableIndex: Int,
@@ -1129,8 +1135,8 @@ private object JvmComMethodExecutor {
             vtableIndex = vtableIndex,
             operation = operation,
             handle = handle,
-            allocator = { arena -> allocateResultSegment(arena, resultKind) },
-            reader = { segment -> readResult(segment, resultKind) },
+            allocator = resultAllocator(resultKind),
+            reader = resultReader(resultKind),
             first,
             second,
         )
@@ -1150,8 +1156,8 @@ private object JvmComMethodExecutor {
             vtableIndex = vtableIndex,
             operation = operation,
             handle = handle,
-            allocator = { arena -> allocateResultSegment(arena, resultKind) },
-            reader = { segment -> readResult(segment, resultKind) },
+            allocator = resultAllocator(resultKind),
+            reader = resultReader(resultKind),
             first,
             second,
         )
@@ -1171,8 +1177,8 @@ private object JvmComMethodExecutor {
             vtableIndex = vtableIndex,
             operation = operation,
             handle = handle,
-            allocator = { arena -> allocateResultSegment(arena, resultKind) },
-            reader = { segment -> readResult(segment, resultKind) },
+            allocator = resultAllocator(resultKind),
+            reader = resultReader(resultKind),
             first,
             second,
         )
@@ -1192,8 +1198,8 @@ private object JvmComMethodExecutor {
             vtableIndex = vtableIndex,
             operation = operation,
             handle = handle,
-            allocator = { arena -> allocateResultSegment(arena, resultKind) },
-            reader = { segment -> readResult(segment, resultKind) },
+            allocator = resultAllocator(resultKind),
+            reader = resultReader(resultKind),
             first,
             second,
         )
@@ -1213,8 +1219,8 @@ private object JvmComMethodExecutor {
             vtableIndex = vtableIndex,
             operation = operation,
             handle = handle,
-            allocator = { arena -> allocateResultSegment(arena, resultKind) },
-            reader = { segment -> readResult(segment, resultKind) },
+            allocator = resultAllocator(resultKind),
+            reader = resultReader(resultKind),
             first,
             second,
         )
@@ -1234,8 +1240,8 @@ private object JvmComMethodExecutor {
             vtableIndex = vtableIndex,
             operation = operation,
             handle = handle,
-            allocator = { arena -> allocateResultSegment(arena, resultKind) },
-            reader = { segment -> readResult(segment, resultKind) },
+            allocator = resultAllocator(resultKind),
+            reader = resultReader(resultKind),
             first,
             second,
         )
@@ -1255,8 +1261,8 @@ private object JvmComMethodExecutor {
             vtableIndex = vtableIndex,
             operation = operation,
             handle = handle,
-            allocator = { arena -> allocateResultSegment(arena, resultKind) },
-            reader = { segment -> readResult(segment, resultKind) },
+            allocator = resultAllocator(resultKind),
+            reader = resultReader(resultKind),
             first,
             second,
         )
@@ -1276,8 +1282,8 @@ private object JvmComMethodExecutor {
             vtableIndex = vtableIndex,
             operation = operation,
             handle = handle,
-            allocator = { arena -> allocateResultSegment(arena, resultKind) },
-            reader = { segment -> readResult(segment, resultKind) },
+            allocator = resultAllocator(resultKind),
+            reader = resultReader(resultKind),
             first,
             second,
         )
@@ -1297,8 +1303,8 @@ private object JvmComMethodExecutor {
             vtableIndex = vtableIndex,
             operation = operation,
             handle = handle,
-            allocator = { arena -> allocateResultSegment(arena, resultKind) },
-            reader = { segment -> readResult(segment, resultKind) },
+            allocator = resultAllocator(resultKind),
+            reader = resultReader(resultKind),
             first,
             second,
         )
@@ -1318,8 +1324,8 @@ private object JvmComMethodExecutor {
             vtableIndex = vtableIndex,
             operation = operation,
             handle = handle,
-            allocator = { arena -> allocateResultSegment(arena, resultKind) },
-            reader = { segment -> readResult(segment, resultKind) },
+            allocator = resultAllocator(resultKind),
+            reader = resultReader(resultKind),
             first,
             second,
         )
@@ -1339,8 +1345,8 @@ private object JvmComMethodExecutor {
             vtableIndex = vtableIndex,
             operation = operation,
             handle = handle,
-            allocator = { arena -> allocateResultSegment(arena, resultKind) },
-            reader = { segment -> readResult(segment, resultKind) },
+            allocator = resultAllocator(resultKind),
+            reader = resultReader(resultKind),
             first,
             second,
         )
@@ -1360,8 +1366,8 @@ private object JvmComMethodExecutor {
             vtableIndex = vtableIndex,
             operation = operation,
             handle = handle,
-            allocator = { arena -> allocateResultSegment(arena, resultKind) },
-            reader = { segment -> readResult(segment, resultKind) },
+            allocator = resultAllocator(resultKind),
+            reader = resultReader(resultKind),
             first,
             second,
         )
@@ -1381,8 +1387,8 @@ private object JvmComMethodExecutor {
             vtableIndex = vtableIndex,
             operation = operation,
             handle = handle,
-            allocator = { arena -> allocateResultSegment(arena, resultKind) },
-            reader = { segment -> readResult(segment, resultKind) },
+            allocator = resultAllocator(resultKind),
+            reader = resultReader(resultKind),
             first,
             second,
         )
@@ -1402,8 +1408,8 @@ private object JvmComMethodExecutor {
             vtableIndex = vtableIndex,
             operation = operation,
             handle = handle,
-            allocator = { arena -> allocateResultSegment(arena, resultKind) },
-            reader = { segment -> readResult(segment, resultKind) },
+            allocator = resultAllocator(resultKind),
+            reader = resultReader(resultKind),
             first,
             second,
         )
@@ -1423,8 +1429,8 @@ private object JvmComMethodExecutor {
             vtableIndex = vtableIndex,
             operation = operation,
             handle = handle,
-            allocator = { arena -> allocateResultSegment(arena, resultKind) },
-            reader = { segment -> readResult(segment, resultKind) },
+            allocator = resultAllocator(resultKind),
+            reader = resultReader(resultKind),
             first,
             second,
         )
