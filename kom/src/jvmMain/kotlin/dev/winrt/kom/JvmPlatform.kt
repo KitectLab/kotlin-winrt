@@ -668,20 +668,11 @@ private object JvmComMethodExecutor {
         allocator: (Arena) -> MemorySegment,
         reader: (MemorySegment) -> T,
     ): Result<T> {
-        return runCatching {
-            requireInstance(instance)
-            Arena.ofConfined().use { arena ->
-                val resultSegment = allocator(arena)
-                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-                val hresult = HResult(
-                    handle.bindTo(function).invokeWithArguments(
-                        Jdk22Foreign.pointerOf(instance),
-                        resultSegment,
-                    ) as Int,
-                )
-                hresult.requireSuccess("$operation($vtableIndex)")
-                reader(resultSegment)
-            }
+        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader) { resultSegment ->
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                resultSegment,
+            ) as Int
         }
     }
 
@@ -819,26 +810,14 @@ private object JvmComMethodExecutor {
         allocator: (Arena) -> MemorySegment,
         reader: (MemorySegment) -> T,
         value: String,
-        ): Result<T> {
-        return runCatching {
-            requireInstance(instance)
-            val hString = JvmWinRtRuntime.createHString(value)
-            try {
-                Arena.ofConfined().use { arena ->
-                    val resultSegment = allocator(arena)
-                    val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-                    val hresult = HResult(
-                        handle.bindTo(function).invokeWithArguments(
-                            Jdk22Foreign.pointerOf(instance),
-                            MemorySegment.ofAddress(hString.raw),
-                            resultSegment,
-                        ) as Int,
-                    )
-                    hresult.requireSuccess("$operation($vtableIndex)")
-                    reader(resultSegment)
-                }
-            } finally {
-                JvmWinRtRuntime.releaseHString(hString)
+    ): Result<T> {
+        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader) { resultSegment ->
+            withCreatedHString(value) { hString ->
+                handle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    hString,
+                    resultSegment,
+                ) as Int
             }
         }
     }
@@ -853,26 +832,14 @@ private object JvmComMethodExecutor {
         first: ComPtr,
         second: String,
     ): Result<T> {
-        return runCatching {
-            requireInstance(instance)
-            val hString = JvmWinRtRuntime.createHString(second)
-            try {
-                Arena.ofConfined().use { arena ->
-                    val resultSegment = allocator(arena)
-                    val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-                    val hresult = HResult(
-                        handle.bindTo(function).invokeWithArguments(
-                            Jdk22Foreign.pointerOf(instance),
-                            if (first.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(first),
-                            MemorySegment.ofAddress(hString.raw),
-                            resultSegment,
-                        ) as Int,
-                    )
-                    hresult.requireSuccess("$operation($vtableIndex)")
-                    reader(resultSegment)
-                }
-            } finally {
-                JvmWinRtRuntime.releaseHString(hString)
+        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader) { resultSegment ->
+            withCreatedHString(second) { hString ->
+                handle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    pointerArgument(first),
+                    hString,
+                    resultSegment,
+                ) as Int
             }
         }
     }
@@ -887,26 +854,14 @@ private object JvmComMethodExecutor {
         first: String,
         second: ComPtr,
     ): Result<T> {
-        return runCatching {
-            requireInstance(instance)
-            val hString = JvmWinRtRuntime.createHString(first)
-            try {
-                Arena.ofConfined().use { arena ->
-                    val resultSegment = allocator(arena)
-                    val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-                    val hresult = HResult(
-                        handle.bindTo(function).invokeWithArguments(
-                            Jdk22Foreign.pointerOf(instance),
-                            MemorySegment.ofAddress(hString.raw),
-                            if (second.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(second),
-                            resultSegment,
-                        ) as Int,
-                    )
-                    hresult.requireSuccess("$operation($vtableIndex)")
-                    reader(resultSegment)
-                }
-            } finally {
-                JvmWinRtRuntime.releaseHString(hString)
+        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader) { resultSegment ->
+            withCreatedHString(first) { hString ->
+                handle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    hString,
+                    pointerArgument(second),
+                    resultSegment,
+                ) as Int
             }
         }
     }
@@ -946,22 +901,13 @@ private object JvmComMethodExecutor {
         first: ComPtr,
         second: ComPtr,
     ): Result<T> {
-        return runCatching {
-            requireInstance(instance)
-            Arena.ofConfined().use { arena ->
-                val resultSegment = allocator(arena)
-                val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-                val hresult = HResult(
-                    handle.bindTo(function).invokeWithArguments(
-                        Jdk22Foreign.pointerOf(instance),
-                        if (first.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(first),
-                        if (second.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(second),
-                        resultSegment,
-                    ) as Int,
-                )
-                hresult.requireSuccess("$operation($vtableIndex)")
-                reader(resultSegment)
-            }
+        return runDirectWithOut(instance, vtableIndex, operation, handle, allocator, reader) { resultSegment ->
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                pointerArgument(first),
+                pointerArgument(second),
+                resultSegment,
+            ) as Int
         }
     }
 
