@@ -70,16 +70,6 @@ class MethodSignatureShapeTest {
     }
 
     @Test
-    fun identifies_two_argument_unified_return_keys() {
-        assertTrue(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.OBJECT_STRING).isTwoArgumentUnifiedReturnShape())
-        assertTrue(MethodSignatureKey(MethodReturnKind.INT64, MethodSignatureShape.TWO_OBJECT).isTwoArgumentUnifiedReturnShape())
-        assertTrue(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.TWO_OBJECT).isTwoArgumentUnifiedReturnShape())
-        assertTrue(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.OBJECT_INT32).isTwoArgumentUnifiedReturnShape())
-        assertTrue(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.STRING_INT32).isTwoArgumentUnifiedReturnShape())
-        assertFalse(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING).isTwoArgumentUnifiedReturnShape())
-    }
-
-    @Test
     fun classifies_supported_two_argument_parameter_categories() {
         assertTrue(listOf(MethodParameterCategory.STRING, MethodParameterCategory.STRING).isSupportedTwoArgumentUnitCategories())
         assertTrue(listOf(MethodParameterCategory.OBJECT, MethodParameterCategory.INT32).isSupportedTwoArgumentUnitCategories())

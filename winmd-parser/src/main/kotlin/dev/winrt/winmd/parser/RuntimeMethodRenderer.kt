@@ -223,10 +223,9 @@ internal class RuntimeMethodRenderer(
             returnType = method.returnType,
             parameterTypes = parameterTypes.map { typeRegistry.signatureParameterType(it, currentNamespace) },
             supportsParameterObjectType = { type -> supportsRuntimeObjectType(type, currentNamespace) },
-        )
-        return signatureKey
-            ?.takeIf { MethodRuleRegistry.sharedMethodRuleFamily(it) != null }
-            ?.let(::runtimeMethodPlanForKey)
+        ) ?: return null
+        val planKind = MethodRuleRegistry.sharedMethodPlan(signatureKey)?.kind ?: return null
+        return runtimeMethodPlanForKey(signatureKey, planKind)
     }
 
     private fun plannedInt32FillArrayRuntimeMethod(
@@ -591,39 +590,46 @@ internal class RuntimeMethodRenderer(
         }
     }
 
-    private fun runtimeMethodPlanForKey(signatureKey: MethodSignatureKey): RuntimeMethodPlan? {
-        if (signatureKey.isTwoArgumentUnifiedReturnShape()) {
-            return plannedTwoArgumentRuntimeMethod(signatureKey)
+    private fun runtimeMethodPlanForKey(
+        signatureKey: MethodSignatureKey,
+        planKind: SharedMethodPlanKind,
+    ): RuntimeMethodPlan? {
+        return when (planKind) {
+            SharedMethodPlanKind.UNARY -> plannedUnaryRuntimeMethod(signatureKey)
+            SharedMethodPlanKind.TWO_ARGUMENT_RETURN -> plannedTwoArgumentRuntimeMethod(signatureKey)
+            SharedMethodPlanKind.TWO_ARGUMENT_UNIT -> plannedTwoArgumentUnitRuntimeMethod(signatureKey)
         }
-        plannedUnaryRuntimeMethod(signatureKey)?.let { return it }
-        signatureKey.shape.toParameterCategories()
-            ?.takeIf { signatureKey.returnKind == MethodReturnKind.UNIT && it.isSupportedTwoArgumentUnitCategories() }
-            ?.let {
-                return RuntimeMethodPlan(
-                    nullPointerReturn = { PlannedStatement("return") },
-                    returnStatement = "%L",
-                    statementArgs = { method, currentNamespace, parameterBindings ->
-                        val argumentExpressions = abiArgumentExpressions(
-                            parameters = parameterBindings,
-                            parameterCategories = it,
-                            argumentName = RuntimeMethodParameterBinding::name,
-                            parameterType = RuntimeMethodParameterBinding::type,
-                            lowerObjectArgument = { binding ->
-                                runtimeObjectArgumentExpression(binding, currentNamespace)
-                            },
-                        )
-                        arrayOf(
-                            AbiCallCatalog.unitMethodWithTwoArguments(
-                                method.vtableIndex!!,
-                                it,
-                                argumentExpressions[0],
-                                argumentExpressions[1],
-                            ),
-                        )
+    }
+
+    private fun plannedTwoArgumentUnitRuntimeMethod(
+        signatureKey: MethodSignatureKey,
+    ): RuntimeMethodPlan? {
+        val parameterCategories = signatureKey.shape.toParameterCategories()
+            ?.takeIf(List<MethodParameterCategory>::isSupportedTwoArgumentUnitCategories)
+            ?: return null
+        return RuntimeMethodPlan(
+            nullPointerReturn = { PlannedStatement("return") },
+            returnStatement = "%L",
+            statementArgs = { method, currentNamespace, parameterBindings ->
+                val argumentExpressions = abiArgumentExpressions(
+                    parameters = parameterBindings,
+                    parameterCategories = parameterCategories,
+                    argumentName = RuntimeMethodParameterBinding::name,
+                    parameterType = RuntimeMethodParameterBinding::type,
+                    lowerObjectArgument = { binding ->
+                        runtimeObjectArgumentExpression(binding, currentNamespace)
                     },
                 )
-            }
-        return null
+                arrayOf(
+                    AbiCallCatalog.unitMethodWithTwoArguments(
+                        method.vtableIndex!!,
+                        parameterCategories,
+                        argumentExpressions[0],
+                        argumentExpressions[1],
+                    ),
+                )
+            },
+        )
     }
 
     private fun plannedUnaryRuntimeMethod(signatureKey: MethodSignatureKey): RuntimeMethodPlan? {

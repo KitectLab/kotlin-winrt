@@ -254,10 +254,6 @@ internal fun methodParameterCategories(
 ): List<MethodParameterCategory>? =
     parameterTypes.map { type -> methodParameterCategory(type, supportsObjectType) ?: return null }
 
-internal fun MethodSignatureKey.isTwoArgumentUnifiedReturnShape(): Boolean =
-    shape.toParameterCategories()?.let(returnKind::twoArgumentSharedRuleFamily) != null &&
-        returnKind != MethodReturnKind.UNIT
-
 internal fun methodParameterCategory(
     type: String,
     supportsObjectType: (String) -> Boolean,

@@ -1825,10 +1825,9 @@ internal class InterfaceTypeRenderer(
             parameterTypes = method.parameters.map { typeRegistry.signatureParameterType(it.type, currentNamespace) },
             supportsParameterObjectType = { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) },
             supportsReturnObjectType = { typeName -> supportsInterfaceObjectReturnType(typeName, currentNamespace) },
-        )
-        return signatureKey
-            ?.takeIf { MethodRuleRegistry.sharedMethodRuleFamily(it) != null }
-            ?.let { plannedInterfaceMethodForKey(it, genericParameters) }
+        ) ?: return null
+        val planKind = MethodRuleRegistry.sharedMethodPlan(signatureKey)?.kind ?: return null
+        return plannedInterfaceMethodForKey(signatureKey, genericParameters, planKind)
     }
 
     private fun plannedInt32FillArrayInterfaceMethod(
@@ -2189,42 +2188,47 @@ internal class InterfaceTypeRenderer(
     private fun plannedInterfaceMethodForKey(
         signatureKey: MethodSignatureKey,
         genericParameters: Set<String>,
+        planKind: SharedMethodPlanKind,
     ): PlannedInterfaceMethod? {
-        if (signatureKey.isTwoArgumentUnifiedReturnShape()) {
-            return plannedTwoArgumentReturnMethod(signatureKey, genericParameters)
+        return when (planKind) {
+            SharedMethodPlanKind.UNARY -> plannedUnaryInterfaceMethod(signatureKey, genericParameters)
+            SharedMethodPlanKind.TWO_ARGUMENT_RETURN -> plannedTwoArgumentReturnMethod(signatureKey, genericParameters)
+            SharedMethodPlanKind.TWO_ARGUMENT_UNIT -> plannedTwoArgumentUnitInterfaceMethod(signatureKey)
         }
-        plannedUnaryInterfaceMethod(signatureKey, genericParameters)?.let { return it }
-        signatureKey.shape.toParameterCategories()
-            ?.takeIf { signatureKey.returnKind == MethodReturnKind.UNIT && it.isSupportedTwoArgumentUnitCategories() }
-            ?.let {
-                return PlannedInterfaceMethod(
-                    statement = "%L",
-                    args = { method, namespace ->
-                        val argumentExpressions = abiArgumentExpressions(
-                            parameters = method.parameters,
-                            parameterCategories = it,
-                            argumentName = { parameter -> parameter.name.replaceFirstChar(Char::lowercase) },
-                            parameterType = WinMdParameter::type,
-                            lowerObjectArgument = { parameter ->
-                                interfaceObjectArgumentExpression(
-                                    parameter.name.replaceFirstChar(Char::lowercase),
-                                    parameter.type,
-                                    namespace,
-                                )
-                            },
-                        )
-                        arrayOf(
-                            AbiCallCatalog.unitMethodWithTwoArguments(
-                                method.vtableIndex!!,
-                                it,
-                                argumentExpressions[0],
-                                argumentExpressions[1],
-                            ),
+    }
+
+    private fun plannedTwoArgumentUnitInterfaceMethod(
+        signatureKey: MethodSignatureKey,
+    ): PlannedInterfaceMethod? {
+        val parameterCategories = signatureKey.shape.toParameterCategories()
+            ?.takeIf(List<MethodParameterCategory>::isSupportedTwoArgumentUnitCategories)
+            ?: return null
+        return PlannedInterfaceMethod(
+            statement = "%L",
+            args = { method, namespace ->
+                val argumentExpressions = abiArgumentExpressions(
+                    parameters = method.parameters,
+                    parameterCategories = parameterCategories,
+                    argumentName = { parameter -> parameter.name.replaceFirstChar(Char::lowercase) },
+                    parameterType = WinMdParameter::type,
+                    lowerObjectArgument = { parameter ->
+                        interfaceObjectArgumentExpression(
+                            parameter.name.replaceFirstChar(Char::lowercase),
+                            parameter.type,
+                            namespace,
                         )
                     },
                 )
-            }
-        return null
+                arrayOf(
+                    AbiCallCatalog.unitMethodWithTwoArguments(
+                        method.vtableIndex!!,
+                        parameterCategories,
+                        argumentExpressions[0],
+                        argumentExpressions[1],
+                    ),
+                )
+            },
+        )
     }
 
     private fun plannedUnaryInterfaceMethod(

@@ -43,4 +43,20 @@ class MethodRuleRegistryTest {
             MethodRuleRegistry.sharedMethodRuleFamily(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING_STRING)),
         )
     }
+
+    @Test
+    fun classifies_shared_method_plan_kinds() {
+        assertEquals(
+            SharedMethodPlanKind.UNARY,
+            MethodRuleRegistry.sharedMethodPlan(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.EMPTY))?.kind,
+        )
+        assertEquals(
+            SharedMethodPlanKind.TWO_ARGUMENT_RETURN,
+            MethodRuleRegistry.sharedMethodPlan(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.OBJECT_STRING))?.kind,
+        )
+        assertEquals(
+            SharedMethodPlanKind.TWO_ARGUMENT_UNIT,
+            MethodRuleRegistry.sharedMethodPlan(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_INT32))?.kind,
+        )
+    }
 }
