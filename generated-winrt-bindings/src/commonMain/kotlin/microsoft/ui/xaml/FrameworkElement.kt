@@ -82,7 +82,7 @@ public open class FrameworkElement(
         backing_AllowFocusOnInteraction.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 39, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 39, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_AllowFocusWhenDisabled: RuntimeProperty<WinRtBoolean> =
@@ -100,7 +100,7 @@ public open class FrameworkElement(
         backing_AllowFocusWhenDisabled.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 51, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 51, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_BaseUri: RuntimeProperty<Uri> = RuntimeProperty<Uri>(Uri(ComPtr.NULL))
@@ -128,7 +128,7 @@ public open class FrameworkElement(
         backing_DataContext.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 37, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 37, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -147,7 +147,7 @@ public open class FrameworkElement(
         backing_FlowDirection.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 56, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 56, value.value).getOrThrow()
     }
 
   private val backing_FocusVisualMargin: RuntimeProperty<Thickness> =
@@ -185,7 +185,7 @@ public open class FrameworkElement(
         backing_FocusVisualPrimaryBrush.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 49, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 49, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -224,7 +224,7 @@ public open class FrameworkElement(
         backing_FocusVisualSecondaryBrush.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 47, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 47, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -262,7 +262,7 @@ public open class FrameworkElement(
         backing_Height.set(value)
         return
       }
-      PlatformComInterop.invokeFloat64Setter(pointer, 18, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithFloat64Arg(pointer, 18, value.value).getOrThrow()
     }
 
   private val backing_HorizontalAlignment: RuntimeProperty<HorizontalAlignment> =
@@ -281,7 +281,7 @@ public open class FrameworkElement(
         backing_HorizontalAlignment.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 28, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 28, value.value).getOrThrow()
     }
 
   private val backing_IsLoaded: RuntimeProperty<WinRtBoolean> =
@@ -316,7 +316,7 @@ public open class FrameworkElement(
         backing_Language.set(value)
         return
       }
-      PlatformComInterop.invokeStringSetter(pointer, 12, value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 12, value).getOrThrow()
     }
 
   private val backing_Margin: RuntimeProperty<Thickness> =
@@ -353,7 +353,7 @@ public open class FrameworkElement(
         backing_MaxHeight.set(value)
         return
       }
-      PlatformComInterop.invokeFloat64Setter(pointer, 26, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithFloat64Arg(pointer, 26, value.value).getOrThrow()
     }
 
   private val backing_MaxWidth: RuntimeProperty<Float64> = RuntimeProperty<Float64>(Float64(0.0))
@@ -370,7 +370,7 @@ public open class FrameworkElement(
         backing_MaxWidth.set(value)
         return
       }
-      PlatformComInterop.invokeFloat64Setter(pointer, 22, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithFloat64Arg(pointer, 22, value.value).getOrThrow()
     }
 
   private val backing_MinHeight: RuntimeProperty<Float64> = RuntimeProperty<Float64>(Float64(0.0))
@@ -387,7 +387,7 @@ public open class FrameworkElement(
         backing_MinHeight.set(value)
         return
       }
-      PlatformComInterop.invokeFloat64Setter(pointer, 24, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithFloat64Arg(pointer, 24, value.value).getOrThrow()
     }
 
   private val backing_MinWidth: RuntimeProperty<Float64> = RuntimeProperty<Float64>(Float64(0.0))
@@ -404,7 +404,7 @@ public open class FrameworkElement(
         backing_MinWidth.set(value)
         return
       }
-      PlatformComInterop.invokeFloat64Setter(pointer, 20, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithFloat64Arg(pointer, 20, value.value).getOrThrow()
     }
 
   private val backing_Name: RuntimeProperty<String> = RuntimeProperty<String>("")
@@ -428,7 +428,7 @@ public open class FrameworkElement(
         backing_Name.set(value)
         return
       }
-      PlatformComInterop.invokeStringSetter(pointer, 34, value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 34, value).getOrThrow()
     }
 
   private val backing_Parent: RuntimeProperty<DependencyObject> =
@@ -457,7 +457,7 @@ public open class FrameworkElement(
         backing_RequestedTheme.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 58, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 58, value.value).getOrThrow()
     }
 
   private val backing_Resources: RuntimeProperty<ResourceDictionary> =
@@ -475,7 +475,7 @@ public open class FrameworkElement(
         backing_Resources.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 8, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 8, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -493,7 +493,7 @@ public open class FrameworkElement(
         backing_Style.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 53, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 53, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -512,7 +512,7 @@ public open class FrameworkElement(
         backing_Tag.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 10, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 10, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -543,7 +543,7 @@ public open class FrameworkElement(
         backing_VerticalAlignment.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 30, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 30, value.value).getOrThrow()
     }
 
   private val backing_Width: RuntimeProperty<Float64> = RuntimeProperty<Float64>(Float64(0.0))
@@ -560,7 +560,7 @@ public open class FrameworkElement(
         backing_Width.set(value)
         return
       }
-      PlatformComInterop.invokeFloat64Setter(pointer, 16, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithFloat64Arg(pointer, 16, value.value).getOrThrow()
     }
 
   private val dataContextChangedEventSlot: DataContextChangedEvent = DataContextChangedEvent()

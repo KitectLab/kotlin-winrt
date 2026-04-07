@@ -36,7 +36,7 @@ private class IButtonProjection(
   override var flyout: FlyoutBase
     get() = FlyoutBase(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 7, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 7, projectedObjectArgumentPointer(value,
           "Microsoft.UI.Xaml.Controls.Primitives.FlyoutBase",
           "rc(Microsoft.UI.Xaml.Controls.Primitives.FlyoutBase;{bb6603bf-744d-5c31-a87d-744394634d77})")).getOrThrow()
     }

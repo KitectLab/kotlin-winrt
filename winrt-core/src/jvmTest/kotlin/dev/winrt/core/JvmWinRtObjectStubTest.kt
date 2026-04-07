@@ -55,7 +55,7 @@ class JvmWinRtObjectStubTest {
             assertTrue(noArgInvoked)
 
             val secondary = PlatformComInterop.queryInterface(stub.primaryPointer, secondaryIid).getOrThrow()
-            PlatformComInterop.invokeObjectSetter(secondary, 6, stub.primaryPointer).getOrThrow()
+            PlatformComInterop.invokeUnitMethodWithObjectArg(secondary, 6, stub.primaryPointer).getOrThrow()
             assertEquals(stub.primaryPointer.value.rawValue, seenObjectArg.value.rawValue)
             PlatformComInterop.release(secondary)
         }

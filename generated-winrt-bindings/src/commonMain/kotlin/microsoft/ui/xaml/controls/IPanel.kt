@@ -47,7 +47,7 @@ private class IPanelProjection(
   override var background: Brush
     get() = Brush(PlatformComInterop.invokeObjectMethod(pointer, 7).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 8, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 8, projectedObjectArgumentPointer(value,
           "Microsoft.UI.Xaml.Media.Brush",
           "rc(Microsoft.UI.Xaml.Media.Brush;{2de3cb83-1329-5679-88f8-c822bc5442cb})")).getOrThrow()
     }
@@ -55,7 +55,7 @@ private class IPanelProjection(
   override var backgroundTransition: BrushTransition
     get() = BrushTransition(PlatformComInterop.invokeObjectMethod(pointer, 12).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 13, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 13, projectedObjectArgumentPointer(value,
           "Microsoft.UI.Xaml.BrushTransition",
           "rc(Microsoft.UI.Xaml.BrushTransition;{a996a7ba-4567-5963-a112-76e3c0000204})")).getOrThrow()
     }
@@ -66,7 +66,7 @@ private class IPanelProjection(
   override var childrenTransitions: TransitionCollection
     get() = TransitionCollection(PlatformComInterop.invokeObjectMethod(pointer, 10).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 11, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 11, projectedObjectArgumentPointer(value,
           "Microsoft.UI.Xaml.Media.Animation.TransitionCollection",
           "rc(Microsoft.UI.Xaml.Media.Animation.TransitionCollection;pinterface({913337e9-11a1-4345-a3a2-4e7f956e222d};rc(Microsoft.UI.Xaml.Media.Animation.Transition;{e5b71956-8e44-5a38-b41e-274d706102bf})))")).getOrThrow()
     }

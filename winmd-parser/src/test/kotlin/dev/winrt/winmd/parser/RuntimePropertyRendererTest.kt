@@ -186,7 +186,7 @@ class RuntimePropertyRendererTest {
         assertTrue(binding.contains("varfontWeight:FontWeight?"))
         assertTrue(binding.contains("IReference.from<FontWeight>(Inspectable(it),\"struct(Windows.UI.Text.FontWeight;u2)\",\"Windows.UI.Text.FontWeight\")"))
         assertTrue(binding.contains("FontWeight.fromAbi(PlatformComInterop.invokeStructMethodWithArgs(reference.pointer,6,FontWeight.ABI_LAYOUT).getOrThrow())"))
-        assertTrue(binding.contains("PlatformComInterop.invokeObjectSetter(pointer,7,if(value==null)ComPtr.NULLelse"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithObjectArg(pointer,7,if(value==null)ComPtr.NULLelse"))
         assertTrue(binding.contains("projectedObjectArgumentPointer("))
         assertTrue(binding.contains("\"pinterface({61c17706-2d65-11e0-9ae8-d48564015472};struct(Windows.UI.Text.FontWeight;u2))\""))
     }
@@ -306,7 +306,7 @@ class RuntimePropertyRendererTest {
 
         assertTrue(binding.contains("varmode:Mode"))
         assertTrue(binding.contains("Mode.fromValue(PlatformComInterop.invokeInt32Method(pointer,6).getOrThrow())"))
-        assertTrue(binding.contains("PlatformComInterop.invokeInt32Setter(pointer,7,value.value).getOrThrow()"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer,7,value.value).getOrThrow()"))
     }
 
     @Test
@@ -349,7 +349,7 @@ class RuntimePropertyRendererTest {
 
         assertTrue(binding.contains("varmode:Mode"))
         assertTrue(binding.contains("Mode.fromValue(PlatformComInterop.invokeUInt32Method(pointer,6).getOrThrow())"))
-        assertTrue(binding.contains("PlatformComInterop.invokeUInt32Setter(pointer,7,value.value).getOrThrow()"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer,7,value.value).getOrThrow()"))
     }
 
     @Test
@@ -678,7 +678,7 @@ class RuntimePropertyRendererTest {
 
         assertTrue(binding.contains("valbounds:Rect?") || binding.contains("varbounds:Rect?"))
         assertTrue(binding.contains("PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow().let{if(it.isNull)nullelseIPropertyValue.from(Inspectable(it)).getRect()}"))
-        assertTrue(binding.contains("PlatformComInterop.invokeObjectSetter(pointer,7,if(value==null)ComPtr.NULLelsePropertyValue.createRect(value).pointer).getOrThrow()"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithObjectArg(pointer,7,if(value==null)ComPtr.NULLelsePropertyValue.createRect(value).pointer).getOrThrow()"))
     }
 
     @Test
@@ -725,7 +725,7 @@ class RuntimePropertyRendererTest {
         assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithArgs(pointer,7,value).getOrThrow()"))
         assertTrue(binding.contains("varoptionalPriority:Short?"))
         assertTrue(binding.contains("PlatformComInterop.invokeObjectMethod(pointer,8).getOrThrow().let{if(it.isNull)nullelseIPropertyValue.from(Inspectable(it)).getInt16()}"))
-        assertTrue(binding.contains("PlatformComInterop.invokeObjectSetter(pointer,9,if(value==null)ComPtr.NULLelsePropertyValue.createInt16(value).pointer).getOrThrow()"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithObjectArg(pointer,9,if(value==null)ComPtr.NULLelsePropertyValue.createInt16(value).pointer).getOrThrow()"))
     }
 
     @Test
@@ -769,7 +769,7 @@ class RuntimePropertyRendererTest {
         assertTrue(binding.contains("varmode:Mode?"))
         assertTrue(binding.contains("IReference.from<Mode>(Inspectable(it),\"enum(Example.Contracts.Mode;u4)\",\"Example.Contracts.Mode\")"))
         assertTrue(binding.contains("Mode.fromValue(PlatformComInterop.invokeUInt32Method(reference.pointer,6).getOrThrow())"))
-        assertTrue(binding.contains("PlatformComInterop.invokeObjectSetter(pointer,7,if(value==null)ComPtr.NULLelse"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithObjectArg(pointer,7,if(value==null)ComPtr.NULLelse"))
         assertTrue(binding.contains("projectedObjectArgumentPointer("))
         assertTrue(binding.contains("\"pinterface({61c17706-2d65-11e0-9ae8-d48564015472};enum(Example.Contracts.Mode;u4))\""))
     }
@@ -815,11 +815,11 @@ class RuntimePropertyRendererTest {
 
         assertTrue(binding.contains("lastError"))
         assertTrue(binding.contains("exceptionFromHResult(PlatformComInterop.invokeInt32Method(pointer,6).getOrThrow())"))
-        assertTrue(binding.contains("PlatformComInterop.invokeInt32Setter(pointer,7,hResultOfException(value)).getOrThrow()"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer,7,hResultOfException(value)).getOrThrow()"))
         assertTrue(binding.contains("optionalError"))
         assertTrue(binding.contains("IReference.from<"))
         assertTrue(binding.contains("Inspectable(it),\"struct(Windows.Foundation.HResult;i4)\""))
-        assertTrue(binding.contains("PlatformComInterop.invokeObjectSetter(pointer,9,if(value==null)ComPtr.NULLelse"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithObjectArg(pointer,9,if(value==null)ComPtr.NULLelse"))
         assertTrue(binding.contains("\"pinterface({61c17706-2d65-11e0-9ae8-d48564015472};struct(Windows.Foundation.HResult;i4))\""))
     }
 

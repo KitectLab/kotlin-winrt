@@ -62,14 +62,14 @@ private class IToggleSwitchProjection(
   override var header: Inspectable
     get() = Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 8).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 9, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 9, projectedObjectArgumentPointer(value,
           "Object", "cinterface(IInspectable)")).getOrThrow()
     }
 
   override var headerTemplate: DataTemplate
     get() = DataTemplate(PlatformComInterop.invokeObjectMethod(pointer, 10).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 11, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 11, projectedObjectArgumentPointer(value,
           "Microsoft.UI.Xaml.DataTemplate",
           "rc(Microsoft.UI.Xaml.DataTemplate;{08fa70fa-ee75-5e92-a101-f52d0e1e9fab})")).getOrThrow()
     }
@@ -77,20 +77,20 @@ private class IToggleSwitchProjection(
   override var isOn: WinRtBoolean
     get() = WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 6).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeBooleanSetter(pointer, 7, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 7, if (value.value) 1u else 0u).getOrThrow()
     }
 
   override var offContent: Inspectable
     get() = Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 16).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 17, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 17, projectedObjectArgumentPointer(value,
           "Object", "cinterface(IInspectable)")).getOrThrow()
     }
 
   override var offContentTemplate: DataTemplate
     get() = DataTemplate(PlatformComInterop.invokeObjectMethod(pointer, 18).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 19, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 19, projectedObjectArgumentPointer(value,
           "Microsoft.UI.Xaml.DataTemplate",
           "rc(Microsoft.UI.Xaml.DataTemplate;{08fa70fa-ee75-5e92-a101-f52d0e1e9fab})")).getOrThrow()
     }
@@ -98,14 +98,14 @@ private class IToggleSwitchProjection(
   override var onContent: Inspectable
     get() = Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 12).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 13, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 13, projectedObjectArgumentPointer(value,
           "Object", "cinterface(IInspectable)")).getOrThrow()
     }
 
   override var onContentTemplate: DataTemplate
     get() = DataTemplate(PlatformComInterop.invokeObjectMethod(pointer, 14).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 15, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 15, projectedObjectArgumentPointer(value,
           "Microsoft.UI.Xaml.DataTemplate",
           "rc(Microsoft.UI.Xaml.DataTemplate;{08fa70fa-ee75-5e92-a101-f52d0e1e9fab})")).getOrThrow()
     }

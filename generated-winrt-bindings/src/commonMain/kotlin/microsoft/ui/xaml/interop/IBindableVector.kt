@@ -20,7 +20,7 @@ public open class IBindableVector(
     UInt32(PlatformComInterop.invokeUInt32Method(pointer, 8).getOrThrow()).value.toInt() }, getter =
     { index -> Inspectable(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 7,
     index.toUInt()).getOrThrow()) }, append = { value ->
-    PlatformComInterop.invokeObjectSetter(pointer, 14, (value as
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 14, (value as
     Inspectable).pointer).getOrThrow() }, clearer = { PlatformComInterop.invokeUnitMethod(pointer,
     16).getOrThrow() }) {
   public val winRtSize: UInt32
@@ -58,7 +58,7 @@ public open class IBindableVector(
   }
 
   public fun append(value: Inspectable) {
-    PlatformComInterop.invokeObjectSetter(pointer, 14, projectedObjectArgumentPointer(value,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 14, projectedObjectArgumentPointer(value,
         "Object", "cinterface(IInspectable)")).getOrThrow()
   }
 

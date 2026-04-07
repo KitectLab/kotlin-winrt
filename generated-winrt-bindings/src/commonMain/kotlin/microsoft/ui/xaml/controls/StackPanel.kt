@@ -77,7 +77,7 @@ public open class StackPanel(
         backing_AreScrollSnapPointsRegular.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 7, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 7, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_BackgroundSizing: RuntimeProperty<BackgroundSizing> =
@@ -96,7 +96,7 @@ public open class StackPanel(
         backing_BackgroundSizing.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 11, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 11, value.value).getOrThrow()
     }
 
   private val backing_BorderBrush: RuntimeProperty<Brush> =
@@ -114,7 +114,7 @@ public open class StackPanel(
         backing_BorderBrush.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 13, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 13, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -173,7 +173,7 @@ public open class StackPanel(
         backing_Orientation.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 9, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 9, value.value).getOrThrow()
     }
 
   private val backing_Padding: RuntimeProperty<Thickness> =
@@ -210,7 +210,7 @@ public open class StackPanel(
         backing_Spacing.set(value)
         return
       }
-      PlatformComInterop.invokeFloat64Setter(pointer, 21, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithFloat64Arg(pointer, 21, value.value).getOrThrow()
     }
 
   private val backing_AreScrollSnapPointsRegularProperty: RuntimeProperty<DependencyProperty> =

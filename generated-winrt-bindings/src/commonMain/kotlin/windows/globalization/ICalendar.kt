@@ -211,7 +211,7 @@ private class ICalendarProjection(
   override var day: Int32
     get() = Int32(PlatformComInterop.invokeInt32Method(pointer, 52).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 53, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 53, value.value).getOrThrow()
     }
 
   override val dayOfWeek: DayOfWeek
@@ -220,7 +220,7 @@ private class ICalendarProjection(
   override var era: Int32
     get() = Int32(PlatformComInterop.invokeInt32Method(pointer, 22).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 23, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 23, value.value).getOrThrow()
     }
 
   override val firstDayInThisMonth: Int32
@@ -250,7 +250,7 @@ private class ICalendarProjection(
   override var hour: Int32
     get() = Int32(PlatformComInterop.invokeInt32Method(pointer, 73).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 74, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 74, value.value).getOrThrow()
     }
 
   override val isDaylightSavingTime: WinRtBoolean
@@ -287,19 +287,19 @@ private class ICalendarProjection(
   override var minute: Int32
     get() = Int32(PlatformComInterop.invokeInt32Method(pointer, 78).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 79, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 79, value.value).getOrThrow()
     }
 
   override var month: Int32
     get() = Int32(PlatformComInterop.invokeInt32Method(pointer, 39).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 40, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 40, value.value).getOrThrow()
     }
 
   override var nanosecond: Int32
     get() = Int32(PlatformComInterop.invokeInt32Method(pointer, 88).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 89, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 89, value.value).getOrThrow()
     }
 
   override val numberOfDaysInThisMonth: Int32
@@ -336,13 +336,13 @@ private class ICalendarProjection(
       }
     }
     set(value) {
-      PlatformComInterop.invokeStringSetter(pointer, 11, value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 11, value).getOrThrow()
     }
 
   override var period: Int32
     get() = Int32(PlatformComInterop.invokeInt32Method(pointer, 65).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 66, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 66, value.value).getOrThrow()
     }
 
   override val resolvedLanguage: String
@@ -358,13 +358,13 @@ private class ICalendarProjection(
   override var second: Int32
     get() = Int32(PlatformComInterop.invokeInt32Method(pointer, 83).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 84, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 84, value.value).getOrThrow()
     }
 
   override var year: Int32
     get() = Int32(PlatformComInterop.invokeInt32Method(pointer, 30).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 31, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 31, value.value).getOrThrow()
     }
 
   override fun clone(): Calendar = Calendar(PlatformComInterop.invokeObjectMethod(pointer,
@@ -719,7 +719,7 @@ private class ICalendarProjection(
       "rc(Windows.Globalization.Calendar;{ca30221d-86d9-40fb-a26b-d44eb7cf08ea})")).getOrThrow())
 
   override fun copyTo(other: Calendar) {
-    PlatformComInterop.invokeObjectSetter(pointer, 95, projectedObjectArgumentPointer(other,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 95, projectedObjectArgumentPointer(other,
         "Windows.Globalization.Calendar",
         "rc(Windows.Globalization.Calendar;{ca30221d-86d9-40fb-a26b-d44eb7cf08ea})")).getOrThrow()
   }

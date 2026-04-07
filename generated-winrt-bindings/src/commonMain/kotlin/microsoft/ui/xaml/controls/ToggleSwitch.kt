@@ -37,7 +37,7 @@ public open class ToggleSwitch(
         backing_Header.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 9, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 9, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -56,7 +56,7 @@ public open class ToggleSwitch(
         backing_HeaderTemplate.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 11, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 11, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -75,7 +75,7 @@ public open class ToggleSwitch(
         backing_IsOn.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 7, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 7, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_OffContent: RuntimeProperty<Inspectable> =
@@ -93,7 +93,7 @@ public open class ToggleSwitch(
         backing_OffContent.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 17, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 17, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -112,7 +112,7 @@ public open class ToggleSwitch(
         backing_OffContentTemplate.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 19, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 19, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -131,7 +131,7 @@ public open class ToggleSwitch(
         backing_OnContent.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 13, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 13, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -150,7 +150,7 @@ public open class ToggleSwitch(
         backing_OnContentTemplate.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 15, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 15, (value as
           Inspectable).pointer).getOrThrow()
     }
 

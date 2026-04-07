@@ -55,7 +55,7 @@ private class INumeralSystemTranslatorProjection(
       }
     }
     set(value) {
-      PlatformComInterop.invokeStringSetter(pointer, 9, value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 9, value).getOrThrow()
     }
 
   override val resolvedLanguage: String

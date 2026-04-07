@@ -159,7 +159,7 @@ private class ITextBlockProjection(
   override var characterSpacing: Int32
     get() = Int32(PlatformComInterop.invokeInt32Method(pointer, 16).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 17, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 17, value.value).getOrThrow()
     }
 
   override val contentEnd: TextPointer
@@ -171,7 +171,7 @@ private class ITextBlockProjection(
   override var fontFamily: FontFamily
     get() = FontFamily(PlatformComInterop.invokeObjectMethod(pointer, 8).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 9, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 9, projectedObjectArgumentPointer(value,
           "Microsoft.UI.Xaml.Media.FontFamily",
           "rc(Microsoft.UI.Xaml.Media.FontFamily;{18fa5bc1-7294-527c-bb02-b213e0b3a2a3})")).getOrThrow()
     }
@@ -179,19 +179,19 @@ private class ITextBlockProjection(
   override var fontSize: Float64
     get() = Float64(PlatformComInterop.invokeFloat64Method(pointer, 6).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeFloat64Setter(pointer, 7, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithFloat64Arg(pointer, 7, value.value).getOrThrow()
     }
 
   override var fontStretch: FontStretch
     get() = FontStretch.fromValue(PlatformComInterop.invokeInt32Method(pointer, 14).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 15, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 15, value.value).getOrThrow()
     }
 
   override var fontStyle: FontStyle
     get() = FontStyle.fromValue(PlatformComInterop.invokeInt32Method(pointer, 12).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 13, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 13, value.value).getOrThrow()
     }
 
   override var fontWeight: FontWeight
@@ -204,7 +204,7 @@ private class ITextBlockProjection(
   override var foreground: Brush
     get() = Brush(PlatformComInterop.invokeObjectMethod(pointer, 18).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 19, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 19, projectedObjectArgumentPointer(value,
           "Microsoft.UI.Xaml.Media.Brush",
           "rc(Microsoft.UI.Xaml.Media.Brush;{2de3cb83-1329-5679-88f8-c822bc5442cb})")).getOrThrow()
     }
@@ -212,7 +212,7 @@ private class ITextBlockProjection(
   override var horizontalTextAlignment: TextAlignment
     get() = TextAlignment.fromValue(PlatformComInterop.invokeInt32Method(pointer, 60).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 61, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 61, value.value).getOrThrow()
     }
 
   override val inlines: InlineCollection
@@ -221,19 +221,19 @@ private class ITextBlockProjection(
   override var isColorFontEnabled: WinRtBoolean
     get() = WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 51).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeBooleanSetter(pointer, 52, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 52, if (value.value) 1u else 0u).getOrThrow()
     }
 
   override var isTextScaleFactorEnabled: WinRtBoolean
     get() = WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 55).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeBooleanSetter(pointer, 56, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 56, if (value.value) 1u else 0u).getOrThrow()
     }
 
   override var isTextSelectionEnabled: WinRtBoolean
     get() = WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 35).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeBooleanSetter(pointer, 36, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 36, if (value.value) 1u else 0u).getOrThrow()
     }
 
   override val isTextTrimmed: WinRtBoolean
@@ -242,27 +242,27 @@ private class ITextBlockProjection(
   override var lineHeight: Float64
     get() = Float64(PlatformComInterop.invokeFloat64Method(pointer, 31).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeFloat64Setter(pointer, 32, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithFloat64Arg(pointer, 32, value.value).getOrThrow()
     }
 
   override var lineStackingStrategy: LineStackingStrategy
     get() = LineStackingStrategy.fromValue(PlatformComInterop.invokeInt32Method(pointer,
         33).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 34, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 34, value.value).getOrThrow()
     }
 
   override var maxLines: Int32
     get() = Int32(PlatformComInterop.invokeInt32Method(pointer, 45).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 46, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 46, value.value).getOrThrow()
     }
 
   override var opticalMarginAlignment: OpticalMarginAlignment
     get() = OpticalMarginAlignment.fromValue(PlatformComInterop.invokeInt32Method(pointer,
         49).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 50, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 50, value.value).getOrThrow()
     }
 
   override var padding: Thickness
@@ -288,7 +288,7 @@ private class ITextBlockProjection(
   override var selectionFlyout: FlyoutBase
     get() = FlyoutBase(PlatformComInterop.invokeObjectMethod(pointer, 63).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 64, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 64, projectedObjectArgumentPointer(value,
           "Microsoft.UI.Xaml.Controls.Primitives.FlyoutBase",
           "rc(Microsoft.UI.Xaml.Controls.Primitives.FlyoutBase;{bb6603bf-744d-5c31-a87d-744394634d77})")).getOrThrow()
     }
@@ -296,7 +296,7 @@ private class ITextBlockProjection(
   override var selectionHighlightColor: SolidColorBrush
     get() = SolidColorBrush(PlatformComInterop.invokeObjectMethod(pointer, 43).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 44, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 44, projectedObjectArgumentPointer(value,
           "Microsoft.UI.Xaml.Media.SolidColorBrush",
           "rc(Microsoft.UI.Xaml.Media.SolidColorBrush;{b3865c31-37c8-55c1-8a72-d41c67642e2a})")).getOrThrow()
     }
@@ -314,20 +314,20 @@ private class ITextBlockProjection(
       }
     }
     set(value) {
-      PlatformComInterop.invokeStringSetter(pointer, 27, value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 27, value).getOrThrow()
     }
 
   override var textAlignment: TextAlignment
     get() = TextAlignment.fromValue(PlatformComInterop.invokeInt32Method(pointer, 24).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 25, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 25, value.value).getOrThrow()
     }
 
   override var textDecorations: TextDecorations
     get() = TextDecorations.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
         57).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeUInt32Setter(pointer, 58, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 58, value.value).getOrThrow()
     }
 
   override val textHighlighters: IVector<TextHighlighter>
@@ -339,26 +339,26 @@ private class ITextBlockProjection(
   override var textLineBounds: TextLineBounds
     get() = TextLineBounds.fromValue(PlatformComInterop.invokeInt32Method(pointer, 47).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 48, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 48, value.value).getOrThrow()
     }
 
   override var textReadingOrder: TextReadingOrder
     get() = TextReadingOrder.fromValue(PlatformComInterop.invokeInt32Method(pointer,
         53).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 54, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 54, value.value).getOrThrow()
     }
 
   override var textTrimming: TextTrimming
     get() = TextTrimming.fromValue(PlatformComInterop.invokeInt32Method(pointer, 22).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 23, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 23, value.value).getOrThrow()
     }
 
   override var textWrapping: TextWrapping
     get() = TextWrapping.fromValue(PlatformComInterop.invokeInt32Method(pointer, 20).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 21, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 21, value.value).getOrThrow()
     }
 
   private val isTextTrimmedChangedEventSlot: IsTextTrimmedChangedEvent = IsTextTrimmedChangedEvent()

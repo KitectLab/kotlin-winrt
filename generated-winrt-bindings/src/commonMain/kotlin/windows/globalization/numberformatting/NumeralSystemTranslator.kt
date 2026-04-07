@@ -36,7 +36,7 @@ public open class NumeralSystemTranslator(
         backing_NumeralSystem.set(value)
         return
       }
-      PlatformComInterop.invokeStringSetter(pointer, 9, value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 9, value).getOrThrow()
     }
 
   private val backing_ResolvedLanguage: RuntimeProperty<String> = RuntimeProperty<String>("")

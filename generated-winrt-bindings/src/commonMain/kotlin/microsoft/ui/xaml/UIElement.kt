@@ -107,7 +107,7 @@ public open class UIElement(
         backing_ProtectedCursor.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 7, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 7, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -132,7 +132,7 @@ public open class UIElement(
         backing_AccessKey.set(value)
         return
       }
-      PlatformComInterop.invokeStringSetter(pointer, 59, value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 59, value).getOrThrow()
     }
 
   private val backing_AccessKeyScopeOwner: RuntimeProperty<DependencyObject> =
@@ -150,7 +150,7 @@ public open class UIElement(
         backing_AccessKeyScopeOwner.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 57, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 57, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -195,7 +195,7 @@ public open class UIElement(
         backing_AllowDrop.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 8, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 8, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_CacheMode: RuntimeProperty<CacheMode> =
@@ -213,7 +213,7 @@ public open class UIElement(
         backing_CacheMode.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 31, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 31, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -232,7 +232,7 @@ public open class UIElement(
         backing_CanBeScrollAnchor.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 51, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 51, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_CanDrag: RuntimeProperty<WinRtBoolean> =
@@ -250,7 +250,7 @@ public open class UIElement(
         backing_CanDrag.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 37, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 37, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_CenterPoint: RuntimeProperty<Vector3> =
@@ -288,7 +288,7 @@ public open class UIElement(
         backing_Clip.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 12, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 12, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -308,7 +308,7 @@ public open class UIElement(
         backing_CompositeMode.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 48, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 48, value.value).getOrThrow()
     }
 
   private val backing_ContextFlyout: RuntimeProperty<FlyoutBase> =
@@ -326,7 +326,7 @@ public open class UIElement(
         backing_ContextFlyout.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 46, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 46, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -358,7 +358,7 @@ public open class UIElement(
         backing_ExitDisplayModeOnAccessKeyInvoked.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 53, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 53, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_FocusState: RuntimeProperty<FocusState> =
@@ -388,7 +388,7 @@ public open class UIElement(
         backing_HighContrastAdjustment.set(value)
         return
       }
-      PlatformComInterop.invokeUInt32Setter(pointer, 84, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 84, value.value).getOrThrow()
     }
 
   private val backing_IsAccessKeyScope: RuntimeProperty<WinRtBoolean> =
@@ -406,7 +406,7 @@ public open class UIElement(
         backing_IsAccessKeyScope.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 55, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 55, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_IsDoubleTapEnabled: RuntimeProperty<WinRtBoolean> =
@@ -424,7 +424,7 @@ public open class UIElement(
         backing_IsDoubleTapEnabled.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 35, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 35, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_IsHitTestVisible: RuntimeProperty<WinRtBoolean> =
@@ -442,7 +442,7 @@ public open class UIElement(
         backing_IsHitTestVisible.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 22, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 22, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_IsHoldingEnabled: RuntimeProperty<WinRtBoolean> =
@@ -460,7 +460,7 @@ public open class UIElement(
         backing_IsHoldingEnabled.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 41, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 41, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_IsRightTapEnabled: RuntimeProperty<WinRtBoolean> =
@@ -478,7 +478,7 @@ public open class UIElement(
         backing_IsRightTapEnabled.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 39, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 39, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_IsTabStop: RuntimeProperty<WinRtBoolean> =
@@ -496,7 +496,7 @@ public open class UIElement(
         backing_IsTabStop.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 127, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 127, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_IsTapEnabled: RuntimeProperty<WinRtBoolean> =
@@ -514,7 +514,7 @@ public open class UIElement(
         backing_IsTapEnabled.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 33, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 33, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_KeyTipHorizontalOffset: RuntimeProperty<Float64> =
@@ -532,7 +532,7 @@ public open class UIElement(
         backing_KeyTipHorizontalOffset.set(value)
         return
       }
-      PlatformComInterop.invokeFloat64Setter(pointer, 63, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithFloat64Arg(pointer, 63, value.value).getOrThrow()
     }
 
   private val backing_KeyTipPlacementMode: RuntimeProperty<KeyTipPlacementMode> =
@@ -551,7 +551,7 @@ public open class UIElement(
         backing_KeyTipPlacementMode.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 61, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 61, value.value).getOrThrow()
     }
 
   private val backing_KeyTipTarget: RuntimeProperty<DependencyObject> =
@@ -569,7 +569,7 @@ public open class UIElement(
         backing_KeyTipTarget.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 67, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 67, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -588,7 +588,7 @@ public open class UIElement(
         backing_KeyTipVerticalOffset.set(value)
         return
       }
-      PlatformComInterop.invokeFloat64Setter(pointer, 65, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithFloat64Arg(pointer, 65, value.value).getOrThrow()
     }
 
   private val backing_KeyboardAcceleratorPlacementMode:
@@ -608,7 +608,7 @@ public open class UIElement(
         backing_KeyboardAcceleratorPlacementMode.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 82, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 82, value.value).getOrThrow()
     }
 
   private val backing_KeyboardAcceleratorPlacementTarget: RuntimeProperty<DependencyObject> =
@@ -626,7 +626,7 @@ public open class UIElement(
         backing_KeyboardAcceleratorPlacementTarget.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 80, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 80, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -646,7 +646,7 @@ public open class UIElement(
         backing_ManipulationMode.set(value)
         return
       }
-      PlatformComInterop.invokeUInt32Setter(pointer, 43, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 43, value.value).getOrThrow()
     }
 
   private val backing_Opacity: RuntimeProperty<Float64> = RuntimeProperty<Float64>(Float64(0.0))
@@ -663,7 +663,7 @@ public open class UIElement(
         backing_Opacity.set(value)
         return
       }
-      PlatformComInterop.invokeFloat64Setter(pointer, 10, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithFloat64Arg(pointer, 10, value.value).getOrThrow()
     }
 
   private val backing_OpacityTransition: RuntimeProperty<ScalarTransition> =
@@ -681,7 +681,7 @@ public open class UIElement(
         backing_OpacityTransition.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 88, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 88, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -700,7 +700,7 @@ public open class UIElement(
         backing_Projection.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 16, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 16, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -719,7 +719,7 @@ public open class UIElement(
         backing_RasterizationScale.set(value)
         return
       }
-      PlatformComInterop.invokeFloat64Setter(pointer, 114, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithFloat64Arg(pointer, 114, value.value).getOrThrow()
     }
 
   private val backing_RenderSize: RuntimeProperty<Size> =
@@ -750,7 +750,7 @@ public open class UIElement(
         backing_RenderTransform.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 14, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 14, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -788,7 +788,7 @@ public open class UIElement(
         backing_Rotation.set(value)
         return
       }
-      PlatformComInterop.invokeFloat32Setter(pointer, 94, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithFloat32Arg(pointer, 94, value.value).getOrThrow()
     }
 
   private val backing_RotationAxis: RuntimeProperty<Vector3> =
@@ -826,7 +826,7 @@ public open class UIElement(
         backing_RotationTransition.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 96, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 96, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -865,7 +865,7 @@ public open class UIElement(
         backing_ScaleTransition.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 100, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 100, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -883,7 +883,7 @@ public open class UIElement(
         backing_Shadow.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 112, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 112, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -903,7 +903,7 @@ public open class UIElement(
         backing_TabFocusNavigation.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 86, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 86, value.value).getOrThrow()
     }
 
   private val backing_TabIndex: RuntimeProperty<Int32> = RuntimeProperty<Int32>(Int32(0))
@@ -920,7 +920,7 @@ public open class UIElement(
         backing_TabIndex.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 129, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 129, value.value).getOrThrow()
     }
 
   private val backing_Transform3D: RuntimeProperty<Transform3D> =
@@ -938,7 +938,7 @@ public open class UIElement(
         backing_Transform3D.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 18, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 18, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -977,7 +977,7 @@ public open class UIElement(
         backing_Transitions.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 29, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 29, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -1016,7 +1016,7 @@ public open class UIElement(
         backing_TranslationTransition.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 92, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 92, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -1035,7 +1035,7 @@ public open class UIElement(
         backing_UseLayoutRounding.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 27, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 27, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_UseSystemFocusVisuals: RuntimeProperty<WinRtBoolean> =
@@ -1053,7 +1053,7 @@ public open class UIElement(
         backing_UseSystemFocusVisuals.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 117, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 117, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_Visibility: RuntimeProperty<Visibility> =
@@ -1071,7 +1071,7 @@ public open class UIElement(
         backing_Visibility.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 24, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 24, value.value).getOrThrow()
     }
 
   private val backing_XYFocusDown: RuntimeProperty<DependencyObject> =
@@ -1089,7 +1089,7 @@ public open class UIElement(
         backing_XYFocusDown.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 125, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 125, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -1109,7 +1109,7 @@ public open class UIElement(
         backing_XYFocusDownNavigationStrategy.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 73, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 73, value.value).getOrThrow()
     }
 
   private val backing_XYFocusKeyboardNavigation: RuntimeProperty<XYFocusKeyboardNavigationMode> =
@@ -1128,7 +1128,7 @@ public open class UIElement(
         backing_XYFocusKeyboardNavigation.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 69, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 69, value.value).getOrThrow()
     }
 
   private val backing_XYFocusLeft: RuntimeProperty<DependencyObject> =
@@ -1146,7 +1146,7 @@ public open class UIElement(
         backing_XYFocusLeft.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 119, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 119, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -1166,7 +1166,7 @@ public open class UIElement(
         backing_XYFocusLeftNavigationStrategy.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 75, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 75, value.value).getOrThrow()
     }
 
   private val backing_XYFocusRight: RuntimeProperty<DependencyObject> =
@@ -1184,7 +1184,7 @@ public open class UIElement(
         backing_XYFocusRight.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 121, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 121, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -1204,7 +1204,7 @@ public open class UIElement(
         backing_XYFocusRightNavigationStrategy.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 77, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 77, value.value).getOrThrow()
     }
 
   private val backing_XYFocusUp: RuntimeProperty<DependencyObject> =
@@ -1222,7 +1222,7 @@ public open class UIElement(
         backing_XYFocusUp.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 123, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 123, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -1242,7 +1242,7 @@ public open class UIElement(
         backing_XYFocusUpNavigationStrategy.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 71, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 71, value.value).getOrThrow()
     }
 
   private val backing_XamlRoot: RuntimeProperty<XamlRoot> =
@@ -1260,7 +1260,7 @@ public open class UIElement(
         backing_XamlRoot.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 110, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 110, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -1369,7 +1369,7 @@ public open class UIElement(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 10, projectedObjectArgumentPointer(args,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 10, projectedObjectArgumentPointer(args,
         "Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs;{62c9fdb0-b574-527d-97eb-5c7f674441e0})")).getOrThrow()
   }
@@ -1378,7 +1378,7 @@ public open class UIElement(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 11, projectedObjectArgumentPointer(args,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 11, projectedObjectArgumentPointer(args,
         "Microsoft.UI.Xaml.Input.ProcessKeyboardAcceleratorEventArgs",
         "rc(Microsoft.UI.Xaml.Input.ProcessKeyboardAcceleratorEventArgs;{9be0d058-3d26-5811-b50a-3bb80ca766c9})")).getOrThrow()
   }
@@ -1387,7 +1387,7 @@ public open class UIElement(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 12, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 12, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.BringIntoViewRequestedEventArgs",
         "rc(Microsoft.UI.Xaml.BringIntoViewRequestedEventArgs;{807de8f9-b1dc-5a63-8101-5ee966841a27})")).getOrThrow()
   }
@@ -2217,7 +2217,7 @@ public open class UIElement(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 213, projectedObjectArgumentPointer(value,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 213, projectedObjectArgumentPointer(value,
         "Microsoft.UI.Xaml.Input.Pointer",
         "rc(Microsoft.UI.Xaml.Input.Pointer;{1f9afbf5-11a3-5e68-aa1b-72febfa0ab23})")).getOrThrow()
   }
@@ -2296,7 +2296,7 @@ public open class UIElement(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 224, projectedObjectArgumentPointer(options,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 224, projectedObjectArgumentPointer(options,
         "Microsoft.UI.Xaml.BringIntoViewOptions",
         "rc(Microsoft.UI.Xaml.BringIntoViewOptions;{eeb4a447-eb9e-5003-a479-b9e3a886b708})")).getOrThrow()
   }
@@ -2305,7 +2305,7 @@ public open class UIElement(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 225, projectedObjectArgumentPointer(args,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 225, projectedObjectArgumentPointer(args,
         "Microsoft.UI.Xaml.Input.ProcessKeyboardAcceleratorEventArgs",
         "rc(Microsoft.UI.Xaml.Input.ProcessKeyboardAcceleratorEventArgs;{9be0d058-3d26-5811-b50a-3bb80ca766c9})")).getOrThrow()
   }
@@ -2322,7 +2322,7 @@ public open class UIElement(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 227, projectedObjectArgumentPointer(animation,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 227, projectedObjectArgumentPointer(animation,
         "Microsoft.UI.Composition.ICompositionAnimationBase",
         "{a77c0e5a-f059-4e85-bcef-c068694cec78}")).getOrThrow()
   }
@@ -2331,7 +2331,7 @@ public open class UIElement(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 228, projectedObjectArgumentPointer(animation,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 228, projectedObjectArgumentPointer(animation,
         "Microsoft.UI.Composition.ICompositionAnimationBase",
         "{a77c0e5a-f059-4e85-bcef-c068694cec78}")).getOrThrow()
   }

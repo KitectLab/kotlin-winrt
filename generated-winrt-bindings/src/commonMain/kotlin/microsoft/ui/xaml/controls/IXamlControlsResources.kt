@@ -35,6 +35,6 @@ private class IXamlControlsResourcesProjection(
   override var useCompactResources: WinRtBoolean
     get() = WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 6).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeBooleanSetter(pointer, 7, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 7, if (value.value) 1u else 0u).getOrThrow()
     }
 }

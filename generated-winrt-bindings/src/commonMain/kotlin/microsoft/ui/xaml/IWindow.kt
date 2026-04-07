@@ -98,7 +98,7 @@ private class IWindowProjection(
   override var content: UIElement
     get() = UIElement(PlatformComInterop.invokeObjectMethod(pointer, 8).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 9, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 9, projectedObjectArgumentPointer(value,
           "Microsoft.UI.Xaml.UIElement",
           "rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b})")).getOrThrow()
     }
@@ -115,7 +115,7 @@ private class IWindowProjection(
   override var extendsContentIntoTitleBar: WinRtBoolean
     get() = WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 16).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeBooleanSetter(pointer, 17, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 17, if (value.value) 1u else 0u).getOrThrow()
     }
 
   override var title: String
@@ -128,7 +128,7 @@ private class IWindowProjection(
       }
     }
     set(value) {
-      PlatformComInterop.invokeStringSetter(pointer, 15, value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 15, value).getOrThrow()
     }
 
   override val visible: WinRtBoolean
@@ -208,7 +208,7 @@ private class IWindowProjection(
   }
 
   override fun setTitleBar(titleBar: UIElement) {
-    PlatformComInterop.invokeObjectSetter(pointer, 28, projectedObjectArgumentPointer(titleBar,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 28, projectedObjectArgumentPointer(titleBar,
         "Microsoft.UI.Xaml.UIElement",
         "rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b})")).getOrThrow()
   }

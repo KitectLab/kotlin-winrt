@@ -42,7 +42,7 @@ public open class Application(
         backing_DispatcherShutdownMode.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 7, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 7, value.value).getOrThrow()
     }
 
   private val backing_DebugSettings: RuntimeProperty<DebugSettings> =
@@ -72,7 +72,7 @@ public open class Application(
         backing_FocusVisualKind.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 12, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 12, value.value).getOrThrow()
     }
 
   private val backing_HighContrastAdjustment: RuntimeProperty<ApplicationHighContrastAdjustment> =
@@ -91,7 +91,7 @@ public open class Application(
         backing_HighContrastAdjustment.set(value)
         return
       }
-      PlatformComInterop.invokeUInt32Setter(pointer, 14, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 14, value.value).getOrThrow()
     }
 
   private val backing_RequestedTheme: RuntimeProperty<ApplicationTheme> =
@@ -110,7 +110,7 @@ public open class Application(
         backing_RequestedTheme.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 10, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 10, value.value).getOrThrow()
     }
 
   private val backing_Resources: RuntimeProperty<ResourceDictionary> =
@@ -128,7 +128,7 @@ public open class Application(
         backing_Resources.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 7, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 7, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -170,7 +170,7 @@ public open class Application(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 6, projectedObjectArgumentPointer(args,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 6, projectedObjectArgumentPointer(args,
         "Microsoft.UI.Xaml.LaunchActivatedEventArgs",
         "rc(Microsoft.UI.Xaml.LaunchActivatedEventArgs;{d505cea9-1bcb-5b29-a8be-944e00f06f78})")).getOrThrow()
   }

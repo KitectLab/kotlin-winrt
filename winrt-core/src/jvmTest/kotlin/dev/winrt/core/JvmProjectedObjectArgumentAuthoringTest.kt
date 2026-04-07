@@ -1546,7 +1546,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
 
                             PlatformComInterop.invokeUnitMethodWithArgs(pointer, 11, 0u, replacementStub.primaryPointer).getOrThrow()
                             PlatformComInterop.invokeUnitMethodWithArgs(pointer, 12, 1u, insertedStub.primaryPointer).getOrThrow()
-                            PlatformComInterop.invokeObjectSetter(pointer, 14, appendedStub.primaryPointer).getOrThrow()
+                            PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 14, appendedStub.primaryPointer).getOrThrow()
 
                             val replacementValue: Any = values[0]
                             val insertedValue: Any = values[1]
@@ -1924,7 +1924,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                             assertEquals(3, values.size)
                             assertEquals(insertedStub.primaryPointer.value.rawValue, values[1].pointer.value.rawValue)
 
-                            PlatformComInterop.invokeObjectSetter(pointer, 14, appendedStub.primaryPointer).getOrThrow()
+                            PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 14, appendedStub.primaryPointer).getOrThrow()
                             assertEquals(4, values.size)
                             assertEquals(appendedStub.primaryPointer.value.rawValue, values.last().pointer.value.rawValue)
 
@@ -2061,7 +2061,7 @@ class JvmProjectedObjectArgumentAuthoringTest {
                             assertEquals(3, values.size)
                             assertEquals(insertedStub.primaryPointer.value.rawValue, values[1].pointer.value.rawValue)
 
-                            PlatformComInterop.invokeObjectSetter(pointer, 14, appendedStub.primaryPointer).getOrThrow()
+                            PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 14, appendedStub.primaryPointer).getOrThrow()
                             assertEquals(4, values.size)
                             assertEquals(appendedStub.primaryPointer.value.rawValue, values.last().pointer.value.rawValue)
 

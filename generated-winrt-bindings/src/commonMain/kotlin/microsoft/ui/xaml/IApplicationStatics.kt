@@ -22,7 +22,7 @@ internal open class IApplicationStatics(
     get() = Application(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
 
   public fun start(callback: ApplicationInitializationCallback) {
-    PlatformComInterop.invokeObjectSetter(pointer, 7, projectedObjectArgumentPointer(callback,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 7, projectedObjectArgumentPointer(callback,
         "Microsoft.UI.Xaml.ApplicationInitializationCallback",
         "delegate({d8eef1c9-1234-56f1-9963-45dd9c80a661})")).getOrThrow()
   }

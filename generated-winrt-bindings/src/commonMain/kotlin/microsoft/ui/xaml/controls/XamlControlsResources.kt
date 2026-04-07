@@ -33,7 +33,7 @@ public open class XamlControlsResources(
         backing_UseCompactResources.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 7, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 7, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_UseCompactResourcesProperty: RuntimeProperty<DependencyProperty> =

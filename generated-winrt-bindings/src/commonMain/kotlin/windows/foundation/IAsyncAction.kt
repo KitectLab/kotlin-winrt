@@ -17,7 +17,7 @@ public open class IAsyncAction(
     get() = AsyncActionCompletedHandler(PlatformComInterop.invokeObjectMethod(pointer,
         12).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 11, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 11, projectedObjectArgumentPointer(value,
           "Windows.Foundation.AsyncActionCompletedHandler",
           "delegate({a4ed5c81-76c9-40bd-8be6-b1d90fb20ae7})")).getOrThrow()
     }

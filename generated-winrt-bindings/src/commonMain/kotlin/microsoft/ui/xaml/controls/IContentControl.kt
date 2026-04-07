@@ -46,14 +46,14 @@ private class IContentControlProjection(
   override var content: Inspectable
     get() = Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 7, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 7, projectedObjectArgumentPointer(value,
           "Object", "cinterface(IInspectable)")).getOrThrow()
     }
 
   override var contentTemplate: DataTemplate
     get() = DataTemplate(PlatformComInterop.invokeObjectMethod(pointer, 8).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 9, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 9, projectedObjectArgumentPointer(value,
           "Microsoft.UI.Xaml.DataTemplate",
           "rc(Microsoft.UI.Xaml.DataTemplate;{08fa70fa-ee75-5e92-a101-f52d0e1e9fab})")).getOrThrow()
     }
@@ -64,7 +64,7 @@ private class IContentControlProjection(
   override var contentTemplateSelector: DataTemplateSelector
     get() = DataTemplateSelector(PlatformComInterop.invokeObjectMethod(pointer, 10).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 11, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 11, projectedObjectArgumentPointer(value,
           "Microsoft.UI.Xaml.Controls.DataTemplateSelector",
           "rc(Microsoft.UI.Xaml.Controls.DataTemplateSelector;{86ca4fa4-7de0-5049-82f5-39ec78569028})")).getOrThrow()
     }
@@ -72,7 +72,7 @@ private class IContentControlProjection(
   override var contentTransitions: TransitionCollection
     get() = TransitionCollection(PlatformComInterop.invokeObjectMethod(pointer, 12).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 13, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 13, projectedObjectArgumentPointer(value,
           "Microsoft.UI.Xaml.Media.Animation.TransitionCollection",
           "rc(Microsoft.UI.Xaml.Media.Animation.TransitionCollection;pinterface({913337e9-11a1-4345-a3a2-4e7f956e222d};rc(Microsoft.UI.Xaml.Media.Animation.Transition;{e5b71956-8e44-5a38-b41e-274d706102bf})))")).getOrThrow()
     }

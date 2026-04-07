@@ -62,7 +62,7 @@ public open class Window(
         backing_SystemBackdrop.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 7, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 7, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -105,7 +105,7 @@ public open class Window(
         backing_Content.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 9, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 9, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -157,7 +157,7 @@ public open class Window(
         backing_ExtendsContentIntoTitleBar.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 17, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 17, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_Title: RuntimeProperty<String> = RuntimeProperty<String>("")
@@ -181,7 +181,7 @@ public open class Window(
         backing_Title.set(value)
         return
       }
-      PlatformComInterop.invokeStringSetter(pointer, 15, value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 15, value).getOrThrow()
     }
 
   private val backing_Visible: RuntimeProperty<WinRtBoolean> =
@@ -388,7 +388,7 @@ public open class Window(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 28, projectedObjectArgumentPointer(titleBar,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 28, projectedObjectArgumentPointer(titleBar,
         "Microsoft.UI.Xaml.UIElement",
         "rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b})")).getOrThrow()
   }

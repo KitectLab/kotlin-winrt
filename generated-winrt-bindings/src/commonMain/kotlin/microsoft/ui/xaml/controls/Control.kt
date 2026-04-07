@@ -73,7 +73,7 @@ public open class Control(
         backing_DefaultStyleKey.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 7, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 7, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -92,7 +92,7 @@ public open class Control(
         backing_Background.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 41, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 41, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -112,7 +112,7 @@ public open class Control(
         backing_BackgroundSizing.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 43, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 43, value.value).getOrThrow()
     }
 
   private val backing_BorderBrush: RuntimeProperty<Brush> =
@@ -130,7 +130,7 @@ public open class Control(
         backing_BorderBrush.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 47, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 47, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -168,7 +168,7 @@ public open class Control(
         backing_CharacterSpacing.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 23, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 23, value.value).getOrThrow()
     }
 
   private val backing_CornerRadius: RuntimeProperty<CornerRadius> =
@@ -206,7 +206,7 @@ public open class Control(
         backing_DefaultStyleResourceUri.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 49, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 49, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -226,7 +226,7 @@ public open class Control(
         backing_ElementSoundMode.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 51, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 51, value.value).getOrThrow()
     }
 
   private val backing_FontFamily: RuntimeProperty<FontFamily> =
@@ -244,7 +244,7 @@ public open class Control(
         backing_FontFamily.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 15, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 15, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -262,7 +262,7 @@ public open class Control(
         backing_FontSize.set(value)
         return
       }
-      PlatformComInterop.invokeFloat64Setter(pointer, 13, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithFloat64Arg(pointer, 13, value.value).getOrThrow()
     }
 
   private val backing_FontStretch: RuntimeProperty<FontStretch> =
@@ -280,7 +280,7 @@ public open class Control(
         backing_FontStretch.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 21, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 21, value.value).getOrThrow()
     }
 
   private val backing_FontStyle: RuntimeProperty<FontStyle> =
@@ -298,7 +298,7 @@ public open class Control(
         backing_FontStyle.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 19, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 19, value.value).getOrThrow()
     }
 
   private val backing_FontWeight: RuntimeProperty<FontWeight> =
@@ -336,7 +336,7 @@ public open class Control(
         backing_Foreground.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 25, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 25, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -356,7 +356,7 @@ public open class Control(
         backing_HorizontalContentAlignment.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 37, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 37, value.value).getOrThrow()
     }
 
   private val backing_IsEnabled: RuntimeProperty<WinRtBoolean> =
@@ -374,7 +374,7 @@ public open class Control(
         backing_IsEnabled.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 29, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 29, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_IsFocusEngaged: RuntimeProperty<WinRtBoolean> =
@@ -392,7 +392,7 @@ public open class Control(
         backing_IsFocusEngaged.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 9, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 9, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_IsFocusEngagementEnabled: RuntimeProperty<WinRtBoolean> =
@@ -410,7 +410,7 @@ public open class Control(
         backing_IsFocusEngagementEnabled.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 7, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 7, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_IsTextScaleFactorEnabled: RuntimeProperty<WinRtBoolean> =
@@ -428,7 +428,7 @@ public open class Control(
         backing_IsTextScaleFactorEnabled.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 27, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 27, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_Padding: RuntimeProperty<Thickness> =
@@ -467,7 +467,7 @@ public open class Control(
         backing_RequiresPointer.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 11, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 11, value.value).getOrThrow()
     }
 
   private val backing_TabNavigation: RuntimeProperty<KeyboardNavigationMode> =
@@ -486,7 +486,7 @@ public open class Control(
         backing_TabNavigation.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 31, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 31, value.value).getOrThrow()
     }
 
   private val backing_Template: RuntimeProperty<ControlTemplate> =
@@ -504,7 +504,7 @@ public open class Control(
         backing_Template.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 33, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 33, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -524,7 +524,7 @@ public open class Control(
         backing_VerticalContentAlignment.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 39, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 39, value.value).getOrThrow()
     }
 
   private val focusEngagedEventSlot: FocusEngagedEvent = FocusEngagedEvent()
@@ -551,7 +551,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 6, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 6, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.PointerRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.PointerRoutedEventArgs;{66e78a9a-1bec-5f92-b1a1-ea6334ee511c})")).getOrThrow()
   }
@@ -560,7 +560,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 7, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 7, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.PointerRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.PointerRoutedEventArgs;{66e78a9a-1bec-5f92-b1a1-ea6334ee511c})")).getOrThrow()
   }
@@ -569,7 +569,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 8, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 8, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.PointerRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.PointerRoutedEventArgs;{66e78a9a-1bec-5f92-b1a1-ea6334ee511c})")).getOrThrow()
   }
@@ -578,7 +578,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 9, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 9, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.PointerRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.PointerRoutedEventArgs;{66e78a9a-1bec-5f92-b1a1-ea6334ee511c})")).getOrThrow()
   }
@@ -587,7 +587,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 10, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 10, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.PointerRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.PointerRoutedEventArgs;{66e78a9a-1bec-5f92-b1a1-ea6334ee511c})")).getOrThrow()
   }
@@ -596,7 +596,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 11, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 11, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.PointerRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.PointerRoutedEventArgs;{66e78a9a-1bec-5f92-b1a1-ea6334ee511c})")).getOrThrow()
   }
@@ -605,7 +605,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 12, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 12, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.PointerRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.PointerRoutedEventArgs;{66e78a9a-1bec-5f92-b1a1-ea6334ee511c})")).getOrThrow()
   }
@@ -614,7 +614,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 13, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 13, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.PointerRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.PointerRoutedEventArgs;{66e78a9a-1bec-5f92-b1a1-ea6334ee511c})")).getOrThrow()
   }
@@ -623,7 +623,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 14, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 14, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.TappedRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.TappedRoutedEventArgs;{73f74b8c-3709-547e-8e0c-51c03c89126a})")).getOrThrow()
   }
@@ -632,7 +632,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 15, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 15, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.DoubleTappedRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.DoubleTappedRoutedEventArgs;{32b9549d-11d8-53a5-a953-02409537a11f})")).getOrThrow()
   }
@@ -641,7 +641,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 16, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 16, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.HoldingRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.HoldingRoutedEventArgs;{8272a4b2-2221-551e-b0bb-16e29138ab20})")).getOrThrow()
   }
@@ -650,7 +650,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 17, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 17, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.RightTappedRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.RightTappedRoutedEventArgs;{3972fafb-2915-5c62-bb6b-54ad84ff400d})")).getOrThrow()
   }
@@ -659,7 +659,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 18, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 18, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.ManipulationStartingRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.ManipulationStartingRoutedEventArgs;{93a99f86-f5a0-5326-91b0-851c897af79f})")).getOrThrow()
   }
@@ -668,7 +668,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 19, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 19, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.ManipulationInertiaStartingRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.ManipulationInertiaStartingRoutedEventArgs;{17d510be-5514-5952-9afd-959b60ab9394})")).getOrThrow()
   }
@@ -677,7 +677,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 20, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 20, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.ManipulationStartedRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.ManipulationStartedRoutedEventArgs;{61857950-5821-5652-9fdf-c6277c5886f5})")).getOrThrow()
   }
@@ -686,7 +686,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 21, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 21, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.ManipulationDeltaRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.ManipulationDeltaRoutedEventArgs;{51369745-960f-54ac-93fa-763d22910dea})")).getOrThrow()
   }
@@ -695,7 +695,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 22, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 22, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.ManipulationCompletedRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.ManipulationCompletedRoutedEventArgs;{e3be9e4e-c5fb-5859-a81d-ce12fc3a2f4d})")).getOrThrow()
   }
@@ -704,7 +704,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 23, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 23, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.KeyRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.KeyRoutedEventArgs;{ee357007-a2d6-5c75-9431-05fd66ec7915})")).getOrThrow()
   }
@@ -713,7 +713,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 24, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 24, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.KeyRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.KeyRoutedEventArgs;{ee357007-a2d6-5c75-9431-05fd66ec7915})")).getOrThrow()
   }
@@ -722,7 +722,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 25, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 25, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.KeyRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.KeyRoutedEventArgs;{ee357007-a2d6-5c75-9431-05fd66ec7915})")).getOrThrow()
   }
@@ -731,7 +731,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 26, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 26, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.KeyRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.KeyRoutedEventArgs;{ee357007-a2d6-5c75-9431-05fd66ec7915})")).getOrThrow()
   }
@@ -740,7 +740,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 27, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 27, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.RoutedEventArgs",
         "rc(Microsoft.UI.Xaml.RoutedEventArgs;{0908c407-1c7d-5de3-9c50-d971c62ec8ec})")).getOrThrow()
   }
@@ -749,7 +749,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 28, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 28, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.RoutedEventArgs",
         "rc(Microsoft.UI.Xaml.RoutedEventArgs;{0908c407-1c7d-5de3-9c50-d971c62ec8ec})")).getOrThrow()
   }
@@ -758,7 +758,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 29, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 29, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.Input.CharacterReceivedRoutedEventArgs",
         "rc(Microsoft.UI.Xaml.Input.CharacterReceivedRoutedEventArgs;{e26ca5bb-34c3-5c1e-9a16-00b80b07a899})")).getOrThrow()
   }
@@ -767,7 +767,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 30, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 30, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.DragEventArgs",
         "rc(Microsoft.UI.Xaml.DragEventArgs;{47ac5757-e4bc-52ba-8ab9-1bf81aad7900})")).getOrThrow()
   }
@@ -776,7 +776,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 31, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 31, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.DragEventArgs",
         "rc(Microsoft.UI.Xaml.DragEventArgs;{47ac5757-e4bc-52ba-8ab9-1bf81aad7900})")).getOrThrow()
   }
@@ -785,7 +785,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 32, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 32, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.DragEventArgs",
         "rc(Microsoft.UI.Xaml.DragEventArgs;{47ac5757-e4bc-52ba-8ab9-1bf81aad7900})")).getOrThrow()
   }
@@ -794,7 +794,7 @@ public open class Control(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 33, projectedObjectArgumentPointer(e,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 33, projectedObjectArgumentPointer(e,
         "Microsoft.UI.Xaml.DragEventArgs",
         "rc(Microsoft.UI.Xaml.DragEventArgs;{47ac5757-e4bc-52ba-8ab9-1bf81aad7900})")).getOrThrow()
   }

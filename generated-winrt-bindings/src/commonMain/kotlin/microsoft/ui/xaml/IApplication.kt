@@ -57,7 +57,7 @@ private class IApplicationProjection(
     get() = FocusVisualKind.fromValue(PlatformComInterop.invokeInt32Method(pointer,
         11).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 12, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 12, value.value).getOrThrow()
     }
 
   override var highContrastAdjustment: ApplicationHighContrastAdjustment
@@ -65,20 +65,20 @@ private class IApplicationProjection(
         ApplicationHighContrastAdjustment.fromValue(PlatformComInterop.invokeUInt32Method(pointer,
         13).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeUInt32Setter(pointer, 14, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 14, value.value).getOrThrow()
     }
 
   override var requestedTheme: ApplicationTheme
     get() = ApplicationTheme.fromValue(PlatformComInterop.invokeInt32Method(pointer,
         9).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeInt32Setter(pointer, 10, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 10, value.value).getOrThrow()
     }
 
   override var resources: ResourceDictionary
     get() = ResourceDictionary(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 7, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 7, projectedObjectArgumentPointer(value,
           "Microsoft.UI.Xaml.ResourceDictionary",
           "rc(Microsoft.UI.Xaml.ResourceDictionary;{1b690975-a710-5783-a6e1-15836f6186c2})")).getOrThrow()
     }

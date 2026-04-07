@@ -68,7 +68,7 @@ public open class DependencyObject(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 8, projectedObjectArgumentPointer(dp,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 8, projectedObjectArgumentPointer(dp,
         "Microsoft.UI.Xaml.DependencyProperty",
         "rc(Microsoft.UI.Xaml.DependencyProperty;{960eab49-9672-58a0-995b-3a42e5ea6278})")).getOrThrow()
   }

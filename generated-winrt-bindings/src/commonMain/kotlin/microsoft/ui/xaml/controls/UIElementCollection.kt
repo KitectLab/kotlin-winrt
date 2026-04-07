@@ -83,7 +83,7 @@ public open class UIElementCollection(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 14, projectedObjectArgumentPointer(value,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 14, projectedObjectArgumentPointer(value,
         "Microsoft.UI.Xaml.UIElement",
         "rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b})")).getOrThrow()
   }

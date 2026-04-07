@@ -204,7 +204,7 @@ internal object AbiCallCatalog {
 
     fun objectSetter(vtableIndex: Int, argumentName: String): CodeBlock =
         CodeBlock.of(
-            "%T.invokeObjectSetter(pointer, %L, (%N as %T).pointer).getOrThrow()",
+            "%T.invokeUnitMethodWithObjectArg(pointer, %L, (%N as %T).pointer).getOrThrow()",
             PoetSymbols.platformComInteropClass,
             vtableIndex,
             argumentName,
@@ -213,7 +213,7 @@ internal object AbiCallCatalog {
 
     fun objectSetterExpression(vtableIndex: Int, argumentExpression: Any): CodeBlock =
         CodeBlock.of(
-            "%T.invokeObjectSetter(pointer, %L, %L).getOrThrow()",
+            "%T.invokeUnitMethodWithObjectArg(pointer, %L, %L).getOrThrow()",
             PoetSymbols.platformComInteropClass,
             vtableIndex,
             argumentExpression,
@@ -286,29 +286,29 @@ internal object AbiCallCatalog {
         if (startsWith("invoke")) this else "invoke${replaceFirstChar(Char::uppercaseChar)}"
 
     fun stringSetter(vtableIndex: Int): CodeBlock =
-        CodeBlock.of("%T.invokeStringSetter(pointer, %L, value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
+        CodeBlock.of("%T.invokeUnitMethodWithStringArg(pointer, %L, value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
     fun int32Setter(vtableIndex: Int): CodeBlock =
-        CodeBlock.of("%T.invokeInt32Setter(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
+        CodeBlock.of("%T.invokeUnitMethodWithInt32Arg(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
     fun int32SetterExpression(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        CodeBlock.of("%T.invokeInt32Setter(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
+        CodeBlock.of("%T.invokeUnitMethodWithInt32Arg(pointer, %L, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex, argumentExpression)
 
     fun uint32Setter(vtableIndex: Int): CodeBlock =
-        CodeBlock.of("%T.invokeUInt32Setter(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
+        CodeBlock.of("%T.invokeUnitMethodWithUInt32Arg(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
     fun float32Setter(vtableIndex: Int): CodeBlock =
-        CodeBlock.of("%T.invokeFloat32Setter(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
+        CodeBlock.of("%T.invokeUnitMethodWithFloat32Arg(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
     fun booleanSetter(vtableIndex: Int): CodeBlock =
-        CodeBlock.of("%T.invokeBooleanSetter(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
+        CodeBlock.of("%T.invokeUnitMethodWithUInt32Arg(pointer, %L, if (value.value) 1u else 0u).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
     fun float64Setter(vtableIndex: Int): CodeBlock =
-        CodeBlock.of("%T.invokeFloat64Setter(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
+        CodeBlock.of("%T.invokeUnitMethodWithFloat64Arg(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
     fun int64Setter(vtableIndex: Int): CodeBlock =
-        CodeBlock.of("%T.invokeInt64Setter(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
+        CodeBlock.of("%T.invokeUnitMethodWithInt64Arg(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
     fun uint64Setter(vtableIndex: Int): CodeBlock =
-        CodeBlock.of("%T.invokeUInt64Setter(pointer, %L, value.value).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
+        CodeBlock.of("%T.invokeUnitMethodWithInt64Arg(pointer, %L, value.value.toLong()).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 }

@@ -49,7 +49,7 @@ private class IResourceDictionaryProjection(
   override var source: Uri
     get() = Uri(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 7, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 7, projectedObjectArgumentPointer(value,
           "Windows.Foundation.Uri",
           "rc(Windows.Foundation.Uri;{9e365e57-48b2-4160-956f-c7385120bbfc})")).getOrThrow()
     }

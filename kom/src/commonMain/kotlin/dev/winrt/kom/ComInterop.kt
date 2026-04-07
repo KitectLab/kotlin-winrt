@@ -70,6 +70,9 @@ interface ComInterop {
     fun invokeUnitMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Unit>
     fun invokeUnitMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit>
     fun invokeUnitMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit>
+    fun invokeUnitMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Unit>
+    fun invokeUnitMethodWithFloat32Arg(instance: ComPtr, vtableIndex: Int, value: Float): Result<Unit>
+    fun invokeUnitMethodWithFloat64Arg(instance: ComPtr, vtableIndex: Int, value: Double): Result<Unit>
     fun invokeUnitMethodWithTwoInt32Args(instance: ComPtr, vtableIndex: Int, first: Int, second: Int): Result<Unit>
     fun invokeUnitMethodWithInt32AndInt64Args(instance: ComPtr, vtableIndex: Int, first: Int, second: Long): Result<Unit>
     fun invokeUnitMethodWithInt64AndInt32Args(instance: ComPtr, vtableIndex: Int, first: Long, second: Int): Result<Unit>
@@ -138,7 +141,6 @@ interface ComInterop {
         vtableIndex: Int,
         vararg arguments: Any,
     ): Result<ComposableMethodResult>
-    fun invokeObjectSetter(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Unit>
     fun invokeInt64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Long>
     fun invokeInt64Method(instance: ComPtr, vtableIndex: Int): Result<Long>
     fun invokeInt64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Long>
@@ -148,14 +150,6 @@ interface ComInterop {
     fun invokeUInt64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<ULong>
     fun invokeUInt64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ULong>
     fun invokeUInt64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ULong>
-    fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit>
-    fun invokeInt32Setter(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit>
-    fun invokeUInt32Setter(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Unit>
-    fun invokeFloat32Setter(instance: ComPtr, vtableIndex: Int, value: Float): Result<Unit>
-    fun invokeBooleanSetter(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Unit>
-    fun invokeFloat64Setter(instance: ComPtr, vtableIndex: Int, value: Double): Result<Unit>
-    fun invokeInt64Setter(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit>
-    fun invokeUInt64Setter(instance: ComPtr, vtableIndex: Int, value: ULong): Result<Unit>
     fun invokeInt32Method(instance: ComPtr, vtableIndex: Int): Result<Int>
     fun invokeInt32MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Int>
     fun invokeInt32MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Int>

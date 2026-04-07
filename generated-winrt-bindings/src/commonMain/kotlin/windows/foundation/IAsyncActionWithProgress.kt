@@ -27,14 +27,14 @@ public open class IAsyncActionWithProgress<TProgress>(
     }
 
   public open fun put_Progress(handler: AsyncActionProgressHandler<TProgress>) {
-    PlatformComInterop.invokeObjectSetter(pointer, 11, handler.pointer).getOrThrow()
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 11, handler.pointer).getOrThrow()
   }
 
   public open fun get_Progress(): AsyncActionProgressHandler<TProgress> =
       AsyncActionProgressHandler(PlatformComInterop.invokeObjectMethod(pointer, 12).getOrThrow())
 
   public open fun put_Completed(handler: AsyncActionWithProgressCompletedHandler<TProgress>) {
-    PlatformComInterop.invokeObjectSetter(pointer, 13, handler.pointer).getOrThrow()
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 13, handler.pointer).getOrThrow()
   }
 
   public open fun get_Completed(): AsyncActionWithProgressCompletedHandler<TProgress> =

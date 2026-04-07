@@ -2004,6 +2004,34 @@ private object JvmPlatformComInterop : ComInterop {
         vtableIndex: Int,
         operation: String,
         handle: java.lang.invoke.MethodHandle,
+        value: Float,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        value,
+    )
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Double,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        value,
+    )
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
         first: Int,
         second: Int,
     ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, operation, handle, first, second)
@@ -2509,6 +2537,18 @@ private object JvmPlatformComInterop : ComInterop {
         return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithStringArg", Jdk22Foreign.hstringSetterHandle, value)
     }
 
+    override fun invokeUnitMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Unit> {
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithObjectArg", Jdk22Foreign.objectSetterHandle, value)
+    }
+
+    override fun invokeUnitMethodWithFloat32Arg(instance: ComPtr, vtableIndex: Int, value: Float): Result<Unit> {
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithFloat32Arg", Jdk22Foreign.float32SetterHandle, value)
+    }
+
+    override fun invokeUnitMethodWithFloat64Arg(instance: ComPtr, vtableIndex: Int, value: Double): Result<Unit> {
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithFloat64Arg", Jdk22Foreign.float64SetterHandle, value)
+    }
+
     override fun invokeUnitMethodWithTwoInt32Args(instance: ComPtr, vtableIndex: Int, first: Int, second: Int): Result<Unit> {
         return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithTwoInt32Args", twoInt32UnitHandle, first, second)
     }
@@ -2912,26 +2952,6 @@ private object JvmPlatformComInterop : ComInterop {
     override fun invokeHStringMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<HString> =
         invokeRawAddressResult(instance, vtableIndex, "invokeHStringMethodWithInt64Arg", Jdk22Foreign.hstringMethodWithInt64Handle, value).asHStringResult()
 
-    override fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeStringSetter",
-            handle = Jdk22Foreign.hstringSetterHandle,
-            value,
-        )
-    }
-
-    override fun invokeObjectSetter(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeObjectSetter",
-            handle = Jdk22Foreign.objectSetterHandle,
-            value,
-        )
-    }
-
     override fun invokeInt64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Long> {
         return invokeRawI64Result(instance, vtableIndex, "invokeInt64MethodWithObjectArg", Jdk22Foreign.int64MethodWithObjectHandle, value)
     }
@@ -2966,76 +2986,6 @@ private object JvmPlatformComInterop : ComInterop {
 
     override fun invokeUInt64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ULong> {
         return invokeRawI64Result(instance, vtableIndex, "invokeUInt64MethodWithUInt32Arg", Jdk22Foreign.uint64MethodWithUInt32Handle, value).asULongResult()
-    }
-
-    override fun invokeInt32Setter(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeInt32Setter",
-            handle = Jdk22Foreign.int32SetterHandle,
-            value,
-        )
-    }
-
-    override fun invokeUInt32Setter(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeUInt32Setter",
-            handle = Jdk22Foreign.uint32SetterHandle,
-            value,
-        )
-    }
-
-    override fun invokeFloat32Setter(instance: ComPtr, vtableIndex: Int, value: Float): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeFloat32Setter",
-            handle = Jdk22Foreign.float32SetterHandle,
-            value,
-        )
-    }
-
-    override fun invokeBooleanSetter(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeBooleanSetter",
-            handle = Jdk22Foreign.booleanSetterHandle,
-            value,
-        )
-    }
-
-    override fun invokeFloat64Setter(instance: ComPtr, vtableIndex: Int, value: Double): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeFloat64Setter",
-            handle = Jdk22Foreign.float64SetterHandle,
-            value,
-        )
-    }
-
-    override fun invokeInt64Setter(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeInt64Setter",
-            handle = Jdk22Foreign.int64SetterHandle,
-            value,
-        )
-    }
-
-    override fun invokeUInt64Setter(instance: ComPtr, vtableIndex: Int, value: ULong): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeUInt64Setter",
-            handle = Jdk22Foreign.uint64SetterHandle,
-            value,
-        )
     }
 
     override fun invokeInt32Method(instance: ComPtr, vtableIndex: Int): Result<Int> {

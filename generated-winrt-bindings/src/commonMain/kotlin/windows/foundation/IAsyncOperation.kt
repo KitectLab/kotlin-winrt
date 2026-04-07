@@ -17,7 +17,7 @@ public open class IAsyncOperation<TResult>(
     }
 
   public open fun put_Completed(handler: AsyncOperationCompletedHandler<TResult>) {
-    PlatformComInterop.invokeObjectSetter(pointer, 11, handler.pointer).getOrThrow()
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 11, handler.pointer).getOrThrow()
   }
 
   public open fun get_Completed(): AsyncOperationCompletedHandler<TResult> =

@@ -33,7 +33,7 @@ public open class Button(
         backing_Flyout.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 7, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 7, (value as
           Inspectable).pointer).getOrThrow()
     }
 

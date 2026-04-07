@@ -38,7 +38,7 @@ object WinUiResourceManagerSupport {
             runCatching {
                 val application2 = PlatformComInterop.queryInterface(applicationPointer, iidIApplication2).getOrThrow()
                 try {
-                    PlatformComInterop.invokeInt64Setter(
+                    PlatformComInterop.invokeUnitMethodWithInt64Arg(
                         application2,
                         removeResourceManagerRequestedSlot,
                         token.value,
@@ -71,7 +71,7 @@ object WinUiResourceManagerSupport {
                 val requestedArgs = PlatformComInterop.queryInterface(eventArgs, iidIResourceManagerRequestedEventArgs)
                     .getOrThrow()
                 try {
-                    PlatformComInterop.invokeObjectSetter(
+                    PlatformComInterop.invokeUnitMethodWithObjectArg(
                         requestedArgs,
                         setCustomResourceManagerSlot,
                         resourceManagerPointer,

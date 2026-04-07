@@ -2026,7 +2026,7 @@ class InterfaceTypeRendererTest {
 
         assertTrue(binding.contains("varbounds:Rect?"))
         assertTrue(binding.contains("PlatformComInterop.invokeObjectMethod(pointer,6).getOrThrow().let{if(it.isNull)nullelseIPropertyValue.from(Inspectable(it)).getRect()}"))
-        assertTrue(binding.contains("PlatformComInterop.invokeObjectSetter(pointer,7,if(value==null)ComPtr.NULLelsePropertyValue.createRect(value).pointer).getOrThrow()"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithObjectArg(pointer,7,if(value==null)ComPtr.NULLelsePropertyValue.createRect(value).pointer).getOrThrow()"))
     }
 
     @Test
@@ -2083,7 +2083,7 @@ class InterfaceTypeRendererTest {
         assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithArgs(pointer,7,value).getOrThrow()"))
         assertTrue(binding.contains("varoptionalPriority:Short?"))
         assertTrue(binding.contains("PlatformComInterop.invokeObjectMethod(pointer,8).getOrThrow().let{if(it.isNull)nullelseIPropertyValue.from(Inspectable(it)).getInt16()}"))
-        assertTrue(binding.contains("PlatformComInterop.invokeObjectSetter(pointer,9,if(value==null)ComPtr.NULLelsePropertyValue.createInt16(value).pointer).getOrThrow()"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithObjectArg(pointer,9,if(value==null)ComPtr.NULLelsePropertyValue.createInt16(value).pointer).getOrThrow()"))
         assertTrue(binding.contains("fungetShortcut():Char"))
         assertTrue(binding.contains("PlatformComInterop.invokeMethodWithResultKind(pointer,10,ComMethodResultKind.CHAR16).getOrThrow().requireChar16()"))
         assertTrue(binding.contains("Inspectable(PlatformComInterop.invokeObjectMethodWithArgs(pointer,11,priority).getOrThrow())"))
@@ -2186,7 +2186,7 @@ class InterfaceTypeRendererTest {
 
         assertTrue(binding.contains("lastError"))
         assertTrue(binding.contains("exceptionFromHResult(PlatformComInterop.invokeInt32Method(pointer,6).getOrThrow())"))
-        assertTrue(binding.contains("PlatformComInterop.invokeInt32Setter(pointer,7,hResultOfException(value)).getOrThrow()"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer,7,hResultOfException(value)).getOrThrow()"))
         assertTrue(binding.contains("optionalError"))
         assertTrue(binding.contains("IReference.from<"))
         assertTrue(binding.contains("Inspectable(it),\"struct(Windows.Foundation.HResult;i4)\""))

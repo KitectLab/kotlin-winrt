@@ -49,7 +49,7 @@ public open class ResourceDictionary(
         backing_Source.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 7, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 7, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -93,7 +93,7 @@ public open class ResourceDictionary(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 12, projectedObjectArgumentPointer(key, "Object",
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 12, projectedObjectArgumentPointer(key, "Object",
         "cinterface(IInspectable)")).getOrThrow()
   }
 

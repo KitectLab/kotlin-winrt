@@ -38,7 +38,7 @@ public open class Border(
         backing_Background.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 11, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 11, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -58,7 +58,7 @@ public open class Border(
         backing_BackgroundSizing.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 13, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 13, value.value).getOrThrow()
     }
 
   private val backing_BackgroundTransition: RuntimeProperty<BrushTransition> =
@@ -76,7 +76,7 @@ public open class Border(
         backing_BackgroundTransition.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 23, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 23, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -95,7 +95,7 @@ public open class Border(
         backing_BorderBrush.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 7, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 7, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -134,7 +134,7 @@ public open class Border(
         backing_Child.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 19, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 19, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -153,7 +153,7 @@ public open class Border(
         backing_ChildTransitions.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 21, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 21, (value as
           Inspectable).pointer).getOrThrow()
     }
 

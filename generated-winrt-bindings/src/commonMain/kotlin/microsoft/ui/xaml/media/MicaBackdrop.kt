@@ -31,7 +31,7 @@ public open class MicaBackdrop(
         backing_Kind.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 7, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 7, value.value).getOrThrow()
     }
 
   private val backing_KindProperty: RuntimeProperty<DependencyProperty> =

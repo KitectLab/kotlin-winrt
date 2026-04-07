@@ -76,7 +76,7 @@ public open class TextBlock(
         backing_CharacterSpacing.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 17, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 17, value.value).getOrThrow()
     }
 
   private val backing_ContentEnd: RuntimeProperty<TextPointer> =
@@ -116,7 +116,7 @@ public open class TextBlock(
         backing_FontFamily.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 9, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 9, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -134,7 +134,7 @@ public open class TextBlock(
         backing_FontSize.set(value)
         return
       }
-      PlatformComInterop.invokeFloat64Setter(pointer, 7, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithFloat64Arg(pointer, 7, value.value).getOrThrow()
     }
 
   private val backing_FontStretch: RuntimeProperty<FontStretch> =
@@ -152,7 +152,7 @@ public open class TextBlock(
         backing_FontStretch.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 15, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 15, value.value).getOrThrow()
     }
 
   private val backing_FontStyle: RuntimeProperty<FontStyle> =
@@ -170,7 +170,7 @@ public open class TextBlock(
         backing_FontStyle.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 13, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 13, value.value).getOrThrow()
     }
 
   private val backing_FontWeight: RuntimeProperty<FontWeight> =
@@ -208,7 +208,7 @@ public open class TextBlock(
         backing_Foreground.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 19, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 19, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -227,7 +227,7 @@ public open class TextBlock(
         backing_HorizontalTextAlignment.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 61, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 61, value.value).getOrThrow()
     }
 
   private val backing_Inlines: RuntimeProperty<InlineCollection> =
@@ -256,7 +256,7 @@ public open class TextBlock(
         backing_IsColorFontEnabled.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 52, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 52, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_IsTextScaleFactorEnabled: RuntimeProperty<WinRtBoolean> =
@@ -274,7 +274,7 @@ public open class TextBlock(
         backing_IsTextScaleFactorEnabled.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 56, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 56, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_IsTextSelectionEnabled: RuntimeProperty<WinRtBoolean> =
@@ -292,7 +292,7 @@ public open class TextBlock(
         backing_IsTextSelectionEnabled.set(value)
         return
       }
-      PlatformComInterop.invokeBooleanSetter(pointer, 36, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 36, if (value.value) 1u else 0u).getOrThrow()
     }
 
   private val backing_IsTextTrimmed: RuntimeProperty<WinRtBoolean> =
@@ -320,7 +320,7 @@ public open class TextBlock(
         backing_LineHeight.set(value)
         return
       }
-      PlatformComInterop.invokeFloat64Setter(pointer, 32, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithFloat64Arg(pointer, 32, value.value).getOrThrow()
     }
 
   private val backing_LineStackingStrategy: RuntimeProperty<LineStackingStrategy> =
@@ -339,7 +339,7 @@ public open class TextBlock(
         backing_LineStackingStrategy.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 34, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 34, value.value).getOrThrow()
     }
 
   private val backing_MaxLines: RuntimeProperty<Int32> = RuntimeProperty<Int32>(Int32(0))
@@ -356,7 +356,7 @@ public open class TextBlock(
         backing_MaxLines.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 46, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 46, value.value).getOrThrow()
     }
 
   private val backing_OpticalMarginAlignment: RuntimeProperty<OpticalMarginAlignment> =
@@ -375,7 +375,7 @@ public open class TextBlock(
         backing_OpticalMarginAlignment.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 50, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 50, value.value).getOrThrow()
     }
 
   private val backing_Padding: RuntimeProperty<Thickness> =
@@ -441,7 +441,7 @@ public open class TextBlock(
         backing_SelectionFlyout.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 64, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 64, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -460,7 +460,7 @@ public open class TextBlock(
         backing_SelectionHighlightColor.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 44, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 44, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -496,7 +496,7 @@ public open class TextBlock(
         backing_Text.set(value)
         return
       }
-      PlatformComInterop.invokeStringSetter(pointer, 27, value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 27, value).getOrThrow()
     }
 
   private val backing_TextAlignment: RuntimeProperty<TextAlignment> =
@@ -514,7 +514,7 @@ public open class TextBlock(
         backing_TextAlignment.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 25, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 25, value.value).getOrThrow()
     }
 
   private val backing_TextDecorations: RuntimeProperty<TextDecorations> =
@@ -533,7 +533,7 @@ public open class TextBlock(
         backing_TextDecorations.set(value)
         return
       }
-      PlatformComInterop.invokeUInt32Setter(pointer, 58, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 58, value.value).getOrThrow()
     }
 
   private val backing_TextLineBounds: RuntimeProperty<TextLineBounds> =
@@ -552,7 +552,7 @@ public open class TextBlock(
         backing_TextLineBounds.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 48, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 48, value.value).getOrThrow()
     }
 
   private val backing_TextReadingOrder: RuntimeProperty<TextReadingOrder> =
@@ -571,7 +571,7 @@ public open class TextBlock(
         backing_TextReadingOrder.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 54, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 54, value.value).getOrThrow()
     }
 
   private val backing_TextTrimming: RuntimeProperty<TextTrimming> =
@@ -589,7 +589,7 @@ public open class TextBlock(
         backing_TextTrimming.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 23, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 23, value.value).getOrThrow()
     }
 
   private val backing_TextWrapping: RuntimeProperty<TextWrapping> =
@@ -607,7 +607,7 @@ public open class TextBlock(
         backing_TextWrapping.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 21, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 21, value.value).getOrThrow()
     }
 
   private val backing_CharacterSpacingProperty: RuntimeProperty<DependencyProperty> =

@@ -323,9 +323,9 @@ class KotlinBindingGeneratorTest {
         assertTrue(enumBinding.contains("All(0xffffffffu)"))
         assertTrue(enumBinding.contains("fromValue(value: UInt)"))
         assertTrue(normalizedInterfaceBinding.contains("FlagMode.fromValue(PlatformComInterop.invokeUInt32Method(pointer,6).getOrThrow())"))
-        assertTrue(normalizedInterfaceBinding.contains("PlatformComInterop.invokeUInt32Setter(pointer,7,value.value).getOrThrow()"))
+        assertTrue(normalizedInterfaceBinding.contains("PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer,7,value.value).getOrThrow()"))
         assertFalse(interfaceBinding.contains("projectedObjectArgumentPointer(value"))
-        assertFalse(interfaceBinding.contains("invokeObjectSetter(pointer, 7"))
+        assertFalse(interfaceBinding.contains("invokeUnitMethodWithObjectArg(pointer, 7"))
     }
 
     @Test
@@ -2095,7 +2095,7 @@ class KotlinBindingGeneratorTest {
         assertFalse(windowBinding.contains("fun asIStringable(): IStringable = IStringable.from(this)"))
         assertTrue(windowBinding.contains("var title: String"))
         assertTrue(windowBinding.contains("PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()"))
-        assertTrue(windowBinding.contains("PlatformComInterop.invokeStringSetter(pointer, 7, value).getOrThrow()"))
+        assertTrue(windowBinding.contains("PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 7, value).getOrThrow()"))
         assertTrue(windowBinding.contains("val isVisible"))
         assertTrue(windowBinding.contains("val createdAt"))
         assertTrue(windowBinding.contains("val lifetime"))
@@ -2665,7 +2665,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("open class IBindableVector"))
         assertTrue(binding.contains("val winRtSize: UInt32"))
         assertTrue(binding.contains("fun getAt(index: UInt32): Inspectable"))
-        assertTrue(binding.contains("invokeObjectSetter(pointer, 14,"))
+        assertTrue(binding.contains("invokeUnitMethodWithObjectArg(pointer, 14,"))
         assertTrue(binding.contains("invokeUnitMethod(pointer, 16).getOrThrow()"))
     }
 
@@ -5092,14 +5092,14 @@ class KotlinBindingGeneratorTest {
         assertTrue(binding.contains("PlatformComInterop.invokeHStringMethod(pointer, 11).getOrThrow()"))
         assertTrue(binding.contains("value.toKotlinString()"))
         assertTrue(binding.contains("value.close()"))
-        assertTrue(binding.contains("PlatformComInterop.invokeStringSetter(pointer, 12, value).getOrThrow()"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 12, value).getOrThrow()"))
         assertTrue(binding.contains("var count: Int32"))
         assertTrue(binding.contains("return Int32(PlatformComInterop.invokeInt32Method(pointer, 13).getOrThrow())"))
-        assertTrue(binding.contains("PlatformComInterop.invokeInt32Setter(pointer, 14, value.value).getOrThrow()"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 14, value.value).getOrThrow()"))
         assertTrue(normalizedBinding.contains("var payload: Inspectable"))
         assertTrue(normalizedBinding.contains("RuntimeProperty<Inspectable>(Inspectable(ComPtr.NULL))"))
         assertTrue(normalizedBinding.contains("return Inspectable(PlatformComInterop.invokeObjectMethod(pointer, 15).getOrThrow())"))
-        assertTrue(normalizedBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 16, (value as Inspectable).pointer).getOrThrow()"))
+        assertTrue(normalizedBinding.contains("PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 16, (value as Inspectable).pointer).getOrThrow()"))
     }
 
     @Test
@@ -8306,7 +8306,7 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(binding.contains("var title: String"))
         assertTrue(binding.contains("PlatformComInterop.invokeHStringMethod(pointer, 6).getOrThrow()"))
-        assertTrue(binding.contains("PlatformComInterop.invokeStringSetter(pointer, 7, value).getOrThrow()"))
+        assertTrue(binding.contains("PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 7, value).getOrThrow()"))
         assertTrue(binding.contains("val enabled: WinRtBoolean"))
         assertTrue(binding.contains("WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 8).getOrThrow())"))
     }
@@ -8470,10 +8470,10 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(runtimeBinding.contains("var count: UInt32"))
         assertTrue(runtimeBinding.contains("UInt32(PlatformComInterop.invokeUInt32Method(pointer, 6).getOrThrow())"))
-        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeUInt32Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 7, value.value).getOrThrow()"))
         assertTrue(interfaceBinding.contains("var count: UInt32"))
         assertTrue(interfaceBinding.contains("UInt32(PlatformComInterop.invokeUInt32Method(pointer, 6).getOrThrow())"))
-        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeUInt32Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 7, value.value).getOrThrow()"))
     }
 
     @Test
@@ -8524,10 +8524,10 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(runtimeBinding.contains("var progress: Float32"))
         assertTrue(runtimeBinding.contains("Float32(PlatformComInterop.invokeFloat32Method(pointer, 6).getOrThrow())"))
-        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeFloat32Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeUnitMethodWithFloat32Arg(pointer, 7, value.value).getOrThrow()"))
         assertTrue(interfaceBinding.contains("var progress: Float32"))
         assertTrue(interfaceBinding.contains("Float32(PlatformComInterop.invokeFloat32Method(pointer, 6).getOrThrow())"))
-        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeFloat32Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeUnitMethodWithFloat32Arg(pointer, 7, value.value).getOrThrow()"))
     }
 
     @Test
@@ -8575,13 +8575,15 @@ class KotlinBindingGeneratorTest {
         val files = KotlinBindingGenerator().generate(model)
         val runtimeBinding = files.first { it.relativePath == "Example/Contracts/ToggleHost.kt" }.content
         val interfaceBinding = files.first { it.relativePath == "Example/Contracts/IToggleHost.kt" }.content
+        val normalizedRuntimeBinding = runtimeBinding.replace(Regex("\\s+"), "")
+        val normalizedInterfaceBinding = interfaceBinding.replace(Regex("\\s+"), "")
 
         assertTrue(runtimeBinding.contains("var enabled: WinRtBoolean"))
         assertTrue(runtimeBinding.contains("WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 6).getOrThrow())"))
-        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeBooleanSetter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(normalizedRuntimeBinding.contains("PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer,7,if(value.value)1uelse0u).getOrThrow()"))
         assertTrue(interfaceBinding.contains("var enabled: WinRtBoolean"))
         assertTrue(interfaceBinding.contains("WinRtBoolean(PlatformComInterop.invokeBooleanGetter(pointer, 6).getOrThrow())"))
-        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeBooleanSetter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(normalizedInterfaceBinding.contains("PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer,7,if(value.value)1uelse0u).getOrThrow()"))
     }
 
     @Test
@@ -8632,10 +8634,10 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(runtimeBinding.contains("var ratio: Float64"))
         assertTrue(runtimeBinding.contains("Float64(PlatformComInterop.invokeFloat64Method(pointer, 6).getOrThrow())"))
-        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeFloat64Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeUnitMethodWithFloat64Arg(pointer, 7, value.value).getOrThrow()"))
         assertTrue(interfaceBinding.contains("var ratio: Float64"))
         assertTrue(interfaceBinding.contains("Float64(PlatformComInterop.invokeFloat64Method(pointer, 6).getOrThrow())"))
-        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeFloat64Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeUnitMethodWithFloat64Arg(pointer, 7, value.value).getOrThrow()"))
     }
 
     @Test
@@ -8686,10 +8688,10 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(runtimeBinding.contains("var amount: Int64"))
         assertTrue(runtimeBinding.contains("Int64(PlatformComInterop.invokeInt64Getter(pointer, 6).getOrThrow())"))
-        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeInt64Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 7, value.value).getOrThrow()"))
         assertTrue(interfaceBinding.contains("var amount: Int64"))
         assertTrue(interfaceBinding.contains("Int64(PlatformComInterop.invokeInt64Getter(pointer, 6).getOrThrow())"))
-        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeInt64Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 7, value.value).getOrThrow()"))
     }
 
     @Test
@@ -8740,10 +8742,10 @@ class KotlinBindingGeneratorTest {
 
         assertTrue(runtimeBinding.contains("var count: UInt64"))
         assertTrue(runtimeBinding.contains("UInt64(PlatformComInterop.invokeInt64Getter(pointer, 6).getOrThrow().toULong())"))
-        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeUInt64Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(runtimeBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 7, value.value.toLong()).getOrThrow()"))
         assertTrue(interfaceBinding.contains("var count: UInt64"))
         assertTrue(interfaceBinding.contains("UInt64(PlatformComInterop.invokeInt64Getter(pointer, 6).getOrThrow().toULong())"))
-        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeUInt64Setter(pointer, 7, value.value).getOrThrow()"))
+        assertTrue(interfaceBinding.contains("PlatformComInterop.invokeUnitMethodWithInt64Arg(pointer, 7, value.value.toLong()).getOrThrow()"))
     }
 
     @Test
@@ -9015,10 +9017,10 @@ class KotlinBindingGeneratorTest {
         assertTrue(iWindowBinding.contains("fun put_Title("))
         assertTrue(iWindowBinding.contains("PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 15,"))
         assertTrue(iWindowBinding.contains("fun put_Content("))
-        assertTrue(iWindowBinding.contains("PlatformComInterop.invokeObjectSetter(pointer, 9,"))
+        assertTrue(iWindowBinding.contains("PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 9,"))
         assertFalse(files.any { it.relativePath == "Microsoft/UI/Xaml/IApplicationOverrides.kt" })
         assertTrue(applicationBinding.contains("protected open fun onLaunched(args: LaunchActivatedEventArgs)"))
-        assertTrue(normalizedApplicationBinding.contains("PlatformComInterop.invokeObjectSetter(pointer,6,args.pointer).getOrThrow()"))
+        assertTrue(normalizedApplicationBinding.contains("PlatformComInterop.invokeUnitMethodWithObjectArg(pointer,6,args.pointer).getOrThrow()"))
     }
 
     @Test
@@ -9162,9 +9164,9 @@ class KotlinBindingGeneratorTest {
         assertFalse(files.any { it.relativePath == "Example/Xaml/IWidgetOverrides.kt" })
         assertFalse(files.any { it.relativePath == "Example/Xaml/IWidgetOverrides2.kt" })
         assertTrue(widgetBinding.contains("protected open fun onLaunch(args: LaunchArgs)"))
-        assertTrue(normalizedWidgetBinding.contains("invokeObjectSetter(pointer,6,args.pointer).getOrThrow()"))
+        assertTrue(normalizedWidgetBinding.contains("invokeUnitMethodWithObjectArg(pointer,6,args.pointer).getOrThrow()"))
         assertTrue(widgetBinding.contains("protected open fun onClose(args: CloseArgs)"))
-        assertTrue(normalizedWidgetBinding.contains("invokeObjectSetter(pointer,7,args.pointer).getOrThrow()"))
+        assertTrue(normalizedWidgetBinding.contains("invokeUnitMethodWithObjectArg(pointer,7,args.pointer).getOrThrow()"))
     }
 
     @Test
@@ -9208,7 +9210,7 @@ class KotlinBindingGeneratorTest {
         assertTrue(widgetBinding.contains("private val backing_Title"))
         assertTrue(widgetBinding.contains("protected open var title: String"))
         assertTrue(widgetBinding.contains("invokeHStringMethod(pointer, 6).getOrThrow()"))
-        assertTrue(widgetBinding.contains("invokeStringSetter(pointer, 7, value).getOrThrow()"))
+        assertTrue(widgetBinding.contains("invokeUnitMethodWithStringArg(pointer, 7, value).getOrThrow()"))
     }
 
     @Test
@@ -9297,10 +9299,10 @@ class KotlinBindingGeneratorTest {
         assertTrue(baseBinding.contains("protected open fun onLaunch(args: LaunchArgs)"))
         assertTrue(baseBinding.contains("protected open var title: String"))
         assertTrue(derivedBinding.contains("protected override fun onLaunch(args: LaunchArgs)"))
-        assertTrue(normalizedDerivedBinding.contains("invokeObjectSetter(pointer,9,args.pointer).getOrThrow()"))
+        assertTrue(normalizedDerivedBinding.contains("invokeUnitMethodWithObjectArg(pointer,9,args.pointer).getOrThrow()"))
         assertTrue(derivedBinding.contains("protected override var title: String"))
         assertTrue(derivedBinding.contains("invokeHStringMethod(pointer, 10).getOrThrow()"))
-        assertTrue(derivedBinding.contains("invokeStringSetter(pointer, 11, value).getOrThrow()"))
+        assertTrue(derivedBinding.contains("invokeUnitMethodWithStringArg(pointer, 11, value).getOrThrow()"))
     }
 
     @Test
@@ -9385,7 +9387,7 @@ class KotlinBindingGeneratorTest {
         val normalizedDerivedBinding = derivedBinding.replace(Regex("\\s+"), "")
 
         assertTrue(derivedBinding.contains("protected override fun onLaunch(args: LaunchArgs)"))
-        assertTrue(normalizedDerivedBinding.contains("invokeObjectSetter(pointer,7,args.pointer).getOrThrow()"))
+        assertTrue(normalizedDerivedBinding.contains("invokeUnitMethodWithObjectArg(pointer,7,args.pointer).getOrThrow()"))
     }
 
     @Test

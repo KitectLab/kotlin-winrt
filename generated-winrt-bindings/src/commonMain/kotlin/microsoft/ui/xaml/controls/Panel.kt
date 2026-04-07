@@ -36,7 +36,7 @@ public open class Panel(
         backing_Background.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 8, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 8, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -55,7 +55,7 @@ public open class Panel(
         backing_BackgroundTransition.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 13, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 13, (value as
           Inspectable).pointer).getOrThrow()
     }
 
@@ -85,7 +85,7 @@ public open class Panel(
         backing_ChildrenTransitions.set(value)
         return
       }
-      PlatformComInterop.invokeObjectSetter(pointer, 11, (value as
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 11, (value as
           Inspectable).pointer).getOrThrow()
     }
 

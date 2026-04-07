@@ -32,7 +32,7 @@ internal open class IApplicationLanguagesStatics(
       }
     }
     set(value) {
-      PlatformComInterop.invokeStringSetter(pointer, 7, value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 7, value).getOrThrow()
     }
 
   public companion object : WinRtInterfaceMetadata {

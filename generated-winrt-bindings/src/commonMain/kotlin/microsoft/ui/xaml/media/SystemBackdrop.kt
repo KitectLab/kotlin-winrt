@@ -39,7 +39,7 @@ public open class SystemBackdrop(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 7,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 7,
         projectedObjectArgumentPointer(disconnectedTarget,
         "Microsoft.UI.Composition.ICompositionSupportsSystemBackdrop",
         "{397dafe4-b6c2-5bb9-951d-f5707de8b7bc}")).getOrThrow()

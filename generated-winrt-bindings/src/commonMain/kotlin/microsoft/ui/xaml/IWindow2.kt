@@ -42,7 +42,7 @@ private class IWindow2Projection(
   override var systemBackdrop: SystemBackdrop
     get() = SystemBackdrop(PlatformComInterop.invokeObjectMethod(pointer, 6).getOrThrow())
     set(value) {
-      PlatformComInterop.invokeObjectSetter(pointer, 7, projectedObjectArgumentPointer(value,
+      PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 7, projectedObjectArgumentPointer(value,
           "Microsoft.UI.Xaml.Media.SystemBackdrop",
           "rc(Microsoft.UI.Xaml.Media.SystemBackdrop;{5aeed5c4-37ac-5852-b73f-1b76ebc3205f})")).getOrThrow()
     }

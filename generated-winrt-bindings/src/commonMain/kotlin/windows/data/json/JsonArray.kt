@@ -100,7 +100,7 @@ public open class JsonArray(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 14, projectedObjectArgumentPointer(value,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 14, projectedObjectArgumentPointer(value,
         "Windows.Data.Json.IJsonValue", "{a3219ecb-f0b3-4dcd-beee-19d48cd3ed1e}")).getOrThrow()
   }
 

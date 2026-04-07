@@ -49,6 +49,24 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
+    override fun invokeUnitMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with object input is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithFloat32Arg(instance: ComPtr, vtableIndex: Int, value: Float): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with Float32 input is not wired yet"),
+        )
+    }
+
+    override fun invokeUnitMethodWithFloat64Arg(instance: ComPtr, vtableIndex: Int, value: Double): Result<Unit> {
+        return Result.failure(
+            UnsupportedOperationException("Native Unit method invocation with Float64 input is not wired yet"),
+        )
+    }
+
     override fun invokeUnitMethodWithTwoInt32Args(instance: ComPtr, vtableIndex: Int, first: Int, second: Int): Result<Unit> {
         return Result.failure(
             UnsupportedOperationException("Native Unit method invocation with two Int32 inputs is not wired yet"),
@@ -464,12 +482,6 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
-    override fun invokeObjectSetter(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Unit> {
-        return Result.failure(
-            UnsupportedOperationException("Native object setter invocation is not wired yet"),
-        )
-    }
-
     override fun invokeInt64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Long> {
         return Result.failure(
             UnsupportedOperationException("Native Int64 method invocation with object input is not wired yet"),
@@ -521,54 +533,6 @@ private object MingwPlatformComInterop : ComInterop {
     override fun invokeUInt64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ULong> {
         return Result.failure(
             UnsupportedOperationException("Native UInt64 method invocation with UInt32 input is not wired yet"),
-        )
-    }
-
-    override fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit> {
-        return Result.failure(
-            UnsupportedOperationException("Native HSTRING setter invocation is not wired yet"),
-        )
-    }
-
-    override fun invokeInt32Setter(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit> {
-        return Result.failure(
-            UnsupportedOperationException("Native Int32 setter invocation is not wired yet"),
-        )
-    }
-
-    override fun invokeUInt32Setter(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Unit> {
-        return Result.failure(
-            UnsupportedOperationException("Native UInt32 setter invocation is not wired yet"),
-        )
-    }
-
-    override fun invokeFloat32Setter(instance: ComPtr, vtableIndex: Int, value: Float): Result<Unit> {
-        return Result.failure(
-            UnsupportedOperationException("Native Float32 setter invocation is not wired yet"),
-        )
-    }
-
-    override fun invokeBooleanSetter(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Unit> {
-        return Result.failure(
-            UnsupportedOperationException("Native Boolean setter invocation is not wired yet"),
-        )
-    }
-
-    override fun invokeFloat64Setter(instance: ComPtr, vtableIndex: Int, value: Double): Result<Unit> {
-        return Result.failure(
-            UnsupportedOperationException("Native Float64 setter invocation is not wired yet"),
-        )
-    }
-
-    override fun invokeInt64Setter(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit> {
-        return Result.failure(
-            UnsupportedOperationException("Native Int64 setter invocation is not wired yet"),
-        )
-    }
-
-    override fun invokeUInt64Setter(instance: ComPtr, vtableIndex: Int, value: ULong): Result<Unit> {
-        return Result.failure(
-            UnsupportedOperationException("Native UInt64 setter invocation is not wired yet"),
         )
     }
 

@@ -35,7 +35,7 @@ public open class Calendar(
         backing_Day.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 53, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 53, value.value).getOrThrow()
     }
 
   private val backing_DayOfWeek: RuntimeProperty<DayOfWeek> =
@@ -63,7 +63,7 @@ public open class Calendar(
         backing_Era.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 23, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 23, value.value).getOrThrow()
     }
 
   private val backing_FirstDayInThisMonth: RuntimeProperty<Int32> = RuntimeProperty<Int32>(Int32(0))
@@ -165,7 +165,7 @@ public open class Calendar(
         backing_Hour.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 74, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 74, value.value).getOrThrow()
     }
 
   private val backing_IsDaylightSavingTime: RuntimeProperty<WinRtBoolean> =
@@ -276,7 +276,7 @@ public open class Calendar(
         backing_Minute.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 79, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 79, value.value).getOrThrow()
     }
 
   private val backing_Month: RuntimeProperty<Int32> = RuntimeProperty<Int32>(Int32(0))
@@ -293,7 +293,7 @@ public open class Calendar(
         backing_Month.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 40, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 40, value.value).getOrThrow()
     }
 
   private val backing_Nanosecond: RuntimeProperty<Int32> = RuntimeProperty<Int32>(Int32(0))
@@ -310,7 +310,7 @@ public open class Calendar(
         backing_Nanosecond.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 89, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 89, value.value).getOrThrow()
     }
 
   private val backing_NumberOfDaysInThisMonth: RuntimeProperty<Int32> =
@@ -421,7 +421,7 @@ public open class Calendar(
         backing_NumeralSystem.set(value)
         return
       }
-      PlatformComInterop.invokeStringSetter(pointer, 11, value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 11, value).getOrThrow()
     }
 
   private val backing_Period: RuntimeProperty<Int32> = RuntimeProperty<Int32>(Int32(0))
@@ -438,7 +438,7 @@ public open class Calendar(
         backing_Period.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 66, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 66, value.value).getOrThrow()
     }
 
   private val backing_ResolvedLanguage: RuntimeProperty<String> = RuntimeProperty<String>("")
@@ -472,7 +472,7 @@ public open class Calendar(
         backing_Second.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 84, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 84, value.value).getOrThrow()
     }
 
   private val backing_Year: RuntimeProperty<Int32> = RuntimeProperty<Int32>(Int32(0))
@@ -489,7 +489,7 @@ public open class Calendar(
         backing_Year.set(value)
         return
       }
-      PlatformComInterop.invokeInt32Setter(pointer, 31, value.value).getOrThrow()
+      PlatformComInterop.invokeUnitMethodWithInt32Arg(pointer, 31, value.value).getOrThrow()
     }
 
   public constructor(languages: Iterable<String>) :
@@ -1128,7 +1128,7 @@ public open class Calendar(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeObjectSetter(pointer, 95, projectedObjectArgumentPointer(other,
+    PlatformComInterop.invokeUnitMethodWithObjectArg(pointer, 95, projectedObjectArgumentPointer(other,
         "Windows.Globalization.Calendar",
         "rc(Windows.Globalization.Calendar;{ca30221d-86d9-40fb-a26b-d44eb7cf08ea})")).getOrThrow()
   }
