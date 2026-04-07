@@ -118,93 +118,21 @@ internal object JvmWinRtBooleanResultDelegates {
     }
 
     private fun booleanAbiMethodType(parameterKinds: List<WinRtDelegateValueKind>): MethodType {
-        val parameterTypes = parameterKinds.map { kind ->
-            when (kind) {
-                WinRtDelegateValueKind.OBJECT,
-                WinRtDelegateValueKind.STRING,
-                -> MemorySegment::class.java
-                WinRtDelegateValueKind.INT32,
-                WinRtDelegateValueKind.UINT32,
-                WinRtDelegateValueKind.BOOLEAN,
-                -> Int::class.javaPrimitiveType
-                WinRtDelegateValueKind.INT64,
-                WinRtDelegateValueKind.UINT64,
-                -> Long::class.javaPrimitiveType
-                WinRtDelegateValueKind.FLOAT32 -> Float::class.javaPrimitiveType
-                WinRtDelegateValueKind.FLOAT64 -> Double::class.javaPrimitiveType
-            }
-        }
-        return MethodType.methodType(Int::class.javaPrimitiveType, MemorySegment::class.java, *parameterTypes.toTypedArray(), MemorySegment::class.java)
+        return MethodType.methodType(
+            Int::class.javaPrimitiveType,
+            MemorySegment::class.java,
+            *JvmWinRtDelegateArgumentSupport.abiParameterTypes(parameterKinds),
+            MemorySegment::class.java,
+        )
     }
 
     private fun booleanDescriptor(parameterKinds: List<WinRtDelegateValueKind>): FunctionDescriptor {
-        val layouts = parameterKinds.map { layoutFor(it) }.toTypedArray()
+        val layouts = JvmWinRtDelegateArgumentSupport.abiParameterLayouts(parameterKinds)
         return FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, *layouts, ValueLayout.ADDRESS)
     }
 
-    private fun decodeArguments(parameterKinds: List<WinRtDelegateValueKind>, args: Array<out Any?>): Array<Any?> {
-        return parameterKinds.mapIndexed { index, kind -> decodeArgument(kind, args[index]) }.toTypedArray()
-    }
-
-    private fun layoutFor(kind: WinRtDelegateValueKind): ValueLayout {
-        return when (kind) {
-            WinRtDelegateValueKind.OBJECT,
-            WinRtDelegateValueKind.STRING,
-            -> ValueLayout.ADDRESS
-            WinRtDelegateValueKind.INT32,
-            WinRtDelegateValueKind.UINT32,
-            WinRtDelegateValueKind.BOOLEAN,
-            -> ValueLayout.JAVA_INT
-            WinRtDelegateValueKind.INT64,
-            WinRtDelegateValueKind.UINT64,
-            -> ValueLayout.JAVA_LONG
-            WinRtDelegateValueKind.FLOAT32 -> ValueLayout.JAVA_FLOAT
-            WinRtDelegateValueKind.FLOAT64 -> ValueLayout.JAVA_DOUBLE
-        }
-    }
-
-    private fun decodeArgument(kind: WinRtDelegateValueKind, raw: Any?): Any? {
-        return when (kind) {
-            WinRtDelegateValueKind.OBJECT -> ComPtr(AbiIntPtr((raw as MemorySegment).address()))
-            WinRtDelegateValueKind.STRING -> PlatformHStringBridge.toKotlinString(HString((raw as MemorySegment).address()))
-            WinRtDelegateValueKind.INT32 -> when (raw) {
-                is Int -> raw
-                is Number -> raw.toInt()
-                else -> error("Expected Int32 delegate argument, got ${raw?.javaClass?.name ?: "null"}")
-            }
-            WinRtDelegateValueKind.UINT32 -> when (raw) {
-                is Int -> raw.toUInt()
-                is Number -> raw.toInt().toUInt()
-                else -> error("Expected UInt32 delegate argument, got ${raw?.javaClass?.name ?: "null"}")
-            }
-            WinRtDelegateValueKind.BOOLEAN -> when (raw) {
-                is Int -> raw != 0
-                is Boolean -> raw
-                is Number -> raw.toInt() != 0
-                else -> error("Expected Boolean delegate argument, got ${raw?.javaClass?.name ?: "null"}")
-            }
-            WinRtDelegateValueKind.INT64 -> when (raw) {
-                is Long -> raw
-                is Number -> raw.toLong()
-                else -> error("Expected Int64 delegate argument, got ${raw?.javaClass?.name ?: "null"}")
-            }
-            WinRtDelegateValueKind.UINT64 -> when (raw) {
-                is Long -> raw.toULong()
-                is Number -> raw.toLong().toULong()
-                else -> error("Expected UInt64 delegate argument, got ${raw?.javaClass?.name ?: "null"}")
-            }
-            WinRtDelegateValueKind.FLOAT32 -> when (raw) {
-                is Float -> raw
-                is Number -> raw.toFloat()
-                else -> error("Expected Float32 delegate argument, got ${raw?.javaClass?.name ?: "null"}")
-            }
-            WinRtDelegateValueKind.FLOAT64 -> when (raw) {
-                is Double -> raw
-                is Number -> raw.toDouble()
-                else -> error("Expected Float64 delegate argument, got ${raw?.javaClass?.name ?: "null"}")
-            }
-        }
-    }
+    private fun decodeArguments(parameterKinds: List<WinRtDelegateValueKind>, args: Array<out Any?>): Array<Any?> =
+        JvmWinRtDelegateArgumentSupport.decodeArguments(parameterKinds, args)
 
     private fun createDelegate(
         iid: Guid,
