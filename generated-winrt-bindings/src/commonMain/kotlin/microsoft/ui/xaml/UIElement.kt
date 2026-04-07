@@ -2314,8 +2314,8 @@ public open class UIElement(
     if (pointer.isNull) {
       return WinRtBoolean.FALSE
     }
-    return WinRtBoolean(PlatformComInterop.invokeBooleanMethodWithInt32Arg(pointer, 226,
-        value.value).getOrThrow())
+    return WinRtBoolean(PlatformComInterop.invokeBooleanMethodWithUInt32Arg(pointer, 226,
+        value.value.toUInt()).getOrThrow())
   }
 
   override fun startAnimation(animation: ICompositionAnimationBase) {

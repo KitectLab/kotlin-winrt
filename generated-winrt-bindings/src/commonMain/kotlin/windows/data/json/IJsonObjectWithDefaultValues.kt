@@ -80,8 +80,8 @@ private class IJsonObjectWithDefaultValuesProjection(
       "rc(Windows.Data.Json.JsonArray;{08c1ddb6-0cbd-4a9a-b5d3-2f852dc37e81})")).getOrThrow().requireObject())
 
   override fun getNamedBoolean(name: String, defaultValue: WinRtBoolean): WinRtBoolean =
-      WinRtBoolean(PlatformComInterop.invokeMethodWithStringAndBooleanArgs(pointer, 32,
-      ComMethodResultKind.BOOLEAN, name, defaultValue.value).getOrThrow().requireBoolean())
+      WinRtBoolean(PlatformComInterop.invokeMethodWithStringAndInt32Args(pointer, 32,
+      ComMethodResultKind.BOOLEAN, name, if (defaultValue.value) 1 else 0).getOrThrow().requireBoolean())
 
   override fun getNamedValue(name: String): JsonValue =
       JsonValue(PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 13, name).getOrThrow())

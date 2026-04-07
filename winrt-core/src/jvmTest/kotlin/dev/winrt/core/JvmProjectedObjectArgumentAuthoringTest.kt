@@ -1798,16 +1798,16 @@ class JvmProjectedObjectArgumentAuthoringTest {
             assertEquals("fr-FR", value.toKotlinString())
         }
         assertBoundsFailure(PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer, 7, 2u))
-        assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithUInt32AndStringArgs(pointer, 11, 2u, "de-DE"))
-        assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithUInt32AndStringArgs(pointer, 12, 3u, "de-DE"))
+        assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithInt32AndStringArgs(pointer, 11, 2, "de-DE"))
+        assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithInt32AndStringArgs(pointer, 12, 3, "de-DE"))
         assertBoundsFailure(PlatformComInterop.invokeUnitMethodWithUInt32Arg(pointer, 13, 2u))
         assertIndexOfResult(invokeStringIndexOf(pointer, 10, "fr-FR"), true, 1u)
         assertIndexOfResult(invokeStringIndexOf(pointer, 10, "de-DE"), false, 0u)
 
-        PlatformComInterop.invokeUnitMethodWithUInt32AndStringArgs(pointer, 11, 0u, "de-DE").getOrThrow()
+        PlatformComInterop.invokeUnitMethodWithInt32AndStringArgs(pointer, 11, 0, "de-DE").getOrThrow()
         assertEquals("de-DE", values[0])
 
-        PlatformComInterop.invokeUnitMethodWithUInt32AndStringArgs(pointer, 12, 1u, "es-ES").getOrThrow()
+        PlatformComInterop.invokeUnitMethodWithInt32AndStringArgs(pointer, 12, 1, "es-ES").getOrThrow()
         assertEquals(listOf("de-DE", "es-ES", "fr-FR"), values)
 
         PlatformComInterop.invokeUnitMethodWithStringArg(pointer, 14, "ja-JP").getOrThrow()

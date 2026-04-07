@@ -44,12 +44,12 @@ public open class IBindableVector(
   }
 
   public fun setAt(index: UInt32, value: Inspectable) {
-    PlatformComInterop.invokeUnitMethodWithUInt32AndObjectArgs(pointer, 11, index.value,
+    PlatformComInterop.invokeUnitMethodWithInt32AndObjectArgs(pointer, 11, index.value.toInt(),
         projectedObjectArgumentPointer(value, "Object", "cinterface(IInspectable)")).getOrThrow()
   }
 
   public fun insertAt(index: UInt32, value: Inspectable) {
-    PlatformComInterop.invokeUnitMethodWithUInt32AndObjectArgs(pointer, 12, index.value,
+    PlatformComInterop.invokeUnitMethodWithInt32AndObjectArgs(pointer, 12, index.value.toInt(),
         projectedObjectArgumentPointer(value, "Object", "cinterface(IInspectable)")).getOrThrow()
   }
 

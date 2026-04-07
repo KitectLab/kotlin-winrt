@@ -58,7 +58,7 @@ public open class UIElementCollection(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeUnitMethodWithUInt32AndObjectArgs(pointer, 11, index.value,
+    PlatformComInterop.invokeUnitMethodWithInt32AndObjectArgs(pointer, 11, index.value.toInt(),
         projectedObjectArgumentPointer(value, "Microsoft.UI.Xaml.UIElement",
         "rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b})")).getOrThrow()
   }
@@ -67,7 +67,7 @@ public open class UIElementCollection(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeUnitMethodWithUInt32AndObjectArgs(pointer, 12, index.value,
+    PlatformComInterop.invokeUnitMethodWithInt32AndObjectArgs(pointer, 12, index.value.toInt(),
         projectedObjectArgumentPointer(value, "Microsoft.UI.Xaml.UIElement",
         "rc(Microsoft.UI.Xaml.UIElement;{c3c01020-320c-5cf6-9d24-d396bbfa4d8b})")).getOrThrow()
   }
@@ -114,8 +114,8 @@ public open class UIElementCollection(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeUnitMethodWithTwoUInt32Args(pointer, 6, oldIndex.value,
-        newIndex.value).getOrThrow()
+    PlatformComInterop.invokeUnitMethodWithTwoInt32Args(pointer, 6, oldIndex.value.toInt(),
+        newIndex.value.toInt()).getOrThrow()
   }
 
   public companion object : WinRtRuntimeClassMetadata {

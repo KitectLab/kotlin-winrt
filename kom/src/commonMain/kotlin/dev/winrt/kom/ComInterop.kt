@@ -62,6 +62,8 @@ interface ComInterop {
     fun queryInterface(instance: ComPtr, iid: Guid): Result<ComPtr>
     fun addRef(instance: ComPtr): UInt
     fun release(instance: ComPtr): UInt
+
+    // Core kernel
     fun invokeUnitMethod(instance: ComPtr, vtableIndex: Int): Result<Unit>
     fun invokeUnitMethodWithArgs(instance: ComPtr, vtableIndex: Int, vararg arguments: Any): Result<Unit>
     fun invokeUnitMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit>
@@ -73,21 +75,11 @@ interface ComInterop {
     fun invokeUnitMethodWithInt64AndInt32Args(instance: ComPtr, vtableIndex: Int, first: Long, second: Int): Result<Unit>
     fun invokeUnitMethodWithTwoInt64Args(instance: ComPtr, vtableIndex: Int, first: Long, second: Long): Result<Unit>
     fun invokeUnitMethodWithObjectAndInt32Args(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: Int): Result<Unit>
-    fun invokeUnitMethodWithObjectAndBooleanArgs(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: Boolean): Result<Unit> =
-        invokeUnitMethodWithObjectAndInt32Args(instance, vtableIndex, first, if (second) 1 else 0)
     fun invokeUnitMethodWithInt32AndObjectArgs(instance: ComPtr, vtableIndex: Int, first: Int, second: ComPtr): Result<Unit>
     fun invokeUnitMethodWithObjectAndInt64Args(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: Long): Result<Unit>
     fun invokeUnitMethodWithInt64AndObjectArgs(instance: ComPtr, vtableIndex: Int, first: Long, second: ComPtr): Result<Unit>
     fun invokeUnitMethodWithStringAndInt32Args(instance: ComPtr, vtableIndex: Int, first: String, second: Int): Result<Unit>
     fun invokeUnitMethodWithInt32AndStringArgs(instance: ComPtr, vtableIndex: Int, first: Int, second: String): Result<Unit>
-    fun invokeUnitMethodWithStringAndUInt32Args(instance: ComPtr, vtableIndex: Int, first: String, second: UInt): Result<Unit> =
-        invokeUnitMethodWithStringAndInt32Args(instance, vtableIndex, first, second.toInt())
-    fun invokeUnitMethodWithUInt32AndStringArgs(instance: ComPtr, vtableIndex: Int, first: UInt, second: String): Result<Unit> =
-        invokeUnitMethodWithInt32AndStringArgs(instance, vtableIndex, first.toInt(), second)
-    fun invokeUnitMethodWithStringAndBooleanArgs(instance: ComPtr, vtableIndex: Int, first: String, second: Boolean): Result<Unit> =
-        invokeUnitMethodWithStringAndInt32Args(instance, vtableIndex, first, if (second) 1 else 0)
-    fun invokeUnitMethodWithBooleanAndStringArgs(instance: ComPtr, vtableIndex: Int, first: Boolean, second: String): Result<Unit> =
-        invokeUnitMethodWithInt32AndStringArgs(instance, vtableIndex, if (first) 1 else 0, second)
     fun invokeUnitMethodWithStringAndInt64Args(instance: ComPtr, vtableIndex: Int, first: String, second: Long): Result<Unit>
     fun invokeUnitMethodWithInt64AndStringArgs(instance: ComPtr, vtableIndex: Int, first: Long, second: String): Result<Unit>
     fun invokeUnitMethodWithTwoStringArgs(instance: ComPtr, vtableIndex: Int, first: String, second: String): Result<Unit>
@@ -98,8 +90,6 @@ interface ComInterop {
     fun invokeHStringMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<HString>
     fun invokeHStringMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<HString>
     fun invokeHStringMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<HString>
-    fun invokeHStringMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<HString> =
-        invokeHStringMethodWithUInt32Arg(instance, vtableIndex, if (value) 1u else 0u)
     fun invokeHStringMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<HString>
     fun invokeHStringMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<HString>
     fun invokeObjectMethod(instance: ComPtr, vtableIndex: Int): Result<ComPtr>
@@ -108,11 +98,9 @@ interface ComInterop {
     fun invokeObjectMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<ComPtr>
     fun invokeObjectMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ComPtr>
     fun invokeObjectMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ComPtr>
-    fun invokeObjectMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<ComPtr> =
-        invokeObjectMethodWithUInt32Arg(instance, vtableIndex, value.toUInt())
-    fun invokeObjectMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<ComPtr> =
-        invokeObjectMethodWithUInt32Arg(instance, vtableIndex, if (value) 1u else 0u)
     fun invokeObjectMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<ComPtr>
+
+    // Special paths
     fun invokeStructMethodWithArgs(
         instance: ComPtr,
         vtableIndex: Int,
@@ -156,16 +144,10 @@ interface ComInterop {
     fun invokeInt64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Long>
     fun invokeInt64MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Long>
     fun invokeInt64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Long>
-    fun invokeInt64MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Long> =
-        invokeInt64MethodWithUInt32Arg(instance, vtableIndex, if (value) 1u else 0u)
     fun invokeUInt64Method(instance: ComPtr, vtableIndex: Int): Result<ULong>
     fun invokeUInt64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<ULong>
     fun invokeUInt64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ULong>
-    fun invokeUInt64MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<ULong> =
-        invokeUInt64MethodWithUInt32Arg(instance, vtableIndex, value.toUInt())
     fun invokeUInt64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ULong>
-    fun invokeUInt64MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<ULong> =
-        invokeUInt64MethodWithUInt32Arg(instance, vtableIndex, if (value) 1u else 0u)
     fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit>
     fun invokeInt32Setter(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit>
     fun invokeUInt32Setter(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Unit>
@@ -178,52 +160,32 @@ interface ComInterop {
     fun invokeInt32MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Int>
     fun invokeInt32MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Int>
     fun invokeInt32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Int>
-    fun invokeInt32MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Int> =
-        invokeInt32MethodWithUInt32Arg(instance, vtableIndex, if (value) 1u else 0u)
     fun invokeInt32MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Int>
     fun invokeInt32MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Int>
     fun invokeUInt32Method(instance: ComPtr, vtableIndex: Int): Result<UInt>
     fun invokeUInt32MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<UInt>
     fun invokeUInt32MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<UInt>
     fun invokeUInt32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<UInt>
-    fun invokeUInt32MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<UInt> =
-        invokeUInt32MethodWithUInt32Arg(instance, vtableIndex, if (value) 1u else 0u)
     fun invokeUInt32MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<UInt>
     fun invokeUInt32MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<UInt>
     fun invokeBooleanGetter(instance: ComPtr, vtableIndex: Int): Result<Boolean>
     fun invokeBooleanMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Boolean>
     fun invokeBooleanMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Boolean>
     fun invokeBooleanMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Boolean>
-    fun invokeBooleanMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Boolean> =
-        invokeBooleanMethodWithUInt32Arg(instance, vtableIndex, value.toUInt())
-    fun invokeBooleanMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Boolean> =
-        invokeBooleanMethodWithUInt32Arg(instance, vtableIndex, if (value) 1u else 0u)
     fun invokeBooleanMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Boolean>
     fun invokeFloat32Method(instance: ComPtr, vtableIndex: Int): Result<Float>
     fun invokeFloat32MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Float>
     fun invokeFloat32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Float>
-    fun invokeFloat32MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Float> =
-        invokeFloat32MethodWithUInt32Arg(instance, vtableIndex, value.toUInt())
-    fun invokeFloat32MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Float> =
-        invokeFloat32MethodWithUInt32Arg(instance, vtableIndex, if (value) 1u else 0u)
     fun invokeFloat32MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Float>
     fun invokeFloat32MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Float>
     fun invokeFloat64Method(instance: ComPtr, vtableIndex: Int): Result<Double>
     fun invokeFloat64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Double>
     fun invokeFloat64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Double>
-    fun invokeFloat64MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Double> =
-        invokeFloat64MethodWithUInt32Arg(instance, vtableIndex, value.toUInt())
-    fun invokeFloat64MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Double> =
-        invokeFloat64MethodWithUInt32Arg(instance, vtableIndex, if (value) 1u else 0u)
     fun invokeFloat64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Double>
     fun invokeFloat64MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Double>
     fun invokeGuidGetter(instance: ComPtr, vtableIndex: Int): Result<Guid>
     fun invokeGuidMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Guid>
     fun invokeGuidMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Guid>
-    fun invokeGuidMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Guid> =
-        invokeGuidMethodWithInt32Arg(instance, vtableIndex, value.toInt())
-    fun invokeGuidMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Guid> =
-        invokeGuidMethodWithInt32Arg(instance, vtableIndex, if (value) 1 else 0)
     fun invokeGuidMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Guid>
     fun invokeGuidMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Guid>
     fun invokeInt64Getter(instance: ComPtr, vtableIndex: Int): Result<Long>

@@ -27,8 +27,8 @@ internal open class IJsonValueStatics(
       "rc(Windows.Data.Json.JsonValue;{a3219ecb-f0b3-4dcd-beee-19d48cd3ed1e})")).getOrThrow().requireBoolean())
 
   public fun createBooleanValue(input: WinRtBoolean): JsonValue =
-      JsonValue(PlatformComInterop.invokeObjectMethodWithBooleanArg(pointer, 8,
-      input.value).getOrThrow())
+      JsonValue(PlatformComInterop.invokeObjectMethodWithUInt32Arg(pointer, 8,
+      if (input.value) 1u else 0u).getOrThrow())
 
   public fun createStringValue(input: String): JsonValue =
       JsonValue(PlatformComInterop.invokeObjectMethodWithStringArg(pointer, 10, input).getOrThrow())

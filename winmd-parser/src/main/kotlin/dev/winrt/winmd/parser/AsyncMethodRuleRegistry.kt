@@ -9,6 +9,11 @@ internal class AsyncMethodRuleRegistry(
     private val asyncMethodProjectionPlanner: AsyncMethodProjectionPlanner,
     private val projectedObjectArgumentLowering: ProjectedObjectArgumentLowering,
 ) {
+    private data class AsyncKernelArgument(
+        val methodNamePart: String,
+        val expression: String,
+    )
+
     constructor(
         typeNameMapper: TypeNameMapper,
         asyncMethodProjectionPlanner: AsyncMethodProjectionPlanner,
@@ -181,11 +186,11 @@ internal class AsyncMethodRuleRegistry(
             MethodParameterCategory.OBJECT ->
                 "%T.invokeObjectMethodWithObjectArg(pointer, $vtableIndex, $loweredArgument).getOrThrow()"
             MethodParameterCategory.INT32 ->
-                "%T.invokeObjectMethodWithInt32Arg(pointer, $vtableIndex, $loweredArgument).getOrThrow()"
+                "%T.invokeObjectMethodWithUInt32Arg(pointer, $vtableIndex, ($loweredArgument).toUInt()).getOrThrow()"
             MethodParameterCategory.UINT32 ->
                 "%T.invokeObjectMethodWithUInt32Arg(pointer, $vtableIndex, $loweredArgument).getOrThrow()"
             MethodParameterCategory.BOOLEAN ->
-                "%T.invokeObjectMethodWithBooleanArg(pointer, $vtableIndex, $loweredArgument).getOrThrow()"
+                "%T.invokeObjectMethodWithUInt32Arg(pointer, $vtableIndex, if ($loweredArgument) 1u else 0u).getOrThrow()"
             MethodParameterCategory.INT64,
             MethodParameterCategory.EVENT_REGISTRATION_TOKEN ->
                 "%T.invokeObjectMethodWithInt64Arg(pointer, $vtableIndex, $loweredArgument).getOrThrow()"
@@ -202,17 +207,38 @@ internal class AsyncMethodRuleRegistry(
         currentNamespace: String,
         vtableIndex: Int,
     ): String? {
-        val firstToken = first.toAbiDescriptor().methodNamePart
-        val secondToken = second.toAbiDescriptor().methodNamePart
+        val firstArgument = normalizeAsyncTwoArgument(
+            first,
+            asyncArgumentExpression(first, firstName, firstType, currentNamespace),
+        )
+        val secondArgument = normalizeAsyncTwoArgument(
+            second,
+            asyncArgumentExpression(second, secondName, secondType, currentNamespace),
+        )
+        val firstToken = firstArgument.methodNamePart
+        val secondToken = secondArgument.methodNamePart
         val helperNamePart = if (firstToken == secondToken) {
             "Two${firstToken}Args"
         } else {
             "${firstToken}And${secondToken}Args"
         }
-        val firstArgument = asyncArgumentExpression(first, firstName, firstType, currentNamespace)
-        val secondArgument = asyncArgumentExpression(second, secondName, secondType, currentNamespace)
-        return "dev.winrt.kom.requireObject(%T.invokeMethodWith${helperNamePart}(pointer, $vtableIndex, dev.winrt.kom.ComMethodResultKind.OBJECT, $firstArgument, $secondArgument).getOrThrow())"
+        return "dev.winrt.kom.requireObject(%T.invokeMethodWith${helperNamePart}(pointer, $vtableIndex, dev.winrt.kom.ComMethodResultKind.OBJECT, ${firstArgument.expression}, ${secondArgument.expression}).getOrThrow())"
     }
+
+    private fun normalizeAsyncTwoArgument(
+        category: MethodParameterCategory,
+        expression: String,
+    ): AsyncKernelArgument =
+        when (category) {
+            MethodParameterCategory.STRING -> AsyncKernelArgument("String", expression)
+            MethodParameterCategory.OBJECT -> AsyncKernelArgument("Object", expression)
+            MethodParameterCategory.INT32 -> AsyncKernelArgument("Int32", expression)
+            MethodParameterCategory.UINT32 -> AsyncKernelArgument("Int32", "($expression).toInt()")
+            MethodParameterCategory.BOOLEAN -> AsyncKernelArgument("Int32", "if ($expression) 1 else 0")
+            MethodParameterCategory.INT64,
+            MethodParameterCategory.EVENT_REGISTRATION_TOKEN,
+            -> AsyncKernelArgument("Int64", expression)
+        }
 
     private fun asyncGenericInvocation(
         categories: List<MethodParameterCategory>,

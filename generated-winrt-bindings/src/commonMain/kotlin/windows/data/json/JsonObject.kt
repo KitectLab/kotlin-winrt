@@ -138,8 +138,8 @@ public open class JsonObject(
     if (pointer.isNull) {
       return WinRtBoolean.FALSE
     }
-    return WinRtBoolean(PlatformComInterop.invokeMethodWithStringAndBooleanArgs(pointer, 32,
-        ComMethodResultKind.BOOLEAN, name, defaultValue.value).getOrThrow().requireBoolean())
+    return WinRtBoolean(PlatformComInterop.invokeMethodWithStringAndInt32Args(pointer, 32,
+        ComMethodResultKind.BOOLEAN, name, if (defaultValue.value) 1 else 0).getOrThrow().requireBoolean())
   }
 
   public fun setNamedValue(name: String, value: IJsonValue) {

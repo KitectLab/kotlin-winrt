@@ -625,8 +625,8 @@ public open class FrameworkElement(
     if (pointer.isNull) {
       return WinRtBoolean.FALSE
     }
-    return WinRtBoolean(PlatformComInterop.invokeMethodWithStringAndBooleanArgs(pointer, 9,
-        ComMethodResultKind.BOOLEAN, stateName, useTransitions.value).getOrThrow().requireBoolean())
+    return WinRtBoolean(PlatformComInterop.invokeMethodWithStringAndInt32Args(pointer, 9,
+        ComMethodResultKind.BOOLEAN, stateName, if (useTransitions.value) 1 else 0).getOrThrow().requireBoolean())
   }
 
   override fun add_Loaded(handler: RoutedEventHandler): EventRegistrationToken {

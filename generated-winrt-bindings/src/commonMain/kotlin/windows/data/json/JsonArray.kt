@@ -75,7 +75,7 @@ public open class JsonArray(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeUnitMethodWithUInt32AndObjectArgs(pointer, 11, index.value,
+    PlatformComInterop.invokeUnitMethodWithInt32AndObjectArgs(pointer, 11, index.value.toInt(),
         projectedObjectArgumentPointer(value, "Windows.Data.Json.IJsonValue",
         "{a3219ecb-f0b3-4dcd-beee-19d48cd3ed1e}")).getOrThrow()
   }
@@ -84,7 +84,7 @@ public open class JsonArray(
     if (pointer.isNull) {
       return
     }
-    PlatformComInterop.invokeUnitMethodWithUInt32AndObjectArgs(pointer, 12, index.value,
+    PlatformComInterop.invokeUnitMethodWithInt32AndObjectArgs(pointer, 12, index.value.toInt(),
         projectedObjectArgumentPointer(value, "Windows.Data.Json.IJsonValue",
         "{a3219ecb-f0b3-4dcd-beee-19d48cd3ed1e}")).getOrThrow()
   }
