@@ -66,9 +66,8 @@ interface ComInterop {
     // Core kernel
     fun invokeUnitMethod(instance: ComPtr, vtableIndex: Int): Result<Unit>
     fun invokeUnitMethodWithArgs(instance: ComPtr, vtableIndex: Int, vararg arguments: Any): Result<Unit>
-    fun invokeUnitMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit>
-    fun invokeUnitMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Unit>
-    fun invokeUnitMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit>
+    fun invokeRawUnitMethodWithI32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit>
+    fun invokeRawUnitMethodWithI64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit>
     fun invokeUnitMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit>
     fun invokeUnitMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Unit>
     fun invokeUnitMethodWithFloat32Arg(instance: ComPtr, vtableIndex: Int, value: Float): Result<Unit>
@@ -180,6 +179,18 @@ internal fun Result<AbiIntPtr>.asHStringResult(): Result<HString> = map { addres
 internal fun Result<AbiIntPtr>.asComPtrResult(): Result<ComPtr> = map(::ComPtr)
 
 object PlatformComInterop : ComInterop by PlatformComInteropKernel {
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeUnitMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit> =
+        invokeRawUnitMethodWithI32Arg(instance, vtableIndex, value)
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeUnitMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Unit> =
+        invokeRawUnitMethodWithI32Arg(instance, vtableIndex, value.toInt())
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeUnitMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit> =
+        invokeRawUnitMethodWithI64Arg(instance, vtableIndex, value)
+
     @Suppress("NOTHING_TO_INLINE")
     inline fun invokeHStringMethod(instance: ComPtr, vtableIndex: Int): Result<HString> =
         invokeRawAddressMethod(instance, vtableIndex).asHStringResult()

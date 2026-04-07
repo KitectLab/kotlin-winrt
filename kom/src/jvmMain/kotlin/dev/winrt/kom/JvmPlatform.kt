@@ -2511,16 +2511,12 @@ private object JvmPlatformComInterop : ComInterop {
         )
     }
 
-    override fun invokeUnitMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit> {
-        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithInt32Arg", Jdk22Foreign.unitMethodWithInt32Handle, value)
+    override fun invokeRawUnitMethodWithI32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit> {
+        return invokeRawUnit(instance, vtableIndex, "invokeRawUnitMethodWithI32Arg", Jdk22Foreign.unitMethodWithInt32Handle, value)
     }
 
-    override fun invokeUnitMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Unit> {
-        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithUInt32Arg", Jdk22Foreign.unitMethodWithUInt32Handle, value)
-    }
-
-    override fun invokeUnitMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit> {
-        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithInt64Arg", Jdk22Foreign.unitMethodWithInt64Handle, value)
+    override fun invokeRawUnitMethodWithI64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit> {
+        return invokeRawUnit(instance, vtableIndex, "invokeRawUnitMethodWithI64Arg", Jdk22Foreign.unitMethodWithInt64Handle, value)
     }
 
     override fun invokeUnitMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit> {
