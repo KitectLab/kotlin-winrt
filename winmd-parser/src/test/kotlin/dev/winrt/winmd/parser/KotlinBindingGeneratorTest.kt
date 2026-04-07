@@ -5449,6 +5449,40 @@ class KotlinBindingGeneratorTest {
     }
 
     @Test
+    fun generates_string_runtime_methods_with_boolean_arguments() {
+        val model = dev.winrt.winmd.plugin.WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Runtime",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Runtime",
+                            name = "BooleanArgumentHost",
+                            kind = WinMdTypeKind.RuntimeClass,
+                            methods = listOf(
+                                WinMdMethod(
+                                    name = "Render",
+                                    returnType = "String",
+                                    vtableIndex = 6,
+                                    parameters = listOf(WinMdParameter(name = "flag", type = "Boolean")),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val files = KotlinBindingGenerator().generate(model)
+        val binding = files.first { it.relativePath == "Example/Runtime/BooleanArgumentHost.kt" }.content
+        val normalizedBinding = binding.replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("fun render(flag: WinRtBoolean): String"))
+        assertTrue(normalizedBinding.contains("PlatformComInterop.invokeHStringMethodWithUInt32Arg(pointer,6,if(flag.value)1uelse0u).getOrThrow()"))
+    }
+
+    @Test
     fun generates_json_array_uint32_object_call_from_real_metadata_model() {
         val universalContract = WindowsSdkReferences.findContract(
             contractName = "Windows.Foundation.UniversalApiContract",

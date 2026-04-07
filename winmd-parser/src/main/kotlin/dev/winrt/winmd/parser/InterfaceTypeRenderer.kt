@@ -2288,7 +2288,7 @@ internal class InterfaceTypeRenderer(
         argumentName: String?,
     ): CodeBlock {
         if (parameterCategory == null) {
-            return zeroArgumentUnaryInterfaceAbiCall(vtableIndex, returnKind)
+            return zeroArgumentUnaryAbiCall(vtableIndex, returnKind)
         }
         val argument = requireNotNull(argumentName)
         val loweredArgument = unaryArgumentExpression(
@@ -2297,83 +2297,14 @@ internal class InterfaceTypeRenderer(
             category = parameterCategory,
             currentNamespace = currentNamespace,
         )
-        return when {
-            returnKind == MethodReturnKind.UNIT ->
-                unitUnaryInterfaceAbiCall(vtableIndex, parameterCategory, argument, loweredArgument)
-            returnKind == MethodReturnKind.UINT64 &&
-                (parameterCategory == MethodParameterCategory.INT64 || parameterCategory == MethodParameterCategory.EVENT_REGISTRATION_TOKEN) ->
-                error("Unsupported unary interface return kind: $returnKind")
-            else -> AbiCallCatalog.unaryMethod(
-                returnToken = returnKind.unaryMethodAbiToken(),
-                parameterCategory = parameterCategory,
-                vtableIndex = vtableIndex,
-                argumentExpression = unaryInterfaceAbiArgument(parameterCategory, argument, loweredArgument),
-            )
-        }
-    }
-
-    private fun zeroArgumentUnaryInterfaceAbiCall(
-        vtableIndex: Int,
-        returnKind: MethodReturnKind,
-    ): CodeBlock = when (returnKind) {
-        MethodReturnKind.STRING -> AbiCallCatalog.hstringMethod(vtableIndex)
-        MethodReturnKind.FLOAT32 -> AbiCallCatalog.float32Method(vtableIndex)
-        MethodReturnKind.FLOAT64 -> AbiCallCatalog.float64Method(vtableIndex)
-        MethodReturnKind.DATE_TIME,
-        MethodReturnKind.TIME_SPAN,
-        MethodReturnKind.INT64,
-        MethodReturnKind.EVENT_REGISTRATION_TOKEN -> AbiCallCatalog.int64Getter(vtableIndex)
-        MethodReturnKind.BOOLEAN -> AbiCallCatalog.booleanMethod(vtableIndex)
-        MethodReturnKind.INT32 -> AbiCallCatalog.int32Method(vtableIndex)
-        MethodReturnKind.UINT32 -> AbiCallCatalog.uint32Method(vtableIndex)
-        MethodReturnKind.UINT64 -> CodeBlock.of(
-            "%T.invokeInt64Getter(pointer, %L).getOrThrow().toULong()",
-            PoetSymbols.platformComInteropClass,
-            vtableIndex,
-        )
-        MethodReturnKind.GUID -> AbiCallCatalog.guidGetter(vtableIndex)
-        MethodReturnKind.OBJECT -> AbiCallCatalog.objectMethod(vtableIndex)
-        MethodReturnKind.UNIT -> AbiCallCatalog.unitMethod(vtableIndex)
-    }
-
-    private fun unitUnaryInterfaceAbiCall(
-        vtableIndex: Int,
-        parameterCategory: MethodParameterCategory,
-        argumentName: String,
-        loweredArgument: Any,
-    ): CodeBlock = when (parameterCategory) {
-        MethodParameterCategory.BOOLEAN ->
-            AbiCallCatalog.unitMethodWithInt32Expression(vtableIndex, "if ($loweredArgument) 1 else 0")
-        MethodParameterCategory.OBJECT -> AbiCallCatalog.objectSetterExpression(vtableIndex, loweredArgument)
-        else -> AbiCallCatalog.unaryMethod(
-            returnToken = MethodAbiToken.UNIT,
-            parameterCategory = parameterCategory,
+        return defaultUnaryAbiCall(
             vtableIndex = vtableIndex,
-            argumentExpression = unaryInterfaceAbiArgument(parameterCategory, argumentName, loweredArgument),
+            returnKind = returnKind,
+            parameterCategory = parameterCategory,
+            argumentName = argument,
+            loweredArgument = loweredArgument,
+            unsupportedMessage = "Unsupported unary interface return kind: $returnKind",
         )
-    }
-
-    private fun unaryInterfaceAbiArgument(
-        parameterCategory: MethodParameterCategory,
-        argumentName: String,
-        loweredArgument: Any,
-    ): Any = if (parameterCategory == MethodParameterCategory.STRING) argumentName else loweredArgument
-
-    private fun MethodReturnKind.unaryMethodAbiToken(): MethodAbiToken = when (this) {
-        MethodReturnKind.STRING -> MethodAbiToken.HSTRING
-        MethodReturnKind.FLOAT32 -> MethodAbiToken.FLOAT32
-        MethodReturnKind.FLOAT64 -> MethodAbiToken.FLOAT64
-        MethodReturnKind.DATE_TIME,
-        MethodReturnKind.TIME_SPAN,
-        MethodReturnKind.INT64,
-        MethodReturnKind.EVENT_REGISTRATION_TOKEN -> MethodAbiToken.INT64
-        MethodReturnKind.BOOLEAN -> MethodAbiToken.BOOLEAN
-        MethodReturnKind.INT32 -> MethodAbiToken.INT32
-        MethodReturnKind.UINT32 -> MethodAbiToken.UINT32
-        MethodReturnKind.UINT64 -> MethodAbiToken.UINT64
-        MethodReturnKind.GUID -> MethodAbiToken.GUID
-        MethodReturnKind.OBJECT -> MethodAbiToken.OBJECT
-        MethodReturnKind.UNIT -> MethodAbiToken.UNIT
     }
 
     private fun unaryArgumentExpression(
