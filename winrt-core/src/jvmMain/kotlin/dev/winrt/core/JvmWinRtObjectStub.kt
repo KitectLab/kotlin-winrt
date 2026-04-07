@@ -2266,17 +2266,12 @@ class JvmWinRtObjectStub private constructor(
             thisPointer: MemorySegment,
             result: MemorySegment,
         ): Int {
-            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return runCatching {
-                val value = state.noArgObjectMethods[interfaceAddress to slot]
-                    ?.invoke()
-                    ?: return KnownHResults.E_NOTIMPL.value
-                writeAddress(result, value)
-                HResult(0).value
-            }.getOrElse {
-                writeAddress(result, ComPtr.NULL)
-                hResultValue(it)
-            }
+            return invokeStubResult(
+                thisPointer = thisPointer,
+                defaultResult = { writeAddress(result, ComPtr.NULL) },
+                resolve = { state -> state.noArgObjectMethods[interfaceAddress to slot]?.invoke() },
+                writeResult = { value -> writeAddress(result, value) },
+            )
         }
 
         @JvmStatic
@@ -2287,19 +2282,18 @@ class JvmWinRtObjectStub private constructor(
             firstResult: MemorySegment,
             secondResult: MemorySegment,
         ): Int {
-            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return runCatching {
-                val value = state.noArgTwoObjectMethods[interfaceAddress to slot]
-                    ?.invoke()
-                    ?: return KnownHResults.E_NOTIMPL.value
-                writeAddress(firstResult, value.first)
-                writeAddress(secondResult, value.second)
-                HResult(0).value
-            }.getOrElse {
-                writeAddress(firstResult, ComPtr.NULL)
-                writeAddress(secondResult, ComPtr.NULL)
-                hResultValue(it)
-            }
+            return invokeStubResult(
+                thisPointer = thisPointer,
+                defaultResult = {
+                    writeAddress(firstResult, ComPtr.NULL)
+                    writeAddress(secondResult, ComPtr.NULL)
+                },
+                resolve = { state -> state.noArgTwoObjectMethods[interfaceAddress to slot]?.invoke() },
+                writeResult = { value ->
+                    writeAddress(firstResult, value.first)
+                    writeAddress(secondResult, value.second)
+                },
+            )
         }
 
         @JvmStatic
@@ -2309,16 +2303,14 @@ class JvmWinRtObjectStub private constructor(
             thisPointer: MemorySegment,
             result: MemorySegment,
         ): Int {
-            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return runCatching {
-                val value = state.noArgStructMethods[interfaceAddress to slot]
-                    ?.invoke()
-                    ?: return KnownHResults.E_NOTIMPL.value
-                result.reinterpret(value.layout.byteSize.toLong()).copyFrom(MemorySegment.ofArray(value.bytes))
-                HResult(0).value
-            }.getOrElse {
-                hResultValue(it)
-            }
+            return invokeStubResult(
+                thisPointer = thisPointer,
+                defaultResult = {},
+                resolve = { state -> state.noArgStructMethods[interfaceAddress to slot]?.invoke() },
+                writeResult = { value ->
+                    result.reinterpret(value.layout.byteSize.toLong()).copyFrom(MemorySegment.ofArray(value.bytes))
+                },
+            )
         }
 
         @JvmStatic
@@ -2328,21 +2320,12 @@ class JvmWinRtObjectStub private constructor(
             thisPointer: MemorySegment,
             result: MemorySegment,
         ): Int {
-            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return runCatching {
-                val value = state.noArgBooleanMethods[interfaceAddress to slot]
-                    ?.invoke()
-                    ?: return KnownHResults.E_NOTIMPL.value
-                result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(
-                    ValueLayout.JAVA_INT,
-                    0L,
-                    if (value) 1 else 0,
-                )
-                HResult(0).value
-            }.getOrElse {
-                result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                hResultValue(it)
-            }
+            return invokeStubResult(
+                thisPointer = thisPointer,
+                defaultResult = { writeBooleanResult(result, false) },
+                resolve = { state -> state.noArgBooleanMethods[interfaceAddress to slot]?.invoke() },
+                writeResult = { value -> writeBooleanResult(result, value) },
+            )
         }
 
         @JvmStatic
@@ -2352,21 +2335,12 @@ class JvmWinRtObjectStub private constructor(
             thisPointer: MemorySegment,
             result: MemorySegment,
         ): Int {
-            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return runCatching {
-                val value = state.noArgInt32Methods[interfaceAddress to slot]
-                    ?.invoke()
-                    ?: return KnownHResults.E_NOTIMPL.value
-                result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(
-                    ValueLayout.JAVA_INT,
-                    0L,
-                    value,
-                )
-                HResult(0).value
-            }.getOrElse {
-                result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                hResultValue(it)
-            }
+            return invokeStubResult(
+                thisPointer = thisPointer,
+                defaultResult = { writeInt32Result(result, 0) },
+                resolve = { state -> state.noArgInt32Methods[interfaceAddress to slot]?.invoke() },
+                writeResult = { value -> writeInt32Result(result, value) },
+            )
         }
 
         @JvmStatic
@@ -2376,21 +2350,12 @@ class JvmWinRtObjectStub private constructor(
             thisPointer: MemorySegment,
             result: MemorySegment,
         ): Int {
-            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return runCatching {
-                val value = state.noArgUInt32Methods[interfaceAddress to slot]
-                    ?.invoke()
-                    ?: return KnownHResults.E_NOTIMPL.value
-                result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(
-                    ValueLayout.JAVA_INT,
-                    0L,
-                    value.toInt(),
-                )
-                HResult(0).value
-            }.getOrElse {
-                result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(ValueLayout.JAVA_INT, 0L, 0)
-                hResultValue(it)
-            }
+            return invokeStubResult(
+                thisPointer = thisPointer,
+                defaultResult = { writeUInt32Result(result, 0u) },
+                resolve = { state -> state.noArgUInt32Methods[interfaceAddress to slot]?.invoke() },
+                writeResult = { value -> writeUInt32Result(result, value) },
+            )
         }
 
         @JvmStatic
@@ -2400,21 +2365,12 @@ class JvmWinRtObjectStub private constructor(
             thisPointer: MemorySegment,
             result: MemorySegment,
         ): Int {
-            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return runCatching {
-                val value = state.noArgInt64Methods[interfaceAddress to slot]
-                    ?.invoke()
-                    ?: return KnownHResults.E_NOTIMPL.value
-                result.reinterpret(ValueLayout.JAVA_LONG.byteSize().toLong()).set(
-                    ValueLayout.JAVA_LONG,
-                    0L,
-                    value,
-                )
-                HResult(0).value
-            }.getOrElse {
-                result.reinterpret(ValueLayout.JAVA_LONG.byteSize().toLong()).set(ValueLayout.JAVA_LONG, 0L, 0L)
-                hResultValue(it)
-            }
+            return invokeStubResult(
+                thisPointer = thisPointer,
+                defaultResult = { writeInt64Result(result, 0L) },
+                resolve = { state -> state.noArgInt64Methods[interfaceAddress to slot]?.invoke() },
+                writeResult = { value -> writeInt64Result(result, value) },
+            )
         }
 
         @JvmStatic
@@ -2424,21 +2380,12 @@ class JvmWinRtObjectStub private constructor(
             thisPointer: MemorySegment,
             result: MemorySegment,
         ): Int {
-            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return runCatching {
-                val value = state.noArgUInt64Methods[interfaceAddress to slot]
-                    ?.invoke()
-                    ?: return KnownHResults.E_NOTIMPL.value
-                result.reinterpret(ValueLayout.JAVA_LONG.byteSize().toLong()).set(
-                    ValueLayout.JAVA_LONG,
-                    0L,
-                    value.toLong(),
-                )
-                HResult(0).value
-            }.getOrElse {
-                result.reinterpret(ValueLayout.JAVA_LONG.byteSize().toLong()).set(ValueLayout.JAVA_LONG, 0L, 0L)
-                hResultValue(it)
-            }
+            return invokeStubResult(
+                thisPointer = thisPointer,
+                defaultResult = { writeUInt64Result(result, 0uL) },
+                resolve = { state -> state.noArgUInt64Methods[interfaceAddress to slot]?.invoke() },
+                writeResult = { value -> writeUInt64Result(result, value) },
+            )
         }
 
         @JvmStatic
@@ -2448,21 +2395,12 @@ class JvmWinRtObjectStub private constructor(
             thisPointer: MemorySegment,
             result: MemorySegment,
         ): Int {
-            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return runCatching {
-                val value = state.noArgFloat32Methods[interfaceAddress to slot]
-                    ?.invoke()
-                    ?: return KnownHResults.E_NOTIMPL.value
-                result.reinterpret(ValueLayout.JAVA_FLOAT.byteSize().toLong()).set(
-                    ValueLayout.JAVA_FLOAT,
-                    0L,
-                    value,
-                )
-                HResult(0).value
-            }.getOrElse {
-                result.reinterpret(ValueLayout.JAVA_FLOAT.byteSize().toLong()).set(ValueLayout.JAVA_FLOAT, 0L, 0f)
-                hResultValue(it)
-            }
+            return invokeStubResult(
+                thisPointer = thisPointer,
+                defaultResult = { writeFloat32Result(result, 0f) },
+                resolve = { state -> state.noArgFloat32Methods[interfaceAddress to slot]?.invoke() },
+                writeResult = { value -> writeFloat32Result(result, value) },
+            )
         }
 
         @JvmStatic
@@ -2472,21 +2410,12 @@ class JvmWinRtObjectStub private constructor(
             thisPointer: MemorySegment,
             result: MemorySegment,
         ): Int {
-            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return runCatching {
-                val value = state.noArgFloat64Methods[interfaceAddress to slot]
-                    ?.invoke()
-                    ?: return KnownHResults.E_NOTIMPL.value
-                result.reinterpret(ValueLayout.JAVA_DOUBLE.byteSize().toLong()).set(
-                    ValueLayout.JAVA_DOUBLE,
-                    0L,
-                    value,
-                )
-                HResult(0).value
-            }.getOrElse {
-                result.reinterpret(ValueLayout.JAVA_DOUBLE.byteSize().toLong()).set(ValueLayout.JAVA_DOUBLE, 0L, 0.0)
-                hResultValue(it)
-            }
+            return invokeStubResult(
+                thisPointer = thisPointer,
+                defaultResult = { writeFloat64Result(result, 0.0) },
+                resolve = { state -> state.noArgFloat64Methods[interfaceAddress to slot]?.invoke() },
+                writeResult = { value -> writeFloat64Result(result, value) },
+            )
         }
 
         @JvmStatic
@@ -2496,18 +2425,15 @@ class JvmWinRtObjectStub private constructor(
             thisPointer: MemorySegment,
             result: MemorySegment,
         ): Int {
-            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
-            return runCatching {
-                val value = state.noArgHStringMethods[interfaceAddress to slot]
-                    ?.invoke()
-                    ?: return KnownHResults.E_NOTIMPL.value
-                val hString = JvmWinRtRuntime.createHString(value)
-                writeAddress(result, ComPtr(AbiIntPtr(hString.raw)))
-                HResult(0).value
-            }.getOrElse {
-                writeAddress(result, ComPtr.NULL)
-                hResultValue(it)
-            }
+            return invokeStubResult(
+                thisPointer = thisPointer,
+                defaultResult = { writeAddress(result, ComPtr.NULL) },
+                resolve = { state -> state.noArgHStringMethods[interfaceAddress to slot]?.invoke() },
+                writeResult = { value ->
+                    val hString = JvmWinRtRuntime.createHString(value)
+                    writeAddress(result, ComPtr(AbiIntPtr(hString.raw)))
+                },
+            )
         }
 
         @JvmStatic
@@ -3677,6 +3603,23 @@ class JvmWinRtObjectStub private constructor(
             }.getOrElse(::hResultValue)
         }
 
+        private inline fun <T> invokeStubResult(
+            thisPointer: MemorySegment,
+            defaultResult: () -> Unit,
+            resolve: (SharedState) -> T?,
+            writeResult: (T) -> Unit,
+        ): Int {
+            val state = states[thisPointer.address()] ?: return KnownHResults.E_POINTER.value
+            return runCatching {
+                val value = resolve(state) ?: return KnownHResults.E_NOTIMPL.value
+                writeResult(value)
+                HResult(0).value
+            }.getOrElse {
+                defaultResult()
+                hResultValue(it)
+            }
+        }
+
         private fun hResultValue(error: Throwable): Int {
             var current: Throwable? = error
             while (current != null) {
@@ -3723,6 +3666,62 @@ class JvmWinRtObjectStub private constructor(
                 ValueLayout.ADDRESS,
                 0,
                 if (pointer.isNull) MemorySegment.NULL else MemorySegment.ofAddress(pointer.value.rawValue),
+            )
+        }
+
+        private fun writeBooleanResult(result: MemorySegment, value: Boolean) {
+            result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(
+                ValueLayout.JAVA_INT,
+                0L,
+                if (value) 1 else 0,
+            )
+        }
+
+        private fun writeInt32Result(result: MemorySegment, value: Int) {
+            result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(
+                ValueLayout.JAVA_INT,
+                0L,
+                value,
+            )
+        }
+
+        private fun writeUInt32Result(result: MemorySegment, value: UInt) {
+            result.reinterpret(ValueLayout.JAVA_INT.byteSize().toLong()).set(
+                ValueLayout.JAVA_INT,
+                0L,
+                value.toInt(),
+            )
+        }
+
+        private fun writeInt64Result(result: MemorySegment, value: Long) {
+            result.reinterpret(ValueLayout.JAVA_LONG.byteSize().toLong()).set(
+                ValueLayout.JAVA_LONG,
+                0L,
+                value,
+            )
+        }
+
+        private fun writeUInt64Result(result: MemorySegment, value: ULong) {
+            result.reinterpret(ValueLayout.JAVA_LONG.byteSize().toLong()).set(
+                ValueLayout.JAVA_LONG,
+                0L,
+                value.toLong(),
+            )
+        }
+
+        private fun writeFloat32Result(result: MemorySegment, value: Float) {
+            result.reinterpret(ValueLayout.JAVA_FLOAT.byteSize().toLong()).set(
+                ValueLayout.JAVA_FLOAT,
+                0L,
+                value,
+            )
+        }
+
+        private fun writeFloat64Result(result: MemorySegment, value: Double) {
+            result.reinterpret(ValueLayout.JAVA_DOUBLE.byteSize().toLong()).set(
+                ValueLayout.JAVA_DOUBLE,
+                0L,
+                value,
             )
         }
 
