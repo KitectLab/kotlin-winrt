@@ -1879,6 +1879,194 @@ private object JvmPlatformComInterop : ComInterop {
         value,
     )
 
+    private fun invokeRawF32Result(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+    ): Result<Float> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(ValueLayout.JAVA_FLOAT) },
+        reader = { segment -> segment.get(ValueLayout.JAVA_FLOAT, 0L) },
+    )
+
+    private fun invokeRawF32Result(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Int,
+    ): Result<Float> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(ValueLayout.JAVA_FLOAT) },
+        reader = { segment -> segment.get(ValueLayout.JAVA_FLOAT, 0L) },
+        value,
+    )
+
+    private fun invokeRawF32Result(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: UInt,
+    ): Result<Float> = invokeRawF32Result(instance, vtableIndex, operation, handle, value.toInt())
+
+    private fun invokeRawF32Result(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Boolean,
+    ): Result<Float> = invokeRawF32Result(instance, vtableIndex, operation, handle, if (value) 1 else 0)
+
+    private fun invokeRawF32Result(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Long,
+    ): Result<Float> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(ValueLayout.JAVA_FLOAT) },
+        reader = { segment -> segment.get(ValueLayout.JAVA_FLOAT, 0L) },
+        value,
+    )
+
+    private fun invokeRawF32Result(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: ComPtr,
+    ): Result<Float> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(ValueLayout.JAVA_FLOAT) },
+        reader = { segment -> segment.get(ValueLayout.JAVA_FLOAT, 0L) },
+        value,
+    )
+
+    private fun invokeRawF32Result(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: String,
+    ): Result<Float> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(ValueLayout.JAVA_FLOAT) },
+        reader = { segment -> segment.get(ValueLayout.JAVA_FLOAT, 0L) },
+        value,
+    )
+
+    private fun invokeRawF64Result(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+    ): Result<Double> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(ValueLayout.JAVA_DOUBLE) },
+        reader = { segment -> segment.get(ValueLayout.JAVA_DOUBLE, 0L) },
+    )
+
+    private fun invokeRawF64Result(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Int,
+    ): Result<Double> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(ValueLayout.JAVA_DOUBLE) },
+        reader = { segment -> segment.get(ValueLayout.JAVA_DOUBLE, 0L) },
+        value,
+    )
+
+    private fun invokeRawF64Result(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: UInt,
+    ): Result<Double> = invokeRawF64Result(instance, vtableIndex, operation, handle, value.toInt())
+
+    private fun invokeRawF64Result(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Boolean,
+    ): Result<Double> = invokeRawF64Result(instance, vtableIndex, operation, handle, if (value) 1 else 0)
+
+    private fun invokeRawF64Result(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Long,
+    ): Result<Double> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(ValueLayout.JAVA_DOUBLE) },
+        reader = { segment -> segment.get(ValueLayout.JAVA_DOUBLE, 0L) },
+        value,
+    )
+
+    private fun invokeRawF64Result(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: ComPtr,
+    ): Result<Double> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(ValueLayout.JAVA_DOUBLE) },
+        reader = { segment -> segment.get(ValueLayout.JAVA_DOUBLE, 0L) },
+        value,
+    )
+
+    private fun invokeRawF64Result(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: String,
+    ): Result<Double> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(ValueLayout.JAVA_DOUBLE) },
+        reader = { segment -> segment.get(ValueLayout.JAVA_DOUBLE, 0L) },
+        value,
+    )
+
     private fun Result<Int>.asUIntResult(): Result<UInt> = map(Int::toUInt)
 
     private fun Result<Int>.asBooleanResult(): Result<Boolean> = map { it != 0 }
@@ -2895,162 +3083,52 @@ private object JvmPlatformComInterop : ComInterop {
         invokeRawI32Result(instance, vtableIndex, "invokeBooleanMethodWithInt64Arg", Jdk22Foreign.booleanMethodWithInt64Handle, value).asBooleanResult()
 
     override fun invokeFloat64Method(instance: ComPtr, vtableIndex: Int): Result<Double> {
-        return JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeFloat64Method",
-            handle = Jdk22Foreign.float64MethodHandle,
-            allocator = { arena -> arena.allocate(ValueLayout.JAVA_DOUBLE) },
-            reader = { segment -> segment.get(ValueLayout.JAVA_DOUBLE, 0L) },
-        )
+        return invokeRawF64Result(instance, vtableIndex, "invokeFloat64Method", Jdk22Foreign.float64MethodHandle)
     }
 
     override fun invokeFloat32Method(instance: ComPtr, vtableIndex: Int): Result<Float> {
-        return JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeFloat32Method",
-            handle = Jdk22Foreign.float32MethodHandle,
-            allocator = { arena -> arena.allocate(ValueLayout.JAVA_FLOAT) },
-            reader = { segment -> segment.get(ValueLayout.JAVA_FLOAT, 0L) },
-        )
+        return invokeRawF32Result(instance, vtableIndex, "invokeFloat32Method", Jdk22Foreign.float32MethodHandle)
     }
 
     override fun invokeFloat32MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Float> {
-        return JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeFloat32MethodWithStringArg",
-            handle = Jdk22Foreign.float32MethodWithInputHandle,
-            allocator = { arena -> arena.allocate(ValueLayout.JAVA_FLOAT) },
-            reader = { segment -> segment.get(ValueLayout.JAVA_FLOAT, 0L) },
-            value,
-        )
+        return invokeRawF32Result(instance, vtableIndex, "invokeFloat32MethodWithStringArg", Jdk22Foreign.float32MethodWithInputHandle, value)
     }
 
     override fun invokeFloat32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Float> {
-        return JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeFloat32MethodWithUInt32Arg",
-            handle = Jdk22Foreign.float32MethodWithUInt32Handle,
-            allocator = { arena -> arena.allocate(ValueLayout.JAVA_FLOAT) },
-            reader = { segment -> segment.get(ValueLayout.JAVA_FLOAT, 0L) },
-            value,
-        )
+        return invokeRawF32Result(instance, vtableIndex, "invokeFloat32MethodWithUInt32Arg", Jdk22Foreign.float32MethodWithUInt32Handle, value)
     }
 
     override fun invokeFloat32MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Float> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeFloat32MethodWithInt32Arg",
-            handle = Jdk22Foreign.float32MethodWithUInt32Handle,
-            allocator = { arena -> arena.allocate(ValueLayout.JAVA_FLOAT) },
-            reader = { segment -> segment.get(ValueLayout.JAVA_FLOAT, 0L) },
-            value,
-        )
+        invokeRawF32Result(instance, vtableIndex, "invokeFloat32MethodWithInt32Arg", Jdk22Foreign.float32MethodWithUInt32Handle, value)
 
     override fun invokeFloat32MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Float> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeFloat32MethodWithBooleanArg",
-            handle = Jdk22Foreign.float32MethodWithUInt32Handle,
-            allocator = { arena -> arena.allocate(ValueLayout.JAVA_FLOAT) },
-            reader = { segment -> segment.get(ValueLayout.JAVA_FLOAT, 0L) },
-            if (value) 1 else 0,
-        )
+        invokeRawF32Result(instance, vtableIndex, "invokeFloat32MethodWithBooleanArg", Jdk22Foreign.float32MethodWithUInt32Handle, value)
 
     override fun invokeFloat32MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Float> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeFloat32MethodWithObjectArg",
-            handle = Jdk22Foreign.float32MethodWithInputHandle,
-            allocator = { arena -> arena.allocate(ValueLayout.JAVA_FLOAT) },
-            reader = { segment -> segment.get(ValueLayout.JAVA_FLOAT, 0L) },
-            value,
-        )
+        invokeRawF32Result(instance, vtableIndex, "invokeFloat32MethodWithObjectArg", Jdk22Foreign.float32MethodWithInputHandle, value)
 
     override fun invokeFloat32MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Float> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeFloat32MethodWithInt64Arg",
-            handle = Jdk22Foreign.float32MethodWithInt64Handle,
-            allocator = { arena -> arena.allocate(ValueLayout.JAVA_FLOAT) },
-            reader = { segment -> segment.get(ValueLayout.JAVA_FLOAT, 0L) },
-            value,
-        )
+        invokeRawF32Result(instance, vtableIndex, "invokeFloat32MethodWithInt64Arg", Jdk22Foreign.float32MethodWithInt64Handle, value)
 
     override fun invokeFloat64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Double> {
-        return JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeFloat64MethodWithStringArg",
-            handle = Jdk22Foreign.float64MethodWithInputHandle,
-            allocator = { arena -> arena.allocate(ValueLayout.JAVA_DOUBLE) },
-            reader = { segment -> segment.get(ValueLayout.JAVA_DOUBLE, 0L) },
-            value,
-        )
+        return invokeRawF64Result(instance, vtableIndex, "invokeFloat64MethodWithStringArg", Jdk22Foreign.float64MethodWithInputHandle, value)
     }
 
     override fun invokeFloat64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Double> {
-        return JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeFloat64MethodWithUInt32Arg",
-            handle = Jdk22Foreign.float64MethodWithUInt32Handle,
-            allocator = { arena -> arena.allocate(ValueLayout.JAVA_DOUBLE) },
-            reader = { segment -> segment.get(ValueLayout.JAVA_DOUBLE, 0L) },
-            value,
-        )
+        return invokeRawF64Result(instance, vtableIndex, "invokeFloat64MethodWithUInt32Arg", Jdk22Foreign.float64MethodWithUInt32Handle, value)
     }
 
     override fun invokeFloat64MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Double> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeFloat64MethodWithInt32Arg",
-            handle = Jdk22Foreign.float64MethodWithUInt32Handle,
-            allocator = { arena -> arena.allocate(ValueLayout.JAVA_DOUBLE) },
-            reader = { segment -> segment.get(ValueLayout.JAVA_DOUBLE, 0L) },
-            value,
-        )
+        invokeRawF64Result(instance, vtableIndex, "invokeFloat64MethodWithInt32Arg", Jdk22Foreign.float64MethodWithUInt32Handle, value)
 
     override fun invokeFloat64MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Double> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeFloat64MethodWithBooleanArg",
-            handle = Jdk22Foreign.float64MethodWithUInt32Handle,
-            allocator = { arena -> arena.allocate(ValueLayout.JAVA_DOUBLE) },
-            reader = { segment -> segment.get(ValueLayout.JAVA_DOUBLE, 0L) },
-            if (value) 1 else 0,
-        )
+        invokeRawF64Result(instance, vtableIndex, "invokeFloat64MethodWithBooleanArg", Jdk22Foreign.float64MethodWithUInt32Handle, value)
 
     override fun invokeFloat64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Double> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeFloat64MethodWithObjectArg",
-            handle = Jdk22Foreign.float64MethodWithInputHandle,
-            allocator = { arena -> arena.allocate(ValueLayout.JAVA_DOUBLE) },
-            reader = { segment -> segment.get(ValueLayout.JAVA_DOUBLE, 0L) },
-            value,
-        )
+        invokeRawF64Result(instance, vtableIndex, "invokeFloat64MethodWithObjectArg", Jdk22Foreign.float64MethodWithInputHandle, value)
 
     override fun invokeFloat64MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Double> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeFloat64MethodWithInt64Arg",
-            handle = Jdk22Foreign.float64MethodWithInt64Handle,
-            allocator = { arena -> arena.allocate(ValueLayout.JAVA_DOUBLE) },
-            reader = { segment -> segment.get(ValueLayout.JAVA_DOUBLE, 0L) },
-            value,
-        )
+        invokeRawF64Result(instance, vtableIndex, "invokeFloat64MethodWithInt64Arg", Jdk22Foreign.float64MethodWithInt64Handle, value)
 
     override fun invokeGuidGetter(instance: ComPtr, vtableIndex: Int): Result<Guid> {
         return JvmComMethodExecutor.invokeWithOutSegment(
