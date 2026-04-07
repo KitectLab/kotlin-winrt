@@ -1540,14 +1540,6 @@ private object JvmPlatformComInterop : ComInterop {
         vtableIndex: Int,
         operation: String,
         handle: java.lang.invoke.MethodHandle,
-        value: Boolean,
-    ): Result<Float> = invokeRawF32Result(instance, vtableIndex, operation, handle, if (value) 1 else 0)
-
-    private fun invokeRawF32Result(
-        instance: ComPtr,
-        vtableIndex: Int,
-        operation: String,
-        handle: java.lang.invoke.MethodHandle,
         value: Long,
     ): Result<Float> = JvmComMethodExecutor.invokeWithOutSegment(
         instance = instance,
@@ -1634,14 +1626,6 @@ private object JvmPlatformComInterop : ComInterop {
         vtableIndex: Int,
         operation: String,
         handle: java.lang.invoke.MethodHandle,
-        value: Boolean,
-    ): Result<Double> = invokeRawF64Result(instance, vtableIndex, operation, handle, if (value) 1 else 0)
-
-    private fun invokeRawF64Result(
-        instance: ComPtr,
-        vtableIndex: Int,
-        operation: String,
-        handle: java.lang.invoke.MethodHandle,
         value: Long,
     ): Result<Double> = JvmComMethodExecutor.invokeWithOutSegment(
         instance = instance,
@@ -1792,14 +1776,6 @@ private object JvmPlatformComInterop : ComInterop {
         reader = Jdk22Foreign::guidFromSegment,
         value,
     )
-
-    private fun invokeRawGuidResult(
-        instance: ComPtr,
-        vtableIndex: Int,
-        operation: String,
-        handle: java.lang.invoke.MethodHandle,
-        value: UInt,
-    ): Result<Guid> = invokeRawGuidResult(instance, vtableIndex, operation, handle, value.toInt())
 
     private fun invokeRawGuidResult(
         instance: ComPtr,
