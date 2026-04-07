@@ -1,5 +1,6 @@
 package dev.winrt.winmd.parser
 
+import dev.winrt.core.WinRtDelegateValueKind
 import dev.winrt.winmd.plugin.WinMdModel
 import dev.winrt.winmd.plugin.WinMdNamespace
 import org.junit.Assert.assertEquals
@@ -36,7 +37,14 @@ class AsyncMethodProjectionPlannerTest {
         assertTrue(
             planner.asyncProgressDescriptorExpression("Windows.Foundation.IAsyncOperationWithProgress<String, Float64>", "Windows.Foundation")
                 .toString()
-                .contains("FLOAT64"),
+                .contains("WinRtDelegateValueKind.FLOAT64"),
+        )
+        assertEquals(
+            WinRtDelegateValueKind.FLOAT64,
+            planner.asyncOperationWithProgressPlan(
+                "Windows.Foundation.IAsyncOperationWithProgress<String, Float64>",
+                "Windows.Foundation",
+            )?.valueKind,
         )
     }
 

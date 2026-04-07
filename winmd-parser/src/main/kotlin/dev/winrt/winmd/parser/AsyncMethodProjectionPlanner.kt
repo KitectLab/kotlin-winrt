@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.asTypeName
+import dev.winrt.core.WinRtDelegateValueKind
 
 internal class AsyncMethodProjectionPlanner(
     private val typeNameMapper: TypeNameMapper,
@@ -143,7 +144,7 @@ internal class AsyncMethodProjectionPlanner(
             PoetSymbols.asyncProgressTypesClass,
             progressPlan.progressSignature,
             PoetSymbols.winRtDelegateValueKindClass,
-            progressPlan.valueKind,
+            progressPlan.valueKind.name,
         )
     }
 
@@ -191,7 +192,7 @@ internal class AsyncMethodProjectionPlanner(
         if (typeName in genericParameters) return null
         return AsyncProgressPlan(
             progressSignature = signature,
-            valueKind = "OBJECT",
+            valueKind = WinRtDelegateValueKind.OBJECT,
             decodeLambda = CodeBlock.of(
                 "{ %T(it as %T) }",
                 typeNameMapper.mapTypeName(typeName, currentNamespace, genericParameters),
@@ -229,30 +230,30 @@ private val scalarAsyncResultTypeNames = setOf(
 )
 
 private val scalarAsyncProgressPlan = mapOf(
-    "String" to AsyncProgressPlanBlueprint("STRING", CodeBlock.of("{ it as String }")),
-    "Boolean" to AsyncProgressPlanBlueprint("BOOLEAN", CodeBlock.of("{ it as Boolean }")),
-    "Int32" to AsyncProgressPlanBlueprint("INT32", CodeBlock.of("{ it as Int }")),
-    "UInt32" to AsyncProgressPlanBlueprint("UINT32", CodeBlock.of("{ it as UInt32 }")),
-    "Int64" to AsyncProgressPlanBlueprint("INT64", CodeBlock.of("{ it as Long }")),
-    "UInt64" to AsyncProgressPlanBlueprint("UINT64", CodeBlock.of("{ it as ULong }")),
-    "Float32" to AsyncProgressPlanBlueprint("FLOAT32", CodeBlock.of("{ it as Float }")),
-    "Float64" to AsyncProgressPlanBlueprint("FLOAT64", CodeBlock.of("{ it as Double }")),
+    "String" to AsyncProgressPlanBlueprint(WinRtDelegateValueKind.STRING, CodeBlock.of("{ it as String }")),
+    "Boolean" to AsyncProgressPlanBlueprint(WinRtDelegateValueKind.BOOLEAN, CodeBlock.of("{ it as Boolean }")),
+    "Int32" to AsyncProgressPlanBlueprint(WinRtDelegateValueKind.INT32, CodeBlock.of("{ it as Int }")),
+    "UInt32" to AsyncProgressPlanBlueprint(WinRtDelegateValueKind.UINT32, CodeBlock.of("{ it as UInt32 }")),
+    "Int64" to AsyncProgressPlanBlueprint(WinRtDelegateValueKind.INT64, CodeBlock.of("{ it as Long }")),
+    "UInt64" to AsyncProgressPlanBlueprint(WinRtDelegateValueKind.UINT64, CodeBlock.of("{ it as ULong }")),
+    "Float32" to AsyncProgressPlanBlueprint(WinRtDelegateValueKind.FLOAT32, CodeBlock.of("{ it as Float }")),
+    "Float64" to AsyncProgressPlanBlueprint(WinRtDelegateValueKind.FLOAT64, CodeBlock.of("{ it as Double }")),
 )
 
 private data class AsyncProgressPlanBlueprint(
-    val valueKind: String,
+    val valueKind: WinRtDelegateValueKind,
     val decodeLambda: CodeBlock,
 )
 
 internal data class AsyncProgressPlan(
     val progressSignature: String,
-    val valueKind: String,
+    val valueKind: WinRtDelegateValueKind,
     val decodeLambda: CodeBlock,
 )
 
 internal data class AsyncOperationWithProgressPlan(
     val resultSignature: String,
     val progressSignature: String,
-    val valueKind: String,
+    val valueKind: WinRtDelegateValueKind,
     val decodeLambda: CodeBlock,
 )

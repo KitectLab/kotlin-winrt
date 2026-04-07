@@ -40,7 +40,7 @@ internal object AsyncTaskCallCatalog {
                 platformComInteropClass,
                 progressPlan.progressSignature,
                 PoetSymbols.winRtDelegateValueKindClass,
-                progressPlan.valueKind,
+                progressPlan.valueKind.name,
                 progressPlan.decodeLambda,
             ),
         )
@@ -61,7 +61,7 @@ internal object AsyncTaskCallCatalog {
                 resultType,
                 progressPlan.progressSignature,
                 PoetSymbols.winRtDelegateValueKindClass,
-                progressPlan.valueKind,
+                progressPlan.valueKind.name,
                 progressPlan.decodeLambda,
             ),
         )
