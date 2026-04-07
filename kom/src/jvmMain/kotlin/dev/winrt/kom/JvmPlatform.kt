@@ -2529,10 +2529,6 @@ private object JvmPlatformComInterop : ComInterop {
         return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithObjectAndInt32Args", addressInt32UnitHandle, first, second)
     }
 
-    override fun invokeUnitMethodWithObjectAndBooleanArgs(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: Boolean): Result<Unit> {
-        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithObjectAndBooleanArgs", addressInt32UnitHandle, first, if (second) 1 else 0)
-    }
-
     override fun invokeUnitMethodWithInt32AndObjectArgs(instance: ComPtr, vtableIndex: Int, first: Int, second: ComPtr): Result<Unit> {
         return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithInt32AndObjectArgs", int32AddressUnitHandle, first, second)
     }
@@ -2551,22 +2547,6 @@ private object JvmPlatformComInterop : ComInterop {
 
     override fun invokeUnitMethodWithInt32AndStringArgs(instance: ComPtr, vtableIndex: Int, first: Int, second: String): Result<Unit> {
         return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithInt32AndStringArgs", int32StringUnitHandle, first, second)
-    }
-
-    override fun invokeUnitMethodWithStringAndUInt32Args(instance: ComPtr, vtableIndex: Int, first: String, second: UInt): Result<Unit> {
-        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithStringAndUInt32Args", stringInt32UnitHandle, first, second.toInt())
-    }
-
-    override fun invokeUnitMethodWithUInt32AndStringArgs(instance: ComPtr, vtableIndex: Int, first: UInt, second: String): Result<Unit> {
-        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithUInt32AndStringArgs", int32StringUnitHandle, first.toInt(), second)
-    }
-
-    override fun invokeUnitMethodWithStringAndBooleanArgs(instance: ComPtr, vtableIndex: Int, first: String, second: Boolean): Result<Unit> {
-        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithStringAndBooleanArgs", stringInt32UnitHandle, first, if (second) 1 else 0)
-    }
-
-    override fun invokeUnitMethodWithBooleanAndStringArgs(instance: ComPtr, vtableIndex: Int, first: Boolean, second: String): Result<Unit> {
-        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithBooleanAndStringArgs", int32StringUnitHandle, if (first) 1 else 0, second)
     }
 
     override fun invokeUnitMethodWithStringAndInt64Args(instance: ComPtr, vtableIndex: Int, first: String, second: Long): Result<Unit> {
@@ -2673,12 +2653,6 @@ private object JvmPlatformComInterop : ComInterop {
     override fun invokeObjectMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ComPtr> {
         return invokeRawAddressResult(instance, vtableIndex, "invokeObjectMethodWithUInt32Arg", Jdk22Foreign.objectMethodWithUInt32Handle, value).asComPtrResult()
     }
-
-    override fun invokeObjectMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<ComPtr> =
-        invokeRawAddressResult(instance, vtableIndex, "invokeObjectMethodWithInt32Arg", Jdk22Foreign.objectMethodWithUInt32Handle, value).asComPtrResult()
-
-    override fun invokeObjectMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<ComPtr> =
-        invokeRawAddressResult(instance, vtableIndex, "invokeObjectMethodWithBooleanArg", Jdk22Foreign.objectMethodWithUInt32Handle, value).asComPtrResult()
 
     override fun invokeObjectMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<ComPtr> =
         invokeRawAddressResult(instance, vtableIndex, "invokeObjectMethodWithInt64Arg", Jdk22Foreign.objectMethodWithInt64Handle, value).asComPtrResult()
@@ -2932,9 +2906,6 @@ private object JvmPlatformComInterop : ComInterop {
         return invokeRawAddressResult(instance, vtableIndex, "invokeHStringMethodWithUInt32Arg", Jdk22Foreign.hstringMethodWithUInt32Handle, value).asHStringResult()
     }
 
-    override fun invokeHStringMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<HString> =
-        invokeRawAddressResult(instance, vtableIndex, "invokeHStringMethodWithBooleanArg", Jdk22Foreign.hstringMethodWithUInt32Handle, value).asHStringResult()
-
     override fun invokeHStringMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<HString> =
         invokeRawAddressResult(instance, vtableIndex, "invokeHStringMethodWithObjectArg", Jdk22Foreign.hstringMethodWithInputHandle, value).asHStringResult()
 
@@ -2981,10 +2952,6 @@ private object JvmPlatformComInterop : ComInterop {
         return invokeRawI64Result(instance, vtableIndex, "invokeInt64MethodWithUInt32Arg", Jdk22Foreign.int64MethodWithUInt32Handle, value)
     }
 
-    override fun invokeInt64MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Long> {
-        return invokeRawI64Result(instance, vtableIndex, "invokeInt64MethodWithBooleanArg", Jdk22Foreign.int64MethodWithBooleanHandle, value)
-    }
-
     override fun invokeUInt64Method(instance: ComPtr, vtableIndex: Int): Result<ULong> {
         return invokeRawI64Result(instance, vtableIndex, "invokeUInt64Method", Jdk22Foreign.uint64MethodHandle).asULongResult()
     }
@@ -2997,16 +2964,8 @@ private object JvmPlatformComInterop : ComInterop {
         return invokeRawI64Result(instance, vtableIndex, "invokeUInt64MethodWithStringArg", Jdk22Foreign.uint64MethodWithStringHandle, value).asULongResult()
     }
 
-    override fun invokeUInt64MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<ULong> {
-        return invokeRawI64Result(instance, vtableIndex, "invokeUInt64MethodWithInt32Arg", Jdk22Foreign.uint64MethodWithInt32Handle, value).asULongResult()
-    }
-
     override fun invokeUInt64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ULong> {
         return invokeRawI64Result(instance, vtableIndex, "invokeUInt64MethodWithUInt32Arg", Jdk22Foreign.uint64MethodWithUInt32Handle, value).asULongResult()
-    }
-
-    override fun invokeUInt64MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<ULong> {
-        return invokeRawI64Result(instance, vtableIndex, "invokeUInt64MethodWithBooleanArg", Jdk22Foreign.uint64MethodWithBooleanHandle, value).asULongResult()
     }
 
     override fun invokeInt32Setter(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit> {
@@ -3099,9 +3058,6 @@ private object JvmPlatformComInterop : ComInterop {
         return invokeRawI32Result(instance, vtableIndex, "invokeInt32MethodWithObjectArg", Jdk22Foreign.int32MethodWithObjectHandle, value)
     }
 
-    override fun invokeInt32MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Int> =
-        invokeRawI32Result(instance, vtableIndex, "invokeInt32MethodWithBooleanArg", Jdk22Foreign.int32MethodWithUInt32Handle, value)
-
     override fun invokeInt32MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Int> =
         invokeRawI32Result(instance, vtableIndex, "invokeInt32MethodWithInt64Arg", Jdk22Foreign.int32MethodWithInt64Handle, value)
 
@@ -3125,9 +3081,6 @@ private object JvmPlatformComInterop : ComInterop {
         return invokeRawI32Result(instance, vtableIndex, "invokeUInt32MethodWithObjectArg", Jdk22Foreign.uint32MethodWithObjectHandle, value).asUIntResult()
     }
 
-    override fun invokeUInt32MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<UInt> =
-        invokeRawI32Result(instance, vtableIndex, "invokeUInt32MethodWithBooleanArg", Jdk22Foreign.uint32MethodWithUInt32Handle, value).asUIntResult()
-
     override fun invokeUInt32MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<UInt> =
         invokeRawI32Result(instance, vtableIndex, "invokeUInt32MethodWithInt64Arg", Jdk22Foreign.uint32MethodWithInt64Handle, value).asUIntResult()
 
@@ -3146,12 +3099,6 @@ private object JvmPlatformComInterop : ComInterop {
     override fun invokeBooleanMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Boolean> {
         return invokeRawI32Result(instance, vtableIndex, "invokeBooleanMethodWithUInt32Arg", Jdk22Foreign.booleanMethodWithUInt32Handle, value).asBooleanResult()
     }
-
-    override fun invokeBooleanMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Boolean> =
-        invokeRawI32Result(instance, vtableIndex, "invokeBooleanMethodWithInt32Arg", Jdk22Foreign.booleanMethodWithUInt32Handle, value).asBooleanResult()
-
-    override fun invokeBooleanMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Boolean> =
-        invokeRawI32Result(instance, vtableIndex, "invokeBooleanMethodWithBooleanArg", Jdk22Foreign.booleanMethodWithUInt32Handle, value).asBooleanResult()
 
     override fun invokeBooleanMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Boolean> =
         invokeRawI32Result(instance, vtableIndex, "invokeBooleanMethodWithInt64Arg", Jdk22Foreign.booleanMethodWithInt64Handle, value).asBooleanResult()
@@ -3172,12 +3119,6 @@ private object JvmPlatformComInterop : ComInterop {
         return invokeRawF32Result(instance, vtableIndex, "invokeFloat32MethodWithUInt32Arg", Jdk22Foreign.float32MethodWithUInt32Handle, value)
     }
 
-    override fun invokeFloat32MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Float> =
-        invokeRawF32Result(instance, vtableIndex, "invokeFloat32MethodWithInt32Arg", Jdk22Foreign.float32MethodWithUInt32Handle, value)
-
-    override fun invokeFloat32MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Float> =
-        invokeRawF32Result(instance, vtableIndex, "invokeFloat32MethodWithBooleanArg", Jdk22Foreign.float32MethodWithUInt32Handle, value)
-
     override fun invokeFloat32MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Float> =
         invokeRawF32Result(instance, vtableIndex, "invokeFloat32MethodWithObjectArg", Jdk22Foreign.float32MethodWithInputHandle, value)
 
@@ -3191,12 +3132,6 @@ private object JvmPlatformComInterop : ComInterop {
     override fun invokeFloat64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Double> {
         return invokeRawF64Result(instance, vtableIndex, "invokeFloat64MethodWithUInt32Arg", Jdk22Foreign.float64MethodWithUInt32Handle, value)
     }
-
-    override fun invokeFloat64MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Double> =
-        invokeRawF64Result(instance, vtableIndex, "invokeFloat64MethodWithInt32Arg", Jdk22Foreign.float64MethodWithUInt32Handle, value)
-
-    override fun invokeFloat64MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Double> =
-        invokeRawF64Result(instance, vtableIndex, "invokeFloat64MethodWithBooleanArg", Jdk22Foreign.float64MethodWithUInt32Handle, value)
 
     override fun invokeFloat64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Double> =
         invokeRawF64Result(instance, vtableIndex, "invokeFloat64MethodWithObjectArg", Jdk22Foreign.float64MethodWithInputHandle, value)
@@ -3213,12 +3148,6 @@ private object JvmPlatformComInterop : ComInterop {
 
     override fun invokeGuidMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Guid> =
         invokeRawGuidResult(instance, vtableIndex, "invokeGuidMethodWithInt32Arg", Jdk22Foreign.guidMethodWithInt32Handle, value)
-
-    override fun invokeGuidMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Guid> =
-        invokeRawGuidResult(instance, vtableIndex, "invokeGuidMethodWithUInt32Arg", Jdk22Foreign.guidMethodWithInt32Handle, value)
-
-    override fun invokeGuidMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Guid> =
-        invokeRawGuidResult(instance, vtableIndex, "invokeGuidMethodWithBooleanArg", Jdk22Foreign.guidMethodWithInt32Handle, value)
 
     override fun invokeGuidMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Guid> =
         invokeRawGuidResult(instance, vtableIndex, "invokeGuidMethodWithObjectArg", Jdk22Foreign.guidMethodWithInputHandle, value)

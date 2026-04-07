@@ -79,12 +79,6 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
-    override fun invokeUnitMethodWithObjectAndBooleanArgs(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: Boolean): Result<Unit> {
-        return Result.failure(
-            UnsupportedOperationException("Native Unit method invocation with Object and Boolean inputs is not wired yet"),
-        )
-    }
-
     override fun invokeUnitMethodWithInt32AndObjectArgs(instance: ComPtr, vtableIndex: Int, first: Int, second: ComPtr): Result<Unit> {
         return Result.failure(
             UnsupportedOperationException("Native Unit method invocation with Int32 and Object inputs is not wired yet"),
@@ -112,30 +106,6 @@ private object MingwPlatformComInterop : ComInterop {
     override fun invokeUnitMethodWithInt32AndStringArgs(instance: ComPtr, vtableIndex: Int, first: Int, second: String): Result<Unit> {
         return Result.failure(
             UnsupportedOperationException("Native Unit method invocation with Int32 and String inputs is not wired yet"),
-        )
-    }
-
-    override fun invokeUnitMethodWithStringAndUInt32Args(instance: ComPtr, vtableIndex: Int, first: String, second: UInt): Result<Unit> {
-        return Result.failure(
-            UnsupportedOperationException("Native Unit method invocation with String and UInt32 inputs is not wired yet"),
-        )
-    }
-
-    override fun invokeUnitMethodWithUInt32AndStringArgs(instance: ComPtr, vtableIndex: Int, first: UInt, second: String): Result<Unit> {
-        return Result.failure(
-            UnsupportedOperationException("Native Unit method invocation with UInt32 and String inputs is not wired yet"),
-        )
-    }
-
-    override fun invokeUnitMethodWithStringAndBooleanArgs(instance: ComPtr, vtableIndex: Int, first: String, second: Boolean): Result<Unit> {
-        return Result.failure(
-            UnsupportedOperationException("Native Unit method invocation with String and Boolean inputs is not wired yet"),
-        )
-    }
-
-    override fun invokeUnitMethodWithBooleanAndStringArgs(instance: ComPtr, vtableIndex: Int, first: Boolean, second: String): Result<Unit> {
-        return Result.failure(
-            UnsupportedOperationException("Native Unit method invocation with Boolean and String inputs is not wired yet"),
         )
     }
 
@@ -218,12 +188,6 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
-    override fun invokeHStringMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<HString> {
-        return Result.failure(
-            UnsupportedOperationException("Native HSTRING invocation with Boolean input is not wired yet"),
-        )
-    }
-
     override fun invokeHStringMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<HString> {
         return Result.failure(
             UnsupportedOperationException("Native HSTRING invocation with object input is not wired yet"),
@@ -269,18 +233,6 @@ private object MingwPlatformComInterop : ComInterop {
     override fun invokeObjectMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ComPtr> {
         return Result.failure(
             UnsupportedOperationException("Native object invocation with UInt32 input is not wired yet"),
-        )
-    }
-
-    override fun invokeObjectMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<ComPtr> {
-        return Result.failure(
-            UnsupportedOperationException("Native object invocation with Int32 input is not wired yet"),
-        )
-    }
-
-    override fun invokeObjectMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<ComPtr> {
-        return Result.failure(
-            UnsupportedOperationException("Native object invocation with Boolean input is not wired yet"),
         )
     }
 
@@ -548,12 +500,6 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
-    override fun invokeInt64MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Long> {
-        return Result.failure(
-            UnsupportedOperationException("Native Int64 method invocation with Boolean input is not wired yet"),
-        )
-    }
-
     override fun invokeUInt64Method(instance: ComPtr, vtableIndex: Int): Result<ULong> {
         return Result.failure(
             UnsupportedOperationException("Native UInt64 method invocation is not wired yet"),
@@ -572,21 +518,9 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
-    override fun invokeUInt64MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<ULong> {
-        return Result.failure(
-            UnsupportedOperationException("Native UInt64 method invocation with Int32 input is not wired yet"),
-        )
-    }
-
     override fun invokeUInt64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ULong> {
         return Result.failure(
             UnsupportedOperationException("Native UInt64 method invocation with UInt32 input is not wired yet"),
-        )
-    }
-
-    override fun invokeUInt64MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<ULong> {
-        return Result.failure(
-            UnsupportedOperationException("Native UInt64 method invocation with Boolean input is not wired yet"),
         )
     }
 
@@ -662,12 +596,6 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
-    override fun invokeInt32MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Int> {
-        return Result.failure(
-            UnsupportedOperationException("Native Int32 method invocation with Boolean input is not wired yet"),
-        )
-    }
-
     override fun invokeInt32MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Int> {
         return Result.failure(
             UnsupportedOperationException("Native Int32 method invocation with Int64 input is not wired yet"),
@@ -701,12 +629,6 @@ private object MingwPlatformComInterop : ComInterop {
     override fun invokeUInt32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<UInt> {
         return Result.failure(
             UnsupportedOperationException("Native UInt32 method invocation with UInt32 input is not wired yet"),
-        )
-    }
-
-    override fun invokeUInt32MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<UInt> {
-        return Result.failure(
-            UnsupportedOperationException("Native UInt32 method invocation with Boolean input is not wired yet"),
         )
     }
 
@@ -746,18 +668,6 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
-    override fun invokeBooleanMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Boolean> {
-        return Result.failure(
-            UnsupportedOperationException("Native Boolean method invocation with Int32 input is not wired yet"),
-        )
-    }
-
-    override fun invokeBooleanMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Boolean> {
-        return Result.failure(
-            UnsupportedOperationException("Native Boolean method invocation with Boolean input is not wired yet"),
-        )
-    }
-
     override fun invokeBooleanMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Boolean> {
         return Result.failure(
             UnsupportedOperationException("Native Boolean method invocation with Int64 input is not wired yet"),
@@ -788,18 +698,6 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
-    override fun invokeFloat32MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Float> {
-        return Result.failure(
-            UnsupportedOperationException("Native Float32 method invocation with Int32 input is not wired yet"),
-        )
-    }
-
-    override fun invokeFloat32MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Float> {
-        return Result.failure(
-            UnsupportedOperationException("Native Float32 method invocation with Boolean input is not wired yet"),
-        )
-    }
-
     override fun invokeFloat32MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Float> {
         return Result.failure(
             UnsupportedOperationException("Native Float32 method invocation with object input is not wired yet"),
@@ -821,18 +719,6 @@ private object MingwPlatformComInterop : ComInterop {
     override fun invokeFloat64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Double> {
         return Result.failure(
             UnsupportedOperationException("Native Float64 method invocation with UInt32 input is not wired yet"),
-        )
-    }
-
-    override fun invokeFloat64MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Double> {
-        return Result.failure(
-            UnsupportedOperationException("Native Float64 method invocation with Int32 input is not wired yet"),
-        )
-    }
-
-    override fun invokeFloat64MethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Double> {
-        return Result.failure(
-            UnsupportedOperationException("Native Float64 method invocation with Boolean input is not wired yet"),
         )
     }
 
@@ -863,18 +749,6 @@ private object MingwPlatformComInterop : ComInterop {
     override fun invokeGuidMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Guid> {
         return Result.failure(
             UnsupportedOperationException("Native GUID method invocation with Int32 input is not wired yet"),
-        )
-    }
-
-    override fun invokeGuidMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Guid> {
-        return Result.failure(
-            UnsupportedOperationException("Native GUID method invocation with UInt32 input is not wired yet"),
-        )
-    }
-
-    override fun invokeGuidMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Guid> {
-        return Result.failure(
-            UnsupportedOperationException("Native GUID method invocation with Boolean input is not wired yet"),
         )
     }
 
