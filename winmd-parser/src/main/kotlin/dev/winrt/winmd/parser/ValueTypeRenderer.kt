@@ -5,6 +5,7 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import kotlin.time.Duration
 import kotlin.time.Instant
@@ -17,6 +18,13 @@ internal class ValueTypeRenderer(
     private val typeRegistry: TypeRegistry,
     private val valueTypeProjectionSupport: ValueTypeProjectionSupport = ValueTypeProjectionSupport(typeNameMapper, typeRegistry),
 ) {
+    private data class DirectStructFieldProjection(
+        val kotlinTypeName: TypeName,
+        val layoutKindLiteral: String,
+        val writer: (String) -> CodeBlock,
+        val reader: CodeBlock,
+    )
+
     fun render(type: WinMdType): TypeSpec {
         return when (type.kind) {
             WinMdTypeKind.Struct -> renderStruct(type)
@@ -51,31 +59,8 @@ internal class ValueTypeRenderer(
             .build()
     }
 
-    private fun structFieldTypeName(typeName: String, currentNamespace: String) = when (typeName) {
-        "Boolean",
-        "Windows.Foundation.WinRtBoolean" -> Boolean::class.asTypeName()
-        "UInt8",
-        "Windows.Foundation.UInt8" -> UByte::class.asTypeName()
-        "Int16",
-        "Windows.Foundation.Int16" -> Short::class.asTypeName()
-        "UInt16",
-        "Windows.Foundation.UInt16" -> UShort::class.asTypeName()
-        "Char16",
-        "Windows.Foundation.Char16" -> Char::class.asTypeName()
-        "Int32",
-        "Windows.Foundation.Int32" -> Int::class.asTypeName()
-        "UInt32",
-        "Windows.Foundation.UInt32" -> UInt::class.asTypeName()
-        "Int64",
-        "Windows.Foundation.Int64" -> Long::class.asTypeName()
-        "UInt64",
-        "Windows.Foundation.UInt64" -> ULong::class.asTypeName()
-        "Float32",
-        "Windows.Foundation.Float32" -> Float::class.asTypeName()
-        "Float64",
-        "Windows.Foundation.Float64" -> Double::class.asTypeName()
-        else -> typeNameMapper.mapTypeName(typeName, currentNamespace)
-    }
+    private fun structFieldTypeName(typeName: String, currentNamespace: String): TypeName =
+        directStructFieldProjection(typeName)?.kotlinTypeName ?: typeNameMapper.mapTypeName(typeName, currentNamespace)
 
     private fun renderStructToAbi(type: WinMdType): FunSpec {
         return FunSpec.builder("toAbi")
@@ -143,9 +128,9 @@ internal class ValueTypeRenderer(
     }
 
     private fun appendStructLayoutEntries(builder: CodeBlock.Builder, typeName: String, currentNamespace: String) {
-        val kind = primitiveStructFieldKind(typeName, currentNamespace)
-        if (kind != null) {
-            builder.addStatement("add(%T.%L)", PoetSymbols.comStructFieldKindClass, kind)
+        val directProjection = directStructFieldProjection(typeName)
+        if (directProjection != null) {
+            builder.addStatement("add(%T.%L)", PoetSymbols.comStructFieldKindClass, directProjection.layoutKindLiteral)
             return
         }
         if (typeRegistry.isEnumType(typeName, currentNamespace)) {
@@ -175,37 +160,9 @@ internal class ValueTypeRenderer(
     }
 
     private fun renderStructFieldWrite(typeName: String, propertyName: String, currentNamespace: String): CodeBlock {
-        when (canonicalWinRtSpecialType(typeName)) {
-            "DateTime" -> {
-                return CodeBlock.of(
-                    "writer.writeLong((((%L.epochSeconds * 10000000L) + (%L.nanosecondsOfSecond / 100)) + %LL))\n",
-                    propertyName,
-                    propertyName,
-                    WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
-                )
-            }
-            "TimeSpan" -> return CodeBlock.of("writer.writeLong(%L.inWholeNanoseconds / 100)\n", propertyName)
-            "EventRegistrationToken" -> return CodeBlock.of("writer.writeLong(%L.value)\n", propertyName)
-        }
-        val kind = primitiveStructFieldKind(typeName, currentNamespace)
-        if (kind != null) {
-            return when (kind) {
-                "BOOLEAN" -> CodeBlock.of("writer.writeBoolean(%L)\n", propertyName)
-                "INT8" -> CodeBlock.of("writer.writeByte(%L)\n", propertyName)
-                "UINT8" -> CodeBlock.of("writer.writeUByte(%L)\n", propertyName)
-                "INT16" -> CodeBlock.of("writer.writeShort(%L)\n", propertyName)
-                "UINT16" -> CodeBlock.of("writer.writeUShort(%L)\n", propertyName)
-                "CHAR16" -> CodeBlock.of("writer.writeChar(%L)\n", propertyName)
-                "INT32" -> CodeBlock.of("writer.writeInt(%L)\n", propertyName)
-                "UINT32" -> CodeBlock.of("writer.writeUInt(%L)\n", propertyName)
-                "INT64" -> CodeBlock.of("writer.writeLong(%L)\n", propertyName)
-                "UINT64" -> CodeBlock.of("writer.writeULong(%L)\n", propertyName)
-                "FLOAT32" -> CodeBlock.of("writer.writeFloat(%L)\n", propertyName)
-                "FLOAT64" -> CodeBlock.of("writer.writeDouble(%L)\n", propertyName)
-                "HSTRING" -> CodeBlock.of("writer.writeHString(%L)\n", propertyName)
-                "GUID" -> CodeBlock.of("writer.writeGuid(%L)\n", propertyName)
-                else -> error("Unsupported struct field kind: $kind")
-            }
+        val directProjection = directStructFieldProjection(typeName)
+        if (directProjection != null) {
+            return directProjection.writer(propertyName)
         }
         if (typeRegistry.isEnumType(typeName, currentNamespace)) {
             return renderStructFieldWrite(
@@ -242,16 +199,11 @@ internal class ValueTypeRenderer(
     }
 
     private fun renderStructFieldRead(typeName: String, currentNamespace: String): CodeBlock {
+        val directProjection = directStructFieldProjection(typeName)
+        if (directProjection != null) {
+            return directProjection.reader
+        }
         return when {
-            canonicalWinRtSpecialType(typeName) == "DateTime" -> CodeBlock.of(
-                "reader.readLong().let { ticks -> %T.fromEpochSeconds((ticks - %LL) / 10000000L, (((ticks - %LL) %% 10000000L) * 100).toInt()) }",
-                Instant::class,
-                WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
-                WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
-            )
-            canonicalWinRtSpecialType(typeName) == "TimeSpan" -> CodeBlock.of("%T(reader.readLong())", Duration::class)
-            canonicalWinRtSpecialType(typeName) == "EventRegistrationToken" ->
-                CodeBlock.of("%T(reader.readLong())", PoetSymbols.eventRegistrationTokenClass)
             typeRegistry.isStructType(typeName, currentNamespace) ->
                 CodeBlock.of(
                     "%T.fromAbi(reader.readStruct(%T.ABI_LAYOUT))",
@@ -276,60 +228,84 @@ internal class ValueTypeRenderer(
                     currentNamespace = currentNamespace,
                     abiCall = CodeBlock.of("reader.readObjectPointer()"),
                 ) ?: error("Unsupported struct field type for reader: $typeName")
-            else -> renderPrimitiveStructFieldRead(typeName, currentNamespace)
-        }
-    }
-
-    private fun renderPrimitiveStructFieldRead(typeName: String, currentNamespace: String): CodeBlock {
-        val kind = primitiveStructFieldKind(typeName, currentNamespace)
-        if (kind != null) {
-            return when (kind) {
-                "BOOLEAN" -> CodeBlock.of("reader.readBoolean()")
-                "INT8" -> CodeBlock.of("reader.readByte()")
-                "UINT8" -> CodeBlock.of("reader.readUByte()")
-                "INT16" -> CodeBlock.of("reader.readShort()")
-                "UINT16" -> CodeBlock.of("reader.readUShort()")
-                "CHAR16" -> CodeBlock.of("reader.readChar()")
-                "INT32" -> CodeBlock.of("reader.readInt()")
-                "UINT32" -> CodeBlock.of("reader.readUInt()")
-                "INT64" -> CodeBlock.of("reader.readLong()")
-                "UINT64" -> CodeBlock.of("reader.readULong()")
-                "FLOAT32" -> CodeBlock.of("reader.readFloat()")
-                "FLOAT64" -> CodeBlock.of("reader.readDouble()")
-                "HSTRING" -> CodeBlock.of("reader.readHString()")
-                "GUID" -> CodeBlock.of("reader.readGuid()")
-                else -> error("Unsupported struct field kind: $kind")
+            typeRegistry.isEnumType(typeName, currentNamespace) -> {
+                val mappedType = typeNameMapper.mapTypeName(typeName, currentNamespace)
+                val underlyingRead = renderStructFieldRead(
+                    enumUnderlyingTypeOrDefault(typeRegistry, typeName, currentNamespace),
+                    currentNamespace,
+                )
+                CodeBlock.of("%T.fromValue(%L)", mappedType, underlyingRead)
             }
+            else -> error("Unsupported struct field type for reader: $typeName")
         }
-        if (typeRegistry.isEnumType(typeName, currentNamespace)) {
-            val mappedType = typeNameMapper.mapTypeName(typeName, currentNamespace)
-            val underlyingRead = renderStructFieldRead(
-                enumUnderlyingTypeOrDefault(typeRegistry, typeName, currentNamespace),
-                currentNamespace,
-            )
-            return CodeBlock.of("%T.fromValue(%L)", mappedType, underlyingRead)
-        }
-        error("Unsupported struct field type for reader: $typeName")
     }
 
-    private fun primitiveStructFieldKind(typeName: String, currentNamespace: String): String? {
+    private fun directStructFieldProjection(typeName: String): DirectStructFieldProjection? {
         return when (canonicalWinRtSpecialType(typeName)) {
-            "Boolean" -> "BOOLEAN"
-            "UInt8" -> "UINT8"
-            "Int16" -> "INT16"
-            "UInt16" -> "UINT16"
-            "Char16" -> "CHAR16"
-            "Int32" -> "INT32"
-            "UInt32" -> "UINT32"
-            "Int64", "DateTime", "TimeSpan", "EventRegistrationToken" -> "INT64"
-            "UInt64" -> "UINT64"
-            "Float32" -> "FLOAT32"
-            "Float64" -> "FLOAT64"
-            "String" -> "HSTRING"
-            "Guid" -> "GUID"
+            "Boolean" -> scalarStructFieldProjection(Boolean::class.asTypeName(), "BOOLEAN", "writeBoolean", "readBoolean")
+            "UInt8" -> scalarStructFieldProjection(UByte::class.asTypeName(), "UINT8", "writeUByte", "readUByte")
+            "Int16" -> scalarStructFieldProjection(Short::class.asTypeName(), "INT16", "writeShort", "readShort")
+            "UInt16" -> scalarStructFieldProjection(UShort::class.asTypeName(), "UINT16", "writeUShort", "readUShort")
+            "Char16" -> scalarStructFieldProjection(Char::class.asTypeName(), "CHAR16", "writeChar", "readChar")
+            "Int32" -> scalarStructFieldProjection(Int::class.asTypeName(), "INT32", "writeInt", "readInt")
+            "UInt32" -> scalarStructFieldProjection(UInt::class.asTypeName(), "UINT32", "writeUInt", "readUInt")
+            "Int64" -> scalarStructFieldProjection(Long::class.asTypeName(), "INT64", "writeLong", "readLong")
+            "UInt64" -> scalarStructFieldProjection(ULong::class.asTypeName(), "UINT64", "writeULong", "readULong")
+            "Float32" -> scalarStructFieldProjection(Float::class.asTypeName(), "FLOAT32", "writeFloat", "readFloat")
+            "Float64" -> scalarStructFieldProjection(Double::class.asTypeName(), "FLOAT64", "writeDouble", "readDouble")
+            "String" -> scalarStructFieldProjection(String::class.asTypeName(), "HSTRING", "writeHString", "readHString")
+            "Guid" -> DirectStructFieldProjection(
+                kotlinTypeName = PoetSymbols.guidValueClass,
+                layoutKindLiteral = "GUID",
+                writer = { propertyName -> CodeBlock.of("writer.writeGuid(%L)\n", propertyName) },
+                reader = CodeBlock.of("reader.readGuid()"),
+            )
+            "DateTime" -> DirectStructFieldProjection(
+                kotlinTypeName = Instant::class.asTypeName(),
+                layoutKindLiteral = "INT64",
+                writer = { propertyName ->
+                    CodeBlock.of(
+                        "writer.writeLong((((%L.epochSeconds * 10000000L) + (%L.nanosecondsOfSecond / 100)) + %LL))\n",
+                        propertyName,
+                        propertyName,
+                        WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
+                    )
+                },
+                reader = CodeBlock.of(
+                    "reader.readLong().let { ticks -> %T.fromEpochSeconds((ticks - %LL) / 10000000L, (((ticks - %LL) %% 10000000L) * 100).toInt()) }",
+                    Instant::class,
+                    WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
+                    WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
+                ),
+            )
+            "TimeSpan" -> DirectStructFieldProjection(
+                kotlinTypeName = Duration::class.asTypeName(),
+                layoutKindLiteral = "INT64",
+                writer = { propertyName -> CodeBlock.of("writer.writeLong(%L.inWholeNanoseconds / 100)\n", propertyName) },
+                reader = CodeBlock.of("%T(reader.readLong())", Duration::class),
+            )
+            "EventRegistrationToken" -> DirectStructFieldProjection(
+                kotlinTypeName = PoetSymbols.eventRegistrationTokenClass,
+                layoutKindLiteral = "INT64",
+                writer = { propertyName -> CodeBlock.of("writer.writeLong(%L.value)\n", propertyName) },
+                reader = CodeBlock.of("%T(reader.readLong())", PoetSymbols.eventRegistrationTokenClass),
+            )
             else -> null
         }
     }
+
+    private fun scalarStructFieldProjection(
+        kotlinTypeName: TypeName,
+        layoutKindLiteral: String,
+        writerMethod: String,
+        readerMethod: String,
+    ): DirectStructFieldProjection =
+        DirectStructFieldProjection(
+            kotlinTypeName = kotlinTypeName,
+            layoutKindLiteral = layoutKindLiteral,
+            writer = { propertyName -> CodeBlock.of("writer.$writerMethod(%L)\n", propertyName) },
+            reader = CodeBlock.of("reader.$readerMethod()"),
+        )
 
     private fun renderEnum(type: WinMdType): TypeSpec {
         val declarationName = projectedDeclarationSimpleName(type.name)

@@ -128,6 +128,59 @@ class ValueTypeRendererTest {
     }
 
     @Test
+    fun generates_struct_abi_helpers_for_direct_scalar_projections() {
+        val model = WinMdModel(
+            files = emptyList(),
+            namespaces = listOf(
+                WinMdNamespace(
+                    name = "Example.Foundation",
+                    types = listOf(
+                        WinMdType(
+                            namespace = "Example.Foundation",
+                            name = "TelemetryStamp",
+                            kind = WinMdTypeKind.Struct,
+                            fields = listOf(
+                                WinMdField("OccurredAt", "DateTime"),
+                                WinMdField("Elapsed", "TimeSpan"),
+                                WinMdField("Token", "EventRegistrationToken"),
+                                WinMdField("Id", "Guid"),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val binding = KotlinBindingGenerator().generate(model)
+            .first { it.relativePath == "Example/Foundation/TelemetryStamp.kt" }
+            .content
+            .replace(Regex("\\s+"), "")
+
+        assertTrue(binding.contains("valoccurredAt:Instant"))
+        assertTrue(binding.contains("valelapsed:Duration"))
+        assertTrue(binding.contains("valtoken:EventRegistrationToken"))
+        assertTrue(binding.contains("valid:Uuid"))
+        assertTrue(
+            binding.contains(
+                "add(ComStructFieldKind.INT64)add(ComStructFieldKind.INT64)add(ComStructFieldKind.INT64)add(ComStructFieldKind.GUID)",
+            ),
+        )
+        assertTrue(binding.contains("writer.writeLong("))
+        assertTrue(binding.contains("occurredAt.epochSeconds*10000000L"))
+        assertTrue(binding.contains("occurredAt.nanosecondsOfSecond/100"))
+        assertTrue(binding.contains("116_444_736_000_000_000L"))
+        assertTrue(binding.contains("writer.writeLong(elapsed.inWholeNanoseconds/100)"))
+        assertTrue(binding.contains("writer.writeLong(token.value)"))
+        assertTrue(binding.contains("writer.writeGuid(id)"))
+        assertTrue(binding.contains("Instant.fromEpochSeconds("))
+        assertTrue(binding.contains("(ticks-116_444_736_000_000_000L)/10000000L"))
+        assertTrue(binding.contains("((ticks-116_444_736_000_000_000L)%10000000L)*100"))
+        assertTrue(binding.contains("Duration(reader.readLong())"))
+        assertTrue(binding.contains("EventRegistrationToken(reader.readLong())"))
+        assertTrue(binding.contains("reader.readGuid()"))
+    }
+
+    @Test
     fun generates_struct_abi_helpers_for_nullable_ireference_fields() {
         val model = WinMdModel(
             files = emptyList(),
