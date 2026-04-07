@@ -194,12 +194,6 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
-    override fun invokeRawAddressMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<AbiIntPtr> {
-        return Result.failure(
-            UnsupportedOperationException("Native address-returning invocation with UInt32 input is not wired yet"),
-        )
-    }
-
     override fun invokeRawAddressMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<AbiIntPtr> {
         return Result.failure(
             UnsupportedOperationException("Native address-returning invocation with object input is not wired yet"),
@@ -477,12 +471,6 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
-    override fun invokeRawI32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Int> {
-        return Result.failure(
-            UnsupportedOperationException("Native Int32 method invocation with UInt32 input is not wired yet"),
-        )
-    }
-
     override fun invokeFloat64Method(instance: ComPtr, vtableIndex: Int): Result<Double> {
         return Result.failure(
             UnsupportedOperationException("Native Float64 method invocation is not wired yet"),
@@ -597,11 +585,6 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
-    override fun invokeRawI64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Long> {
-        return Result.failure(
-            UnsupportedOperationException("Native Int64 method invocation with UInt32 input is not wired yet"),
-        )
-    }
 }
 
 actual val PlatformComInteropKernel: ComInterop = MingwPlatformComInterop

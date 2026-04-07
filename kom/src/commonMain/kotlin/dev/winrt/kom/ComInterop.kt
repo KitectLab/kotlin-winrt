@@ -91,7 +91,6 @@ interface ComInterop {
     fun invokeRawAddressMethod(instance: ComPtr, vtableIndex: Int): Result<AbiIntPtr>
     fun invokeRawAddressMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<AbiIntPtr>
     fun invokeRawAddressMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<AbiIntPtr>
-    fun invokeRawAddressMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<AbiIntPtr>
     fun invokeRawAddressMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<AbiIntPtr>
     fun invokeRawAddressMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<AbiIntPtr>
     fun invokeTwoObjectMethod(instance: ComPtr, vtableIndex: Int): Result<Pair<ComPtr, ComPtr>>
@@ -138,7 +137,6 @@ interface ComInterop {
     fun invokeRawI32Method(instance: ComPtr, vtableIndex: Int): Result<Int>
     fun invokeRawI32MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Int>
     fun invokeRawI32MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Int>
-    fun invokeRawI32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Int>
     fun invokeRawI32MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Int>
     fun invokeRawI32MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Int>
     fun invokeFloat32Method(instance: ComPtr, vtableIndex: Int): Result<Float>
@@ -160,7 +158,6 @@ interface ComInterop {
     fun invokeRawI64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Long>
     fun invokeRawI64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Long>
     fun invokeRawI64MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Long>
-    fun invokeRawI64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Long>
 }
 
 @PublishedApi
@@ -205,7 +202,7 @@ object PlatformComInterop : ComInterop by PlatformComInteropKernel {
 
     @Suppress("NOTHING_TO_INLINE")
     inline fun invokeHStringMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<HString> =
-        invokeRawAddressMethodWithUInt32Arg(instance, vtableIndex, value).asHStringResult()
+        invokeRawAddressMethodWithInt32Arg(instance, vtableIndex, value.toInt()).asHStringResult()
 
     @Suppress("NOTHING_TO_INLINE")
     inline fun invokeHStringMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<HString> =
@@ -229,7 +226,7 @@ object PlatformComInterop : ComInterop by PlatformComInteropKernel {
 
     @Suppress("NOTHING_TO_INLINE")
     inline fun invokeObjectMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ComPtr> =
-        invokeRawAddressMethodWithUInt32Arg(instance, vtableIndex, value).asComPtrResult()
+        invokeRawAddressMethodWithInt32Arg(instance, vtableIndex, value.toInt()).asComPtrResult()
 
     @Suppress("NOTHING_TO_INLINE")
     inline fun invokeObjectMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<ComPtr> =
@@ -249,7 +246,7 @@ object PlatformComInterop : ComInterop by PlatformComInteropKernel {
 
     @Suppress("NOTHING_TO_INLINE")
     inline fun invokeInt32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Int> =
-        invokeRawI32MethodWithUInt32Arg(instance, vtableIndex, value)
+        invokeRawI32MethodWithInt32Arg(instance, vtableIndex, value.toInt())
 
     @Suppress("NOTHING_TO_INLINE")
     inline fun invokeInt32MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Int> =
@@ -273,7 +270,7 @@ object PlatformComInterop : ComInterop by PlatformComInteropKernel {
 
     @Suppress("NOTHING_TO_INLINE")
     inline fun invokeUInt32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<UInt> =
-        invokeRawI32MethodWithUInt32Arg(instance, vtableIndex, value).asUIntResult()
+        invokeRawI32MethodWithInt32Arg(instance, vtableIndex, value.toInt()).asUIntResult()
 
     @Suppress("NOTHING_TO_INLINE")
     inline fun invokeUInt32MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<UInt> =
@@ -297,7 +294,7 @@ object PlatformComInterop : ComInterop by PlatformComInteropKernel {
 
     @Suppress("NOTHING_TO_INLINE")
     inline fun invokeBooleanMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Boolean> =
-        invokeRawI32MethodWithUInt32Arg(instance, vtableIndex, value).asBooleanResult()
+        invokeRawI32MethodWithInt32Arg(instance, vtableIndex, value.toInt()).asBooleanResult()
 
     @Suppress("NOTHING_TO_INLINE")
     inline fun invokeBooleanMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Boolean> =
@@ -321,7 +318,7 @@ object PlatformComInterop : ComInterop by PlatformComInteropKernel {
 
     @Suppress("NOTHING_TO_INLINE")
     inline fun invokeInt64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Long> =
-        invokeRawI64MethodWithUInt32Arg(instance, vtableIndex, value)
+        invokeRawI64MethodWithInt32Arg(instance, vtableIndex, value.toInt())
 
     @Suppress("NOTHING_TO_INLINE")
     inline fun invokeUInt64Method(instance: ComPtr, vtableIndex: Int): Result<ULong> =
@@ -337,7 +334,7 @@ object PlatformComInterop : ComInterop by PlatformComInteropKernel {
 
     @Suppress("NOTHING_TO_INLINE")
     inline fun invokeUInt64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ULong> =
-        invokeRawI64MethodWithUInt32Arg(instance, vtableIndex, value).asULongResult()
+        invokeRawI64MethodWithInt32Arg(instance, vtableIndex, value.toInt()).asULongResult()
 
     @Suppress("NOTHING_TO_INLINE")
     inline fun invokeInt64Getter(instance: ComPtr, vtableIndex: Int): Result<Long> =

@@ -2631,10 +2631,6 @@ private object JvmPlatformComInterop : ComInterop {
         invokeRawAddressResult(instance, vtableIndex, "invokeRawAddressMethodWithInt32Arg", Jdk22Foreign.hstringMethodWithInt32Handle, value)
             .map { segment -> AbiIntPtr(segment.address()) }
 
-    override fun invokeRawAddressMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<AbiIntPtr> =
-        invokeRawAddressResult(instance, vtableIndex, "invokeRawAddressMethodWithUInt32Arg", Jdk22Foreign.objectMethodWithUInt32Handle, value)
-            .map { segment -> AbiIntPtr(segment.address()) }
-
     override fun invokeRawAddressMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<AbiIntPtr> =
         invokeRawAddressResult(instance, vtableIndex, "invokeRawAddressMethodWithObjectArg", Jdk22Foreign.objectMethodWithInputHandle, value)
             .map { segment -> AbiIntPtr(segment.address()) }
@@ -2937,10 +2933,6 @@ private object JvmPlatformComInterop : ComInterop {
         return invokeRawI64Result(instance, vtableIndex, "invokeRawI64MethodWithInt32Arg", Jdk22Foreign.int64MethodWithInt32Handle, value)
     }
 
-    override fun invokeRawI64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Long> {
-        return invokeRawI64Result(instance, vtableIndex, "invokeRawI64MethodWithUInt32Arg", Jdk22Foreign.int64MethodWithUInt32Handle, value)
-    }
-
     override fun invokeRawI32Method(instance: ComPtr, vtableIndex: Int): Result<Int> {
         return invokeRawI32Result(instance, vtableIndex, "invokeRawI32Method", Jdk22Foreign.int32MethodHandle)
     }
@@ -2951,10 +2943,6 @@ private object JvmPlatformComInterop : ComInterop {
 
     override fun invokeRawI32MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Int> {
         return invokeRawI32Result(instance, vtableIndex, "invokeRawI32MethodWithInt32Arg", Jdk22Foreign.int32MethodWithInt32Handle, value)
-    }
-
-    override fun invokeRawI32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Int> {
-        return invokeRawI32Result(instance, vtableIndex, "invokeRawI32MethodWithUInt32Arg", Jdk22Foreign.int32MethodWithUInt32Handle, value)
     }
 
     override fun invokeRawI32MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Int> {
