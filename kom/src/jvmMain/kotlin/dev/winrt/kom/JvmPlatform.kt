@@ -2171,6 +2171,234 @@ private object JvmPlatformComInterop : ComInterop {
 
     private fun Result<MemorySegment>.asComPtrResult(): Result<ComPtr> = map(Jdk22Foreign::addressResult)
 
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+    )
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Int,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        value,
+    )
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: UInt,
+    ): Result<Unit> = invokeRawUnit(instance, vtableIndex, operation, handle, value.toInt())
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Boolean,
+    ): Result<Unit> = invokeRawUnit(instance, vtableIndex, operation, handle, if (value) 1 else 0)
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Long,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        value,
+    )
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: ComPtr,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        value,
+    )
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: String,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        value,
+    )
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: Int,
+        second: Int,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, operation, handle, first, second)
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: Int,
+        second: Long,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, operation, handle, first, second)
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: Long,
+        second: Int,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, operation, handle, first, second)
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: Long,
+        second: Long,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, operation, handle, first, second)
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: ComPtr,
+        second: Int,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, operation, handle, first, second)
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: Int,
+        second: ComPtr,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, operation, handle, first, second)
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: ComPtr,
+        second: Long,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, operation, handle, first, second)
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: Long,
+        second: ComPtr,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, operation, handle, first, second)
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: String,
+        second: Int,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, operation, handle, first, second)
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: Int,
+        second: String,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, operation, handle, first, second)
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: String,
+        second: Long,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, operation, handle, first, second)
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: Long,
+        second: String,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, operation, handle, first, second)
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: String,
+        second: String,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, operation, handle, first, second)
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: ComPtr,
+        second: String,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, operation, handle, first, second)
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: String,
+        second: ComPtr,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, operation, handle, first, second)
+
+    private fun invokeRawUnit(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        first: ComPtr,
+        second: ComPtr,
+    ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, operation, handle, first, second)
+
     override fun queryInterface(instance: ComPtr, iid: Guid): Result<ComPtr> {
         if (instance.isNull) {
             return Result.failure(KomException("QueryInterface requires a non-null COM pointer"))
@@ -2223,12 +2451,7 @@ private object JvmPlatformComInterop : ComInterop {
     }
 
     override fun invokeUnitMethod(instance: ComPtr, vtableIndex: Int): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeUnitMethod",
-            handle = Jdk22Foreign.unitMethodHandle,
-        )
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethod", Jdk22Foreign.unitMethodHandle)
     }
 
     override fun invokeUnitMethodWithArgs(instance: ComPtr, vtableIndex: Int, vararg arguments: Any): Result<Unit> {
@@ -2242,118 +2465,87 @@ private object JvmPlatformComInterop : ComInterop {
     }
 
     override fun invokeUnitMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeUnitMethodWithInt32Arg",
-            handle = Jdk22Foreign.unitMethodWithInt32Handle,
-            value,
-        )
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithInt32Arg", Jdk22Foreign.unitMethodWithInt32Handle, value)
     }
 
     override fun invokeUnitMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeUnitMethodWithUInt32Arg",
-            handle = Jdk22Foreign.unitMethodWithUInt32Handle,
-            value.toInt(),
-        )
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithUInt32Arg", Jdk22Foreign.unitMethodWithUInt32Handle, value)
     }
 
     override fun invokeUnitMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeUnitMethodWithInt64Arg",
-            handle = Jdk22Foreign.unitMethodWithInt64Handle,
-            value,
-        )
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithInt64Arg", Jdk22Foreign.unitMethodWithInt64Handle, value)
     }
 
     override fun invokeUnitMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeUnitMethodWithStringArg",
-            handle = Jdk22Foreign.hstringSetterHandle,
-            value,
-        )
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithStringArg", Jdk22Foreign.hstringSetterHandle, value)
     }
 
     override fun invokeUnitMethodWithTwoInt32Args(instance: ComPtr, vtableIndex: Int, first: Int, second: Int): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithTwoInt32Args", twoInt32UnitHandle, first, second)
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithTwoInt32Args", twoInt32UnitHandle, first, second)
     }
 
     override fun invokeUnitMethodWithInt32AndInt64Args(instance: ComPtr, vtableIndex: Int, first: Int, second: Long): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithInt32AndInt64Args", int32Int64UnitHandle, first, second)
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithInt32AndInt64Args", int32Int64UnitHandle, first, second)
     }
 
     override fun invokeUnitMethodWithInt64AndInt32Args(instance: ComPtr, vtableIndex: Int, first: Long, second: Int): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithInt64AndInt32Args", int64Int32UnitHandle, first, second)
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithInt64AndInt32Args", int64Int32UnitHandle, first, second)
     }
 
     override fun invokeUnitMethodWithTwoInt64Args(instance: ComPtr, vtableIndex: Int, first: Long, second: Long): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithTwoInt64Args", twoInt64UnitHandle, first, second)
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithTwoInt64Args", twoInt64UnitHandle, first, second)
     }
 
     override fun invokeUnitMethodWithObjectAndInt32Args(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: Int): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithObjectAndInt32Args", addressInt32UnitHandle, first, second)
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithObjectAndInt32Args", addressInt32UnitHandle, first, second)
     }
 
     override fun invokeUnitMethodWithObjectAndBooleanArgs(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: Boolean): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance,
-            vtableIndex,
-            "invokeUnitMethodWithObjectAndBooleanArgs",
-            addressInt32UnitHandle,
-            first,
-            if (second) 1 else 0,
-        )
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithObjectAndBooleanArgs", addressInt32UnitHandle, first, if (second) 1 else 0)
     }
 
     override fun invokeUnitMethodWithInt32AndObjectArgs(instance: ComPtr, vtableIndex: Int, first: Int, second: ComPtr): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithInt32AndObjectArgs", int32AddressUnitHandle, first, second)
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithInt32AndObjectArgs", int32AddressUnitHandle, first, second)
     }
 
     override fun invokeUnitMethodWithObjectAndInt64Args(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: Long): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithObjectAndInt64Args", addressInt64UnitHandle, first, second)
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithObjectAndInt64Args", addressInt64UnitHandle, first, second)
     }
 
     override fun invokeUnitMethodWithInt64AndObjectArgs(instance: ComPtr, vtableIndex: Int, first: Long, second: ComPtr): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithInt64AndObjectArgs", int64AddressUnitHandle, first, second)
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithInt64AndObjectArgs", int64AddressUnitHandle, first, second)
     }
 
     override fun invokeUnitMethodWithStringAndInt32Args(instance: ComPtr, vtableIndex: Int, first: String, second: Int): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithStringAndInt32Args", stringInt32UnitHandle, first, second)
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithStringAndInt32Args", stringInt32UnitHandle, first, second)
     }
 
     override fun invokeUnitMethodWithInt32AndStringArgs(instance: ComPtr, vtableIndex: Int, first: Int, second: String): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithInt32AndStringArgs", int32StringUnitHandle, first, second)
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithInt32AndStringArgs", int32StringUnitHandle, first, second)
     }
 
     override fun invokeUnitMethodWithStringAndUInt32Args(instance: ComPtr, vtableIndex: Int, first: String, second: UInt): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithStringAndUInt32Args", stringInt32UnitHandle, first, second)
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithStringAndUInt32Args", stringInt32UnitHandle, first, second.toInt())
     }
 
     override fun invokeUnitMethodWithUInt32AndStringArgs(instance: ComPtr, vtableIndex: Int, first: UInt, second: String): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithUInt32AndStringArgs", int32StringUnitHandle, first, second)
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithUInt32AndStringArgs", int32StringUnitHandle, first.toInt(), second)
     }
 
     override fun invokeUnitMethodWithStringAndBooleanArgs(instance: ComPtr, vtableIndex: Int, first: String, second: Boolean): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithStringAndBooleanArgs", stringInt32UnitHandle, first, second)
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithStringAndBooleanArgs", stringInt32UnitHandle, first, if (second) 1 else 0)
     }
 
     override fun invokeUnitMethodWithBooleanAndStringArgs(instance: ComPtr, vtableIndex: Int, first: Boolean, second: String): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithBooleanAndStringArgs", int32StringUnitHandle, first, second)
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithBooleanAndStringArgs", int32StringUnitHandle, if (first) 1 else 0, second)
     }
 
     override fun invokeUnitMethodWithStringAndInt64Args(instance: ComPtr, vtableIndex: Int, first: String, second: Long): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithStringAndInt64Args", stringInt64UnitHandle, first, second)
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithStringAndInt64Args", stringInt64UnitHandle, first, second)
     }
 
     override fun invokeUnitMethodWithInt64AndStringArgs(instance: ComPtr, vtableIndex: Int, first: Long, second: String): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, "invokeUnitMethodWithInt64AndStringArgs", int64StringUnitHandle, first, second)
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithInt64AndStringArgs", int64StringUnitHandle, first, second)
     }
 
     override fun invokeUnitMethodWithTwoStringArgs(
@@ -2362,14 +2554,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: String,
         second: String,
     ): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeUnitMethodWithTwoStringArgs",
-            handle = twoAddressUnitHandle,
-            first,
-            second,
-        )
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithTwoStringArgs", twoAddressUnitHandle, first, second)
     }
 
     override fun invokeUnitMethodWithObjectAndStringArgs(
@@ -2378,14 +2563,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: ComPtr,
         second: String,
     ): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeUnitMethodWithObjectAndStringArgs",
-            handle = twoAddressOutHandle,
-            first,
-            second,
-        )
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithObjectAndStringArgs", twoAddressOutHandle, first, second)
     }
 
     override fun invokeUnitMethodWithStringAndObjectArgs(
@@ -2394,14 +2572,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: String,
         second: ComPtr,
     ): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeUnitMethodWithStringAndObjectArgs",
-            handle = twoAddressOutHandle,
-            first,
-            second,
-        )
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithStringAndObjectArgs", twoAddressOutHandle, first, second)
     }
 
     override fun invokeUnitMethodWithTwoObjectArgs(
@@ -2410,14 +2581,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: ComPtr,
         second: ComPtr,
     ): Result<Unit> {
-        return JvmComMethodExecutor.invokeWithoutOut(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeUnitMethodWithTwoObjectArgs",
-            handle = twoAddressUnitHandle,
-            first,
-            second,
-        )
+        return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithTwoObjectArgs", twoAddressUnitHandle, first, second)
     }
 
     override fun invokeHStringMethod(instance: ComPtr, vtableIndex: Int): Result<HString> {
