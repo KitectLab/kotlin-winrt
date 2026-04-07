@@ -2399,6 +2399,156 @@ private object JvmPlatformComInterop : ComInterop {
         second: ComPtr,
     ): Result<Unit> = JvmComMethodExecutor.invokeWithoutOut(instance, vtableIndex, operation, handle, first, second)
 
+    private fun invokeRawResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: ComPtr,
+        second: String,
+    ): Result<ComMethodResult> = JvmComMethodExecutor.invokeWithOutResultKind(instance, vtableIndex, operation, handle, resultKind, first, second)
+
+    private fun invokeRawResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: ComPtr,
+        second: Int,
+    ): Result<ComMethodResult> = JvmComMethodExecutor.invokeWithOutResultKind(instance, vtableIndex, operation, handle, resultKind, first, second)
+
+    private fun invokeRawResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: Int,
+        second: ComPtr,
+    ): Result<ComMethodResult> = JvmComMethodExecutor.invokeWithOutResultKind(instance, vtableIndex, operation, handle, resultKind, first, second)
+
+    private fun invokeRawResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: ComPtr,
+        second: Long,
+    ): Result<ComMethodResult> = JvmComMethodExecutor.invokeWithOutResultKind(instance, vtableIndex, operation, handle, resultKind, first, second)
+
+    private fun invokeRawResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: String,
+        second: Int,
+    ): Result<ComMethodResult> = JvmComMethodExecutor.invokeWithOutResultKind(instance, vtableIndex, operation, handle, resultKind, first, second)
+
+    private fun invokeRawResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: Int,
+        second: String,
+    ): Result<ComMethodResult> = JvmComMethodExecutor.invokeWithOutResultKind(instance, vtableIndex, operation, handle, resultKind, first, second)
+
+    private fun invokeRawResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: String,
+        second: Long,
+    ): Result<ComMethodResult> = JvmComMethodExecutor.invokeWithOutResultKind(instance, vtableIndex, operation, handle, resultKind, first, second)
+
+    private fun invokeRawResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: Long,
+        second: String,
+    ): Result<ComMethodResult> = JvmComMethodExecutor.invokeWithOutResultKind(instance, vtableIndex, operation, handle, resultKind, first, second)
+
+    private fun invokeRawResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: Int,
+        second: Int,
+    ): Result<ComMethodResult> = JvmComMethodExecutor.invokeWithOutResultKind(instance, vtableIndex, operation, handle, resultKind, first, second)
+
+    private fun invokeRawResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: Int,
+        second: Long,
+    ): Result<ComMethodResult> = JvmComMethodExecutor.invokeWithOutResultKind(instance, vtableIndex, operation, handle, resultKind, first, second)
+
+    private fun invokeRawResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: Long,
+        second: Int,
+    ): Result<ComMethodResult> = JvmComMethodExecutor.invokeWithOutResultKind(instance, vtableIndex, operation, handle, resultKind, first, second)
+
+    private fun invokeRawResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: Long,
+        second: Long,
+    ): Result<ComMethodResult> = JvmComMethodExecutor.invokeWithOutResultKind(instance, vtableIndex, operation, handle, resultKind, first, second)
+
+    private fun invokeRawResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: Long,
+        second: ComPtr,
+    ): Result<ComMethodResult> = JvmComMethodExecutor.invokeWithOutResultKind(instance, vtableIndex, operation, handle, resultKind, first, second)
+
+    private fun invokeRawResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: String,
+        second: ComPtr,
+    ): Result<ComMethodResult> = JvmComMethodExecutor.invokeWithOutResultKind(instance, vtableIndex, operation, handle, resultKind, first, second)
+
+    private fun invokeRawResultKind(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        resultKind: ComMethodResultKind,
+        first: ComPtr,
+        second: ComPtr,
+    ): Result<ComMethodResult> = JvmComMethodExecutor.invokeWithOutResultKind(instance, vtableIndex, operation, handle, resultKind, first, second)
+
     override fun queryInterface(instance: ComPtr, iid: Guid): Result<ComPtr> {
         if (instance.isNull) {
             return Result.failure(KomException("QueryInterface requires a non-null COM pointer"))
@@ -2678,15 +2828,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: ComPtr,
         second: String,
     ): Result<ComMethodResult> {
-        return JvmComMethodExecutor.invokeWithOutResultKind(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeMethodWithObjectAndStringArgs",
-            handle = twoAddressOutHandle,
-            resultKind = resultKind,
-            first,
-            second,
-        )
+        return invokeRawResultKind(instance, vtableIndex, "invokeMethodWithObjectAndStringArgs", twoAddressOutHandle, resultKind, first, second)
     }
 
     override fun invokeMethodWithObjectAndInt32Args(
@@ -2696,15 +2838,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: ComPtr,
         second: Int,
     ): Result<ComMethodResult> {
-        return JvmComMethodExecutor.invokeWithOutResultKind(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeMethodWithObjectAndInt32Args",
-            handle = addressInt32OutHandle,
-            resultKind = resultKind,
-            first,
-            second,
-        )
+        return invokeRawResultKind(instance, vtableIndex, "invokeMethodWithObjectAndInt32Args", addressInt32OutHandle, resultKind, first, second)
     }
 
     override fun invokeMethodWithInt32AndObjectArgs(
@@ -2714,15 +2848,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: Int,
         second: ComPtr,
     ): Result<ComMethodResult> {
-        return JvmComMethodExecutor.invokeWithOutResultKind(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeMethodWithInt32AndObjectArgs",
-            handle = int32AddressOutHandle,
-            resultKind = resultKind,
-            first,
-            second,
-        )
+        return invokeRawResultKind(instance, vtableIndex, "invokeMethodWithInt32AndObjectArgs", int32AddressOutHandle, resultKind, first, second)
     }
 
     override fun invokeMethodWithObjectAndInt64Args(
@@ -2732,15 +2858,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: ComPtr,
         second: Long,
     ): Result<ComMethodResult> {
-        return JvmComMethodExecutor.invokeWithOutResultKind(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeMethodWithObjectAndInt64Args",
-            handle = addressInt64OutHandle,
-            resultKind = resultKind,
-            first,
-            second,
-        )
+        return invokeRawResultKind(instance, vtableIndex, "invokeMethodWithObjectAndInt64Args", addressInt64OutHandle, resultKind, first, second)
     }
 
     override fun invokeMethodWithStringAndInt32Args(
@@ -2750,15 +2868,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: String,
         second: Int,
     ): Result<ComMethodResult> {
-        return JvmComMethodExecutor.invokeWithOutResultKind(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeMethodWithStringAndInt32Args",
-            handle = stringInt32UnitHandle,
-            resultKind = resultKind,
-            first,
-            second,
-        )
+        return invokeRawResultKind(instance, vtableIndex, "invokeMethodWithStringAndInt32Args", stringInt32UnitHandle, resultKind, first, second)
     }
 
     override fun invokeMethodWithInt32AndStringArgs(
@@ -2768,15 +2878,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: Int,
         second: String,
     ): Result<ComMethodResult> {
-        return JvmComMethodExecutor.invokeWithOutResultKind(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeMethodWithInt32AndStringArgs",
-            handle = int32StringUnitHandle,
-            resultKind = resultKind,
-            first,
-            second,
-        )
+        return invokeRawResultKind(instance, vtableIndex, "invokeMethodWithInt32AndStringArgs", int32StringUnitHandle, resultKind, first, second)
     }
 
     override fun invokeMethodWithStringAndInt64Args(
@@ -2786,15 +2888,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: String,
         second: Long,
     ): Result<ComMethodResult> {
-        return JvmComMethodExecutor.invokeWithOutResultKind(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeMethodWithStringAndInt64Args",
-            handle = stringInt64UnitHandle,
-            resultKind = resultKind,
-            first,
-            second,
-        )
+        return invokeRawResultKind(instance, vtableIndex, "invokeMethodWithStringAndInt64Args", stringInt64UnitHandle, resultKind, first, second)
     }
 
     override fun invokeMethodWithTwoInt32Args(
@@ -2804,15 +2898,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: Int,
         second: Int,
     ): Result<ComMethodResult> {
-        return JvmComMethodExecutor.invokeWithOutResultKind(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeMethodWithTwoInt32Args",
-            handle = twoInt32UnitHandle,
-            resultKind = resultKind,
-            first,
-            second,
-        )
+        return invokeRawResultKind(instance, vtableIndex, "invokeMethodWithTwoInt32Args", twoInt32UnitHandle, resultKind, first, second)
     }
 
     override fun invokeMethodWithInt32AndInt64Args(
@@ -2822,15 +2908,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: Int,
         second: Long,
     ): Result<ComMethodResult> {
-        return JvmComMethodExecutor.invokeWithOutResultKind(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeMethodWithInt32AndInt64Args",
-            handle = int32Int64UnitHandle,
-            resultKind = resultKind,
-            first,
-            second,
-        )
+        return invokeRawResultKind(instance, vtableIndex, "invokeMethodWithInt32AndInt64Args", int32Int64UnitHandle, resultKind, first, second)
     }
 
     override fun invokeMethodWithInt64AndInt32Args(
@@ -2840,15 +2918,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: Long,
         second: Int,
     ): Result<ComMethodResult> {
-        return JvmComMethodExecutor.invokeWithOutResultKind(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeMethodWithInt64AndInt32Args",
-            handle = int64Int32UnitHandle,
-            resultKind = resultKind,
-            first,
-            second,
-        )
+        return invokeRawResultKind(instance, vtableIndex, "invokeMethodWithInt64AndInt32Args", int64Int32UnitHandle, resultKind, first, second)
     }
 
     override fun invokeMethodWithTwoInt64Args(
@@ -2858,15 +2928,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: Long,
         second: Long,
     ): Result<ComMethodResult> {
-        return JvmComMethodExecutor.invokeWithOutResultKind(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeMethodWithTwoInt64Args",
-            handle = twoInt64UnitHandle,
-            resultKind = resultKind,
-            first,
-            second,
-        )
+        return invokeRawResultKind(instance, vtableIndex, "invokeMethodWithTwoInt64Args", twoInt64UnitHandle, resultKind, first, second)
     }
 
     override fun invokeMethodWithInt64AndStringArgs(
@@ -2876,15 +2938,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: Long,
         second: String,
     ): Result<ComMethodResult> {
-        return JvmComMethodExecutor.invokeWithOutResultKind(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeMethodWithInt64AndStringArgs",
-            handle = int64StringUnitHandle,
-            resultKind = resultKind,
-            first,
-            second,
-        )
+        return invokeRawResultKind(instance, vtableIndex, "invokeMethodWithInt64AndStringArgs", int64StringUnitHandle, resultKind, first, second)
     }
 
     override fun invokeMethodWithInt64AndObjectArgs(
@@ -2894,15 +2948,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: Long,
         second: ComPtr,
     ): Result<ComMethodResult> {
-        return JvmComMethodExecutor.invokeWithOutResultKind(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeMethodWithInt64AndObjectArgs",
-            handle = int64AddressOutHandle,
-            resultKind = resultKind,
-            first,
-            second,
-        )
+        return invokeRawResultKind(instance, vtableIndex, "invokeMethodWithInt64AndObjectArgs", int64AddressOutHandle, resultKind, first, second)
     }
 
     override fun invokeMethodWithStringAndObjectArgs(
@@ -2912,15 +2958,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: String,
         second: ComPtr,
     ): Result<ComMethodResult> {
-        return JvmComMethodExecutor.invokeWithOutResultKind(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeMethodWithStringAndObjectArgs",
-            handle = twoAddressOutHandle,
-            resultKind = resultKind,
-            first,
-            second,
-        )
+        return invokeRawResultKind(instance, vtableIndex, "invokeMethodWithStringAndObjectArgs", twoAddressOutHandle, resultKind, first, second)
     }
 
     override fun invokeMethodWithTwoObjectArgs(
@@ -2930,15 +2968,7 @@ private object JvmPlatformComInterop : ComInterop {
         first: ComPtr,
         second: ComPtr,
     ): Result<ComMethodResult> {
-        return JvmComMethodExecutor.invokeWithOutResultKind(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeMethodWithTwoObjectArgs",
-            handle = twoAddressOutHandle,
-            resultKind = resultKind,
-            first,
-            second,
-        )
+        return invokeRawResultKind(instance, vtableIndex, "invokeMethodWithTwoObjectArgs", twoAddressOutHandle, resultKind, first, second)
     }
 
     override fun invokeMethodWithResultKind(
