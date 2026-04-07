@@ -182,57 +182,39 @@ private object MingwPlatformComInterop : ComInterop {
 
     override fun release(instance: ComPtr): UInt = 0u
 
-    override fun invokeHStringMethod(instance: ComPtr, vtableIndex: Int): Result<HString> {
+    override fun invokeRawAddressMethod(instance: ComPtr, vtableIndex: Int): Result<AbiIntPtr> {
         return Result.failure(
-            UnsupportedOperationException("Native HSTRING invocation is not wired yet"),
+            UnsupportedOperationException("Native address-returning invocation is not wired yet"),
         )
     }
 
-    override fun invokeHStringMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<HString> {
+    override fun invokeRawAddressMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<AbiIntPtr> {
         return Result.failure(
-            UnsupportedOperationException("Native HSTRING invocation with input is not wired yet"),
+            UnsupportedOperationException("Native address-returning invocation with String input is not wired yet"),
         )
     }
 
-    override fun invokeHStringMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<HString> {
+    override fun invokeRawAddressMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<AbiIntPtr> {
         return Result.failure(
-            UnsupportedOperationException("Native HSTRING invocation with Int32 input is not wired yet"),
+            UnsupportedOperationException("Native address-returning invocation with Int32 input is not wired yet"),
         )
     }
 
-    override fun invokeHStringMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<HString> {
+    override fun invokeRawAddressMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<AbiIntPtr> {
         return Result.failure(
-            UnsupportedOperationException("Native HSTRING invocation with UInt32 input is not wired yet"),
+            UnsupportedOperationException("Native address-returning invocation with UInt32 input is not wired yet"),
         )
     }
 
-    override fun invokeHStringMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<HString> {
+    override fun invokeRawAddressMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<AbiIntPtr> {
         return Result.failure(
-            UnsupportedOperationException("Native HSTRING invocation with object input is not wired yet"),
+            UnsupportedOperationException("Native address-returning invocation with object input is not wired yet"),
         )
     }
 
-    override fun invokeHStringMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<HString> {
+    override fun invokeRawAddressMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<AbiIntPtr> {
         return Result.failure(
-            UnsupportedOperationException("Native HSTRING invocation with Int64 input is not wired yet"),
-        )
-    }
-
-    override fun invokeObjectMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ComPtr> {
-        return Result.failure(
-            UnsupportedOperationException("Native object invocation with HSTRING input is not wired yet"),
-        )
-    }
-
-    override fun invokeObjectMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<ComPtr> {
-        return Result.failure(
-            UnsupportedOperationException("Native object invocation with object input is not wired yet"),
-        )
-    }
-
-    override fun invokeObjectMethod(instance: ComPtr, vtableIndex: Int): Result<ComPtr> {
-        return Result.failure(
-            UnsupportedOperationException("Native object invocation is not wired yet"),
+            UnsupportedOperationException("Native address-returning invocation with Int64 input is not wired yet"),
         )
     }
 
@@ -248,17 +230,6 @@ private object MingwPlatformComInterop : ComInterop {
         )
     }
 
-    override fun invokeObjectMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ComPtr> {
-        return Result.failure(
-            UnsupportedOperationException("Native object invocation with UInt32 input is not wired yet"),
-        )
-    }
-
-    override fun invokeObjectMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<ComPtr> {
-        return Result.failure(
-            UnsupportedOperationException("Native object invocation with Int64 input is not wired yet"),
-        )
-    }
 
     override fun invokeStructMethodWithArgs(
         instance: ComPtr,

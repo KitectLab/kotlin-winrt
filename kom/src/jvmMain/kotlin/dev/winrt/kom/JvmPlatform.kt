@@ -1811,10 +1811,6 @@ private object JvmPlatformComInterop : ComInterop {
         value,
     )
 
-    private fun Result<MemorySegment>.asHStringResult(): Result<HString> = map { segment -> HString(segment.address()) }
-
-    private fun Result<MemorySegment>.asComPtrResult(): Result<ComPtr> = map(Jdk22Foreign::addressResult)
-
     private fun invokeRawGuidResult(
         instance: ComPtr,
         vtableIndex: Int,
@@ -2627,29 +2623,25 @@ private object JvmPlatformComInterop : ComInterop {
         return invokeRawUnit(instance, vtableIndex, "invokeUnitMethodWithTwoObjectArgs", twoAddressUnitHandle, first, second)
     }
 
-    override fun invokeHStringMethod(instance: ComPtr, vtableIndex: Int): Result<HString> {
-        return invokeRawAddressResult(instance, vtableIndex, "invokeHStringMethod", Jdk22Foreign.hstringMethodHandle).asHStringResult()
-    }
+    override fun invokeRawAddressMethod(instance: ComPtr, vtableIndex: Int): Result<AbiIntPtr> =
+        invokeRawAddressResult(instance, vtableIndex, "invokeRawAddressMethod", Jdk22Foreign.objectMethodHandle)
+            .map { segment -> AbiIntPtr(segment.address()) }
 
-    override fun invokeHStringMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<HString> {
-        return invokeRawAddressResult(instance, vtableIndex, "invokeHStringMethodWithStringArg", Jdk22Foreign.hstringMethodWithInputHandle, value).asHStringResult()
-    }
+    override fun invokeRawAddressMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<AbiIntPtr> =
+        invokeRawAddressResult(instance, vtableIndex, "invokeRawAddressMethodWithStringArg", Jdk22Foreign.objectMethodWithInputHandle, value)
+            .map { segment -> AbiIntPtr(segment.address()) }
 
-    override fun invokeHStringMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<HString> {
-        return invokeRawAddressResult(instance, vtableIndex, "invokeHStringMethodWithInt32Arg", Jdk22Foreign.hstringMethodWithInt32Handle, value).asHStringResult()
-    }
+    override fun invokeRawAddressMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<AbiIntPtr> =
+        invokeRawAddressResult(instance, vtableIndex, "invokeRawAddressMethodWithInt32Arg", Jdk22Foreign.hstringMethodWithInt32Handle, value)
+            .map { segment -> AbiIntPtr(segment.address()) }
 
-    override fun invokeObjectMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ComPtr> {
-        return invokeRawAddressResult(instance, vtableIndex, "invokeObjectMethodWithStringArg", Jdk22Foreign.objectMethodWithInputHandle, value).asComPtrResult()
-    }
+    override fun invokeRawAddressMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<AbiIntPtr> =
+        invokeRawAddressResult(instance, vtableIndex, "invokeRawAddressMethodWithUInt32Arg", Jdk22Foreign.objectMethodWithUInt32Handle, value)
+            .map { segment -> AbiIntPtr(segment.address()) }
 
-    override fun invokeObjectMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<ComPtr> {
-        return invokeRawAddressResult(instance, vtableIndex, "invokeObjectMethodWithObjectArg", Jdk22Foreign.objectMethodWithInputHandle, value).asComPtrResult()
-    }
-
-    override fun invokeObjectMethod(instance: ComPtr, vtableIndex: Int): Result<ComPtr> {
-        return invokeRawAddressResult(instance, vtableIndex, "invokeObjectMethod", Jdk22Foreign.objectMethodHandle).asComPtrResult()
-    }
+    override fun invokeRawAddressMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<AbiIntPtr> =
+        invokeRawAddressResult(instance, vtableIndex, "invokeRawAddressMethodWithObjectArg", Jdk22Foreign.objectMethodWithInputHandle, value)
+            .map { segment -> AbiIntPtr(segment.address()) }
 
     override fun invokeTwoObjectMethod(instance: ComPtr, vtableIndex: Int): Result<Pair<ComPtr, ComPtr>> {
         return runCatching {
@@ -2684,12 +2676,9 @@ private object JvmPlatformComInterop : ComInterop {
         )
     }
 
-    override fun invokeObjectMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ComPtr> {
-        return invokeRawAddressResult(instance, vtableIndex, "invokeObjectMethodWithUInt32Arg", Jdk22Foreign.objectMethodWithUInt32Handle, value).asComPtrResult()
-    }
-
-    override fun invokeObjectMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<ComPtr> =
-        invokeRawAddressResult(instance, vtableIndex, "invokeObjectMethodWithInt64Arg", Jdk22Foreign.objectMethodWithInt64Handle, value).asComPtrResult()
+    override fun invokeRawAddressMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<AbiIntPtr> =
+        invokeRawAddressResult(instance, vtableIndex, "invokeRawAddressMethodWithInt64Arg", Jdk22Foreign.objectMethodWithInt64Handle, value)
+            .map { segment -> AbiIntPtr(segment.address()) }
 
     override fun invokeStructMethodWithArgs(
         instance: ComPtr,
@@ -2935,16 +2924,6 @@ private object JvmPlatformComInterop : ComInterop {
             }
         }
     }
-
-    override fun invokeHStringMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<HString> {
-        return invokeRawAddressResult(instance, vtableIndex, "invokeHStringMethodWithUInt32Arg", Jdk22Foreign.hstringMethodWithUInt32Handle, value).asHStringResult()
-    }
-
-    override fun invokeHStringMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<HString> =
-        invokeRawAddressResult(instance, vtableIndex, "invokeHStringMethodWithObjectArg", Jdk22Foreign.hstringMethodWithInputHandle, value).asHStringResult()
-
-    override fun invokeHStringMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<HString> =
-        invokeRawAddressResult(instance, vtableIndex, "invokeHStringMethodWithInt64Arg", Jdk22Foreign.hstringMethodWithInt64Handle, value).asHStringResult()
 
     override fun invokeRawI64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Long> {
         return invokeRawI64Result(instance, vtableIndex, "invokeRawI64MethodWithObjectArg", Jdk22Foreign.int64MethodWithObjectHandle, value)

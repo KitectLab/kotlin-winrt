@@ -89,19 +89,14 @@ interface ComInterop {
     fun invokeUnitMethodWithObjectAndStringArgs(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: String): Result<Unit>
     fun invokeUnitMethodWithStringAndObjectArgs(instance: ComPtr, vtableIndex: Int, first: String, second: ComPtr): Result<Unit>
     fun invokeUnitMethodWithTwoObjectArgs(instance: ComPtr, vtableIndex: Int, first: ComPtr, second: ComPtr): Result<Unit>
-    fun invokeHStringMethod(instance: ComPtr, vtableIndex: Int): Result<HString>
-    fun invokeHStringMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<HString>
-    fun invokeHStringMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<HString>
-    fun invokeHStringMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<HString>
-    fun invokeHStringMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<HString>
-    fun invokeHStringMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<HString>
-    fun invokeObjectMethod(instance: ComPtr, vtableIndex: Int): Result<ComPtr>
+    fun invokeRawAddressMethod(instance: ComPtr, vtableIndex: Int): Result<AbiIntPtr>
+    fun invokeRawAddressMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<AbiIntPtr>
+    fun invokeRawAddressMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<AbiIntPtr>
+    fun invokeRawAddressMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<AbiIntPtr>
+    fun invokeRawAddressMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<AbiIntPtr>
+    fun invokeRawAddressMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<AbiIntPtr>
     fun invokeTwoObjectMethod(instance: ComPtr, vtableIndex: Int): Result<Pair<ComPtr, ComPtr>>
     fun invokeObjectMethodWithArgs(instance: ComPtr, vtableIndex: Int, vararg arguments: Any): Result<ComPtr>
-    fun invokeObjectMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<ComPtr>
-    fun invokeObjectMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ComPtr>
-    fun invokeObjectMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ComPtr>
-    fun invokeObjectMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<ComPtr>
 
     // Special paths
     fun invokeStructMethodWithArgs(
@@ -178,7 +173,57 @@ internal fun Result<Int>.asBooleanResult(): Result<Boolean> = map { it != 0 }
 @PublishedApi
 internal fun Result<Long>.asULongResult(): Result<ULong> = map(Long::toULong)
 
+@PublishedApi
+internal fun Result<AbiIntPtr>.asHStringResult(): Result<HString> = map { address -> HString(address.rawValue) }
+
+@PublishedApi
+internal fun Result<AbiIntPtr>.asComPtrResult(): Result<ComPtr> = map(::ComPtr)
+
 object PlatformComInterop : ComInterop by PlatformComInteropKernel {
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeHStringMethod(instance: ComPtr, vtableIndex: Int): Result<HString> =
+        invokeRawAddressMethod(instance, vtableIndex).asHStringResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeHStringMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<HString> =
+        invokeRawAddressMethodWithStringArg(instance, vtableIndex, value).asHStringResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeHStringMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<HString> =
+        invokeRawAddressMethodWithInt32Arg(instance, vtableIndex, value).asHStringResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeHStringMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<HString> =
+        invokeRawAddressMethodWithUInt32Arg(instance, vtableIndex, value).asHStringResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeHStringMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<HString> =
+        invokeRawAddressMethodWithObjectArg(instance, vtableIndex, value).asHStringResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeHStringMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<HString> =
+        invokeRawAddressMethodWithInt64Arg(instance, vtableIndex, value).asHStringResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeObjectMethod(instance: ComPtr, vtableIndex: Int): Result<ComPtr> =
+        invokeRawAddressMethod(instance, vtableIndex).asComPtrResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeObjectMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<ComPtr> =
+        invokeRawAddressMethodWithObjectArg(instance, vtableIndex, value).asComPtrResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeObjectMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ComPtr> =
+        invokeRawAddressMethodWithStringArg(instance, vtableIndex, value).asComPtrResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeObjectMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ComPtr> =
+        invokeRawAddressMethodWithUInt32Arg(instance, vtableIndex, value).asComPtrResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeObjectMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<ComPtr> =
+        invokeRawAddressMethodWithInt64Arg(instance, vtableIndex, value).asComPtrResult()
+
     @Suppress("NOTHING_TO_INLINE")
     inline fun invokeInt32Method(instance: ComPtr, vtableIndex: Int): Result<Int> =
         invokeRawI32Method(instance, vtableIndex)
