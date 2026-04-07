@@ -121,6 +121,83 @@ class JvmWinRtObjectStubTest {
         }
     }
 
+    @Test
+    fun object_stub_supports_fast_index_of_dispatch_for_single_argument_shapes() {
+        fun assertIndexOf(expected: Pair<Boolean, UInt>, actual: Result<Pair<Boolean, UInt>>) {
+            assertEquals(expected, actual.getOrThrow())
+        }
+
+        JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(
+                iid = guidOf("10000000-0000-0000-0000-000000000001"),
+                booleanArgIndexOfMethods = mapOf(6 to { value -> if (value) 1u else null }),
+            ),
+        ).use { stub ->
+            assertIndexOf(true to 1u, PlatformComInterop.invokeIndexOfMethod(stub.primaryPointer, 6, true))
+            assertIndexOf(false to 0u, PlatformComInterop.invokeIndexOfMethod(stub.primaryPointer, 6, false))
+        }
+
+        JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(
+                iid = guidOf("10000000-0000-0000-0000-000000000002"),
+                uint32ArgIndexOfMethods = mapOf(6 to { value -> if (value == 7u) 2u else null }),
+            ),
+        ).use { stub ->
+            assertIndexOf(true to 2u, PlatformComInterop.invokeIndexOfMethod(stub.primaryPointer, 6, 7u))
+            assertIndexOf(false to 0u, PlatformComInterop.invokeIndexOfMethod(stub.primaryPointer, 6, 8u))
+        }
+
+        JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(
+                iid = guidOf("10000000-0000-0000-0000-000000000003"),
+                uint64ArgIndexOfMethods = mapOf(6 to { value -> if (value == 9uL) 3u else null }),
+            ),
+        ).use { stub ->
+            assertIndexOf(true to 3u, PlatformComInterop.invokeIndexOfMethod(stub.primaryPointer, 6, 9uL))
+            assertIndexOf(false to 0u, PlatformComInterop.invokeIndexOfMethod(stub.primaryPointer, 6, 10uL))
+        }
+
+        JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(
+                iid = guidOf("10000000-0000-0000-0000-000000000004"),
+                float32ArgIndexOfMethods = mapOf(6 to { value -> if (value == 1.5f) 4u else null }),
+            ),
+        ).use { stub ->
+            assertIndexOf(true to 4u, PlatformComInterop.invokeIndexOfMethod(stub.primaryPointer, 6, 1.5f))
+            assertIndexOf(false to 0u, PlatformComInterop.invokeIndexOfMethod(stub.primaryPointer, 6, 2.5f))
+        }
+
+        JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(
+                iid = guidOf("10000000-0000-0000-0000-000000000005"),
+                float64ArgIndexOfMethods = mapOf(6 to { value -> if (value == 2.5) 5u else null }),
+            ),
+        ).use { stub ->
+            assertIndexOf(true to 5u, PlatformComInterop.invokeIndexOfMethod(stub.primaryPointer, 6, 2.5))
+            assertIndexOf(false to 0u, PlatformComInterop.invokeIndexOfMethod(stub.primaryPointer, 6, 3.5))
+        }
+
+        JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(
+                iid = guidOf("10000000-0000-0000-0000-000000000006"),
+                stringArgIndexOfMethods = mapOf(6 to { value -> if (value == "theme") 6u else null }),
+            ),
+        ).use { stub ->
+            assertIndexOf(true to 6u, PlatformComInterop.invokeIndexOfMethod(stub.primaryPointer, 6, "theme"))
+            assertIndexOf(false to 0u, PlatformComInterop.invokeIndexOfMethod(stub.primaryPointer, 6, "accent"))
+        }
+
+        JvmWinRtObjectStub.create(
+            JvmWinRtObjectStub.InterfaceSpec(
+                iid = guidOf("10000000-0000-0000-0000-000000000007"),
+                objectArgIndexOfMethods = mapOf(6 to { value -> if (value.value.rawValue == 0x1234L) 7u else null }),
+            ),
+        ).use { stub ->
+            assertIndexOf(true to 7u, PlatformComInterop.invokeIndexOfMethod(stub.primaryPointer, 6, ComPtr(AbiIntPtr(0x1234L))))
+            assertIndexOf(false to 0u, PlatformComInterop.invokeIndexOfMethod(stub.primaryPointer, 6, ComPtr(AbiIntPtr(0x5678L))))
+        }
+    }
+
     private fun invokeGetIids(pointer: ComPtr): List<Guid> {
         Arena.ofConfined().use { arena ->
             val iidCount = arena.allocate(ValueLayout.JAVA_INT)

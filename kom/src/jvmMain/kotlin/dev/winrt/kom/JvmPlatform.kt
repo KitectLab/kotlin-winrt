@@ -186,6 +186,35 @@ private object JvmComMethodExecutor {
         }
     }
 
+    class DirectIndexOfInvocationScope internal constructor(
+        val instance: ComPtr,
+        val function: MemorySegment,
+        val handle: java.lang.invoke.MethodHandle,
+    )
+
+    private inline fun runDirectIndexOf(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        invoke: DirectIndexOfInvocationScope.(MemorySegment, MemorySegment) -> Int,
+    ): Result<Pair<Boolean, UInt>> {
+        return runCatching {
+            requireInstance(instance)
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            Arena.ofConfined().use { arena ->
+                val indexSegment = arena.allocate(ValueLayout.JAVA_INT)
+                val foundSegment = arena.allocate(ValueLayout.JAVA_INT)
+                val hresult = HResult(DirectIndexOfInvocationScope(instance, function, handle).invoke(indexSegment, foundSegment))
+                hresult.requireSuccess("$operation($vtableIndex)")
+                Pair(
+                    foundSegment.get(ValueLayout.JAVA_INT, 0L) != 0,
+                    indexSegment.get(ValueLayout.JAVA_INT, 0L).toUInt(),
+                )
+            }
+        }
+    }
+
     fun invokeWithoutOut(
         instance: ComPtr,
         vtableIndex: Int,
@@ -1055,6 +1084,98 @@ private object JvmComMethodExecutor {
         }
     }
 
+    fun invokeIndexOfMethod(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Int,
+    ): Result<Pair<Boolean, UInt>> = runDirectIndexOf(instance, vtableIndex, operation, handle) { indexSegment, foundSegment ->
+        handle.bindTo(function).invokeWithArguments(
+            Jdk22Foreign.pointerOf(instance),
+            value,
+            indexSegment,
+            foundSegment,
+        ) as Int
+    }
+
+    fun invokeIndexOfMethod(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Long,
+    ): Result<Pair<Boolean, UInt>> = runDirectIndexOf(instance, vtableIndex, operation, handle) { indexSegment, foundSegment ->
+        handle.bindTo(function).invokeWithArguments(
+            Jdk22Foreign.pointerOf(instance),
+            value,
+            indexSegment,
+            foundSegment,
+        ) as Int
+    }
+
+    fun invokeIndexOfMethod(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Float,
+    ): Result<Pair<Boolean, UInt>> = runDirectIndexOf(instance, vtableIndex, operation, handle) { indexSegment, foundSegment ->
+        handle.bindTo(function).invokeWithArguments(
+            Jdk22Foreign.pointerOf(instance),
+            value,
+            indexSegment,
+            foundSegment,
+        ) as Int
+    }
+
+    fun invokeIndexOfMethod(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Double,
+    ): Result<Pair<Boolean, UInt>> = runDirectIndexOf(instance, vtableIndex, operation, handle) { indexSegment, foundSegment ->
+        handle.bindTo(function).invokeWithArguments(
+            Jdk22Foreign.pointerOf(instance),
+            value,
+            indexSegment,
+            foundSegment,
+        ) as Int
+    }
+
+    fun invokeIndexOfMethod(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: ComPtr,
+    ): Result<Pair<Boolean, UInt>> = runDirectIndexOf(instance, vtableIndex, operation, handle) { indexSegment, foundSegment ->
+        handle.bindTo(function).invokeWithArguments(
+            Jdk22Foreign.pointerOf(instance),
+            pointerArgument(value),
+            indexSegment,
+            foundSegment,
+        ) as Int
+    }
+
+    fun invokeIndexOfMethod(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: String,
+    ): Result<Pair<Boolean, UInt>> = runDirectIndexOf(instance, vtableIndex, operation, handle) { indexSegment, foundSegment ->
+        withCreatedHString(value) { hString ->
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                hString,
+                indexSegment,
+                foundSegment,
+            ) as Int
+        }
+    }
+
     private fun <T> runDirectWithOut(
         instance: ComPtr,
         vtableIndex: Int,
@@ -1203,6 +1324,26 @@ private object JvmPlatformComInterop : ComInterop {
 
     private val int64AddressOutHandle by lazy {
         Jdk22Foreign.methodWithTwoInputsHandle(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)
+    }
+
+    private val addressIndexOfHandle by lazy {
+        Jdk22Foreign.methodWithArgumentsAndTwoOutHandles(listOf(ValueLayout.ADDRESS))
+    }
+
+    private val int32IndexOfHandle by lazy {
+        Jdk22Foreign.methodWithArgumentsAndTwoOutHandles(listOf(ValueLayout.JAVA_INT))
+    }
+
+    private val int64IndexOfHandle by lazy {
+        Jdk22Foreign.methodWithArgumentsAndTwoOutHandles(listOf(ValueLayout.JAVA_LONG))
+    }
+
+    private val float32IndexOfHandle by lazy {
+        Jdk22Foreign.methodWithArgumentsAndTwoOutHandles(listOf(ValueLayout.JAVA_FLOAT))
+    }
+
+    private val float64IndexOfHandle by lazy {
+        Jdk22Foreign.methodWithArgumentsAndTwoOutHandles(listOf(ValueLayout.JAVA_DOUBLE))
     }
 
     private fun invokeRawI32Result(
@@ -2735,10 +2876,23 @@ private object JvmPlatformComInterop : ComInterop {
         vtableIndex: Int,
         vararg arguments: Any,
     ): Result<Pair<Boolean, UInt>> {
+        val operation = "invokeIndexOfMethod"
+        val singleArgument = arguments.singleOrNull()
+        when (singleArgument) {
+            is Boolean -> return JvmComMethodExecutor.invokeIndexOfMethod(instance, vtableIndex, operation, int32IndexOfHandle, if (singleArgument) 1 else 0)
+            is Int -> return JvmComMethodExecutor.invokeIndexOfMethod(instance, vtableIndex, operation, int32IndexOfHandle, singleArgument)
+            is UInt -> return JvmComMethodExecutor.invokeIndexOfMethod(instance, vtableIndex, operation, int32IndexOfHandle, singleArgument.toInt())
+            is Long -> return JvmComMethodExecutor.invokeIndexOfMethod(instance, vtableIndex, operation, int64IndexOfHandle, singleArgument)
+            is ULong -> return JvmComMethodExecutor.invokeIndexOfMethod(instance, vtableIndex, operation, int64IndexOfHandle, singleArgument.toLong())
+            is Float -> return JvmComMethodExecutor.invokeIndexOfMethod(instance, vtableIndex, operation, float32IndexOfHandle, singleArgument)
+            is Double -> return JvmComMethodExecutor.invokeIndexOfMethod(instance, vtableIndex, operation, float64IndexOfHandle, singleArgument)
+            is ComPtr -> return JvmComMethodExecutor.invokeIndexOfMethod(instance, vtableIndex, operation, addressIndexOfHandle, singleArgument)
+            is String -> return JvmComMethodExecutor.invokeIndexOfMethod(instance, vtableIndex, operation, addressIndexOfHandle, singleArgument)
+        }
         return JvmComMethodExecutor.invokeIndexOfMethod(
             instance = instance,
             vtableIndex = vtableIndex,
-            operation = "invokeIndexOfMethod",
+            operation = operation,
             handle = Jdk22Foreign.methodWithArgumentsAndTwoOutHandles(arguments.map(::methodArgumentLayout)),
             *arguments,
         )
