@@ -2067,11 +2067,109 @@ private object JvmPlatformComInterop : ComInterop {
         value,
     )
 
+    private fun invokeRawAddressResult(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+    ): Result<MemorySegment> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+        reader = { segment -> segment.get(ValueLayout.ADDRESS, 0L) },
+    )
+
+    private fun invokeRawAddressResult(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Int,
+    ): Result<MemorySegment> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+        reader = { segment -> segment.get(ValueLayout.ADDRESS, 0L) },
+        value,
+    )
+
+    private fun invokeRawAddressResult(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: UInt,
+    ): Result<MemorySegment> = invokeRawAddressResult(instance, vtableIndex, operation, handle, value.toInt())
+
+    private fun invokeRawAddressResult(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Boolean,
+    ): Result<MemorySegment> = invokeRawAddressResult(instance, vtableIndex, operation, handle, if (value) 1 else 0)
+
+    private fun invokeRawAddressResult(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Long,
+    ): Result<MemorySegment> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+        reader = { segment -> segment.get(ValueLayout.ADDRESS, 0L) },
+        value,
+    )
+
+    private fun invokeRawAddressResult(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: ComPtr,
+    ): Result<MemorySegment> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+        reader = { segment -> segment.get(ValueLayout.ADDRESS, 0L) },
+        value,
+    )
+
+    private fun invokeRawAddressResult(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: String,
+    ): Result<MemorySegment> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
+        reader = { segment -> segment.get(ValueLayout.ADDRESS, 0L) },
+        value,
+    )
+
     private fun Result<Int>.asUIntResult(): Result<UInt> = map(Int::toUInt)
 
     private fun Result<Int>.asBooleanResult(): Result<Boolean> = map { it != 0 }
 
     private fun Result<Long>.asULongResult(): Result<ULong> = map(Long::toULong)
+
+    private fun Result<MemorySegment>.asHStringResult(): Result<HString> = map { segment -> HString(segment.address()) }
+
+    private fun Result<MemorySegment>.asComPtrResult(): Result<ComPtr> = map(Jdk22Foreign::addressResult)
 
     override fun queryInterface(instance: ComPtr, iid: Guid): Result<ComPtr> {
         if (instance.isNull) {
@@ -2323,73 +2421,27 @@ private object JvmPlatformComInterop : ComInterop {
     }
 
     override fun invokeHStringMethod(instance: ComPtr, vtableIndex: Int): Result<HString> {
-        return JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeHStringMethod",
-            handle = Jdk22Foreign.hstringMethodHandle,
-            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
-            reader = { segment -> HString(segment.get(ValueLayout.ADDRESS, 0L).address()) },
-        )
+        return invokeRawAddressResult(instance, vtableIndex, "invokeHStringMethod", Jdk22Foreign.hstringMethodHandle).asHStringResult()
     }
 
     override fun invokeHStringMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<HString> {
-        return JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeHStringMethodWithStringArg",
-            handle = Jdk22Foreign.hstringMethodWithInputHandle,
-            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
-            reader = { segment -> HString(segment.get(ValueLayout.ADDRESS, 0L).address()) },
-            value,
-        )
+        return invokeRawAddressResult(instance, vtableIndex, "invokeHStringMethodWithStringArg", Jdk22Foreign.hstringMethodWithInputHandle, value).asHStringResult()
     }
 
     override fun invokeHStringMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<HString> {
-        return JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeHStringMethodWithInt32Arg",
-            handle = Jdk22Foreign.hstringMethodWithInt32Handle,
-            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
-            reader = { segment -> HString(segment.get(ValueLayout.ADDRESS, 0L).address()) },
-            value,
-        )
+        return invokeRawAddressResult(instance, vtableIndex, "invokeHStringMethodWithInt32Arg", Jdk22Foreign.hstringMethodWithInt32Handle, value).asHStringResult()
     }
 
     override fun invokeObjectMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ComPtr> {
-        return JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeObjectMethodWithStringArg",
-            handle = Jdk22Foreign.objectMethodWithInputHandle,
-            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
-            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
-            value,
-        )
+        return invokeRawAddressResult(instance, vtableIndex, "invokeObjectMethodWithStringArg", Jdk22Foreign.objectMethodWithInputHandle, value).asComPtrResult()
     }
 
     override fun invokeObjectMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<ComPtr> {
-        return JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeObjectMethodWithObjectArg",
-            handle = Jdk22Foreign.objectMethodWithInputHandle,
-            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
-            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
-            value,
-        )
+        return invokeRawAddressResult(instance, vtableIndex, "invokeObjectMethodWithObjectArg", Jdk22Foreign.objectMethodWithInputHandle, value).asComPtrResult()
     }
 
     override fun invokeObjectMethod(instance: ComPtr, vtableIndex: Int): Result<ComPtr> {
-        return JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeObjectMethod",
-            handle = Jdk22Foreign.objectMethodHandle,
-            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
-            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
-        )
+        return invokeRawAddressResult(instance, vtableIndex, "invokeObjectMethod", Jdk22Foreign.objectMethodHandle).asComPtrResult()
     }
 
     override fun invokeTwoObjectMethod(instance: ComPtr, vtableIndex: Int): Result<Pair<ComPtr, ComPtr>> {
@@ -2426,49 +2478,17 @@ private object JvmPlatformComInterop : ComInterop {
     }
 
     override fun invokeObjectMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ComPtr> {
-        return JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeObjectMethodWithUInt32Arg",
-            handle = Jdk22Foreign.objectMethodWithUInt32Handle,
-            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
-            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
-            value,
-        )
+        return invokeRawAddressResult(instance, vtableIndex, "invokeObjectMethodWithUInt32Arg", Jdk22Foreign.objectMethodWithUInt32Handle, value).asComPtrResult()
     }
 
     override fun invokeObjectMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<ComPtr> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeObjectMethodWithInt32Arg",
-            handle = Jdk22Foreign.objectMethodWithUInt32Handle,
-            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
-            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
-            value,
-        )
+        invokeRawAddressResult(instance, vtableIndex, "invokeObjectMethodWithInt32Arg", Jdk22Foreign.objectMethodWithUInt32Handle, value).asComPtrResult()
 
     override fun invokeObjectMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<ComPtr> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeObjectMethodWithBooleanArg",
-            handle = Jdk22Foreign.objectMethodWithUInt32Handle,
-            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
-            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
-            if (value) 1 else 0,
-        )
+        invokeRawAddressResult(instance, vtableIndex, "invokeObjectMethodWithBooleanArg", Jdk22Foreign.objectMethodWithUInt32Handle, value).asComPtrResult()
 
     override fun invokeObjectMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<ComPtr> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeObjectMethodWithInt64Arg",
-            handle = Jdk22Foreign.objectMethodWithInt64Handle,
-            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
-            reader = { segment -> Jdk22Foreign.addressResult(segment.get(ValueLayout.ADDRESS, 0L)) },
-            value,
-        )
+        invokeRawAddressResult(instance, vtableIndex, "invokeObjectMethodWithInt64Arg", Jdk22Foreign.objectMethodWithInt64Handle, value).asComPtrResult()
 
     override fun invokeStructMethodWithArgs(
         instance: ComPtr,
@@ -2823,49 +2843,17 @@ private object JvmPlatformComInterop : ComInterop {
     }
 
     override fun invokeHStringMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<HString> {
-        return JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeHStringMethodWithUInt32Arg",
-            handle = Jdk22Foreign.hstringMethodWithUInt32Handle,
-            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
-            reader = { segment -> HString(segment.get(ValueLayout.ADDRESS, 0L).address()) },
-            value,
-        )
+        return invokeRawAddressResult(instance, vtableIndex, "invokeHStringMethodWithUInt32Arg", Jdk22Foreign.hstringMethodWithUInt32Handle, value).asHStringResult()
     }
 
     override fun invokeHStringMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<HString> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeHStringMethodWithBooleanArg",
-            handle = Jdk22Foreign.hstringMethodWithUInt32Handle,
-            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
-            reader = { segment -> HString(segment.get(ValueLayout.ADDRESS, 0L).address()) },
-            if (value) 1u else 0u,
-        )
+        invokeRawAddressResult(instance, vtableIndex, "invokeHStringMethodWithBooleanArg", Jdk22Foreign.hstringMethodWithUInt32Handle, value).asHStringResult()
 
     override fun invokeHStringMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<HString> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeHStringMethodWithObjectArg",
-            handle = Jdk22Foreign.hstringMethodWithInputHandle,
-            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
-            reader = { segment -> HString(segment.get(ValueLayout.ADDRESS, 0L).address()) },
-            value,
-        )
+        invokeRawAddressResult(instance, vtableIndex, "invokeHStringMethodWithObjectArg", Jdk22Foreign.hstringMethodWithInputHandle, value).asHStringResult()
 
     override fun invokeHStringMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<HString> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeHStringMethodWithInt64Arg",
-            handle = Jdk22Foreign.hstringMethodWithInt64Handle,
-            allocator = { arena -> arena.allocate(ValueLayout.ADDRESS) },
-            reader = { segment -> HString(segment.get(ValueLayout.ADDRESS, 0L).address()) },
-            value,
-        )
+        invokeRawAddressResult(instance, vtableIndex, "invokeHStringMethodWithInt64Arg", Jdk22Foreign.hstringMethodWithInt64Handle, value).asHStringResult()
 
     override fun invokeStringSetter(instance: ComPtr, vtableIndex: Int, value: String): Result<Unit> {
         return JvmComMethodExecutor.invokeWithoutOut(
