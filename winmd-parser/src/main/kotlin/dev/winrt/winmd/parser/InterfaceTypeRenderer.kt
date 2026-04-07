@@ -2200,12 +2200,25 @@ internal class InterfaceTypeRenderer(
                 return PlannedInterfaceMethod(
                     statement = "%L",
                     args = { method, namespace ->
+                        val argumentExpressions = abiArgumentExpressions(
+                            parameters = method.parameters,
+                            parameterCategories = it,
+                            argumentName = { parameter -> parameter.name.replaceFirstChar(Char::lowercase) },
+                            parameterType = WinMdParameter::type,
+                            lowerObjectArgument = { parameter ->
+                                interfaceObjectArgumentExpression(
+                                    parameter.name.replaceFirstChar(Char::lowercase),
+                                    parameter.type,
+                                    namespace,
+                                )
+                            },
+                        )
                         arrayOf(
                             AbiCallCatalog.unitMethodWithTwoArguments(
                                 method.vtableIndex!!,
                                 it,
-                                twoArgumentArgumentExpressions(method.parameters, it, namespace)[0],
-                                twoArgumentArgumentExpressions(method.parameters, it, namespace)[1],
+                                argumentExpressions[0],
+                                argumentExpressions[1],
                             ),
                         )
                     },
@@ -2291,12 +2304,12 @@ internal class InterfaceTypeRenderer(
             return zeroArgumentUnaryAbiCall(vtableIndex, returnKind)
         }
         val argument = requireNotNull(argumentName)
-        val loweredArgument = unaryArgumentExpression(
+        val type = requireNotNull(parameterType)
+        val loweredArgument = abiArgumentExpression(
             argumentName = argument,
-            parameterType = requireNotNull(parameterType),
+            parameterType = type,
             category = parameterCategory,
-            currentNamespace = currentNamespace,
-        )
+        ) { interfaceObjectArgumentExpression(argument, type, currentNamespace) }
         return defaultUnaryAbiCall(
             vtableIndex = vtableIndex,
             returnKind = returnKind,
@@ -2305,21 +2318,6 @@ internal class InterfaceTypeRenderer(
             loweredArgument = loweredArgument,
             unsupportedMessage = "Unsupported unary interface return kind: $returnKind",
         )
-    }
-
-    private fun unaryArgumentExpression(
-        argumentName: String,
-        parameterType: String,
-        category: MethodParameterCategory,
-        currentNamespace: String,
-    ): Any = when (category) {
-        MethodParameterCategory.OBJECT -> interfaceObjectArgumentExpression(argumentName, parameterType, currentNamespace)
-        MethodParameterCategory.INT32,
-        MethodParameterCategory.UINT32,
-        MethodParameterCategory.BOOLEAN,
-        MethodParameterCategory.INT64,
-        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> int64AbiArgumentExpression(argumentName, parameterType)
-        MethodParameterCategory.STRING -> argumentName
     }
 
     private fun lowerInterfaceArrayMethodArgument(
@@ -2340,12 +2338,17 @@ internal class InterfaceTypeRenderer(
         ) { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) } ?: return null
         return CodeBlock.of(
             "%L",
-            unaryArgumentExpression(
+            abiArgumentExpression(
                 argumentName = parameter.name.replaceFirstChar(Char::lowercase),
                 parameterType = parameter.type,
                 category = parameterCategory,
-                currentNamespace = currentNamespace,
-            ),
+            ) {
+                interfaceObjectArgumentExpression(
+                    parameter.name.replaceFirstChar(Char::lowercase),
+                    parameter.type,
+                    currentNamespace,
+                )
+            },
         )
     }
 
@@ -2359,7 +2362,19 @@ internal class InterfaceTypeRenderer(
                 method.parameters.map { parameter -> typeRegistry.signatureParameterType(parameter.type, namespace) },
                 { typeName -> supportsInterfaceObjectInput(typeName, namespace) },
             ) ?: error("Unsupported two-argument return shape: ${signatureKey.shape}")
-            val argumentExpressions = twoArgumentArgumentExpressions(method.parameters, parameterCategories, namespace)
+            val argumentExpressions = abiArgumentExpressions(
+                parameters = method.parameters,
+                parameterCategories = parameterCategories,
+                argumentName = { parameter -> parameter.name.replaceFirstChar(Char::lowercase) },
+                parameterType = WinMdParameter::type,
+                lowerObjectArgument = { parameter ->
+                    interfaceObjectArgumentExpression(
+                        parameter.name.replaceFirstChar(Char::lowercase),
+                        parameter.type,
+                        namespace,
+                    )
+                },
+            )
             val abiCall = AbiCallCatalog.resultMethodWithTwoArguments(
                 method.vtableIndex!!,
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) "OBJECT" else resultKindName(method.returnType),
@@ -2415,20 +2430,6 @@ internal class InterfaceTypeRenderer(
             .add(").getOrThrow().%M()", resultExtractor(returnType))
             .build()
     }
-
-    private fun twoArgumentArgumentExpressions(
-        parameters: List<WinMdParameter>,
-        parameterCategories: List<MethodParameterCategory>,
-        currentNamespace: String,
-    ): List<Any> =
-        parameters.zip(parameterCategories) { parameter, category ->
-            unaryArgumentExpression(
-                argumentName = parameter.name.replaceFirstChar(Char::lowercase),
-                parameterType = parameter.type,
-                category = category,
-                currentNamespace = currentNamespace,
-            )
-        }
 
     private data class PlannedInterfaceMethod(
         val statement: String,

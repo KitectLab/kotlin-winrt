@@ -603,32 +603,21 @@ internal class RuntimeMethodRenderer(
                     nullPointerReturn = { PlannedStatement("return") },
                     returnStatement = "%L",
                     statementArgs = { method, currentNamespace, parameterBindings ->
+                        val argumentExpressions = abiArgumentExpressions(
+                            parameters = parameterBindings,
+                            parameterCategories = it,
+                            argumentName = RuntimeMethodParameterBinding::name,
+                            parameterType = RuntimeMethodParameterBinding::type,
+                            lowerObjectArgument = { binding ->
+                                runtimeObjectArgumentExpression(binding, currentNamespace)
+                            },
+                        )
                         arrayOf(
                             AbiCallCatalog.unitMethodWithTwoArguments(
                                 method.vtableIndex!!,
                                 it,
-                                when (it[0]) {
-                                    MethodParameterCategory.OBJECT ->
-                                        runtimeObjectArgumentExpression(parameterBindings[0], currentNamespace)
-                                    MethodParameterCategory.INT32,
-                                    MethodParameterCategory.UINT32,
-                                    MethodParameterCategory.BOOLEAN,
-                                    MethodParameterCategory.INT64,
-                                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN ->
-                                        int64AbiArgumentExpression(parameterBindings[0].name, parameterBindings[0].type)
-                                    else -> parameterBindings[0].name
-                                },
-                                when (it[1]) {
-                                    MethodParameterCategory.OBJECT ->
-                                        runtimeObjectArgumentExpression(parameterBindings[1], currentNamespace)
-                                    MethodParameterCategory.INT32,
-                                    MethodParameterCategory.UINT32,
-                                    MethodParameterCategory.BOOLEAN,
-                                    MethodParameterCategory.INT64,
-                                    MethodParameterCategory.EVENT_REGISTRATION_TOKEN ->
-                                        int64AbiArgumentExpression(parameterBindings[1].name, parameterBindings[1].type)
-                                    else -> parameterBindings[1].name
-                                },
+                                argumentExpressions[0],
+                                argumentExpressions[1],
                             ),
                         )
                     },
@@ -714,7 +703,11 @@ internal class RuntimeMethodRenderer(
         }
         val binding = requireNotNull(parameterBinding)
         val argumentName = binding.name
-        val loweredArgument = runtimeUnaryArgumentExpression(binding, parameterCategory, currentNamespace)
+        val loweredArgument = abiArgumentExpression(
+            argumentName = binding.name,
+            parameterType = binding.type,
+            category = parameterCategory,
+        ) { runtimeObjectArgumentExpression(binding, currentNamespace) }
         return if (returnKind == MethodReturnKind.STRING && parameterCategory == MethodParameterCategory.BOOLEAN) {
             AbiCallCatalog.hstringMethodWithUInt32(vtableIndex, "if ($loweredArgument) 1u else 0u")
         } else {
@@ -727,20 +720,6 @@ internal class RuntimeMethodRenderer(
                 unsupportedMessage = "Unsupported unary runtime return kind: $returnKind",
             )
         }
-    }
-
-    private fun runtimeUnaryArgumentExpression(
-        binding: RuntimeMethodParameterBinding,
-        category: MethodParameterCategory,
-        currentNamespace: String,
-    ): Any = when (category) {
-        MethodParameterCategory.OBJECT -> runtimeObjectArgumentExpression(binding, currentNamespace)
-        MethodParameterCategory.INT32,
-        MethodParameterCategory.UINT32,
-        MethodParameterCategory.BOOLEAN,
-        MethodParameterCategory.INT64,
-        MethodParameterCategory.EVENT_REGISTRATION_TOKEN -> int64AbiArgumentExpression(binding.name, binding.type)
-        MethodParameterCategory.STRING -> binding.name
     }
 
     private fun lowerRuntimeArrayMethodArgument(
@@ -763,7 +742,14 @@ internal class RuntimeMethodRenderer(
         val parameterCategory = methodParameterCategory(
             typeRegistry.signatureParameterType(parameter.type, currentNamespace),
         ) { typeName -> supportsRuntimeObjectType(typeName, currentNamespace) } ?: return null
-        return CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, currentNamespace))
+        return CodeBlock.of(
+            "%L",
+            abiArgumentExpression(
+                argumentName = binding.name,
+                parameterType = binding.type,
+                category = parameterCategory,
+            ) { runtimeObjectArgumentExpression(binding, currentNamespace) },
+        )
     }
 
     private fun plannedTwoArgumentRuntimeMethod(signatureKey: MethodSignatureKey): RuntimeMethodPlan = RuntimeMethodPlan(
@@ -780,7 +766,15 @@ internal class RuntimeMethodRenderer(
                 method.parameters.map { parameter -> typeRegistry.signatureParameterType(parameter.type, currentNamespace) },
                 { typeName -> supportsRuntimeObjectType(typeName, currentNamespace) },
             ) ?: error("Unsupported two-argument return shape: ${signatureKey.shape}")
-            val argumentExpressions = twoArgumentArgumentExpressions(parameterBindings, parameterCategories, currentNamespace)
+            val argumentExpressions = abiArgumentExpressions(
+                parameters = parameterBindings,
+                parameterCategories = parameterCategories,
+                argumentName = RuntimeMethodParameterBinding::name,
+                parameterType = RuntimeMethodParameterBinding::type,
+                lowerObjectArgument = { binding ->
+                    runtimeObjectArgumentExpression(binding, currentNamespace)
+                },
+            )
             val abiCall = AbiCallCatalog.resultMethodWithTwoArguments(
                 method.vtableIndex!!,
                 if (signatureKey.returnKind == MethodReturnKind.OBJECT) "OBJECT" else resultKindName(method.returnType),
@@ -798,15 +792,6 @@ internal class RuntimeMethodRenderer(
             )
         },
     )
-
-    private fun twoArgumentArgumentExpressions(
-        parameterBindings: List<RuntimeMethodParameterBinding>,
-        parameterCategories: List<MethodParameterCategory>,
-        currentNamespace: String,
-    ): List<Any> =
-        parameterBindings.zip(parameterCategories) { binding, category ->
-            runtimeUnaryArgumentExpression(binding, category, currentNamespace)
-        }
 
     fun renderRuntimeLambdaOverload(method: WinMdMethod, currentNamespace: String): FunSpec? {
         if (method.parameters.size != 1 || method.vtableIndex == null || method.returnType != "Unit") {
@@ -929,7 +914,14 @@ internal class RuntimeMethodRenderer(
                 val parameterCategory = methodParameterCategory(
                     typeRegistry.signatureParameterType(parameter.type, currentNamespace),
                 ) { typeName -> supportsRuntimeObjectType(typeName, currentNamespace) } ?: return@int32FillArrayAbiArguments null
-                CodeBlock.of("%L", runtimeUnaryArgumentExpression(binding, parameterCategory, currentNamespace))
+                CodeBlock.of(
+                    "%L",
+                    abiArgumentExpression(
+                        argumentName = binding.name,
+                        parameterType = binding.type,
+                        category = parameterCategory,
+                    ) { runtimeObjectArgumentExpression(binding, currentNamespace) },
+                )
             },
             lowerArrayArgument = { _ ->
                 CodeBlock.of("%N", int32FillArrayBufferName(fillArrayParameter))
