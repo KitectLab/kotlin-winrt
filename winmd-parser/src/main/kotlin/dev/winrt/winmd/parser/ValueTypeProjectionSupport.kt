@@ -122,10 +122,137 @@ internal class ValueTypeProjectionSupport(
     private val typeNameMapper: TypeNameMapper,
     private val typeRegistry: TypeRegistry,
 ) {
+    data class ValueAwarePropertyProjection(
+        val matches: (String, String) -> Boolean,
+        val interfaceGetterExpression: (String, String, Set<String>, Int) -> CodeBlock?,
+        val interfaceSetterExpression: (String, String, Int, String) -> CodeBlock?,
+        val runtimeGetterExpression: (String, String, Int) -> CodeBlock?,
+        val runtimeSetterExpression: (String, String, Int, String) -> CodeBlock?,
+    )
+
     private val winRtSignatureMapper = WinRtSignatureMapper(typeRegistry)
     private val winRtProjectionTypeMapper = WinRtProjectionTypeMapper()
+    private val valueAwarePropertyProjections = listOf(
+        ValueAwarePropertyProjection(
+            matches = { type, currentNamespace -> typeRegistry.isStructType(type, currentNamespace) },
+            interfaceGetterExpression = { type, currentNamespace, genericParameters, getterVtableIndex ->
+                structReturnExpression(
+                    type = type,
+                    currentNamespace = currentNamespace,
+                    abiCall = invokeStructMethodWithArgs(
+                        vtableIndex = getterVtableIndex,
+                        structType = typeNameMapper.mapTypeName(type, currentNamespace, genericParameters),
+                        arguments = emptyList(),
+                    ),
+                    genericParameters = genericParameters,
+                )
+            },
+            interfaceSetterExpression = { _, _, setterVtableIndex, valueExpression ->
+                invokeUnitMethodWithArgs(
+                    vtableIndex = setterVtableIndex,
+                    arguments = listOf(CodeBlock.of("%N.toAbi()", valueExpression)),
+                )
+            },
+            runtimeGetterExpression = { type, currentNamespace, getterVtableIndex ->
+                structReturnExpression(
+                    type = type,
+                    currentNamespace = currentNamespace,
+                    abiCall = invokeStructMethodWithArgs(
+                        vtableIndex = getterVtableIndex,
+                        structType = typeNameMapper.mapTypeName(type, currentNamespace),
+                        arguments = emptyList(),
+                    ),
+                )
+            },
+            runtimeSetterExpression = { _, _, setterVtableIndex, valueExpression ->
+                invokeUnitMethodWithArgs(
+                    vtableIndex = setterVtableIndex,
+                    arguments = listOf(CodeBlock.of("%N.toAbi()", valueExpression)),
+                )
+            },
+        ),
+        ValueAwarePropertyProjection(
+            matches = { type, currentNamespace -> supportsIReferenceValueProjection(type, currentNamespace, typeRegistry) },
+            interfaceGetterExpression = { type, currentNamespace, _, getterVtableIndex ->
+                nullableValueReturnExpression(
+                    referenceType = type,
+                    currentNamespace = currentNamespace,
+                    abiCall = AbiCallCatalog.objectMethod(getterVtableIndex),
+                )
+            },
+            interfaceSetterExpression = { type, currentNamespace, setterVtableIndex, valueExpression ->
+                nullableValuePointerExpression(type, currentNamespace, valueExpression)
+                    ?.let { pointer -> AbiCallCatalog.objectSetterExpression(setterVtableIndex, pointer) }
+            },
+            runtimeGetterExpression = { type, currentNamespace, getterVtableIndex ->
+                nullableValueReturnExpression(
+                    referenceType = type,
+                    currentNamespace = currentNamespace,
+                    abiCall = AbiCallCatalog.objectMethod(getterVtableIndex),
+                )?.let { getter -> CodeBlock.of("if (pointer.isNull) null else %L", getter) }
+            },
+            runtimeSetterExpression = { type, currentNamespace, setterVtableIndex, valueExpression ->
+                nullableValuePointerExpression(type, currentNamespace, valueExpression)
+                    ?.let { pointer -> AbiCallCatalog.objectSetterExpression(setterVtableIndex, pointer) }
+            },
+        ),
+        ValueAwarePropertyProjection(
+            matches = { type, currentNamespace -> supportsGenericIReferenceStructProjection(type, currentNamespace, typeRegistry) },
+            interfaceGetterExpression = { type, currentNamespace, _, getterVtableIndex ->
+                genericStructReferenceReturnExpression(
+                    referenceType = type,
+                    currentNamespace = currentNamespace,
+                    abiCall = AbiCallCatalog.objectMethod(getterVtableIndex),
+                )
+            },
+            interfaceSetterExpression = { type, currentNamespace, setterVtableIndex, valueExpression ->
+                genericStructReferencePointerExpression(type, currentNamespace, valueExpression)
+                    ?.let { pointer -> AbiCallCatalog.objectSetterExpression(setterVtableIndex, pointer) }
+            },
+            runtimeGetterExpression = { type, currentNamespace, getterVtableIndex ->
+                genericStructReferenceReturnExpression(
+                    referenceType = type,
+                    currentNamespace = currentNamespace,
+                    abiCall = AbiCallCatalog.objectMethod(getterVtableIndex),
+                )?.let { getter -> CodeBlock.of("if (pointer.isNull) null else %L", getter) }
+            },
+            runtimeSetterExpression = { type, currentNamespace, setterVtableIndex, valueExpression ->
+                genericStructReferencePointerExpression(type, currentNamespace, valueExpression)
+                    ?.let { pointer -> AbiCallCatalog.objectSetterExpression(setterVtableIndex, pointer) }
+            },
+        ),
+        ValueAwarePropertyProjection(
+            matches = { type, currentNamespace -> supportsGenericIReferenceEnumProjection(type, currentNamespace, typeRegistry) },
+            interfaceGetterExpression = { type, currentNamespace, _, getterVtableIndex ->
+                genericEnumReferenceReturnExpression(
+                    referenceType = type,
+                    currentNamespace = currentNamespace,
+                    abiCall = AbiCallCatalog.objectMethod(getterVtableIndex),
+                )
+            },
+            interfaceSetterExpression = { type, currentNamespace, setterVtableIndex, valueExpression ->
+                genericEnumReferencePointerExpression(type, currentNamespace, valueExpression)
+                    ?.let { pointer -> AbiCallCatalog.objectSetterExpression(setterVtableIndex, pointer) }
+            },
+            runtimeGetterExpression = { type, currentNamespace, getterVtableIndex ->
+                genericEnumReferenceReturnExpression(
+                    referenceType = type,
+                    currentNamespace = currentNamespace,
+                    abiCall = AbiCallCatalog.objectMethod(getterVtableIndex),
+                )?.let { getter -> CodeBlock.of("if (pointer.isNull) null else %L", getter) }
+            },
+            runtimeSetterExpression = { type, currentNamespace, setterVtableIndex, valueExpression ->
+                genericEnumReferencePointerExpression(type, currentNamespace, valueExpression)
+                    ?.let { pointer -> AbiCallCatalog.objectSetterExpression(setterVtableIndex, pointer) }
+            },
+        ),
+    )
 
     fun supportsSmallScalarProjection(type: String): Boolean = canonicalWinRtSpecialType(type.trim()) in propertyValueScalarTypes
+
+    fun propertyProjection(type: String, currentNamespace: String): ValueAwarePropertyProjection? {
+        return valueAwarePropertyProjections.firstOrNull { projection -> projection.matches(type, currentNamespace) }
+    }
 
     fun structDefaultValue(type: String, currentNamespace: String): CodeBlock {
         val mappedType = typeNameMapper.mapTypeName(type, currentNamespace)

@@ -197,47 +197,24 @@ internal class RuntimePropertyRenderer(
     }
 
     private fun runtimePropertyPlan(property: WinMdProperty, currentNamespace: String): RuntimePropertyPlan? {
+        val propertyProjection = valueTypeProjectionSupport.propertyProjection(property.type, currentNamespace)
         val iReferenceInnerType = iReferenceInnerType(property.type)
-        val supportsNullableValueReference = supportsIReferenceValueProjection(property.type, currentNamespace, typeRegistry)
-        val structPropertyType = typeNameMapper.mapTypeName(property.type, currentNamespace)
-            .takeIf { typeRegistry.isStructType(property.type, currentNamespace) }
         val enumType = typeNameMapper.mapTypeName(property.type, currentNamespace)
             .takeIf { typeRegistry.isEnumType(property.type, currentNamespace) }
         val objectPropertyType = supportsProjectedObjectTypeName(property.type)
-            .takeIf { it && structPropertyType == null && !supportsNullableValueReference }
+            .takeIf { it && propertyProjection == null }
             ?.let { typeNameMapper.mapTypeName(property.type, currentNamespace) }
         val getterPlan = when {
             property.getterVtableIndex == null -> null
-            structPropertyType != null -> RuntimePropertyGetterPlan { getterVtableIndex ->
-                valueTypeProjectionSupport.structReturnExpression(
-                    type = property.type,
-                    currentNamespace = currentNamespace,
-                    abiCall = valueTypeProjectionSupport.invokeStructMethodWithArgs(
-                        vtableIndex = getterVtableIndex,
-                        structType = structPropertyType,
-                        arguments = emptyList(),
-                    ),
-                )
+            propertyProjection != null -> RuntimePropertyGetterPlan { getterVtableIndex ->
+                propertyProjection.runtimeGetterExpression(
+                    property.type,
+                    currentNamespace,
+                    getterVtableIndex,
+                ) ?: error("Unsupported value-aware property projection type: ${property.type}")
             }
             iReferenceInnerType != null -> RuntimePropertyGetterPlan { getterVtableIndex ->
                 val valueGetter = when {
-                    supportsNullableValueReference -> valueTypeProjectionSupport.nullableValueReturnExpression(
-                        referenceType = property.type,
-                        currentNamespace = currentNamespace,
-                        abiCall = AbiCallCatalog.objectMethod(getterVtableIndex),
-                    ) ?: error("Unsupported IReference projection type: $iReferenceInnerType")
-                    supportsGenericIReferenceStructProjection(property.type, currentNamespace, typeRegistry) ->
-                        valueTypeProjectionSupport.genericStructReferenceReturnExpression(
-                            referenceType = property.type,
-                            currentNamespace = currentNamespace,
-                            abiCall = AbiCallCatalog.objectMethod(getterVtableIndex),
-                        ) ?: error("Unsupported IReference projection type: $iReferenceInnerType")
-                    supportsGenericIReferenceEnumProjection(property.type, currentNamespace, typeRegistry) ->
-                        valueTypeProjectionSupport.genericEnumReferenceReturnExpression(
-                            referenceType = property.type,
-                            currentNamespace = currentNamespace,
-                            abiCall = AbiCallCatalog.objectMethod(getterVtableIndex),
-                        ) ?: error("Unsupported IReference projection type: $iReferenceInnerType")
                     iReferenceInnerType == "Object" || canonicalWinRtSpecialType(iReferenceInnerType) == "Object" -> CodeBlock.of(
                         "%T.invokeObjectMethod(pointer, %L).getOrThrow().let { if (it.isNull) null else %T(it) }",
                         PoetSymbols.platformComInteropClass,
@@ -262,66 +239,21 @@ internal class RuntimePropertyRenderer(
             objectPropertyType != null -> RuntimePropertyGetterPlan { getterVtableIndex ->
                 CodeBlock.of("%T(%L)", objectPropertyType, AbiCallCatalog.objectMethod(getterVtableIndex))
             }
-            else -> when {
-                else -> scalarRuntimePropertyPlan(property.type)?.let { scalarPlan ->
+            else -> scalarRuntimePropertyPlan(property.type)?.let { scalarPlan ->
                 RuntimePropertyGetterPlan { getterVtableIndex -> scalarPlan.renderGetter(getterVtableIndex) }
-                }
             }
         }
         val setterPlan = when {
-            structPropertyType != null -> RuntimePropertySetterPlan(
+            propertyProjection != null -> RuntimePropertySetterPlan(
                 statement = "%L",
                 args = { setterVtableIndex ->
                     arrayOf(
-                        valueTypeProjectionSupport.invokeUnitMethodWithArgs(
-                            vtableIndex = setterVtableIndex,
-                            arguments = listOf(CodeBlock.of("value.toAbi()")),
-                        ),
-                    )
-                },
-            )
-            supportsNullableValueReference -> RuntimePropertySetterPlan(
-                statement = "%L",
-                args = { setterVtableIndex ->
-                    arrayOf(
-                        AbiCallCatalog.objectSetterExpression(
+                        propertyProjection.runtimeSetterExpression(
+                            property.type,
+                            currentNamespace,
                             setterVtableIndex,
-                            valueTypeProjectionSupport.nullableValuePointerExpression(
-                                property.type,
-                                currentNamespace,
-                                "value",
-                            ) ?: error("Unsupported IReference projection type: ${property.type}"),
-                        ),
-                    )
-                },
-            )
-            supportsGenericIReferenceStructProjection(property.type, currentNamespace, typeRegistry) -> RuntimePropertySetterPlan(
-                statement = "%L",
-                args = { setterVtableIndex ->
-                    arrayOf(
-                        AbiCallCatalog.objectSetterExpression(
-                            setterVtableIndex,
-                            valueTypeProjectionSupport.genericStructReferencePointerExpression(
-                                property.type,
-                                currentNamespace,
-                                "value",
-                            ) ?: error("Unsupported IReference projection type: ${property.type}"),
-                        ),
-                    )
-                },
-            )
-            supportsGenericIReferenceEnumProjection(property.type, currentNamespace, typeRegistry) -> RuntimePropertySetterPlan(
-                statement = "%L",
-                args = { setterVtableIndex ->
-                    arrayOf(
-                        AbiCallCatalog.objectSetterExpression(
-                            setterVtableIndex,
-                            valueTypeProjectionSupport.genericEnumReferencePointerExpression(
-                                property.type,
-                                currentNamespace,
-                                "value",
-                            ) ?: error("Unsupported IReference projection type: ${property.type}"),
-                        ),
+                            "value",
+                        ) ?: error("Unsupported value-aware property projection type: ${property.type}"),
                     )
                 },
             )

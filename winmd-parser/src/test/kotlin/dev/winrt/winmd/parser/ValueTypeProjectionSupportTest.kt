@@ -5,6 +5,7 @@ import dev.winrt.winmd.plugin.WinMdNamespace
 import dev.winrt.winmd.plugin.WinMdType
 import dev.winrt.winmd.plugin.WinMdTypeKind
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -48,6 +49,26 @@ class ValueTypeProjectionSupportTest {
         ),
     )
     private val projectionSupport = ValueTypeProjectionSupport(TypeNameMapper(), typeRegistry)
+
+    @Test
+    fun resolves_descriptor_driven_property_projections() {
+        assertNull(projectionSupport.propertyProjection("Int16", "Example.Contracts"))
+        assertNotNull(projectionSupport.propertyProjection("Example.Contracts.PointLike", "Example.Contracts"))
+        assertNotNull(projectionSupport.propertyProjection("Windows.Foundation.IReference`1<Int16>", "Example.Contracts"))
+        assertNotNull(
+            projectionSupport.propertyProjection(
+                "Windows.Foundation.IReference`1<Example.Contracts.PointLike>",
+                "Example.Contracts",
+            ),
+        )
+        assertNotNull(
+            projectionSupport.propertyProjection(
+                "Windows.Foundation.IReference`1<Example.Contracts.Mode>",
+                "Example.Contracts",
+            ),
+        )
+        assertNull(projectionSupport.propertyProjection("Example.Contracts.Widget", "Example.Contracts"))
+    }
 
     @Test
     fun classifies_value_aware_method_plan_kinds() {

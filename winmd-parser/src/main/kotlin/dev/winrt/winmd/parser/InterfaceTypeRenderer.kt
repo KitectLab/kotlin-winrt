@@ -993,43 +993,18 @@ internal class InterfaceTypeRenderer(
         val propertyType = typeNameMapper.mapTypeName(property.type, currentNamespace, genericParameters)
         val getterVtableIndex = property.getterVtableIndex!!
         val getterBuilder = FunSpec.getterBuilder()
-        val isStructProperty = typeRegistry.isStructType(property.type, currentNamespace)
-        val supportsNullableValueReference = supportsIReferenceValueProjection(property.type, currentNamespace, typeRegistry)
-        when {
-            isStructProperty -> getterBuilder.addStatement(
-                "return %T.fromAbi(%L)",
-                propertyType,
-                valueTypeProjectionSupport.invokeStructMethodWithArgs(
-                    vtableIndex = getterVtableIndex,
-                    structType = propertyType,
-                    arguments = emptyList(),
-                ),
-            )
-            supportsNullableValueReference -> getterBuilder.addStatement(
+        val propertyProjection = valueTypeProjectionSupport.propertyProjection(property.type, currentNamespace)
+        if (propertyProjection != null) {
+            getterBuilder.addStatement(
                 "return %L",
-                valueTypeProjectionSupport.nullableValueReturnExpression(
-                    referenceType = property.type,
-                    currentNamespace = currentNamespace,
-                    abiCall = AbiCallCatalog.objectMethod(getterVtableIndex),
+                propertyProjection.interfaceGetterExpression(
+                    property.type,
+                    currentNamespace,
+                    genericParameters,
+                    getterVtableIndex,
                 ) ?: return null,
             )
-            supportsGenericIReferenceStructProjection(property.type, currentNamespace, typeRegistry) -> getterBuilder.addStatement(
-                "return %L",
-                valueTypeProjectionSupport.genericStructReferenceReturnExpression(
-                    referenceType = property.type,
-                    currentNamespace = currentNamespace,
-                    abiCall = AbiCallCatalog.objectMethod(getterVtableIndex),
-                ) ?: return null,
-            )
-            supportsGenericIReferenceEnumProjection(property.type, currentNamespace, typeRegistry) -> getterBuilder.addStatement(
-                "return %L",
-                valueTypeProjectionSupport.genericEnumReferenceReturnExpression(
-                    referenceType = property.type,
-                    currentNamespace = currentNamespace,
-                    abiCall = AbiCallCatalog.objectMethod(getterVtableIndex),
-                ) ?: return null,
-            )
-            else -> when (
+        } else when (
                 PropertyRuleRegistry.interfaceGetterRuleFamily(
                     property.type,
                     typeRegistry.isEnumType(property.type, currentNamespace),
@@ -1153,7 +1128,6 @@ internal class InterfaceTypeRenderer(
                     getterVtableIndex,
                 )
             else -> return null
-            }
         }
         val propertyBuilder = PropertySpec.builder(propertyName, propertyType)
             .getter(getterBuilder.build())
@@ -1162,14 +1136,21 @@ internal class InterfaceTypeRenderer(
             property.type,
             supportsInterfaceObjectType(property.type, currentNamespace),
         )
+        val setterExpression = property
+            .setterVtableIndex
+            ?.let { setterVtableIndex ->
+                propertyProjection?.interfaceSetterExpression(
+                    property.type,
+                    currentNamespace,
+                    setterVtableIndex,
+                    "value",
+                )
+            }
         if (
             property.mutable &&
             property.setterVtableIndex != null &&
             (
-                isStructProperty ||
-                    supportsNullableValueReference ||
-                    supportsGenericIReferenceStructProjection(property.type, currentNamespace, typeRegistry) ||
-                    supportsGenericIReferenceEnumProjection(property.type, currentNamespace, typeRegistry) ||
+                setterExpression != null ||
                     isEnumProperty ||
                     setterRuleFamily != null
             )
@@ -1181,92 +1162,58 @@ internal class InterfaceTypeRenderer(
                     .addParameter("value", propertyType)
                     .apply {
                         when {
-                            isStructProperty -> addStatement(
+                            setterExpression != null -> addStatement(
                                 "%L",
-                                valueTypeProjectionSupport.invokeUnitMethodWithArgs(
-                                    vtableIndex = setterVtableIndex,
-                                    arguments = listOf(CodeBlock.of("value.toAbi()")),
-                                ),
+                                setterExpression,
                             )
-                            supportsNullableValueReference -> addStatement(
-                                "%L",
-                                AbiCallCatalog.objectSetterExpression(
-                                    setterVtableIndex,
-                                    valueTypeProjectionSupport.nullableValuePointerExpression(
-                                        property.type,
-                                        currentNamespace,
-                                        "value",
-                                    ) ?: return null,
-                                ),
-                            )
-                            supportsGenericIReferenceStructProjection(property.type, currentNamespace, typeRegistry) -> addStatement(
-                                "%L",
-                                AbiCallCatalog.objectSetterExpression(
-                                    setterVtableIndex,
-                                    valueTypeProjectionSupport.genericStructReferencePointerExpression(
-                                        property.type,
-                                        currentNamespace,
-                                        "value",
-                                    ) ?: return null,
-                                ),
-                            )
-                            supportsGenericIReferenceEnumProjection(property.type, currentNamespace, typeRegistry) -> addStatement(
-                                "%L",
-                                AbiCallCatalog.objectSetterExpression(
-                                    setterVtableIndex,
-                                    valueTypeProjectionSupport.genericEnumReferencePointerExpression(
-                                        property.type,
-                                        currentNamespace,
-                                        "value",
-                                    ) ?: return null,
-                                ),
-                            )
-                            isEnumProperty -> addStatement(
-                                "%L",
-                                enumSetterAbiCall(
-                                    enumUnderlyingTypeOrDefault(typeRegistry, property.type, currentNamespace),
-                                    setterVtableIndex,
-                                ),
-                            )
-                            else -> when (setterRuleFamily) {
-                            InterfacePropertyRuleFamily.OBJECT -> addStatement(
-                                "%L",
-                                AbiCallCatalog.objectSetterExpression(
-                                    setterVtableIndex,
-                                    interfaceObjectArgumentExpression(
-                                        argumentName = "value",
-                                        typeName = property.type,
-                                        currentNamespace = currentNamespace,
+                            isEnumProperty -> {
+                                addStatement(
+                                    "%L",
+                                    enumSetterAbiCall(
+                                        enumUnderlyingTypeOrDefault(typeRegistry, property.type, currentNamespace),
+                                        setterVtableIndex,
                                     ),
-                                ),
-                            )
-                            InterfacePropertyRuleFamily.STRING -> addStatement("%L", AbiCallCatalog.stringSetter(setterVtableIndex))
-                            InterfacePropertyRuleFamily.UINT8,
-                            InterfacePropertyRuleFamily.INT16,
-                            InterfacePropertyRuleFamily.UINT16,
-                            InterfacePropertyRuleFamily.CHAR16,
-                            -> addStatement(
-                                "%L",
-                                valueTypeProjectionSupport.invokeUnitMethodWithArgs(
-                                    vtableIndex = setterVtableIndex,
-                                    arguments = listOf(CodeBlock.of("value")),
-                                ),
-                            )
-                            InterfacePropertyRuleFamily.FLOAT32 -> addStatement("%L", AbiCallCatalog.float32Setter(setterVtableIndex))
-                            InterfacePropertyRuleFamily.FLOAT64 -> addStatement("%L", AbiCallCatalog.float64Setter(setterVtableIndex))
-                            InterfacePropertyRuleFamily.BOOLEAN -> addStatement("%L", AbiCallCatalog.booleanSetter(setterVtableIndex))
-                            InterfacePropertyRuleFamily.HRESULT -> addStatement(
-                                "%L",
-                                AbiCallCatalog.int32SetterExpression(
-                                    setterVtableIndex,
-                                    "hResultOfException(value)",
-                                ),
-                            )
-                            InterfacePropertyRuleFamily.INT32 -> addStatement("%L", AbiCallCatalog.int32Setter(setterVtableIndex))
-                            InterfacePropertyRuleFamily.UINT32 -> addStatement("%L", AbiCallCatalog.uint32Setter(setterVtableIndex))
-                            InterfacePropertyRuleFamily.INT64 -> addStatement("%L", AbiCallCatalog.int64Setter(setterVtableIndex))
-                            InterfacePropertyRuleFamily.UINT64 -> addStatement("%L", AbiCallCatalog.uint64Setter(setterVtableIndex))
-                            else -> return null
+                                )
+                            }
+                            else -> when (setterRuleFamily) {
+                                InterfacePropertyRuleFamily.OBJECT -> addStatement(
+                                    "%L",
+                                    AbiCallCatalog.objectSetterExpression(
+                                        setterVtableIndex,
+                                        interfaceObjectArgumentExpression(
+                                            argumentName = "value",
+                                            typeName = property.type,
+                                            currentNamespace = currentNamespace,
+                                        ),
+                                    ),
+                                )
+                                InterfacePropertyRuleFamily.STRING -> addStatement("%L", AbiCallCatalog.stringSetter(setterVtableIndex))
+                                InterfacePropertyRuleFamily.UINT8,
+                                InterfacePropertyRuleFamily.INT16,
+                                InterfacePropertyRuleFamily.UINT16,
+                                InterfacePropertyRuleFamily.CHAR16,
+                                -> addStatement(
+                                    "%L",
+                                    valueTypeProjectionSupport.invokeUnitMethodWithArgs(
+                                        vtableIndex = setterVtableIndex,
+                                        arguments = listOf(CodeBlock.of("value")),
+                                    ),
+                                )
+                                InterfacePropertyRuleFamily.FLOAT32 -> addStatement("%L", AbiCallCatalog.float32Setter(setterVtableIndex))
+                                InterfacePropertyRuleFamily.FLOAT64 -> addStatement("%L", AbiCallCatalog.float64Setter(setterVtableIndex))
+                                InterfacePropertyRuleFamily.BOOLEAN -> addStatement("%L", AbiCallCatalog.booleanSetter(setterVtableIndex))
+                                InterfacePropertyRuleFamily.HRESULT -> addStatement(
+                                    "%L",
+                                    AbiCallCatalog.int32SetterExpression(
+                                        setterVtableIndex,
+                                        "hResultOfException(value)",
+                                    ),
+                                )
+                                InterfacePropertyRuleFamily.INT32 -> addStatement("%L", AbiCallCatalog.int32Setter(setterVtableIndex))
+                                InterfacePropertyRuleFamily.UINT32 -> addStatement("%L", AbiCallCatalog.uint32Setter(setterVtableIndex))
+                                InterfacePropertyRuleFamily.INT64 -> addStatement("%L", AbiCallCatalog.int64Setter(setterVtableIndex))
+                                InterfacePropertyRuleFamily.UINT64 -> addStatement("%L", AbiCallCatalog.uint64Setter(setterVtableIndex))
+                                else -> return null
                             }
                         }
                     }
@@ -2464,10 +2411,7 @@ internal class InterfaceTypeRenderer(
     ): Boolean {
         return property.getterVtableIndex != null &&
             (
-                typeRegistry.isStructType(property.type, currentNamespace) ||
-                    supportsIReferenceValueProjection(property.type, currentNamespace, typeRegistry) ||
-                    supportsGenericIReferenceStructProjection(property.type, currentNamespace, typeRegistry) ||
-                    supportsGenericIReferenceEnumProjection(property.type, currentNamespace, typeRegistry) ||
+                valueTypeProjectionSupport.propertyProjection(property.type, currentNamespace) != null ||
                     PropertyRuleRegistry.interfaceGetterRuleFamily(
                         type = property.type,
                         isEnumType = typeRegistry.isEnumType(property.type, currentNamespace),
