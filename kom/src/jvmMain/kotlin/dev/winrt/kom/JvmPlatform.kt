@@ -153,21 +153,49 @@ private object JvmComMethodExecutor {
         require(!instance.isNull) { "Method invocation requires a non-null COM pointer" }
     }
 
+    class DirectUnitInvocationScope internal constructor(
+        val instance: ComPtr,
+        val function: MemorySegment,
+        val handle: java.lang.invoke.MethodHandle,
+    )
+
+    private fun pointerArgument(value: ComPtr): MemorySegment =
+        if (value.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(value)
+
+    private inline fun <T> withCreatedHString(value: String, block: (MemorySegment) -> T): T {
+        val hString = JvmWinRtRuntime.createHString(value)
+        try {
+            return block(MemorySegment.ofAddress(hString.raw))
+        } finally {
+            JvmWinRtRuntime.releaseHString(hString)
+        }
+    }
+
+    private inline fun runDirectWithoutOut(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        invoke: DirectUnitInvocationScope.() -> Int,
+    ): Result<Unit> {
+        return runCatching {
+            requireInstance(instance)
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            val hresult = HResult(DirectUnitInvocationScope(instance, function, handle).invoke())
+            hresult.requireSuccess("$operation($vtableIndex)")
+        }
+    }
+
     fun invokeWithoutOut(
         instance: ComPtr,
         vtableIndex: Int,
         operation: String,
         handle: java.lang.invoke.MethodHandle,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+            ) as Int
         }
     }
 
@@ -179,17 +207,12 @@ private object JvmComMethodExecutor {
         first: ComPtr,
         second: Int,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                    if (first.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(first),
-                    second,
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                pointerArgument(first),
+                second,
+            ) as Int
         }
     }
 
@@ -201,17 +224,12 @@ private object JvmComMethodExecutor {
         first: Int,
         second: ComPtr,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                    first,
-                    if (second.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(second),
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                first,
+                pointerArgument(second),
+            ) as Int
         }
     }
 
@@ -223,17 +241,12 @@ private object JvmComMethodExecutor {
         first: ComPtr,
         second: Long,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                    if (first.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(first),
-                    second,
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                pointerArgument(first),
+                second,
+            ) as Int
         }
     }
 
@@ -245,17 +258,12 @@ private object JvmComMethodExecutor {
         first: Long,
         second: ComPtr,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                    first,
-                    if (second.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(second),
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                first,
+                pointerArgument(second),
+            ) as Int
         }
     }
 
@@ -266,16 +274,11 @@ private object JvmComMethodExecutor {
         handle: java.lang.invoke.MethodHandle,
         value: Int,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                    value,
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                value,
+            ) as Int
         }
     }
 
@@ -286,16 +289,11 @@ private object JvmComMethodExecutor {
         handle: java.lang.invoke.MethodHandle,
         value: UInt,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                    value.toInt(),
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                value.toInt(),
+            ) as Int
         }
     }
 
@@ -306,16 +304,11 @@ private object JvmComMethodExecutor {
         handle: java.lang.invoke.MethodHandle,
         value: Long,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                    value,
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                value,
+            ) as Int
         }
     }
 
@@ -326,16 +319,11 @@ private object JvmComMethodExecutor {
         handle: java.lang.invoke.MethodHandle,
         value: ULong,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                    value.toLong(),
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                value.toLong(),
+            ) as Int
         }
     }
 
@@ -346,16 +334,11 @@ private object JvmComMethodExecutor {
         handle: java.lang.invoke.MethodHandle,
         value: Boolean,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                    if (value) 1 else 0,
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                if (value) 1 else 0,
+            ) as Int
         }
     }
 
@@ -366,16 +349,11 @@ private object JvmComMethodExecutor {
         handle: java.lang.invoke.MethodHandle,
         value: Float,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                    value,
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                value,
+            ) as Int
         }
     }
 
@@ -386,16 +364,11 @@ private object JvmComMethodExecutor {
         handle: java.lang.invoke.MethodHandle,
         value: Double,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                    value,
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                value,
+            ) as Int
         }
     }
 
@@ -406,20 +379,12 @@ private object JvmComMethodExecutor {
         handle: java.lang.invoke.MethodHandle,
         value: String,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hString = JvmWinRtRuntime.createHString(value)
-            try {
-                val hresult = HResult(
-                    handle.bindTo(function).invokeWithArguments(
-                        Jdk22Foreign.pointerOf(instance),
-                        MemorySegment.ofAddress(hString.raw),
-                    ) as Int,
-                )
-                hresult.requireSuccess("$operation($vtableIndex)")
-            } finally {
-                JvmWinRtRuntime.releaseHString(hString)
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            withCreatedHString(value) { hString ->
+                handle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    hString,
+                ) as Int
             }
         }
     }
@@ -432,17 +397,12 @@ private object JvmComMethodExecutor {
         first: Int,
         second: Int,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                    first,
-                    second,
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                first,
+                second,
+            ) as Int
         }
     }
 
@@ -454,17 +414,12 @@ private object JvmComMethodExecutor {
         first: Int,
         second: Long,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                    first,
-                    second,
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                first,
+                second,
+            ) as Int
         }
     }
 
@@ -476,17 +431,12 @@ private object JvmComMethodExecutor {
         first: Long,
         second: Int,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                    first,
-                    second,
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                first,
+                second,
+            ) as Int
         }
     }
 
@@ -498,17 +448,12 @@ private object JvmComMethodExecutor {
         first: Long,
         second: Long,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                    first,
-                    second,
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                first,
+                second,
+            ) as Int
         }
     }
 
@@ -520,21 +465,13 @@ private object JvmComMethodExecutor {
         first: String,
         second: Int,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val firstHString = JvmWinRtRuntime.createHString(first)
-            try {
-                val hresult = HResult(
-                    handle.bindTo(function).invokeWithArguments(
-                        Jdk22Foreign.pointerOf(instance),
-                        MemorySegment.ofAddress(firstHString.raw),
-                        second,
-                    ) as Int,
-                )
-                hresult.requireSuccess("$operation($vtableIndex)")
-            } finally {
-                JvmWinRtRuntime.releaseHString(firstHString)
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            withCreatedHString(first) { firstHString ->
+                handle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    firstHString,
+                    second,
+                ) as Int
             }
         }
     }
@@ -547,21 +484,13 @@ private object JvmComMethodExecutor {
         first: Int,
         second: String,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val secondHString = JvmWinRtRuntime.createHString(second)
-            try {
-                val hresult = HResult(
-                    handle.bindTo(function).invokeWithArguments(
-                        Jdk22Foreign.pointerOf(instance),
-                        first,
-                        MemorySegment.ofAddress(secondHString.raw),
-                    ) as Int,
-                )
-                hresult.requireSuccess("$operation($vtableIndex)")
-            } finally {
-                JvmWinRtRuntime.releaseHString(secondHString)
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            withCreatedHString(second) { secondHString ->
+                handle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    first,
+                    secondHString,
+                ) as Int
             }
         }
     }
@@ -610,21 +539,13 @@ private object JvmComMethodExecutor {
         first: String,
         second: Long,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val firstHString = JvmWinRtRuntime.createHString(first)
-            try {
-                val hresult = HResult(
-                    handle.bindTo(function).invokeWithArguments(
-                        Jdk22Foreign.pointerOf(instance),
-                        MemorySegment.ofAddress(firstHString.raw),
-                        second,
-                    ) as Int,
-                )
-                hresult.requireSuccess("$operation($vtableIndex)")
-            } finally {
-                JvmWinRtRuntime.releaseHString(firstHString)
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            withCreatedHString(first) { firstHString ->
+                handle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    firstHString,
+                    second,
+                ) as Int
             }
         }
     }
@@ -637,21 +558,13 @@ private object JvmComMethodExecutor {
         first: Long,
         second: String,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val secondHString = JvmWinRtRuntime.createHString(second)
-            try {
-                val hresult = HResult(
-                    handle.bindTo(function).invokeWithArguments(
-                        Jdk22Foreign.pointerOf(instance),
-                        first,
-                        MemorySegment.ofAddress(secondHString.raw),
-                    ) as Int,
-                )
-                hresult.requireSuccess("$operation($vtableIndex)")
-            } finally {
-                JvmWinRtRuntime.releaseHString(secondHString)
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            withCreatedHString(second) { secondHString ->
+                handle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    first,
+                    secondHString,
+                ) as Int
             }
         }
     }
@@ -664,26 +577,15 @@ private object JvmComMethodExecutor {
         first: String,
         second: String,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val firstHString = JvmWinRtRuntime.createHString(first)
-            try {
-                val secondHString = JvmWinRtRuntime.createHString(second)
-                try {
-                    val hresult = HResult(
-                        handle.bindTo(function).invokeWithArguments(
-                            Jdk22Foreign.pointerOf(instance),
-                            MemorySegment.ofAddress(firstHString.raw),
-                            MemorySegment.ofAddress(secondHString.raw),
-                        ) as Int,
-                    )
-                    hresult.requireSuccess("$operation($vtableIndex)")
-                } finally {
-                    JvmWinRtRuntime.releaseHString(secondHString)
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            withCreatedHString(first) { firstHString ->
+                withCreatedHString(second) { secondHString ->
+                    handle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        firstHString,
+                        secondHString,
+                    ) as Int
                 }
-            } finally {
-                JvmWinRtRuntime.releaseHString(firstHString)
             }
         }
     }
@@ -695,16 +597,11 @@ private object JvmComMethodExecutor {
         handle: java.lang.invoke.MethodHandle,
         value: ComPtr,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                    if (value.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(value),
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                pointerArgument(value),
+            ) as Int
         }
     }
 
@@ -716,21 +613,13 @@ private object JvmComMethodExecutor {
         first: ComPtr,
         second: String,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hString = JvmWinRtRuntime.createHString(second)
-            try {
-                val hresult = HResult(
-                    handle.bindTo(function).invokeWithArguments(
-                        Jdk22Foreign.pointerOf(instance),
-                        if (first.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(first),
-                        MemorySegment.ofAddress(hString.raw),
-                    ) as Int,
-                )
-                hresult.requireSuccess("$operation($vtableIndex)")
-            } finally {
-                JvmWinRtRuntime.releaseHString(hString)
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            withCreatedHString(second) { hString ->
+                handle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    pointerArgument(first),
+                    hString,
+                ) as Int
             }
         }
     }
@@ -743,21 +632,13 @@ private object JvmComMethodExecutor {
         first: String,
         second: ComPtr,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hString = JvmWinRtRuntime.createHString(first)
-            try {
-                val hresult = HResult(
-                    handle.bindTo(function).invokeWithArguments(
-                        Jdk22Foreign.pointerOf(instance),
-                        MemorySegment.ofAddress(hString.raw),
-                        if (second.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(second),
-                    ) as Int,
-                )
-                hresult.requireSuccess("$operation($vtableIndex)")
-            } finally {
-                JvmWinRtRuntime.releaseHString(hString)
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            withCreatedHString(first) { hString ->
+                handle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    hString,
+                    pointerArgument(second),
+                ) as Int
             }
         }
     }
@@ -770,17 +651,12 @@ private object JvmComMethodExecutor {
         first: ComPtr,
         second: ComPtr,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val hresult = HResult(
-                handle.bindTo(function).invokeWithArguments(
-                    Jdk22Foreign.pointerOf(instance),
-                    if (first.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(first),
-                    if (second.isNull) MemorySegment.NULL else Jdk22Foreign.pointerOf(second),
-                ) as Int,
-            )
-            hresult.requireSuccess("$operation($vtableIndex)")
+        return runDirectWithoutOut(instance, vtableIndex, operation, handle) {
+            handle.bindTo(function).invokeWithArguments(
+                Jdk22Foreign.pointerOf(instance),
+                pointerArgument(first),
+                pointerArgument(second),
+            ) as Int
         }
     }
 
