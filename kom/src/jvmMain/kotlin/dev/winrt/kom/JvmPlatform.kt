@@ -1685,6 +1685,100 @@ private object JvmPlatformComInterop : ComInterop {
 
     private fun Result<MemorySegment>.asComPtrResult(): Result<ComPtr> = map(Jdk22Foreign::addressResult)
 
+    private fun invokeRawGuidResult(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+    ): Result<Guid> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(16) },
+        reader = Jdk22Foreign::guidFromSegment,
+    )
+
+    private fun invokeRawGuidResult(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Int,
+    ): Result<Guid> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(16) },
+        reader = Jdk22Foreign::guidFromSegment,
+        value,
+    )
+
+    private fun invokeRawGuidResult(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: UInt,
+    ): Result<Guid> = invokeRawGuidResult(instance, vtableIndex, operation, handle, value.toInt())
+
+    private fun invokeRawGuidResult(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Boolean,
+    ): Result<Guid> = invokeRawGuidResult(instance, vtableIndex, operation, handle, if (value) 1 else 0)
+
+    private fun invokeRawGuidResult(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: Long,
+    ): Result<Guid> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(16) },
+        reader = Jdk22Foreign::guidFromSegment,
+        value,
+    )
+
+    private fun invokeRawGuidResult(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: ComPtr,
+    ): Result<Guid> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(16) },
+        reader = Jdk22Foreign::guidFromSegment,
+        value,
+    )
+
+    private fun invokeRawGuidResult(
+        instance: ComPtr,
+        vtableIndex: Int,
+        operation: String,
+        handle: java.lang.invoke.MethodHandle,
+        value: String,
+    ): Result<Guid> = JvmComMethodExecutor.invokeWithOutSegment(
+        instance = instance,
+        vtableIndex = vtableIndex,
+        operation = operation,
+        handle = handle,
+        allocator = { arena -> arena.allocate(16) },
+        reader = Jdk22Foreign::guidFromSegment,
+        value,
+    )
+
     private fun invokeRawUnit(
         instance: ComPtr,
         vtableIndex: Int,
@@ -2962,81 +3056,26 @@ private object JvmPlatformComInterop : ComInterop {
         invokeRawF64Result(instance, vtableIndex, "invokeFloat64MethodWithInt64Arg", Jdk22Foreign.float64MethodWithInt64Handle, value)
 
     override fun invokeGuidGetter(instance: ComPtr, vtableIndex: Int): Result<Guid> {
-        return JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeGuidGetter",
-            handle = Jdk22Foreign.guidGetterHandle,
-            allocator = { arena -> arena.allocate(16) },
-            reader = Jdk22Foreign::guidFromSegment,
-        )
+        return invokeRawGuidResult(instance, vtableIndex, "invokeGuidGetter", Jdk22Foreign.guidGetterHandle)
     }
 
     override fun invokeGuidMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Guid> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeGuidMethodWithStringArg",
-            handle = Jdk22Foreign.guidMethodWithInputHandle,
-            allocator = { arena -> arena.allocate(16) },
-            reader = Jdk22Foreign::guidFromSegment,
-            value,
-        )
+        invokeRawGuidResult(instance, vtableIndex, "invokeGuidMethodWithStringArg", Jdk22Foreign.guidMethodWithInputHandle, value)
 
     override fun invokeGuidMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Guid> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeGuidMethodWithInt32Arg",
-            handle = Jdk22Foreign.guidMethodWithInt32Handle,
-            allocator = { arena -> arena.allocate(16) },
-            reader = Jdk22Foreign::guidFromSegment,
-            value,
-        )
+        invokeRawGuidResult(instance, vtableIndex, "invokeGuidMethodWithInt32Arg", Jdk22Foreign.guidMethodWithInt32Handle, value)
 
     override fun invokeGuidMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Guid> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeGuidMethodWithUInt32Arg",
-            handle = Jdk22Foreign.guidMethodWithInt32Handle,
-            allocator = { arena -> arena.allocate(16) },
-            reader = Jdk22Foreign::guidFromSegment,
-            value.toInt(),
-        )
+        invokeRawGuidResult(instance, vtableIndex, "invokeGuidMethodWithUInt32Arg", Jdk22Foreign.guidMethodWithInt32Handle, value)
 
     override fun invokeGuidMethodWithBooleanArg(instance: ComPtr, vtableIndex: Int, value: Boolean): Result<Guid> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeGuidMethodWithBooleanArg",
-            handle = Jdk22Foreign.guidMethodWithInt32Handle,
-            allocator = { arena -> arena.allocate(16) },
-            reader = Jdk22Foreign::guidFromSegment,
-            if (value) 1 else 0,
-        )
+        invokeRawGuidResult(instance, vtableIndex, "invokeGuidMethodWithBooleanArg", Jdk22Foreign.guidMethodWithInt32Handle, value)
 
     override fun invokeGuidMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Guid> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeGuidMethodWithObjectArg",
-            handle = Jdk22Foreign.guidMethodWithInputHandle,
-            allocator = { arena -> arena.allocate(16) },
-            reader = Jdk22Foreign::guidFromSegment,
-            value,
-        )
+        invokeRawGuidResult(instance, vtableIndex, "invokeGuidMethodWithObjectArg", Jdk22Foreign.guidMethodWithInputHandle, value)
 
     override fun invokeGuidMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Guid> =
-        JvmComMethodExecutor.invokeWithOutSegment(
-            instance = instance,
-            vtableIndex = vtableIndex,
-            operation = "invokeGuidMethodWithInt64Arg",
-            handle = Jdk22Foreign.guidMethodWithInt64Handle,
-            allocator = { arena -> arena.allocate(16) },
-            reader = Jdk22Foreign::guidFromSegment,
-            value,
-        )
+        invokeRawGuidResult(instance, vtableIndex, "invokeGuidMethodWithInt64Arg", Jdk22Foreign.guidMethodWithInt64Handle, value)
 
     override fun invokeInt64Getter(instance: ComPtr, vtableIndex: Int): Result<Long> {
         return invokeRawI64Result(instance, vtableIndex, "invokeInt64Getter", Jdk22Foreign.int64GetterHandle)
