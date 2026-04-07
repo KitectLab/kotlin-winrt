@@ -224,8 +224,8 @@ internal class RuntimeMethodRenderer(
             parameterTypes = parameterTypes.map { typeRegistry.signatureParameterType(it, currentNamespace) },
             supportsParameterObjectType = { type -> supportsRuntimeObjectType(type, currentNamespace) },
         ) ?: return null
-        val planKind = MethodRuleRegistry.sharedMethodPlan(signatureKey)?.kind ?: return null
-        return runtimeMethodPlanForKey(signatureKey, planKind)
+        MethodRuleRegistry.sharedMethodPlan(signatureKey) ?: return null
+        return runtimeMethodPlanForKey(signatureKey)
     }
 
     private fun plannedInt32FillArrayRuntimeMethod(
@@ -592,12 +592,13 @@ internal class RuntimeMethodRenderer(
 
     private fun runtimeMethodPlanForKey(
         signatureKey: MethodSignatureKey,
-        planKind: SharedMethodPlanKind,
     ): RuntimeMethodPlan? {
-        return when (planKind) {
-            SharedMethodPlanKind.UNARY -> plannedUnaryRuntimeMethod(signatureKey)
-            SharedMethodPlanKind.TWO_ARGUMENT_RETURN -> plannedTwoArgumentRuntimeMethod(signatureKey)
-            SharedMethodPlanKind.TWO_ARGUMENT_UNIT -> plannedTwoArgumentUnitRuntimeMethod(signatureKey)
+        val parameterCategories = signatureKey.shape.toParameterCategories() ?: return null
+        return when {
+            parameterCategories.size <= 1 -> plannedUnaryRuntimeMethod(signatureKey)
+            signatureKey.returnKind == MethodReturnKind.UNIT -> plannedTwoArgumentUnitRuntimeMethod(signatureKey)
+            parameterCategories.size == 2 -> plannedTwoArgumentRuntimeMethod(signatureKey)
+            else -> null
         }
     }
 

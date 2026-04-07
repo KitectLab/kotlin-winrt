@@ -13,15 +13,8 @@ internal enum class SharedMethodRuleFamily {
     UNIT,
 }
 
-internal enum class SharedMethodPlanKind {
-    UNARY,
-    TWO_ARGUMENT_RETURN,
-    TWO_ARGUMENT_UNIT,
-}
-
 internal data class SharedMethodPlan(
     val family: SharedMethodRuleFamily,
-    val kind: SharedMethodPlanKind,
 )
 
 internal object MethodRuleRegistry {
@@ -75,7 +68,7 @@ internal object MethodRuleRegistry {
     fun sharedMethodPlan(signatureKey: MethodSignatureKey): SharedMethodPlan? =
         unaryMethodRuleFamilies[signatureKey.returnKind]
             ?.takeIf { signatureKey.shape in unaryMethodShapes.getValue(signatureKey.returnKind) }
-            ?.let { family -> SharedMethodPlan(family, SharedMethodPlanKind.UNARY) }
+            ?.let(::SharedMethodPlan)
             ?: sharedTwoArgumentMethodPlan(signatureKey)
 
     fun sharedMethodRuleFamily(signatureKey: MethodSignatureKey): SharedMethodRuleFamily? =
@@ -84,11 +77,6 @@ internal object MethodRuleRegistry {
     private fun sharedTwoArgumentMethodPlan(signatureKey: MethodSignatureKey): SharedMethodPlan? {
         val parameterCategories = signatureKey.shape.toParameterCategories() ?: return null
         val family = signatureKey.returnKind.twoArgumentSharedRuleFamily(parameterCategories) ?: return null
-        val kind = if (signatureKey.returnKind == MethodReturnKind.UNIT) {
-            SharedMethodPlanKind.TWO_ARGUMENT_UNIT
-        } else {
-            SharedMethodPlanKind.TWO_ARGUMENT_RETURN
-        }
-        return SharedMethodPlan(family, kind)
+        return SharedMethodPlan(family)
     }
 }

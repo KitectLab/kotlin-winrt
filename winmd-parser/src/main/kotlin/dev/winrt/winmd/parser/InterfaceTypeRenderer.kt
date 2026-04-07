@@ -1773,8 +1773,8 @@ internal class InterfaceTypeRenderer(
             supportsParameterObjectType = { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) },
             supportsReturnObjectType = { typeName -> supportsInterfaceObjectReturnType(typeName, currentNamespace) },
         ) ?: return null
-        val planKind = MethodRuleRegistry.sharedMethodPlan(signatureKey)?.kind ?: return null
-        return plannedInterfaceMethodForKey(signatureKey, genericParameters, planKind)
+        MethodRuleRegistry.sharedMethodPlan(signatureKey) ?: return null
+        return plannedInterfaceMethodForKey(signatureKey, genericParameters)
     }
 
     private fun plannedInt32FillArrayInterfaceMethod(
@@ -2135,12 +2135,13 @@ internal class InterfaceTypeRenderer(
     private fun plannedInterfaceMethodForKey(
         signatureKey: MethodSignatureKey,
         genericParameters: Set<String>,
-        planKind: SharedMethodPlanKind,
     ): PlannedInterfaceMethod? {
-        return when (planKind) {
-            SharedMethodPlanKind.UNARY -> plannedUnaryInterfaceMethod(signatureKey, genericParameters)
-            SharedMethodPlanKind.TWO_ARGUMENT_RETURN -> plannedTwoArgumentReturnMethod(signatureKey, genericParameters)
-            SharedMethodPlanKind.TWO_ARGUMENT_UNIT -> plannedTwoArgumentUnitInterfaceMethod(signatureKey)
+        val parameterCategories = signatureKey.shape.toParameterCategories() ?: return null
+        return when {
+            parameterCategories.size <= 1 -> plannedUnaryInterfaceMethod(signatureKey, genericParameters)
+            signatureKey.returnKind == MethodReturnKind.UNIT -> plannedTwoArgumentUnitInterfaceMethod(signatureKey)
+            parameterCategories.size == 2 -> plannedTwoArgumentReturnMethod(signatureKey, genericParameters)
+            else -> null
         }
     }
 

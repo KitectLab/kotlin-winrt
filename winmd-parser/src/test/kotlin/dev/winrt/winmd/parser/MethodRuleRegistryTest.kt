@@ -1,6 +1,7 @@
 package dev.winrt.winmd.parser
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -45,18 +46,17 @@ class MethodRuleRegistryTest {
     }
 
     @Test
-    fun classifies_shared_method_plan_kinds() {
-        assertEquals(
-            SharedMethodPlanKind.UNARY,
-            MethodRuleRegistry.sharedMethodPlan(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.EMPTY))?.kind,
+    fun resolves_shared_method_plans_for_supported_shapes() {
+        assertNotNull(MethodRuleRegistry.sharedMethodPlan(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.EMPTY)))
+        assertNotNull(
+            MethodRuleRegistry.sharedMethodPlan(
+                MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.OBJECT_STRING),
+            ),
         )
-        assertEquals(
-            SharedMethodPlanKind.TWO_ARGUMENT_RETURN,
-            MethodRuleRegistry.sharedMethodPlan(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.OBJECT_STRING))?.kind,
-        )
-        assertEquals(
-            SharedMethodPlanKind.TWO_ARGUMENT_UNIT,
-            MethodRuleRegistry.sharedMethodPlan(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_INT32))?.kind,
+        assertNotNull(
+            MethodRuleRegistry.sharedMethodPlan(
+                MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_INT32),
+            ),
         )
     }
 }
