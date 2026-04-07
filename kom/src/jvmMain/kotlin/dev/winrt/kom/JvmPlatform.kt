@@ -947,21 +947,14 @@ private object JvmComMethodExecutor {
         handle: java.lang.invoke.MethodHandle,
         arguments: Array<out Any>,
     ): Result<Unit> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            val preparedArguments = prepareAbiArguments(arguments)
-            try {
-                val hresult = HResult(
-                    handle.bindTo(function).invokeWithArguments(
-                        Jdk22Foreign.pointerOf(instance),
-                        *preparedArguments.values.toTypedArray(),
-                    ) as Int,
-                )
-                hresult.requireSuccess("$operation($vtableIndex)")
-            } finally {
-                preparedArguments.close()
-            }
+        return runWithPreparedArguments(instance, vtableIndex, arguments) { function, _, preparedArguments ->
+            val hresult = HResult(
+                handle.bindTo(function).invokeWithArguments(
+                    Jdk22Foreign.pointerOf(instance),
+                    *preparedArguments.values.toTypedArray(),
+                ) as Int,
+            )
+            hresult.requireSuccess("$operation($vtableIndex)")
         }
     }
 
@@ -975,6 +968,26 @@ private object JvmComMethodExecutor {
         return invokeWithoutOutArguments(instance, vtableIndex, operation, handle, arguments)
     }
 
+    private inline fun <T> runWithPreparedArguments(
+        instance: ComPtr,
+        vtableIndex: Int,
+        arguments: Array<out Any>,
+        block: (MemorySegment, Arena, PreparedAbiArguments) -> T,
+    ): Result<T> {
+        return runCatching {
+            requireInstance(instance)
+            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
+            Arena.ofConfined().use { arena ->
+                val preparedArguments = prepareAbiArguments(arguments)
+                try {
+                    block(function, arena, preparedArguments)
+                } finally {
+                    preparedArguments.close()
+                }
+            }
+        }
+    }
+
     private fun <T> invokeWithOutSegmentArguments(
         instance: ComPtr,
         vtableIndex: Int,
@@ -984,26 +997,17 @@ private object JvmComMethodExecutor {
         reader: (MemorySegment) -> T,
         arguments: Array<out Any>,
     ): Result<T> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            Arena.ofConfined().use { arena ->
+        return runWithPreparedArguments(instance, vtableIndex, arguments) { function, arena, preparedArguments ->
                 val resultSegment = allocator(arena)
-                val preparedArguments = prepareAbiArguments(arguments)
-                try {
-                    val hresult = HResult(
-                        handle.bindTo(function).invokeWithArguments(
-                            Jdk22Foreign.pointerOf(instance),
-                            *preparedArguments.values.toTypedArray(),
-                            resultSegment,
-                        ) as Int,
-                    )
-                    hresult.requireSuccess("$operation($vtableIndex)")
-                    reader(resultSegment)
-                } finally {
-                    preparedArguments.close()
-                }
-            }
+                val hresult = HResult(
+                    handle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        *preparedArguments.values.toTypedArray(),
+                        resultSegment,
+                    ) as Int,
+                )
+                hresult.requireSuccess("$operation($vtableIndex)")
+                reader(resultSegment)
         }
     }
 
@@ -1056,31 +1060,22 @@ private object JvmComMethodExecutor {
         handle: java.lang.invoke.MethodHandle,
         vararg arguments: Any,
     ): Result<Pair<Boolean, UInt>> {
-        return runCatching {
-            requireInstance(instance)
-            val function = Jdk22Foreign.vtableEntry(instance, vtableIndex)
-            Arena.ofConfined().use { arena ->
+        return runWithPreparedArguments(instance, vtableIndex, arguments) { function, arena, preparedArguments ->
                 val indexSegment = arena.allocate(ValueLayout.JAVA_INT)
                 val foundSegment = arena.allocate(ValueLayout.JAVA_INT)
-                val preparedArguments = prepareAbiArguments(arguments)
-                try {
-                    val hresult = HResult(
-                        handle.bindTo(function).invokeWithArguments(
-                            Jdk22Foreign.pointerOf(instance),
-                            *preparedArguments.values.toTypedArray(),
-                            indexSegment,
-                            foundSegment,
-                        ) as Int,
-                    )
-                    hresult.requireSuccess("$operation($vtableIndex)")
-                    Pair(
-                        foundSegment.get(ValueLayout.JAVA_INT, 0L) != 0,
-                        indexSegment.get(ValueLayout.JAVA_INT, 0L).toUInt(),
-                    )
-                } finally {
-                    preparedArguments.close()
-                }
-            }
+                val hresult = HResult(
+                    handle.bindTo(function).invokeWithArguments(
+                        Jdk22Foreign.pointerOf(instance),
+                        *preparedArguments.values.toTypedArray(),
+                        indexSegment,
+                        foundSegment,
+                    ) as Int,
+                )
+                hresult.requireSuccess("$operation($vtableIndex)")
+                Pair(
+                    foundSegment.get(ValueLayout.JAVA_INT, 0L) != 0,
+                    indexSegment.get(ValueLayout.JAVA_INT, 0L).toUInt(),
+                )
         }
     }
 
