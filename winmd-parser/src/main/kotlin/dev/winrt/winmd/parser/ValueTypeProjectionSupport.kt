@@ -108,6 +108,16 @@ internal fun supportsGenericIReferenceEnumProjection(
     return typeRegistry.isEnumType(innerType, currentNamespace)
 }
 
+internal enum class ValueAwareMethodPlanKind {
+    SMALL_SCALAR,
+    STRUCT,
+    IREFERENCE_VALUE,
+    IREFERENCE_GENERIC_STRUCT,
+    IREFERENCE_GENERIC_ENUM,
+    UNIT,
+    OBJECT_RETURN,
+}
+
 internal class ValueTypeProjectionSupport(
     private val typeNameMapper: TypeNameMapper,
     private val typeRegistry: TypeRegistry,
@@ -335,6 +345,25 @@ internal class ValueTypeProjectionSupport(
             supportsGenericIReferenceStructProjection(type, currentNamespace, typeRegistry) ||
             supportsGenericIReferenceEnumProjection(type, currentNamespace, typeRegistry) ||
             supportsIReferenceValueProjection(type, currentNamespace, typeRegistry)
+    }
+
+    fun methodPlanKind(
+        returnType: String,
+        parameterTypes: List<String>,
+        currentNamespace: String,
+        supportsObjectReturnType: (String) -> Boolean,
+    ): ValueAwareMethodPlanKind? {
+        val hasValueAwareParameters = parameterTypes.any { requiresValueAwareGenericAbi(it, currentNamespace) }
+        return when {
+            supportsSmallScalarProjection(returnType) -> ValueAwareMethodPlanKind.SMALL_SCALAR
+            typeRegistry.isStructType(returnType, currentNamespace) -> ValueAwareMethodPlanKind.STRUCT
+            supportsIReferenceValueProjection(returnType, currentNamespace, typeRegistry) -> ValueAwareMethodPlanKind.IREFERENCE_VALUE
+            supportsGenericIReferenceStructProjection(returnType, currentNamespace, typeRegistry) -> ValueAwareMethodPlanKind.IREFERENCE_GENERIC_STRUCT
+            supportsGenericIReferenceEnumProjection(returnType, currentNamespace, typeRegistry) -> ValueAwareMethodPlanKind.IREFERENCE_GENERIC_ENUM
+            returnType == "Unit" && hasValueAwareParameters -> ValueAwareMethodPlanKind.UNIT
+            supportsObjectReturnType(returnType) && hasValueAwareParameters -> ValueAwareMethodPlanKind.OBJECT_RETURN
+            else -> null
+        }
     }
 
     fun canLowerGenericAbiArgument(

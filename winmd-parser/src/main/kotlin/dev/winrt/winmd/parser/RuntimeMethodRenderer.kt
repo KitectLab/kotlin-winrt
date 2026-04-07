@@ -458,8 +458,15 @@ internal class RuntimeMethodRenderer(
                 },
             ) ?: return null
         }
-        return when {
-            valueTypeProjectionSupport.supportsSmallScalarProjection(method.returnType) -> RuntimeMethodPlan(
+        return when (
+            valueTypeProjectionSupport.methodPlanKind(
+                returnType = method.returnType,
+                parameterTypes = method.parameters.map(WinMdParameter::type),
+                currentNamespace = currentNamespace,
+                supportsObjectReturnType = { typeName -> supportsRuntimeObjectReturnType(typeName, currentNamespace) },
+            ) ?: return null
+        ) {
+            ValueAwareMethodPlanKind.SMALL_SCALAR -> RuntimeMethodPlan(
                 nullPointerReturn = {
                     PlannedStatement(
                         "return %L",
@@ -480,7 +487,7 @@ internal class RuntimeMethodRenderer(
                     )
                 },
             )
-            typeRegistry.isStructType(method.returnType, currentNamespace) -> {
+            ValueAwareMethodPlanKind.STRUCT -> {
                 val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
                 RuntimeMethodPlan(
                     nullPointerReturn = {
@@ -502,7 +509,7 @@ internal class RuntimeMethodRenderer(
                     },
                 )
             }
-            supportsIReferenceValueProjection(method.returnType, currentNamespace, typeRegistry) -> RuntimeMethodPlan(
+            ValueAwareMethodPlanKind.IREFERENCE_VALUE -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return null") },
                 returnStatement = "return %L",
                 statementArgs = { method, _, _ ->
@@ -518,7 +525,7 @@ internal class RuntimeMethodRenderer(
                     )
                 },
             )
-            supportsGenericIReferenceStructProjection(method.returnType, currentNamespace, typeRegistry) -> RuntimeMethodPlan(
+            ValueAwareMethodPlanKind.IREFERENCE_GENERIC_STRUCT -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return null") },
                 returnStatement = "return %L",
                 statementArgs = { method, _, _ ->
@@ -534,7 +541,7 @@ internal class RuntimeMethodRenderer(
                     )
                 },
             )
-            supportsGenericIReferenceEnumProjection(method.returnType, currentNamespace, typeRegistry) -> RuntimeMethodPlan(
+            ValueAwareMethodPlanKind.IREFERENCE_GENERIC_ENUM -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return null") },
                 returnStatement = "return %L",
                 statementArgs = { method, _, _ ->
@@ -550,10 +557,7 @@ internal class RuntimeMethodRenderer(
                     )
                 },
             )
-            method.returnType == "Unit" &&
-                method.parameters.any { parameter ->
-                    valueTypeProjectionSupport.requiresValueAwareGenericAbi(parameter.type, currentNamespace)
-                } -> RuntimeMethodPlan(
+            ValueAwareMethodPlanKind.UNIT -> RuntimeMethodPlan(
                 nullPointerReturn = { PlannedStatement("return") },
                 returnStatement = "%L",
                 statementArgs = { method, _, _ ->
@@ -565,10 +569,7 @@ internal class RuntimeMethodRenderer(
                     )
                 },
             )
-            supportsRuntimeObjectReturnType(method.returnType, currentNamespace) &&
-                method.parameters.any { parameter ->
-                    valueTypeProjectionSupport.requiresValueAwareGenericAbi(parameter.type, currentNamespace)
-                } -> RuntimeMethodPlan(
+            ValueAwareMethodPlanKind.OBJECT_RETURN -> RuntimeMethodPlan(
                 nullPointerReturn = { method ->
                     PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}"))
                 },
@@ -586,7 +587,6 @@ internal class RuntimeMethodRenderer(
                     )
                 },
             )
-            else -> null
         }
     }
 

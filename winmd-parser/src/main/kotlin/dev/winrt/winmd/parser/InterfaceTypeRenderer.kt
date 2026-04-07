@@ -2071,8 +2071,15 @@ internal class InterfaceTypeRenderer(
                 },
             ) ?: return null
         }
-        return when {
-            valueTypeProjectionSupport.supportsSmallScalarProjection(method.returnType) -> PlannedInterfaceMethod(
+        return when (
+            valueTypeProjectionSupport.methodPlanKind(
+                returnType = method.returnType,
+                parameterTypes = method.parameters.map(WinMdParameter::type),
+                currentNamespace = currentNamespace,
+                supportsObjectReturnType = { typeName -> supportsInterfaceObjectReturnType(typeName, currentNamespace) },
+            ) ?: return null
+        ) {
+            ValueAwareMethodPlanKind.SMALL_SCALAR -> PlannedInterfaceMethod(
                 statement = "return %L",
                 args = { method, _ ->
                     arrayOf(
@@ -2087,7 +2094,7 @@ internal class InterfaceTypeRenderer(
                     )
                 },
             )
-            typeRegistry.isStructType(method.returnType, currentNamespace) -> {
+            ValueAwareMethodPlanKind.STRUCT -> {
                 val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace, genericParameters)
                 PlannedInterfaceMethod(
                     statement = "return %T.fromAbi(%L)",
@@ -2103,7 +2110,7 @@ internal class InterfaceTypeRenderer(
                     },
                 )
             }
-            supportsIReferenceValueProjection(method.returnType, currentNamespace, typeRegistry) -> PlannedInterfaceMethod(
+            ValueAwareMethodPlanKind.IREFERENCE_VALUE -> PlannedInterfaceMethod(
                 statement = "return %L",
                 args = { method, _ ->
                     arrayOf(
@@ -2118,7 +2125,7 @@ internal class InterfaceTypeRenderer(
                     )
                 },
             )
-            supportsGenericIReferenceStructProjection(method.returnType, currentNamespace, typeRegistry) -> PlannedInterfaceMethod(
+            ValueAwareMethodPlanKind.IREFERENCE_GENERIC_STRUCT -> PlannedInterfaceMethod(
                 statement = "return %L",
                 args = { method, _ ->
                     arrayOf(
@@ -2133,7 +2140,7 @@ internal class InterfaceTypeRenderer(
                     )
                 },
             )
-            supportsGenericIReferenceEnumProjection(method.returnType, currentNamespace, typeRegistry) -> PlannedInterfaceMethod(
+            ValueAwareMethodPlanKind.IREFERENCE_GENERIC_ENUM -> PlannedInterfaceMethod(
                 statement = "return %L",
                 args = { method, _ ->
                     arrayOf(
@@ -2148,10 +2155,7 @@ internal class InterfaceTypeRenderer(
                     )
                 },
             )
-            method.returnType == "Unit" &&
-                method.parameters.any { parameter ->
-                    valueTypeProjectionSupport.requiresValueAwareGenericAbi(parameter.type, currentNamespace)
-                } -> PlannedInterfaceMethod(
+            ValueAwareMethodPlanKind.UNIT -> PlannedInterfaceMethod(
                 statement = "%L",
                 args = { method, _ ->
                     arrayOf(
@@ -2162,10 +2166,7 @@ internal class InterfaceTypeRenderer(
                     )
                 },
             )
-            supportsInterfaceObjectReturnType(method.returnType, currentNamespace) &&
-                method.parameters.any { parameter ->
-                    valueTypeProjectionSupport.requiresValueAwareGenericAbi(parameter.type, currentNamespace)
-                } -> PlannedInterfaceMethod(
+            ValueAwareMethodPlanKind.OBJECT_RETURN -> PlannedInterfaceMethod(
                 statement = "return %L",
                 args = { method, _ ->
                     arrayOf(
@@ -2181,7 +2182,6 @@ internal class InterfaceTypeRenderer(
                     )
                 },
             )
-            else -> null
         }
     }
 
