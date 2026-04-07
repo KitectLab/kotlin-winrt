@@ -1004,138 +1004,37 @@ internal class InterfaceTypeRenderer(
                     getterVtableIndex,
                 ) ?: return null,
             )
-        } else when (
-                PropertyRuleRegistry.interfaceGetterRuleFamily(
-                    property.type,
-                    typeRegistry.isEnumType(property.type, currentNamespace),
-                    supportsInterfaceObjectReturnType(property.type, currentNamespace),
-                )
-            ) {
-            InterfacePropertyRuleFamily.ENUM -> {
-                val underlyingType = enumUnderlyingTypeOrDefault(typeRegistry, property.type, currentNamespace)
-                getterBuilder.addStatement(
-                    "return %T.fromValue(%L)",
-                    propertyType,
-                    enumGetterAbiCall(underlyingType, getterVtableIndex),
-                )
-            }
-            InterfacePropertyRuleFamily.OBJECT ->
-                getterBuilder.addStatement(
-                    "return %L",
-                    projectedObjectReturnCode(
-                        typeName = property.type,
-                        currentNamespace = currentNamespace,
-                        abiCall = AbiCallCatalog.objectMethod(getterVtableIndex),
-                        genericParameters = genericParameters,
-                    ),
-                )
-            InterfacePropertyRuleFamily.STRING ->
-                getterBuilder.addStatement(
-                    "return %L",
-                    HStringSupport.toKotlinString("pointer", getterVtableIndex),
-                )
-            InterfacePropertyRuleFamily.UINT8,
-            InterfacePropertyRuleFamily.INT16,
-            InterfacePropertyRuleFamily.UINT16,
-            InterfacePropertyRuleFamily.CHAR16,
-            -> getterBuilder.addStatement(
-                "return %L",
-                valueTypeProjectionSupport.smallScalarAbiCall(property.type, getterVtableIndex, emptyList())
-                    ?: return null,
+        } else if (typeRegistry.isEnumType(property.type, currentNamespace)) {
+            val underlyingType = enumUnderlyingTypeOrDefault(typeRegistry, property.type, currentNamespace)
+            getterBuilder.addStatement(
+                "return %T.fromValue(%L)",
+                propertyType,
+                enumGetterAbiCall(underlyingType, getterVtableIndex),
             )
-            InterfacePropertyRuleFamily.FLOAT32 ->
-                getterBuilder.addStatement(
-                    "return %T(%L)",
-                    PoetSymbols.float32Class,
-                    AbiCallCatalog.float32Method(getterVtableIndex),
-                )
-            InterfacePropertyRuleFamily.FLOAT64 ->
-                getterBuilder.addStatement(
-                    "return %T(%L)",
-                    PoetSymbols.float64Class,
-                    AbiCallCatalog.float64Method(getterVtableIndex),
-                )
-            InterfacePropertyRuleFamily.BOOLEAN ->
-                getterBuilder.addStatement(
-                    "return %T(%T.invokeBooleanGetter(pointer, %L).getOrThrow())",
-                    PoetSymbols.winRtBooleanClass,
-                    PoetSymbols.platformComInteropClass,
-                    getterVtableIndex,
-                )
-            InterfacePropertyRuleFamily.GUID ->
-                getterBuilder.addStatement(
-                    "return %T.parse(%T.invokeGuidGetter(pointer, %L).getOrThrow().toString())",
-                    PoetSymbols.guidValueClass,
-                    PoetSymbols.platformComInteropClass,
-                    getterVtableIndex,
-                )
-            InterfacePropertyRuleFamily.DATE_TIME ->
-                getterBuilder.addStatement(
-                    "val ticks = %T.invokeInt64Getter(pointer, %L).getOrThrow()\nreturn %T.fromEpochSeconds((ticks - %L) / 10000000L, ((ticks - %L) %% 10000000L * 100).toInt())",
-                    PoetSymbols.platformComInteropClass,
-                    getterVtableIndex,
-                    PoetSymbols.dateTimeClass,
-                    WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
-                    WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
-                )
-            InterfacePropertyRuleFamily.TIME_SPAN ->
-                getterBuilder.addStatement(
-                    "return %T(%T.invokeInt64Getter(pointer, %L).getOrThrow())",
-                    PoetSymbols.timeSpanClass,
-                    PoetSymbols.platformComInteropClass,
-                    getterVtableIndex,
-                )
-            InterfacePropertyRuleFamily.EVENT_REGISTRATION_TOKEN ->
-                getterBuilder.addStatement(
-                    "return %T(%T.invokeInt64Getter(pointer, %L).getOrThrow())",
-                    PoetSymbols.eventRegistrationTokenClass,
-                    PoetSymbols.platformComInteropClass,
-                    getterVtableIndex,
-                )
-            InterfacePropertyRuleFamily.HRESULT ->
-                getterBuilder.addStatement(
-                    "return %M(%T.invokeInt32Method(pointer, %L).getOrThrow())",
-                    PoetSymbols.exceptionFromHResultMember,
-                    PoetSymbols.platformComInteropClass,
-                    getterVtableIndex,
-                )
-            InterfacePropertyRuleFamily.INT32 ->
-                getterBuilder.addStatement(
-                    "return %T(%T.invokeInt32Method(pointer, %L).getOrThrow())",
-                    PoetSymbols.int32Class,
-                    PoetSymbols.platformComInteropClass,
-                    getterVtableIndex,
-                )
-            InterfacePropertyRuleFamily.UINT32 ->
-                getterBuilder.addStatement(
-                    "return %T(%T.invokeUInt32Method(pointer, %L).getOrThrow())",
-                    PoetSymbols.uint32Class,
-                    PoetSymbols.platformComInteropClass,
-                    getterVtableIndex,
-                )
-            InterfacePropertyRuleFamily.INT64 ->
-                getterBuilder.addStatement(
-                    "return %T(%T.invokeInt64Getter(pointer, %L).getOrThrow())",
-                    PoetSymbols.int64Class,
-                    PoetSymbols.platformComInteropClass,
-                    getterVtableIndex,
-                )
-            InterfacePropertyRuleFamily.UINT64 ->
-                getterBuilder.addStatement(
-                    "return %T(%T.invokeInt64Getter(pointer, %L).getOrThrow().toULong())",
-                    PoetSymbols.uint64Class,
-                    PoetSymbols.platformComInteropClass,
-                    getterVtableIndex,
-                )
-            else -> return null
+        } else if (supportsInterfaceObjectReturnType(property.type, currentNamespace)) {
+            getterBuilder.addStatement(
+                "return %L",
+                projectedObjectReturnCode(
+                    typeName = property.type,
+                    currentNamespace = currentNamespace,
+                    abiCall = AbiCallCatalog.objectMethod(getterVtableIndex),
+                    genericParameters = genericParameters,
+                ),
+            )
+        } else {
+            val getterExpression = PropertyRuleRegistry.interfaceScalarGetterDescriptor(property.type)
+                ?.render(property.type, getterVtableIndex, valueTypeProjectionSupport)
+                ?: return null
+            getterBuilder.addStatement("return %L", getterExpression)
         }
         val propertyBuilder = PropertySpec.builder(propertyName, propertyType)
             .getter(getterBuilder.build())
         val isEnumProperty = typeRegistry.isEnumType(property.type, currentNamespace)
-        val setterRuleFamily = PropertyRuleRegistry.interfaceSetterRuleFamily(
-            property.type,
-            supportsInterfaceObjectType(property.type, currentNamespace),
-        )
+        val isObjectProperty = supportsInterfaceObjectType(property.type, currentNamespace)
+        val scalarSetterExpression = property.setterVtableIndex?.let { setterVtableIndex ->
+            PropertyRuleRegistry.interfaceScalarSetterDescriptor(property.type)
+                ?.render(setterVtableIndex, valueTypeProjectionSupport)
+        }
         val setterExpression = property
             .setterVtableIndex
             ?.let { setterVtableIndex ->
@@ -1152,7 +1051,8 @@ internal class InterfaceTypeRenderer(
             (
                 setterExpression != null ||
                     isEnumProperty ||
-                    setterRuleFamily != null
+                    isObjectProperty ||
+                    scalarSetterExpression != null
             )
         ) {
             val setterVtableIndex = property.setterVtableIndex!!
@@ -1175,46 +1075,21 @@ internal class InterfaceTypeRenderer(
                                     ),
                                 )
                             }
-                            else -> when (setterRuleFamily) {
-                                InterfacePropertyRuleFamily.OBJECT -> addStatement(
-                                    "%L",
-                                    AbiCallCatalog.objectSetterExpression(
-                                        setterVtableIndex,
-                                        interfaceObjectArgumentExpression(
-                                            argumentName = "value",
-                                            typeName = property.type,
-                                            currentNamespace = currentNamespace,
-                                        ),
+                            isObjectProperty -> addStatement(
+                                "%L",
+                                AbiCallCatalog.objectSetterExpression(
+                                    setterVtableIndex,
+                                    interfaceObjectArgumentExpression(
+                                        argumentName = "value",
+                                        typeName = property.type,
+                                        currentNamespace = currentNamespace,
                                     ),
-                                )
-                                InterfacePropertyRuleFamily.STRING -> addStatement("%L", AbiCallCatalog.stringSetter(setterVtableIndex))
-                                InterfacePropertyRuleFamily.UINT8,
-                                InterfacePropertyRuleFamily.INT16,
-                                InterfacePropertyRuleFamily.UINT16,
-                                InterfacePropertyRuleFamily.CHAR16,
-                                -> addStatement(
-                                    "%L",
-                                    valueTypeProjectionSupport.invokeUnitMethodWithArgs(
-                                        vtableIndex = setterVtableIndex,
-                                        arguments = listOf(CodeBlock.of("value")),
-                                    ),
-                                )
-                                InterfacePropertyRuleFamily.FLOAT32 -> addStatement("%L", AbiCallCatalog.float32Setter(setterVtableIndex))
-                                InterfacePropertyRuleFamily.FLOAT64 -> addStatement("%L", AbiCallCatalog.float64Setter(setterVtableIndex))
-                                InterfacePropertyRuleFamily.BOOLEAN -> addStatement("%L", AbiCallCatalog.booleanSetter(setterVtableIndex))
-                                InterfacePropertyRuleFamily.HRESULT -> addStatement(
-                                    "%L",
-                                    AbiCallCatalog.int32SetterExpression(
-                                        setterVtableIndex,
-                                        "hResultOfException(value)",
-                                    ),
-                                )
-                                InterfacePropertyRuleFamily.INT32 -> addStatement("%L", AbiCallCatalog.int32Setter(setterVtableIndex))
-                                InterfacePropertyRuleFamily.UINT32 -> addStatement("%L", AbiCallCatalog.uint32Setter(setterVtableIndex))
-                                InterfacePropertyRuleFamily.INT64 -> addStatement("%L", AbiCallCatalog.int64Setter(setterVtableIndex))
-                                InterfacePropertyRuleFamily.UINT64 -> addStatement("%L", AbiCallCatalog.uint64Setter(setterVtableIndex))
-                                else -> return null
-                            }
+                                ),
+                            )
+                            else -> addStatement(
+                                "%L",
+                                scalarSetterExpression ?: return null,
+                            )
                         }
                     }
                     .build(),
@@ -2332,11 +2207,9 @@ internal class InterfaceTypeRenderer(
         return property.getterVtableIndex != null &&
             (
                 valueTypeProjectionSupport.propertyProjection(property.type, currentNamespace) != null ||
-                    PropertyRuleRegistry.interfaceGetterRuleFamily(
-                        type = property.type,
-                        isEnumType = typeRegistry.isEnumType(property.type, currentNamespace),
-                        isObjectType = supportsInterfaceObjectReturnType(property.type, currentNamespace),
-                    ) != null
+                    typeRegistry.isEnumType(property.type, currentNamespace) ||
+                    supportsInterfaceObjectReturnType(property.type, currentNamespace) ||
+                    PropertyRuleRegistry.interfaceScalarGetterDescriptor(property.type) != null
                 )
     }
 

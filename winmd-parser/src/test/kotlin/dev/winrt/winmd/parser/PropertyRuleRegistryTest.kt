@@ -1,73 +1,48 @@
 package dev.winrt.winmd.parser
 
-import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class PropertyRuleRegistryTest {
     @Test
-    fun classifies_runtime_property_getter_rules() {
-        assertEquals(RuntimePropertyGetterRuleFamily.OBJECT, PropertyRuleRegistry.getterRuleFamily("Object"))
-        assertEquals(RuntimePropertyGetterRuleFamily.IREFERENCE_STRING, PropertyRuleRegistry.getterRuleFamily("IReference<String>"))
-        assertEquals(RuntimePropertyGetterRuleFamily.STRING, PropertyRuleRegistry.getterRuleFamily("String"))
-        assertEquals(RuntimePropertyGetterRuleFamily.BOOLEAN, PropertyRuleRegistry.getterRuleFamily("Boolean"))
-        assertEquals(RuntimePropertyGetterRuleFamily.HRESULT, PropertyRuleRegistry.getterRuleFamily("Windows.Foundation.HResult"))
-        assertEquals(RuntimePropertyGetterRuleFamily.GUID, PropertyRuleRegistry.getterRuleFamily("Guid"))
-        assertEquals(RuntimePropertyGetterRuleFamily.DATE_TIME, PropertyRuleRegistry.getterRuleFamily("DateTime"))
-        assertEquals(RuntimePropertyGetterRuleFamily.TIME_SPAN, PropertyRuleRegistry.getterRuleFamily("TimeSpan"))
-        assertEquals(RuntimePropertyGetterRuleFamily.EVENT_REGISTRATION_TOKEN, PropertyRuleRegistry.getterRuleFamily("EventRegistrationToken"))
-        assertEquals(RuntimePropertyGetterRuleFamily.INT32, PropertyRuleRegistry.getterRuleFamily("Int32"))
-        assertEquals(RuntimePropertyGetterRuleFamily.UINT32, PropertyRuleRegistry.getterRuleFamily("UInt32"))
-        assertEquals(RuntimePropertyGetterRuleFamily.INT64, PropertyRuleRegistry.getterRuleFamily("Int64"))
-        assertEquals(RuntimePropertyGetterRuleFamily.UINT64, PropertyRuleRegistry.getterRuleFamily("UInt64"))
+    fun resolves_runtime_property_getter_descriptors() {
+        assertNotNull(PropertyRuleRegistry.runtimeGetterDescriptor("Object"))
+        assertNull(PropertyRuleRegistry.runtimeGetterDescriptor("IReference<String>"))
+        assertNotNull(PropertyRuleRegistry.runtimeGetterDescriptor("String"))
+        assertNotNull(PropertyRuleRegistry.runtimeGetterDescriptor("Boolean"))
+        assertNotNull(PropertyRuleRegistry.runtimeGetterDescriptor("Windows.Foundation.HResult"))
+        assertNotNull(PropertyRuleRegistry.runtimeGetterDescriptor("Guid"))
+        assertNotNull(PropertyRuleRegistry.runtimeGetterDescriptor("DateTime"))
+        assertNotNull(PropertyRuleRegistry.runtimeGetterDescriptor("TimeSpan"))
+        assertNotNull(PropertyRuleRegistry.runtimeGetterDescriptor("EventRegistrationToken"))
+        assertNotNull(PropertyRuleRegistry.runtimeGetterDescriptor("Int32"))
+        assertNotNull(PropertyRuleRegistry.runtimeGetterDescriptor("UInt32"))
+        assertNotNull(PropertyRuleRegistry.runtimeGetterDescriptor("Int64"))
+        assertNotNull(PropertyRuleRegistry.runtimeGetterDescriptor("UInt64"))
     }
 
     @Test
-    fun classifies_runtime_property_setter_rules() {
-        assertEquals(RuntimePropertySetterRuleFamily.OBJECT, PropertyRuleRegistry.setterRuleFamily("Object"))
-        assertEquals(RuntimePropertySetterRuleFamily.STRING, PropertyRuleRegistry.setterRuleFamily("String"))
-        assertEquals(RuntimePropertySetterRuleFamily.BOOLEAN, PropertyRuleRegistry.setterRuleFamily("Boolean"))
-        assertEquals(RuntimePropertySetterRuleFamily.FLOAT32, PropertyRuleRegistry.setterRuleFamily("Float32"))
-        assertEquals(RuntimePropertySetterRuleFamily.FLOAT64, PropertyRuleRegistry.setterRuleFamily("Float64"))
-        assertEquals(RuntimePropertySetterRuleFamily.HRESULT, PropertyRuleRegistry.setterRuleFamily("Windows.Foundation.HResult"))
-        assertEquals(RuntimePropertySetterRuleFamily.INT32, PropertyRuleRegistry.setterRuleFamily("Int32"))
-        assertEquals(RuntimePropertySetterRuleFamily.UINT32, PropertyRuleRegistry.setterRuleFamily("UInt32"))
-        assertEquals(RuntimePropertySetterRuleFamily.INT64, PropertyRuleRegistry.setterRuleFamily("Int64"))
-        assertEquals(RuntimePropertySetterRuleFamily.UINT64, PropertyRuleRegistry.setterRuleFamily("UInt64"))
+    fun resolves_runtime_property_setter_descriptors() {
+        assertNotNull(PropertyRuleRegistry.runtimeSetterDescriptor("Object"))
+        assertNotNull(PropertyRuleRegistry.runtimeSetterDescriptor("String"))
+        assertNotNull(PropertyRuleRegistry.runtimeSetterDescriptor("Boolean"))
+        assertNotNull(PropertyRuleRegistry.runtimeSetterDescriptor("Float32"))
+        assertNotNull(PropertyRuleRegistry.runtimeSetterDescriptor("Float64"))
+        assertNotNull(PropertyRuleRegistry.runtimeSetterDescriptor("Windows.Foundation.HResult"))
+        assertNotNull(PropertyRuleRegistry.runtimeSetterDescriptor("Int32"))
+        assertNotNull(PropertyRuleRegistry.runtimeSetterDescriptor("UInt32"))
+        assertNotNull(PropertyRuleRegistry.runtimeSetterDescriptor("Int64"))
+        assertNotNull(PropertyRuleRegistry.runtimeSetterDescriptor("UInt64"))
     }
 
     @Test
-    fun classifies_interface_property_rules() {
-        assertEquals(
-            InterfacePropertyRuleFamily.ENUM,
-            PropertyRuleRegistry.interfaceGetterRuleFamily("AsyncStatus", isEnumType = true, isObjectType = false),
-        )
-        assertEquals(
-            InterfacePropertyRuleFamily.OBJECT,
-            PropertyRuleRegistry.interfaceGetterRuleFamily("JsonObject", isEnumType = false, isObjectType = true),
-        )
-        assertEquals(
-            InterfacePropertyRuleFamily.STRING,
-            PropertyRuleRegistry.interfaceGetterRuleFamily("String", isEnumType = false, isObjectType = false),
-        )
-        assertEquals(
-            InterfacePropertyRuleFamily.STRING,
-            PropertyRuleRegistry.interfaceSetterRuleFamily("String", isObjectType = false),
-        )
-        assertEquals(
-            InterfacePropertyRuleFamily.HRESULT,
-            PropertyRuleRegistry.interfaceGetterRuleFamily("Windows.Foundation.HResult", isEnumType = false, isObjectType = false),
-        )
-        assertEquals(
-            InterfacePropertyRuleFamily.HRESULT,
-            PropertyRuleRegistry.interfaceSetterRuleFamily("Windows.Foundation.HResult", isObjectType = false),
-        )
-        assertEquals(
-            InterfacePropertyRuleFamily.OBJECT,
-            PropertyRuleRegistry.interfaceSetterRuleFamily("JsonObject", isObjectType = true),
-        )
-        assertEquals(
-            null,
-            PropertyRuleRegistry.interfaceSetterRuleFamily("JsonObject", isObjectType = false),
-        )
+    fun resolves_interface_scalar_property_descriptors() {
+        assertNull(PropertyRuleRegistry.interfaceScalarGetterDescriptor("JsonObject"))
+        assertNotNull(PropertyRuleRegistry.interfaceScalarGetterDescriptor("String"))
+        assertNotNull(PropertyRuleRegistry.interfaceScalarSetterDescriptor("String"))
+        assertNotNull(PropertyRuleRegistry.interfaceScalarGetterDescriptor("Windows.Foundation.HResult"))
+        assertNotNull(PropertyRuleRegistry.interfaceScalarSetterDescriptor("Windows.Foundation.HResult"))
+        assertNull(PropertyRuleRegistry.interfaceScalarSetterDescriptor("JsonObject"))
     }
 }

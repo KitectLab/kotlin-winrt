@@ -1,158 +1,174 @@
 package dev.winrt.winmd.parser
 
-internal enum class RuntimePropertyGetterRuleFamily {
-    OBJECT,
-    IREFERENCE_STRING,
-    STRING,
-    UINT8,
-    INT16,
-    UINT16,
-    CHAR16,
-    FLOAT32,
-    FLOAT64,
-    BOOLEAN,
-    GUID,
-    DATE_TIME,
-    TIME_SPAN,
-    EVENT_REGISTRATION_TOKEN,
-    HRESULT,
-    INT32,
-    UINT32,
-    INT64,
-    UINT64,
-}
+import com.squareup.kotlinpoet.CodeBlock
 
-internal enum class RuntimePropertySetterRuleFamily {
-    OBJECT,
-    STRING,
-    UINT8,
-    INT16,
-    UINT16,
-    CHAR16,
-    HRESULT,
-    INT32,
-    UINT32,
-    FLOAT32,
-    BOOLEAN,
-    FLOAT64,
-    INT64,
-    UINT64,
-}
+internal data class ScalarPropertyGetterDescriptor(
+    val render: (type: String, getterVtableIndex: Int, valueTypeProjectionSupport: ValueTypeProjectionSupport) -> CodeBlock?,
+)
 
-internal enum class InterfacePropertyRuleFamily {
-    ENUM,
-    OBJECT,
-    STRING,
-    UINT8,
-    INT16,
-    UINT16,
-    CHAR16,
-    FLOAT32,
-    FLOAT64,
-    BOOLEAN,
-    GUID,
-    DATE_TIME,
-    TIME_SPAN,
-    EVENT_REGISTRATION_TOKEN,
-    HRESULT,
-    INT32,
-    UINT32,
-    INT64,
-    UINT64,
-}
+internal data class ScalarPropertySetterDescriptor(
+    val render: (setterVtableIndex: Int, valueTypeProjectionSupport: ValueTypeProjectionSupport) -> CodeBlock,
+)
 
 internal object PropertyRuleRegistry {
-    private val getterRules: Map<String, RuntimePropertyGetterRuleFamily> = mapOf(
-        "Object" to RuntimePropertyGetterRuleFamily.OBJECT,
-        "IReference<String>" to RuntimePropertyGetterRuleFamily.IREFERENCE_STRING,
-        "String" to RuntimePropertyGetterRuleFamily.STRING,
-        "UInt8" to RuntimePropertyGetterRuleFamily.UINT8,
-        "Int16" to RuntimePropertyGetterRuleFamily.INT16,
-        "UInt16" to RuntimePropertyGetterRuleFamily.UINT16,
-        "Char16" to RuntimePropertyGetterRuleFamily.CHAR16,
-        "Float32" to RuntimePropertyGetterRuleFamily.FLOAT32,
-        "Float64" to RuntimePropertyGetterRuleFamily.FLOAT64,
-        "Boolean" to RuntimePropertyGetterRuleFamily.BOOLEAN,
-        "Guid" to RuntimePropertyGetterRuleFamily.GUID,
-        "DateTime" to RuntimePropertyGetterRuleFamily.DATE_TIME,
-        "TimeSpan" to RuntimePropertyGetterRuleFamily.TIME_SPAN,
-        "EventRegistrationToken" to RuntimePropertyGetterRuleFamily.EVENT_REGISTRATION_TOKEN,
-        "HResult" to RuntimePropertyGetterRuleFamily.HRESULT,
-        "Int32" to RuntimePropertyGetterRuleFamily.INT32,
-        "UInt32" to RuntimePropertyGetterRuleFamily.UINT32,
-        "Int64" to RuntimePropertyGetterRuleFamily.INT64,
-        "UInt64" to RuntimePropertyGetterRuleFamily.UINT64,
-    )
-
-    private val setterRules: Map<String, RuntimePropertySetterRuleFamily> = mapOf(
-        "Object" to RuntimePropertySetterRuleFamily.OBJECT,
-        "String" to RuntimePropertySetterRuleFamily.STRING,
-        "UInt8" to RuntimePropertySetterRuleFamily.UINT8,
-        "Int16" to RuntimePropertySetterRuleFamily.INT16,
-        "UInt16" to RuntimePropertySetterRuleFamily.UINT16,
-        "Char16" to RuntimePropertySetterRuleFamily.CHAR16,
-        "HResult" to RuntimePropertySetterRuleFamily.HRESULT,
-        "Int32" to RuntimePropertySetterRuleFamily.INT32,
-        "UInt32" to RuntimePropertySetterRuleFamily.UINT32,
-        "Float32" to RuntimePropertySetterRuleFamily.FLOAT32,
-        "Boolean" to RuntimePropertySetterRuleFamily.BOOLEAN,
-        "Float64" to RuntimePropertySetterRuleFamily.FLOAT64,
-        "Int64" to RuntimePropertySetterRuleFamily.INT64,
-        "UInt64" to RuntimePropertySetterRuleFamily.UINT64,
-    )
-
-    fun interfaceGetterRuleFamily(
-        type: String,
-        isEnumType: Boolean,
-        isObjectType: Boolean,
-    ): InterfacePropertyRuleFamily? {
-        val canonicalType = canonicalWinRtSpecialType(type)
-        return when {
-            isEnumType -> InterfacePropertyRuleFamily.ENUM
-            isObjectType -> InterfacePropertyRuleFamily.OBJECT
-            canonicalType == "String" -> InterfacePropertyRuleFamily.STRING
-            canonicalType == "UInt8" -> InterfacePropertyRuleFamily.UINT8
-            canonicalType == "Int16" -> InterfacePropertyRuleFamily.INT16
-            canonicalType == "UInt16" -> InterfacePropertyRuleFamily.UINT16
-            canonicalType == "Char16" -> InterfacePropertyRuleFamily.CHAR16
-            canonicalType == "Float32" -> InterfacePropertyRuleFamily.FLOAT32
-            canonicalType == "Float64" -> InterfacePropertyRuleFamily.FLOAT64
-            canonicalType == "Boolean" -> InterfacePropertyRuleFamily.BOOLEAN
-            canonicalType == "Guid" -> InterfacePropertyRuleFamily.GUID
-            canonicalType == "DateTime" -> InterfacePropertyRuleFamily.DATE_TIME
-            canonicalType == "TimeSpan" -> InterfacePropertyRuleFamily.TIME_SPAN
-            canonicalType == "EventRegistrationToken" -> InterfacePropertyRuleFamily.EVENT_REGISTRATION_TOKEN
-            canonicalType == "HResult" -> InterfacePropertyRuleFamily.HRESULT
-            canonicalType == "Int32" -> InterfacePropertyRuleFamily.INT32
-            canonicalType == "UInt32" -> InterfacePropertyRuleFamily.UINT32
-            canonicalType == "Int64" -> InterfacePropertyRuleFamily.INT64
-            canonicalType == "UInt64" -> InterfacePropertyRuleFamily.UINT64
-            else -> null
-        }
+    private val smallScalarGetterDescriptor = ScalarPropertyGetterDescriptor { type, getterVtableIndex, valueTypeProjectionSupport ->
+        valueTypeProjectionSupport.smallScalarAbiCall(type, getterVtableIndex, emptyList())
     }
 
-    fun interfaceSetterRuleFamily(type: String, isObjectType: Boolean): InterfacePropertyRuleFamily? {
-        val canonicalType = canonicalWinRtSpecialType(type)
-        return when {
-            isObjectType -> InterfacePropertyRuleFamily.OBJECT
-            canonicalType == "String" -> InterfacePropertyRuleFamily.STRING
-            canonicalType == "UInt8" -> InterfacePropertyRuleFamily.UINT8
-            canonicalType == "Int16" -> InterfacePropertyRuleFamily.INT16
-            canonicalType == "UInt16" -> InterfacePropertyRuleFamily.UINT16
-            canonicalType == "Char16" -> InterfacePropertyRuleFamily.CHAR16
-            canonicalType == "Float32" -> InterfacePropertyRuleFamily.FLOAT32
-            canonicalType == "Boolean" -> InterfacePropertyRuleFamily.BOOLEAN
-            canonicalType == "Float64" -> InterfacePropertyRuleFamily.FLOAT64
-            canonicalType == "HResult" -> InterfacePropertyRuleFamily.HRESULT
-            canonicalType == "Int32" -> InterfacePropertyRuleFamily.INT32
-            canonicalType == "UInt32" -> InterfacePropertyRuleFamily.UINT32
-            canonicalType == "Int64" -> InterfacePropertyRuleFamily.INT64
-            canonicalType == "UInt64" -> InterfacePropertyRuleFamily.UINT64
-            else -> null
-        }
+    private val smallScalarSetterDescriptor = ScalarPropertySetterDescriptor { setterVtableIndex, valueTypeProjectionSupport ->
+        valueTypeProjectionSupport.invokeUnitMethodWithArgs(
+            vtableIndex = setterVtableIndex,
+            arguments = listOf(CodeBlock.of("value")),
+        )
     }
 
-    fun getterRuleFamily(type: String): RuntimePropertyGetterRuleFamily? = getterRules[canonicalWinRtSpecialType(type)]
+    private val runtimeGetterDescriptors = mapOf(
+        "Object" to ScalarPropertyGetterDescriptor { _, getterVtableIndex, _ ->
+            CodeBlock.of(
+                "%T(%L)",
+                PoetSymbols.inspectableClass,
+                AbiCallCatalog.objectMethod(getterVtableIndex),
+            )
+        },
+        "String" to ScalarPropertyGetterDescriptor { _, getterVtableIndex, _ ->
+            HStringSupport.toKotlinString("pointer", getterVtableIndex)
+        },
+        "UInt8" to smallScalarGetterDescriptor,
+        "Int16" to smallScalarGetterDescriptor,
+        "UInt16" to smallScalarGetterDescriptor,
+        "Char16" to smallScalarGetterDescriptor,
+        "Float32" to ScalarPropertyGetterDescriptor { _, getterVtableIndex, _ ->
+            CodeBlock.of(
+                "%T(%L)",
+                PoetSymbols.float32Class,
+                AbiCallCatalog.float32Method(getterVtableIndex),
+            )
+        },
+        "Float64" to ScalarPropertyGetterDescriptor { _, getterVtableIndex, _ ->
+            CodeBlock.of(
+                "%T(%L)",
+                PoetSymbols.float64Class,
+                AbiCallCatalog.float64Method(getterVtableIndex),
+            )
+        },
+        "Boolean" to ScalarPropertyGetterDescriptor { _, getterVtableIndex, _ ->
+            CodeBlock.of("%T(%L)", PoetSymbols.winRtBooleanClass, AbiCallCatalog.booleanGetter(getterVtableIndex))
+        },
+        "Guid" to ScalarPropertyGetterDescriptor { _, getterVtableIndex, _ ->
+            CodeBlock.of(
+                "%T.parse(%L.toString())",
+                PoetSymbols.guidValueClass,
+                AbiCallCatalog.guidGetter(getterVtableIndex),
+            )
+        },
+        "DateTime" to ScalarPropertyGetterDescriptor { _, getterVtableIndex, _ ->
+            val ticksOffsetLiteral = WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET.toString()
+            CodeBlock.of(
+                "Instant.fromEpochSeconds((PlatformComInterop.invokeInt64Getter(pointer, $getterVtableIndex).getOrThrow() - $ticksOffsetLiteral) / 10000000L, ((PlatformComInterop.invokeInt64Getter(pointer, $getterVtableIndex).getOrThrow() - $ticksOffsetLiteral) %% 10000000L * 100).toInt())",
+            )
+        },
+        "TimeSpan" to ScalarPropertyGetterDescriptor { _, getterVtableIndex, _ ->
+            CodeBlock.of(
+                "%T(%L)",
+                PoetSymbols.timeSpanClass,
+                AbiCallCatalog.int64Getter(getterVtableIndex),
+            )
+        },
+        "EventRegistrationToken" to ScalarPropertyGetterDescriptor { _, getterVtableIndex, _ ->
+            CodeBlock.of(
+                "%T(%L)",
+                PoetSymbols.eventRegistrationTokenClass,
+                AbiCallCatalog.int64Getter(getterVtableIndex),
+            )
+        },
+        "HResult" to ScalarPropertyGetterDescriptor { _, getterVtableIndex, _ ->
+            CodeBlock.of(
+                "%M(%L)",
+                PoetSymbols.exceptionFromHResultMember,
+                AbiCallCatalog.int32Method(getterVtableIndex),
+            )
+        },
+        "Int32" to ScalarPropertyGetterDescriptor { _, getterVtableIndex, _ ->
+            CodeBlock.of(
+                "%T(%L)",
+                PoetSymbols.int32Class,
+                AbiCallCatalog.int32Method(getterVtableIndex),
+            )
+        },
+        "UInt32" to ScalarPropertyGetterDescriptor { _, getterVtableIndex, _ ->
+            CodeBlock.of(
+                "%T(%L)",
+                PoetSymbols.uint32Class,
+                AbiCallCatalog.uint32Method(getterVtableIndex),
+            )
+        },
+        "Int64" to ScalarPropertyGetterDescriptor { _, getterVtableIndex, _ ->
+            CodeBlock.of(
+                "%T(%L)",
+                PoetSymbols.int64Class,
+                AbiCallCatalog.int64Getter(getterVtableIndex),
+            )
+        },
+        "UInt64" to ScalarPropertyGetterDescriptor { _, getterVtableIndex, _ ->
+            CodeBlock.of(
+                "%T(%L.toULong())",
+                PoetSymbols.uint64Class,
+                AbiCallCatalog.int64Getter(getterVtableIndex),
+            )
+        },
+    )
 
-    fun setterRuleFamily(type: String): RuntimePropertySetterRuleFamily? = setterRules[canonicalWinRtSpecialType(type)]
+    private val runtimeSetterDescriptors = mapOf(
+        "Object" to ScalarPropertySetterDescriptor { setterVtableIndex, _ ->
+            AbiCallCatalog.objectSetter(setterVtableIndex, "value")
+        },
+        "String" to ScalarPropertySetterDescriptor { setterVtableIndex, _ ->
+            AbiCallCatalog.stringSetter(setterVtableIndex)
+        },
+        "UInt8" to smallScalarSetterDescriptor,
+        "Int16" to smallScalarSetterDescriptor,
+        "UInt16" to smallScalarSetterDescriptor,
+        "Char16" to smallScalarSetterDescriptor,
+        "HResult" to ScalarPropertySetterDescriptor { setterVtableIndex, _ ->
+            AbiCallCatalog.int32SetterExpression(
+                setterVtableIndex,
+                "hResultOfException(value)",
+            )
+        },
+        "Int32" to ScalarPropertySetterDescriptor { setterVtableIndex, _ ->
+            AbiCallCatalog.int32Setter(setterVtableIndex)
+        },
+        "UInt32" to ScalarPropertySetterDescriptor { setterVtableIndex, _ ->
+            AbiCallCatalog.uint32Setter(setterVtableIndex)
+        },
+        "Float32" to ScalarPropertySetterDescriptor { setterVtableIndex, _ ->
+            AbiCallCatalog.float32Setter(setterVtableIndex)
+        },
+        "Boolean" to ScalarPropertySetterDescriptor { setterVtableIndex, _ ->
+            AbiCallCatalog.booleanSetter(setterVtableIndex)
+        },
+        "Float64" to ScalarPropertySetterDescriptor { setterVtableIndex, _ ->
+            AbiCallCatalog.float64Setter(setterVtableIndex)
+        },
+        "Int64" to ScalarPropertySetterDescriptor { setterVtableIndex, _ ->
+            AbiCallCatalog.int64Setter(setterVtableIndex)
+        },
+        "UInt64" to ScalarPropertySetterDescriptor { setterVtableIndex, _ ->
+            AbiCallCatalog.uint64Setter(setterVtableIndex)
+        },
+    )
+
+    fun runtimeGetterDescriptor(type: String): ScalarPropertyGetterDescriptor? =
+        runtimeGetterDescriptors[canonicalWinRtSpecialType(type)]
+
+    fun runtimeSetterDescriptor(type: String): ScalarPropertySetterDescriptor? =
+        runtimeSetterDescriptors[canonicalWinRtSpecialType(type)]
+
+    fun interfaceScalarGetterDescriptor(type: String): ScalarPropertyGetterDescriptor? =
+        runtimeGetterDescriptors[canonicalWinRtSpecialType(type)]
+            ?.takeUnless { canonicalWinRtSpecialType(type) == "Object" }
+
+    fun interfaceScalarSetterDescriptor(type: String): ScalarPropertySetterDescriptor? =
+        runtimeSetterDescriptors[canonicalWinRtSpecialType(type)]
+            ?.takeUnless { canonicalWinRtSpecialType(type) == "Object" }
 }
