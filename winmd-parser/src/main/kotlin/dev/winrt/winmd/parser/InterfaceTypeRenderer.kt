@@ -2047,7 +2047,7 @@ internal class InterfaceTypeRenderer(
         signatureKey: MethodSignatureKey,
         genericParameters: Set<String>,
     ): PlannedInterfaceMethod? {
-        val parameterCategories = signatureKey.shape.toParameterCategories() ?: return null
+        val parameterCategories = signatureKey.shape.toParameterCategories()
         return when {
             parameterCategories.size <= 1 -> plannedUnaryInterfaceMethod(signatureKey, genericParameters)
             signatureKey.returnKind == MethodReturnKind.UNIT -> plannedTwoArgumentUnitInterfaceMethod(signatureKey)
@@ -2060,7 +2060,7 @@ internal class InterfaceTypeRenderer(
         signatureKey: MethodSignatureKey,
     ): PlannedInterfaceMethod? {
         val parameterCategories = signatureKey.shape.toParameterCategories()
-            ?.takeIf(List<MethodParameterCategory>::isSupportedTwoArgumentUnitCategories)
+            .takeIf(List<MethodParameterCategory>::isSupportedTwoArgumentUnitCategories)
             ?: return null
         return PlannedInterfaceMethod(
             statement = "%L",
@@ -2094,7 +2094,7 @@ internal class InterfaceTypeRenderer(
         signatureKey: MethodSignatureKey,
         genericParameters: Set<String>,
     ): PlannedInterfaceMethod? {
-        val parameterCategories = signatureKey.shape.toParameterCategories() ?: return null
+        val parameterCategories = signatureKey.shape.toParameterCategories()
         if (parameterCategories.size > 1) return null
         val parameterCategory = parameterCategories.singleOrNull()
         return when (signatureKey.returnKind) {

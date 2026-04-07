@@ -2,64 +2,29 @@ package dev.winrt.winmd.parser
 
 import dev.winrt.winmd.plugin.stripValueTypeNameMarker
 
-internal enum class MethodSignatureShape {
-    EMPTY,
-    STRING,
-    INT32,
-    BOOLEAN,
-    INT64,
-    UINT32,
-    EVENT_REGISTRATION_TOKEN,
-    OBJECT,
-    STRING_INT32,
-    INT32_STRING,
-    STRING_UINT32,
-    UINT32_STRING,
-    STRING_BOOLEAN,
-    BOOLEAN_STRING,
-    STRING_INT64,
-    INT64_STRING,
-    STRING_EVENT_REGISTRATION_TOKEN,
-    EVENT_REGISTRATION_TOKEN_STRING,
-    STRING_STRING,
-    INT32_INT32,
-    INT32_UINT32,
-    INT32_BOOLEAN,
-    INT32_INT64,
-    INT32_EVENT_REGISTRATION_TOKEN,
-    UINT32_INT32,
-    UINT32_UINT32,
-    UINT32_BOOLEAN,
-    UINT32_INT64,
-    UINT32_EVENT_REGISTRATION_TOKEN,
-    BOOLEAN_INT32,
-    BOOLEAN_UINT32,
-    BOOLEAN_BOOLEAN,
-    BOOLEAN_INT64,
-    BOOLEAN_EVENT_REGISTRATION_TOKEN,
-    INT64_INT32,
-    INT64_UINT32,
-    INT64_BOOLEAN,
-    INT64_INT64,
-    INT64_EVENT_REGISTRATION_TOKEN,
-    EVENT_REGISTRATION_TOKEN_INT32,
-    EVENT_REGISTRATION_TOKEN_UINT32,
-    EVENT_REGISTRATION_TOKEN_BOOLEAN,
-    EVENT_REGISTRATION_TOKEN_INT64,
-    EVENT_REGISTRATION_TOKEN_EVENT_REGISTRATION_TOKEN,
-    OBJECT_INT32,
-    OBJECT_UINT32,
-    OBJECT_BOOLEAN,
-    OBJECT_INT64,
-    OBJECT_EVENT_REGISTRATION_TOKEN,
-    INT32_OBJECT,
-    UINT32_OBJECT,
-    BOOLEAN_OBJECT,
-    INT64_OBJECT,
-    EVENT_REGISTRATION_TOKEN_OBJECT,
-    OBJECT_STRING,
-    STRING_OBJECT,
-    TWO_OBJECT,
+internal data class MethodSignatureShape(
+    private val parameterCategories: List<MethodParameterCategory>,
+) {
+    init {
+        require(parameterCategories.size <= 2) { "Unsupported method signature arity: ${parameterCategories.size}" }
+    }
+
+    fun toParameterCategories(): List<MethodParameterCategory> = parameterCategories
+
+    companion object {
+        val EMPTY = MethodSignatureShape(emptyList())
+
+        fun of(parameterCategories: List<MethodParameterCategory>): MethodSignatureShape? =
+            if (parameterCategories.size <= 2) {
+                if (parameterCategories.isEmpty()) {
+                    EMPTY
+                } else {
+                    MethodSignatureShape(parameterCategories)
+                }
+            } else {
+                null
+            }
+    }
 }
 
 internal enum class MethodParameterCategory {
@@ -92,11 +57,6 @@ internal enum class MethodReturnKind {
 internal data class MethodSignatureKey(
     val returnKind: MethodReturnKind,
     val shape: MethodSignatureShape,
-)
-
-internal data class MethodParameterPair(
-    val first: MethodParameterCategory,
-    val second: MethodParameterCategory,
 )
 
 internal enum class MethodParameterAbiToken {
@@ -144,45 +104,12 @@ private val int64LikeCategories = setOf(
     MethodParameterCategory.EVENT_REGISTRATION_TOKEN,
 )
 
-private val unaryShapes = mapOf(
-    MethodParameterCategory.STRING to MethodSignatureShape.STRING,
-    MethodParameterCategory.INT32 to MethodSignatureShape.INT32,
-    MethodParameterCategory.BOOLEAN to MethodSignatureShape.BOOLEAN,
-    MethodParameterCategory.INT64 to MethodSignatureShape.INT64,
-    MethodParameterCategory.UINT32 to MethodSignatureShape.UINT32,
-    MethodParameterCategory.EVENT_REGISTRATION_TOKEN to MethodSignatureShape.EVENT_REGISTRATION_TOKEN,
-    MethodParameterCategory.OBJECT to MethodSignatureShape.OBJECT,
-)
+internal fun methodSignatureShapeOf(vararg parameterCategories: MethodParameterCategory): MethodSignatureShape =
+    MethodSignatureShape.of(parameterCategories.toList())
+        ?: error("Unsupported method signature arity: ${parameterCategories.size}")
 
-private fun twoArgumentShape(
-    first: MethodParameterCategory,
-    second: MethodParameterCategory,
-): MethodSignatureShape =
-    if (first == MethodParameterCategory.OBJECT && second == MethodParameterCategory.OBJECT) {
-        MethodSignatureShape.TWO_OBJECT
-    } else {
-        MethodSignatureShape.valueOf("${first.name}_${second.name}")
-    }
-
-private val twoArgumentShapes = buildMap {
-    for (first in MethodParameterCategory.entries) {
-        for (second in MethodParameterCategory.entries) {
-            put(
-                MethodParameterPair(first, second),
-                twoArgumentShape(first, second),
-            )
-        }
-    }
-}
-
-private val parameterCategoriesByShape = buildMap {
-    put(MethodSignatureShape.EMPTY, emptyList())
-    unaryShapes.forEach { (category, shape) -> put(shape, listOf(category)) }
-    twoArgumentShapes.forEach { (pair, shape) -> put(shape, listOf(pair.first, pair.second)) }
-}
-
-internal fun MethodSignatureShape.toParameterCategories(): List<MethodParameterCategory>? =
-    parameterCategoriesByShape[this]
+private fun methodSignatureShapeOf(parameterCategories: List<MethodParameterCategory>): MethodSignatureShape? =
+    MethodSignatureShape.of(parameterCategories)
 
 internal fun List<MethodParameterCategory>.isSupportedTwoArgumentUnitCategories(): Boolean =
     size == 2 && supportedTwoArgumentUnitCategories(this[0], this[1])
@@ -279,17 +206,7 @@ internal fun methodSignatureShape(
     supportsObjectType: (String) -> Boolean,
 ): MethodSignatureShape? {
     val parameterCategories = methodParameterCategories(parameterTypes, supportsObjectType) ?: return null
-    return when {
-        parameterCategories.isEmpty() -> MethodSignatureShape.EMPTY
-        parameterCategories.size == 1 -> unaryShapes[parameterCategories.single()]
-        parameterCategories.size == 2 -> twoArgumentShapes[
-            MethodParameterPair(
-                parameterCategories[0],
-                parameterCategories[1],
-            ),
-        ]
-        else -> null
-    }
+    return methodSignatureShapeOf(parameterCategories)
 }
 
 internal fun methodSignatureKey(

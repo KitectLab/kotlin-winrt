@@ -486,7 +486,7 @@ internal class RuntimeMethodRenderer(
     private fun runtimeMethodPlanForKey(
         signatureKey: MethodSignatureKey,
     ): RuntimeMethodPlan? {
-        val parameterCategories = signatureKey.shape.toParameterCategories() ?: return null
+        val parameterCategories = signatureKey.shape.toParameterCategories()
         return when {
             parameterCategories.size <= 1 -> plannedUnaryRuntimeMethod(signatureKey)
             signatureKey.returnKind == MethodReturnKind.UNIT -> plannedTwoArgumentUnitRuntimeMethod(signatureKey)
@@ -499,7 +499,7 @@ internal class RuntimeMethodRenderer(
         signatureKey: MethodSignatureKey,
     ): RuntimeMethodPlan? {
         val parameterCategories = signatureKey.shape.toParameterCategories()
-            ?.takeIf(List<MethodParameterCategory>::isSupportedTwoArgumentUnitCategories)
+            .takeIf(List<MethodParameterCategory>::isSupportedTwoArgumentUnitCategories)
             ?: return null
         return RuntimeMethodPlan(
             nullPointerReturn = { PlannedStatement("return") },
@@ -527,7 +527,7 @@ internal class RuntimeMethodRenderer(
     }
 
     private fun plannedUnaryRuntimeMethod(signatureKey: MethodSignatureKey): RuntimeMethodPlan? {
-        val parameterCategories = signatureKey.shape.toParameterCategories() ?: return null
+        val parameterCategories = signatureKey.shape.toParameterCategories()
         if (parameterCategories.size > 1) return null
         val parameterCategory = parameterCategories.singleOrNull()
         return when (signatureKey.returnKind) {

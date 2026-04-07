@@ -23,7 +23,10 @@ class MethodSignatureShapeTest {
     @Test
     fun classifies_qualified_event_registration_token_return_kind() {
         assertEquals(
-            MethodSignatureKey(MethodReturnKind.EVENT_REGISTRATION_TOKEN, MethodSignatureShape.OBJECT),
+            MethodSignatureKey(
+                MethodReturnKind.EVENT_REGISTRATION_TOKEN,
+                methodSignatureShapeOf(MethodParameterCategory.OBJECT),
+            ),
             methodSignatureKey(
                 "Windows.Foundation.EventRegistrationToken",
                 listOf("Windows.Foundation.IInspectable"),
@@ -56,15 +59,15 @@ class MethodSignatureShapeTest {
     @Test
     fun derives_supported_two_argument_object_shapes_from_categories() {
         assertEquals(
-            MethodSignatureShape.OBJECT_STRING,
+            methodSignatureShapeOf(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING),
             methodSignatureShape(listOf("Windows.Foundation.Uri", "String"), ::supportsObjectType),
         )
         assertEquals(
-            MethodSignatureShape.STRING_OBJECT,
+            methodSignatureShapeOf(MethodParameterCategory.STRING, MethodParameterCategory.OBJECT),
             methodSignatureShape(listOf("String", "Windows.Foundation.Uri"), ::supportsObjectType),
         )
         assertEquals(
-            MethodSignatureShape.TWO_OBJECT,
+            methodSignatureShapeOf(MethodParameterCategory.OBJECT, MethodParameterCategory.OBJECT),
             methodSignatureShape(listOf("Windows.Foundation.Uri", "Windows.System.User"), ::supportsObjectType),
         )
     }
@@ -103,15 +106,15 @@ class MethodSignatureShapeTest {
     fun exposes_parameter_categories_for_supported_shapes() {
         assertEquals(
             listOf(MethodParameterCategory.STRING, MethodParameterCategory.INT32),
-            MethodSignatureShape.STRING_INT32.toParameterCategories(),
+            methodSignatureShapeOf(MethodParameterCategory.STRING, MethodParameterCategory.INT32).toParameterCategories(),
         )
         assertEquals(
             listOf(MethodParameterCategory.OBJECT, MethodParameterCategory.OBJECT),
-            MethodSignatureShape.TWO_OBJECT.toParameterCategories(),
+            methodSignatureShapeOf(MethodParameterCategory.OBJECT, MethodParameterCategory.OBJECT).toParameterCategories(),
         )
         assertEquals(
             listOf(MethodParameterCategory.OBJECT),
-            MethodSignatureShape.OBJECT.toParameterCategories(),
+            methodSignatureShapeOf(MethodParameterCategory.OBJECT).toParameterCategories(),
         )
     }
 

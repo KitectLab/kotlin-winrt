@@ -14,34 +14,60 @@ class MethodRuleRegistryTest {
         )
         assertEquals(
             SharedMethodRuleFamily.OBJECT,
-            MethodRuleRegistry.sharedMethodRuleFamily(MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.OBJECT_STRING)),
+            MethodRuleRegistry.sharedMethodRuleFamily(
+                MethodSignatureKey(
+                    MethodReturnKind.OBJECT,
+                    methodSignatureShapeOf(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING),
+                ),
+            ),
         )
         assertEquals(
             SharedMethodRuleFamily.UNIT,
-            MethodRuleRegistry.sharedMethodRuleFamily(MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_INT32)),
+            MethodRuleRegistry.sharedMethodRuleFamily(
+                MethodSignatureKey(
+                    MethodReturnKind.UNIT,
+                    methodSignatureShapeOf(MethodParameterCategory.OBJECT, MethodParameterCategory.INT32),
+                ),
+            ),
         )
         assertEquals(
             SharedMethodRuleFamily.GUID,
-            MethodRuleRegistry.sharedMethodRuleFamily(MethodSignatureKey(MethodReturnKind.GUID, MethodSignatureShape.STRING)),
+            MethodRuleRegistry.sharedMethodRuleFamily(
+                MethodSignatureKey(MethodReturnKind.GUID, methodSignatureShapeOf(MethodParameterCategory.STRING)),
+            ),
         )
         assertEquals(
             SharedMethodRuleFamily.DATE_TIME,
-            MethodRuleRegistry.sharedMethodRuleFamily(MethodSignatureKey(MethodReturnKind.DATE_TIME, MethodSignatureShape.STRING)),
+            MethodRuleRegistry.sharedMethodRuleFamily(
+                MethodSignatureKey(MethodReturnKind.DATE_TIME, methodSignatureShapeOf(MethodParameterCategory.STRING)),
+            ),
         )
         assertEquals(
             SharedMethodRuleFamily.TIME_SPAN,
-            MethodRuleRegistry.sharedMethodRuleFamily(MethodSignatureKey(MethodReturnKind.TIME_SPAN, MethodSignatureShape.OBJECT)),
+            MethodRuleRegistry.sharedMethodRuleFamily(
+                MethodSignatureKey(MethodReturnKind.TIME_SPAN, methodSignatureShapeOf(MethodParameterCategory.OBJECT)),
+            ),
         )
         assertEquals(
             SharedMethodRuleFamily.EVENT_REGISTRATION_TOKEN,
-            MethodRuleRegistry.sharedMethodRuleFamily(MethodSignatureKey(MethodReturnKind.EVENT_REGISTRATION_TOKEN, MethodSignatureShape.STRING)),
+            MethodRuleRegistry.sharedMethodRuleFamily(
+                MethodSignatureKey(
+                    MethodReturnKind.EVENT_REGISTRATION_TOKEN,
+                    methodSignatureShapeOf(MethodParameterCategory.STRING),
+                ),
+            ),
         )
     }
 
     @Test
     fun rejects_unsupported_shared_method_rule_families() {
         assertNull(
-            MethodRuleRegistry.sharedMethodRuleFamily(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.STRING_STRING)),
+            MethodRuleRegistry.sharedMethodRuleFamily(
+                MethodSignatureKey(
+                    MethodReturnKind.STRING,
+                    methodSignatureShapeOf(MethodParameterCategory.STRING, MethodParameterCategory.STRING),
+                ),
+            ),
         )
     }
 
@@ -50,12 +76,18 @@ class MethodRuleRegistryTest {
         assertNotNull(MethodRuleRegistry.sharedMethodPlan(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.EMPTY)))
         assertNotNull(
             MethodRuleRegistry.sharedMethodPlan(
-                MethodSignatureKey(MethodReturnKind.OBJECT, MethodSignatureShape.OBJECT_STRING),
+                MethodSignatureKey(
+                    MethodReturnKind.OBJECT,
+                    methodSignatureShapeOf(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING),
+                ),
             ),
         )
         assertNotNull(
             MethodRuleRegistry.sharedMethodPlan(
-                MethodSignatureKey(MethodReturnKind.UNIT, MethodSignatureShape.OBJECT_INT32),
+                MethodSignatureKey(
+                    MethodReturnKind.UNIT,
+                    methodSignatureShapeOf(MethodParameterCategory.OBJECT, MethodParameterCategory.INT32),
+                ),
             ),
         )
     }

@@ -20,17 +20,17 @@ internal data class SharedMethodPlan(
 internal object MethodRuleRegistry {
     private val fullUnaryShapes = setOf(
         MethodSignatureShape.EMPTY,
-        MethodSignatureShape.STRING,
-        MethodSignatureShape.INT32,
-        MethodSignatureShape.UINT32,
-        MethodSignatureShape.BOOLEAN,
-        MethodSignatureShape.INT64,
-        MethodSignatureShape.EVENT_REGISTRATION_TOKEN,
-        MethodSignatureShape.OBJECT,
+        methodSignatureShapeOf(MethodParameterCategory.STRING),
+        methodSignatureShapeOf(MethodParameterCategory.INT32),
+        methodSignatureShapeOf(MethodParameterCategory.UINT32),
+        methodSignatureShapeOf(MethodParameterCategory.BOOLEAN),
+        methodSignatureShapeOf(MethodParameterCategory.INT64),
+        methodSignatureShapeOf(MethodParameterCategory.EVENT_REGISTRATION_TOKEN),
+        methodSignatureShapeOf(MethodParameterCategory.OBJECT),
     )
     private val uint64UnaryShapes = fullUnaryShapes - setOf(
-        MethodSignatureShape.INT64,
-        MethodSignatureShape.EVENT_REGISTRATION_TOKEN,
+        methodSignatureShapeOf(MethodParameterCategory.INT64),
+        methodSignatureShapeOf(MethodParameterCategory.EVENT_REGISTRATION_TOKEN),
     )
     private val unaryMethodRuleFamilies = mapOf(
         MethodReturnKind.STRING to SharedMethodRuleFamily.STRING,
@@ -75,7 +75,7 @@ internal object MethodRuleRegistry {
         sharedMethodPlan(signatureKey)?.family
 
     private fun sharedTwoArgumentMethodPlan(signatureKey: MethodSignatureKey): SharedMethodPlan? {
-        val parameterCategories = signatureKey.shape.toParameterCategories() ?: return null
+        val parameterCategories = signatureKey.shape.toParameterCategories()
         val family = signatureKey.returnKind.twoArgumentSharedRuleFamily(parameterCategories) ?: return null
         return SharedMethodPlan(family)
     }
