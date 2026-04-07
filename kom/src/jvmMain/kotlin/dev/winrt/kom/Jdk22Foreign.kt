@@ -298,12 +298,6 @@ internal object Jdk22Foreign {
         )
     }
 
-    val int64MethodWithBooleanHandle: MethodHandle by lazy {
-        downcallHandle(
-            FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
-        )
-    }
-
     val uint64MethodHandle: MethodHandle by lazy {
         downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout),
@@ -373,12 +367,6 @@ internal object Jdk22Foreign {
     val float32SetterHandle: MethodHandle by lazy {
         downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, ValueLayout.JAVA_FLOAT),
-        )
-    }
-
-    val booleanSetterHandle: MethodHandle by lazy {
-        downcallHandle(
-            FunctionDescriptor.of(intLayout, addressLayout, intLayout),
         )
     }
 

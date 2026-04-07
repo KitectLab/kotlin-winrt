@@ -1376,14 +1376,6 @@ private object JvmPlatformComInterop : ComInterop {
         vtableIndex: Int,
         operation: String,
         handle: java.lang.invoke.MethodHandle,
-        value: Boolean,
-    ): Result<Int> = invokeRawI32Result(instance, vtableIndex, operation, handle, if (value) 1 else 0)
-
-    private fun invokeRawI32Result(
-        instance: ComPtr,
-        vtableIndex: Int,
-        operation: String,
-        handle: java.lang.invoke.MethodHandle,
         value: Long,
     ): Result<Int> = JvmComMethodExecutor.invokeWithOutSegment(
         instance = instance,
@@ -1456,14 +1448,6 @@ private object JvmPlatformComInterop : ComInterop {
         reader = { segment -> segment.get(ValueLayout.JAVA_LONG, 0L) },
         value,
     )
-
-    private fun invokeRawI64Result(
-        instance: ComPtr,
-        vtableIndex: Int,
-        operation: String,
-        handle: java.lang.invoke.MethodHandle,
-        value: Boolean,
-    ): Result<Long> = invokeRawI64Result(instance, vtableIndex, operation, handle, if (value) 1 else 0)
 
     private fun invokeRawI64Result(
         instance: ComPtr,
@@ -1736,14 +1720,6 @@ private object JvmPlatformComInterop : ComInterop {
         vtableIndex: Int,
         operation: String,
         handle: java.lang.invoke.MethodHandle,
-        value: Boolean,
-    ): Result<MemorySegment> = invokeRawAddressResult(instance, vtableIndex, operation, handle, if (value) 1 else 0)
-
-    private fun invokeRawAddressResult(
-        instance: ComPtr,
-        vtableIndex: Int,
-        operation: String,
-        handle: java.lang.invoke.MethodHandle,
         value: Long,
     ): Result<MemorySegment> = JvmComMethodExecutor.invokeWithOutSegment(
         instance = instance,
@@ -1830,14 +1806,6 @@ private object JvmPlatformComInterop : ComInterop {
         vtableIndex: Int,
         operation: String,
         handle: java.lang.invoke.MethodHandle,
-        value: Boolean,
-    ): Result<Guid> = invokeRawGuidResult(instance, vtableIndex, operation, handle, if (value) 1 else 0)
-
-    private fun invokeRawGuidResult(
-        instance: ComPtr,
-        vtableIndex: Int,
-        operation: String,
-        handle: java.lang.invoke.MethodHandle,
         value: Long,
     ): Result<Guid> = JvmComMethodExecutor.invokeWithOutSegment(
         instance = instance,
@@ -1906,14 +1874,6 @@ private object JvmPlatformComInterop : ComInterop {
         handle = handle,
         value,
     )
-
-    private fun invokeRawUnit(
-        instance: ComPtr,
-        vtableIndex: Int,
-        operation: String,
-        handle: java.lang.invoke.MethodHandle,
-        value: Boolean,
-    ): Result<Unit> = invokeRawUnit(instance, vtableIndex, operation, handle, if (value) 1 else 0)
 
     private fun invokeRawUnit(
         instance: ComPtr,
