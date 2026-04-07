@@ -5,35 +5,25 @@ import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdParameter
 
 internal fun WinMdParameter.isUInt8PassArrayParameter(): Boolean =
-    type == "UInt8[]" && arrayParameterCategory() == WinRtArrayParameterCategory.PASS_ARRAY
+    isExactPassArrayParameter("UInt8")
 
 internal fun WinMdMethod.isUInt8PassArrayMethod(
     supportsObjectReturn: (String) -> Boolean,
 ): Boolean =
-    arrayReturnCategory() == null &&
-        parameters.count { parameter -> parameter.isUInt8PassArrayParameter() } == 1 &&
-        parameters.all { parameter -> !parameter.type.isWinRtArrayType() || parameter.isUInt8PassArrayParameter() } &&
-        (returnType == "Unit" || supportsObjectReturn(returnType))
+    isStandardPassArrayMethod(WinMdParameter::isUInt8PassArrayParameter, supportsObjectReturn)
 
 internal fun WinMdMethod.isUInt8ReceiveArrayReturnMethod(): Boolean =
-    returnType == "UInt8[]" &&
-        arrayReturnCategory() == WinRtArrayParameterCategory.RECEIVE_ARRAY &&
-        parameters.count { parameter -> parameter.isUInt8PassArrayParameter() } <= 1 &&
-        parameters.all { parameter -> !parameter.type.isWinRtArrayType() || parameter.isUInt8PassArrayParameter() }
+    isStandardReceiveArrayReturnMethod("UInt8", WinMdParameter::isUInt8PassArrayParameter)
 
 internal fun uint8ReceiveArrayAbiArguments(
     parameters: List<WinMdParameter>,
     lowerArgument: (WinMdParameter) -> CodeBlock?,
-): List<CodeBlock>? = buildList {
-    parameters.forEach { parameter ->
-        val parameterName = parameter.name.replaceFirstChar(Char::lowercase)
-        if (parameter.isUInt8PassArrayParameter()) {
-            add(CodeBlock.of("%N.size", parameterName))
-            add(CodeBlock.of("ByteArray(%N.size) { index -> %N[index].toByte() }", parameterName, parameterName))
-        } else {
-            add(lowerArgument(parameter) ?: return null)
-        }
-    }
+): List<CodeBlock>? = passArrayAbiArguments(
+    parameters = parameters,
+    lowerArgument = lowerArgument,
+    isPassArrayParameter = WinMdParameter::isUInt8PassArrayParameter,
+) { parameterName ->
+    CodeBlock.of("ByteArray(%N.size) { index -> %N[index].toByte() }", parameterName, parameterName)
 }
 
 internal fun uint8PassArrayAbiArguments(
@@ -44,12 +34,9 @@ internal fun uint8PassArrayAbiArguments(
 internal fun uint8ReceiveArrayReturnExpression(
     vtableIndex: Int,
     abiArguments: List<CodeBlock> = emptyList(),
-): CodeBlock = CodeBlock.builder()
-    .add("%M(pointer, %L", PoetSymbols.invokeUInt8ReceiveArrayMethodMember, vtableIndex)
-    .apply {
-        abiArguments.forEach { argument ->
-            add(", %L", argument)
-        }
-    }
-    .add(").getOrThrow().map { it.toUByte() }.toTypedArray()")
-    .build()
+): CodeBlock = receiveArrayReturnExpression(
+    member = PoetSymbols.invokeUInt8ReceiveArrayMethodMember,
+    vtableIndex = vtableIndex,
+    abiArguments = abiArguments,
+    suffixFormat = ").getOrThrow().map { it.toUByte() }.toTypedArray()",
+)

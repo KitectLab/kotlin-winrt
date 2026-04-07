@@ -11,30 +11,23 @@ internal fun WinMdParameter.isObjectPassArrayParameter(): Boolean =
 internal fun WinMdMethod.isObjectPassArrayMethod(
     supportsObjectReturn: (String) -> Boolean,
 ): Boolean =
-    arrayReturnCategory() == null &&
-        parameters.count { parameter -> parameter.isObjectPassArrayParameter() } == 1 &&
-        parameters.all { parameter -> !parameter.type.isWinRtArrayType() || parameter.isObjectPassArrayParameter() } &&
-        (returnType == "Unit" || supportsObjectReturn(returnType))
+    isStandardPassArrayMethod(WinMdParameter::isObjectPassArrayParameter, supportsObjectReturn)
 
 internal fun WinMdMethod.isObjectReceiveArrayReturnMethod(): Boolean =
     stripArraySuffix(returnType)?.let(::canonicalWinRtSpecialType) == "Object" &&
         arrayReturnCategory() == WinRtArrayParameterCategory.RECEIVE_ARRAY &&
-        parameters.count { parameter -> parameter.isObjectPassArrayParameter() } <= 1 &&
+        parameters.count(WinMdParameter::isObjectPassArrayParameter) <= 1 &&
         parameters.all { parameter -> !parameter.type.isWinRtArrayType() || parameter.isObjectPassArrayParameter() }
 
 internal fun objectReceiveArrayAbiArguments(
     parameters: List<WinMdParameter>,
     lowerArgument: (WinMdParameter) -> CodeBlock?,
-): List<CodeBlock>? = buildList {
-    parameters.forEach { parameter ->
-        val parameterName = parameter.name.replaceFirstChar(Char::lowercase)
-        if (parameter.isObjectPassArrayParameter()) {
-            add(CodeBlock.of("%N.size", parameterName))
-            add(CodeBlock.of("Array(%N.size) { index -> %N[index].pointer }", parameterName, parameterName))
-        } else {
-            add(lowerArgument(parameter) ?: return null)
-        }
-    }
+): List<CodeBlock>? = passArrayAbiArguments(
+    parameters = parameters,
+    lowerArgument = lowerArgument,
+    isPassArrayParameter = WinMdParameter::isObjectPassArrayParameter,
+) { parameterName ->
+    CodeBlock.of("Array(%N.size) { index -> %N[index].pointer }", parameterName, parameterName)
 }
 
 internal fun objectPassArrayAbiArguments(
@@ -45,15 +38,13 @@ internal fun objectPassArrayAbiArguments(
 internal fun objectReceiveArrayReturnExpression(
     vtableIndex: Int,
     abiArguments: List<CodeBlock> = emptyList(),
-): CodeBlock = CodeBlock.builder()
-    .add("%M(pointer, %L", PoetSymbols.invokeObjectReceiveArrayMethodMember, vtableIndex)
-    .apply {
-        abiArguments.forEach { argument ->
-            add(", %L", argument)
-        }
-    }
-    .add(").getOrThrow().map { %T(it) }.toTypedArray()", PoetSymbols.inspectableClass)
-    .build()
+): CodeBlock = receiveArrayReturnExpression(
+    member = PoetSymbols.invokeObjectReceiveArrayMethodMember,
+    vtableIndex = vtableIndex,
+    abiArguments = abiArguments,
+    suffixFormat = ").getOrThrow().map { %T(it) }.toTypedArray()",
+    PoetSymbols.inspectableClass,
+)
 
 private fun stripArraySuffix(typeName: String): String? =
     typeName.takeIf { it.endsWith("[]") }?.removeSuffix("[]")

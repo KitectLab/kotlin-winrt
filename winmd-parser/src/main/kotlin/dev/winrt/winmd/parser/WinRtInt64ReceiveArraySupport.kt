@@ -5,35 +5,25 @@ import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdParameter
 
 internal fun WinMdParameter.isInt64PassArrayParameter(): Boolean =
-    type == "Int64[]" && arrayParameterCategory() == WinRtArrayParameterCategory.PASS_ARRAY
+    isExactPassArrayParameter("Int64")
 
 internal fun WinMdMethod.isInt64PassArrayMethod(
     supportsObjectReturn: (String) -> Boolean,
 ): Boolean =
-    arrayReturnCategory() == null &&
-        parameters.count { parameter -> parameter.isInt64PassArrayParameter() } == 1 &&
-        parameters.all { parameter -> !parameter.type.isWinRtArrayType() || parameter.isInt64PassArrayParameter() } &&
-        (returnType == "Unit" || supportsObjectReturn(returnType))
+    isStandardPassArrayMethod(WinMdParameter::isInt64PassArrayParameter, supportsObjectReturn)
 
 internal fun WinMdMethod.isInt64ReceiveArrayReturnMethod(): Boolean =
-    returnType == "Int64[]" &&
-        arrayReturnCategory() == WinRtArrayParameterCategory.RECEIVE_ARRAY &&
-        parameters.count { parameter -> parameter.isInt64PassArrayParameter() } <= 1 &&
-        parameters.all { parameter -> !parameter.type.isWinRtArrayType() || parameter.isInt64PassArrayParameter() }
+    isStandardReceiveArrayReturnMethod("Int64", WinMdParameter::isInt64PassArrayParameter)
 
 internal fun int64ReceiveArrayAbiArguments(
     parameters: List<WinMdParameter>,
     lowerArgument: (WinMdParameter) -> CodeBlock?,
-): List<CodeBlock>? = buildList {
-    parameters.forEach { parameter ->
-        val parameterName = parameter.name.replaceFirstChar(Char::lowercase)
-        if (parameter.isInt64PassArrayParameter()) {
-            add(CodeBlock.of("%N.size", parameterName))
-            add(CodeBlock.of("LongArray(%N.size) { index -> %N[index].value }", parameterName, parameterName))
-        } else {
-            add(lowerArgument(parameter) ?: return null)
-        }
-    }
+): List<CodeBlock>? = passArrayAbiArguments(
+    parameters = parameters,
+    lowerArgument = lowerArgument,
+    isPassArrayParameter = WinMdParameter::isInt64PassArrayParameter,
+) { parameterName ->
+    CodeBlock.of("LongArray(%N.size) { index -> %N[index].value }", parameterName, parameterName)
 }
 
 internal fun int64PassArrayAbiArguments(
@@ -44,12 +34,10 @@ internal fun int64PassArrayAbiArguments(
 internal fun int64ReceiveArrayReturnExpression(
     vtableIndex: Int,
     abiArguments: List<CodeBlock> = emptyList(),
-): CodeBlock = CodeBlock.builder()
-    .add("%M(pointer, %L", PoetSymbols.invokeInt64ReceiveArrayMethodMember, vtableIndex)
-    .apply {
-        abiArguments.forEach { argument ->
-            add(", %L", argument)
-        }
-    }
-    .add(").getOrThrow().map { %T(it) }.toTypedArray()", PoetSymbols.int64Class)
-    .build()
+): CodeBlock = receiveArrayReturnExpression(
+    member = PoetSymbols.invokeInt64ReceiveArrayMethodMember,
+    vtableIndex = vtableIndex,
+    abiArguments = abiArguments,
+    suffixFormat = ").getOrThrow().map { %T(it) }.toTypedArray()",
+    PoetSymbols.int64Class,
+)

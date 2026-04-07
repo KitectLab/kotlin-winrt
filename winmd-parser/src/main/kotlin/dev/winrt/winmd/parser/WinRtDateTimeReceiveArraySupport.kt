@@ -5,43 +5,31 @@ import dev.winrt.winmd.plugin.WinMdMethod
 import dev.winrt.winmd.plugin.WinMdParameter
 
 internal fun WinMdParameter.isDateTimePassArrayParameter(): Boolean =
-    type == "DateTime[]" && arrayParameterCategory() == WinRtArrayParameterCategory.PASS_ARRAY
+    isExactPassArrayParameter("DateTime")
 
 internal fun WinMdMethod.isDateTimePassArrayMethod(
     supportsObjectReturn: (String) -> Boolean,
 ): Boolean =
-    arrayReturnCategory() == null &&
-        parameters.count { parameter -> parameter.isDateTimePassArrayParameter() } == 1 &&
-        parameters.all { parameter -> !parameter.type.isWinRtArrayType() || parameter.isDateTimePassArrayParameter() } &&
-        (returnType == "Unit" || supportsObjectReturn(returnType))
+    isStandardPassArrayMethod(WinMdParameter::isDateTimePassArrayParameter, supportsObjectReturn)
 
 internal fun WinMdMethod.isDateTimeReceiveArrayReturnMethod(): Boolean =
-    returnType == "DateTime[]" &&
-        arrayReturnCategory() == WinRtArrayParameterCategory.RECEIVE_ARRAY &&
-        parameters.count { parameter -> parameter.isDateTimePassArrayParameter() } <= 1 &&
-        parameters.all { parameter -> !parameter.type.isWinRtArrayType() || parameter.isDateTimePassArrayParameter() }
+    isStandardReceiveArrayReturnMethod("DateTime", WinMdParameter::isDateTimePassArrayParameter)
 
 internal fun dateTimeReceiveArrayAbiArguments(
     parameters: List<WinMdParameter>,
     lowerArgument: (WinMdParameter) -> CodeBlock?,
-): List<CodeBlock>? = buildList {
-    parameters.forEach { parameter ->
-        val parameterName = parameter.name.replaceFirstChar(Char::lowercase)
-        if (parameter.isDateTimePassArrayParameter()) {
-            add(CodeBlock.of("%N.size", parameterName))
-            add(
-                CodeBlock.of(
-                    "LongArray(%N.size) { index -> (((%N[index].epochSeconds * 10000000L) + (%N[index].nanosecondsOfSecond / 100)) + %L) }",
-                    parameterName,
-                    parameterName,
-                    parameterName,
-                    WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
-                ),
-            )
-        } else {
-            add(lowerArgument(parameter) ?: return null)
-        }
-    }
+): List<CodeBlock>? = passArrayAbiArguments(
+    parameters = parameters,
+    lowerArgument = lowerArgument,
+    isPassArrayParameter = WinMdParameter::isDateTimePassArrayParameter,
+) { parameterName ->
+    CodeBlock.of(
+        "LongArray(%N.size) { index -> (((%N[index].epochSeconds * 10000000L) + (%N[index].nanosecondsOfSecond / 100)) + %L) }",
+        parameterName,
+        parameterName,
+        parameterName,
+        WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
+    )
 }
 
 internal fun dateTimePassArrayAbiArguments(
@@ -52,12 +40,12 @@ internal fun dateTimePassArrayAbiArguments(
 internal fun dateTimeReceiveArrayReturnExpression(
     vtableIndex: Int,
     abiArguments: List<CodeBlock> = emptyList(),
-): CodeBlock = CodeBlock.builder()
-    .add("%M(pointer, %L", PoetSymbols.invokeDateTimeReceiveArrayMethodMember, vtableIndex)
-    .apply {
-        abiArguments.forEach { argument ->
-            add(", %L", argument)
-        }
-    }
-    .add(").getOrThrow().map { %T.fromEpochSeconds((it - %L) / 10000000L, ((it - %L) %% 10000000L * 100).toInt()) }.toTypedArray()", PoetSymbols.dateTimeClass, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET, WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET)
-    .build()
+): CodeBlock = receiveArrayReturnExpression(
+    member = PoetSymbols.invokeDateTimeReceiveArrayMethodMember,
+    vtableIndex = vtableIndex,
+    abiArguments = abiArguments,
+    suffixFormat = ").getOrThrow().map { %T.fromEpochSeconds((it - %L) / 10000000L, ((it - %L) %% 10000000L * 100).toInt()) }.toTypedArray()",
+    PoetSymbols.dateTimeClass,
+    WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
+    WINDOWS_FOUNDATION_DATE_TIME_TICKS_OFFSET,
+)
