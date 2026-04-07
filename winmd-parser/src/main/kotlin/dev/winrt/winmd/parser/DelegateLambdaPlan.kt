@@ -21,25 +21,13 @@ internal data class BridgeSpec(
     val argumentKinds: List<WinRtDelegateValueKind>,
 )
 
-internal sealed interface ParameterCarrier {
-    data object NoArgs : ParameterCarrier
-
-    data class Direct(
-        val kotlinType: TypeName,
-    ) : ParameterCarrier
-
-    data class ObjectWrapped(
-        val callbackArgType: TypeName,
-    ) : ParameterCarrier
-}
-
 internal data class DelegateReturnDescriptor(
     val factoryMethod: String,
     val lambdaReturnType: TypeName,
 )
 
-private data class ScalarBridgeSpec(
-    val parameterType: TypeName,
+private data class DelegateParameterDescriptor(
+    val lambdaParameterType: TypeName,
     val argumentKind: WinRtDelegateValueKind,
 )
 
@@ -52,37 +40,37 @@ internal data class DelegateSignatureShape(
 internal class DelegateLambdaPlanResolver(
     private val typeNameMapper: TypeNameMapper,
 ) {
-    private val scalarBridgeSpecs = mapOf(
-        "Int32" to ScalarBridgeSpec(
-            parameterType = Int::class.asTypeName(),
+    private val scalarParameterDescriptors = mapOf(
+        "Int32" to DelegateParameterDescriptor(
+            lambdaParameterType = Int::class.asTypeName(),
             argumentKind = WinRtDelegateValueKind.INT32,
         ),
-        "String" to ScalarBridgeSpec(
-            parameterType = String::class.asTypeName(),
+        "String" to DelegateParameterDescriptor(
+            lambdaParameterType = String::class.asTypeName(),
             argumentKind = WinRtDelegateValueKind.STRING,
         ),
-        "UInt32" to ScalarBridgeSpec(
-            parameterType = UInt::class.asTypeName(),
+        "UInt32" to DelegateParameterDescriptor(
+            lambdaParameterType = UInt::class.asTypeName(),
             argumentKind = WinRtDelegateValueKind.UINT32,
         ),
-        "Boolean" to ScalarBridgeSpec(
-            parameterType = Boolean::class.asTypeName(),
+        "Boolean" to DelegateParameterDescriptor(
+            lambdaParameterType = Boolean::class.asTypeName(),
             argumentKind = WinRtDelegateValueKind.BOOLEAN,
         ),
-        "Int64" to ScalarBridgeSpec(
-            parameterType = Long::class.asTypeName(),
+        "Int64" to DelegateParameterDescriptor(
+            lambdaParameterType = Long::class.asTypeName(),
             argumentKind = WinRtDelegateValueKind.INT64,
         ),
-        "UInt64" to ScalarBridgeSpec(
-            parameterType = ULong::class.asTypeName(),
+        "UInt64" to DelegateParameterDescriptor(
+            lambdaParameterType = ULong::class.asTypeName(),
             argumentKind = WinRtDelegateValueKind.UINT64,
         ),
-        "Float32" to ScalarBridgeSpec(
-            parameterType = Float::class.asTypeName(),
+        "Float32" to DelegateParameterDescriptor(
+            lambdaParameterType = Float::class.asTypeName(),
             argumentKind = WinRtDelegateValueKind.FLOAT32,
         ),
-        "Float64" to ScalarBridgeSpec(
-            parameterType = Double::class.asTypeName(),
+        "Float64" to DelegateParameterDescriptor(
+            lambdaParameterType = Double::class.asTypeName(),
             argumentKind = WinRtDelegateValueKind.FLOAT64,
         ),
     )
@@ -134,49 +122,32 @@ internal class DelegateLambdaPlanResolver(
         supportsObjectType: (String) -> Boolean,
     ): DelegateSignatureShape? {
         val returnDescriptor = returnDescriptors[invokeMethod.returnType] ?: return null
-        val carriers = invokeMethod.parameters.map { parameter ->
-            resolveParameterCarrier(
+        val parameterDescriptors = invokeMethod.parameters.map { parameter ->
+            resolveParameterDescriptor(
                 typeName = parameter.type,
                 currentNamespace = currentNamespace,
                 genericParameters = genericParameters,
                 supportsObjectType = supportsObjectType,
             ) ?: return null
         }
-        val lambdaParameterTypes = carriers.mapNotNull {
-            when (it) {
-                ParameterCarrier.NoArgs -> null
-                is ParameterCarrier.Direct -> it.kotlinType
-                is ParameterCarrier.ObjectWrapped -> it.callbackArgType
-            }
-        }
-        val normalizedCarriers = if (carriers.isEmpty()) listOf(ParameterCarrier.NoArgs) else carriers
-        val argumentKinds = carriers.mapNotNull {
-            when (it) {
-                ParameterCarrier.NoArgs -> null
-                is ParameterCarrier.Direct -> scalarBridgeSpecs.entries.firstOrNull { entry -> entry.value.parameterType == it.kotlinType }?.value?.argumentKind
-                is ParameterCarrier.ObjectWrapped -> WinRtDelegateValueKind.OBJECT
-            }
-        }
         return DelegateSignatureShape(
-            argumentKinds = argumentKinds,
-            lambdaParameterTypes = lambdaParameterTypes,
+            argumentKinds = parameterDescriptors.map(DelegateParameterDescriptor::argumentKind),
+            lambdaParameterTypes = parameterDescriptors.map(DelegateParameterDescriptor::lambdaParameterType),
             returnDescriptor = returnDescriptor,
         )
     }
 
-    private fun resolveParameterCarrier(
+    private fun resolveParameterDescriptor(
         typeName: String,
         currentNamespace: String,
         genericParameters: Set<String>,
         supportsObjectType: (String) -> Boolean,
-    ): ParameterCarrier? {
-        val scalar = scalarBridgeSpecs[typeName]
-        if (scalar != null) {
-            return ParameterCarrier.Direct(scalar.parameterType)
-        }
+    ): DelegateParameterDescriptor? {
+        scalarParameterDescriptors[typeName]?.let { return it }
         if (supportsObjectType(typeName)) {
-            return ParameterCarrier.ObjectWrapped(
-                typeNameMapper.mapTypeName(typeName, currentNamespace, genericParameters),
+            return DelegateParameterDescriptor(
+                lambdaParameterType = typeNameMapper.mapTypeName(typeName, currentNamespace, genericParameters),
+                argumentKind = WinRtDelegateValueKind.OBJECT,
             )
         }
         return null
