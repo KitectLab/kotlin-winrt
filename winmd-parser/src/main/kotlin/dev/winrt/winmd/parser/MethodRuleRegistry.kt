@@ -15,25 +15,11 @@ internal object MethodRuleRegistry {
         methodSignatureShapeOf(MethodParameterCategory.INT64),
         methodSignatureShapeOf(MethodParameterCategory.EVENT_REGISTRATION_TOKEN),
     )
-    private val unaryMethodShapes = mapOf(
-        MethodReturnKind.STRING to fullUnaryShapes,
-        MethodReturnKind.FLOAT32 to fullUnaryShapes,
-        MethodReturnKind.FLOAT64 to fullUnaryShapes,
-        MethodReturnKind.DATE_TIME to fullUnaryShapes,
-        MethodReturnKind.TIME_SPAN to fullUnaryShapes,
-        MethodReturnKind.BOOLEAN to fullUnaryShapes,
-        MethodReturnKind.INT32 to fullUnaryShapes,
-        MethodReturnKind.UINT32 to fullUnaryShapes,
-        MethodReturnKind.INT64 to fullUnaryShapes,
-        MethodReturnKind.UINT64 to uint64UnaryShapes,
-        MethodReturnKind.EVENT_REGISTRATION_TOKEN to fullUnaryShapes,
-        MethodReturnKind.GUID to fullUnaryShapes,
-        MethodReturnKind.OBJECT to fullUnaryShapes,
-        MethodReturnKind.UNIT to fullUnaryShapes,
-    )
+    private fun unaryMethodShapes(returnKind: MethodReturnKind): Set<MethodSignatureShape> =
+        if (returnKind == MethodReturnKind.UINT64) uint64UnaryShapes else fullUnaryShapes
 
     fun supportsSharedMethod(signatureKey: MethodSignatureKey): Boolean {
-        if (unaryMethodShapes[signatureKey.returnKind]?.contains(signatureKey.shape) == true) {
+        if (signatureKey.shape in unaryMethodShapes(signatureKey.returnKind)) {
             return true
         }
         val parameterCategories = signatureKey.shape.toParameterCategories()

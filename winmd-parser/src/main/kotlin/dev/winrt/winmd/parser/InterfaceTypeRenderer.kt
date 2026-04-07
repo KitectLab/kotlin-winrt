@@ -1974,26 +1974,11 @@ internal class InterfaceTypeRenderer(
         val parameterCategories = signatureKey.shape.toParameterCategories()
         if (parameterCategories.size > 1) return null
         val parameterCategory = parameterCategories.singleOrNull()
-        return when (signatureKey.returnKind) {
-            MethodReturnKind.STRING,
-            MethodReturnKind.FLOAT32,
-            MethodReturnKind.FLOAT64,
-            MethodReturnKind.DATE_TIME,
-            MethodReturnKind.TIME_SPAN,
-            MethodReturnKind.BOOLEAN,
-            MethodReturnKind.INT32,
-            MethodReturnKind.UINT32,
-            MethodReturnKind.INT64,
-            MethodReturnKind.UINT64,
-            MethodReturnKind.EVENT_REGISTRATION_TOKEN,
-            MethodReturnKind.GUID,
-            MethodReturnKind.OBJECT,
-            MethodReturnKind.UNIT -> plannedUnaryInterfaceMethodForReturnKind(
-                returnKind = signatureKey.returnKind,
-                parameterCategory = parameterCategory,
-                genericParameters = genericParameters,
-            )
-        }
+        return plannedUnaryInterfaceMethodForReturnKind(
+            returnKind = signatureKey.returnKind,
+            parameterCategory = parameterCategory,
+            genericParameters = genericParameters,
+        )
     }
 
     private fun plannedUnaryInterfaceMethodForReturnKind(

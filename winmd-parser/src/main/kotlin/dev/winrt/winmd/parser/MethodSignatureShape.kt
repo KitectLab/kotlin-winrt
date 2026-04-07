@@ -121,26 +121,8 @@ internal fun MethodReturnKind.supportsTwoArgumentSharedMethod(
 ): Boolean = when (this) {
     MethodReturnKind.UNIT ->
         parameterCategories.isSupportedTwoArgumentUnitCategories()
-    MethodReturnKind.STRING ->
-        parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()
-    MethodReturnKind.FLOAT32 ->
-        parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()
-    MethodReturnKind.FLOAT64 ->
-        parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()
-    MethodReturnKind.DATE_TIME ->
-        parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()
-    MethodReturnKind.TIME_SPAN ->
-        parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()
-    MethodReturnKind.BOOLEAN ->
-        parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()
-    MethodReturnKind.INT32,
-    MethodReturnKind.UINT32,
-    MethodReturnKind.INT64,
-    MethodReturnKind.UINT64,
-    MethodReturnKind.GUID,
-    MethodReturnKind.OBJECT ->
-        parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()
     MethodReturnKind.EVENT_REGISTRATION_TOKEN -> false
+    else -> parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()
 }
 
 private fun supportedTwoArgumentUnitCategories(
