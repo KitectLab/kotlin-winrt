@@ -59,7 +59,7 @@ internal class RuntimeCompanionRenderer(
             .addProperty(
                 PropertySpec.builder("activationKind", PoetSymbols.winRtActivationKindClass)
                     .addModifiers(KModifier.OVERRIDE)
-                    .initializer("%T.%L", PoetSymbols.winRtActivationKindClass, activationKindLiteral(activationKind))
+                    .initializer("%T.%L", PoetSymbols.winRtActivationKindClass, activationKind.name)
                     .build(),
             )
         if (shouldRenderFactoryActivationHelper(type, activationKind)) {
@@ -803,7 +803,7 @@ internal class RuntimeCompanionRenderer(
             }
             val lambdaType = plan.lambdaType.parameters[index]
             when (plan.bridge.argumentKinds[index]) {
-                DelegateArgumentKind.OBJECT -> builder.add("%L(args[%L] as %T)", lambdaType, index, PoetSymbols.comPtrClass)
+                dev.winrt.core.WinRtDelegateValueKind.OBJECT -> builder.add("%L(args[%L] as %T)", lambdaType, index, PoetSymbols.comPtrClass)
                 else -> builder.add("args[%L] as %L", index, lambdaType)
             }
         }
@@ -966,13 +966,6 @@ internal class RuntimeCompanionRenderer(
 
     private fun supportsComposableFactoryObjectType(typeName: String, currentNamespace: String): Boolean {
         return projectedObjectArgumentLowering.supportsInputType(typeName, currentNamespace)
-    }
-
-    private fun activationKindLiteral(kind: WinMdActivationKind): String {
-        return when (kind) {
-            WinMdActivationKind.Factory -> "Factory"
-            WinMdActivationKind.Composable -> "Composable"
-        }
     }
 
     private data class RuntimeCompanionEventMembers(

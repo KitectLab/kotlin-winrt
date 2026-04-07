@@ -759,7 +759,7 @@ internal class RuntimeMethodRenderer(
             }
             val parameterType = plan.lambdaType.parameters[index]
             when (plan.bridge.argumentKinds[index]) {
-                DelegateArgumentKind.OBJECT -> builder.add("%L(args[%L] as %T)", parameterType, index, PoetSymbols.comPtrClass)
+                dev.winrt.core.WinRtDelegateValueKind.OBJECT -> builder.add("%L(args[%L] as %T)", parameterType, index, PoetSymbols.comPtrClass)
                 else -> builder.add("args[%L] as %L", index, parameterType)
             }
         }

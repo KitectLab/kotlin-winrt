@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asTypeName
+import dev.winrt.core.WinRtDelegateValueKind
 
 internal data class EventSlotDelegatePlan(
     val delegateType: TypeName,
@@ -35,7 +36,7 @@ internal data class EventSlotDelegatePlan(
 
 internal data class EventSlotLambdaParameterPlan(
     val lambdaType: TypeName,
-    val argumentKind: DelegateArgumentKind,
+    val argumentKind: WinRtDelegateValueKind,
     val decodeMode: EventSlotDecodeMode,
 )
 
@@ -59,7 +60,7 @@ internal class EventSlotDelegatePlanResolver(
             rawType == "Windows.Foundation.EventHandler" && genericArguments.size == 1 -> listOf(
                 EventSlotLambdaParameterPlan(
                     lambdaType = PoetSymbols.comPtrClass,
-                    argumentKind = DelegateArgumentKind.OBJECT,
+                    argumentKind = WinRtDelegateValueKind.OBJECT,
                     decodeMode = EventSlotDecodeMode.DIRECT,
                 ),
                 resolveParameterPlan(genericArguments.single(), currentNamespace, genericParameters) ?: return null,
@@ -89,24 +90,24 @@ internal class EventSlotDelegatePlanResolver(
         return when (typeName) {
             "Object" -> EventSlotLambdaParameterPlan(
                 lambdaType = PoetSymbols.comPtrClass,
-                argumentKind = DelegateArgumentKind.OBJECT,
+                argumentKind = WinRtDelegateValueKind.OBJECT,
                 decodeMode = EventSlotDecodeMode.DIRECT,
             )
-            "Int32" -> scalarPlan(Int::class.asTypeName(), DelegateArgumentKind.INT32)
-            "UInt32" -> scalarPlan(UInt::class.asTypeName(), DelegateArgumentKind.UINT32)
-            "Boolean" -> scalarPlan(Boolean::class.asTypeName(), DelegateArgumentKind.BOOLEAN)
-            "Int64" -> scalarPlan(Long::class.asTypeName(), DelegateArgumentKind.INT64)
-            "UInt64" -> scalarPlan(ULong::class.asTypeName(), DelegateArgumentKind.UINT64)
-            "Float32" -> scalarPlan(Float::class.asTypeName(), DelegateArgumentKind.FLOAT32)
-            "Float64" -> scalarPlan(Double::class.asTypeName(), DelegateArgumentKind.FLOAT64)
-            "String" -> scalarPlan(String::class.asTypeName(), DelegateArgumentKind.STRING)
+            "Int32" -> scalarPlan(Int::class.asTypeName(), WinRtDelegateValueKind.INT32)
+            "UInt32" -> scalarPlan(UInt::class.asTypeName(), WinRtDelegateValueKind.UINT32)
+            "Boolean" -> scalarPlan(Boolean::class.asTypeName(), WinRtDelegateValueKind.BOOLEAN)
+            "Int64" -> scalarPlan(Long::class.asTypeName(), WinRtDelegateValueKind.INT64)
+            "UInt64" -> scalarPlan(ULong::class.asTypeName(), WinRtDelegateValueKind.UINT64)
+            "Float32" -> scalarPlan(Float::class.asTypeName(), WinRtDelegateValueKind.FLOAT32)
+            "Float64" -> scalarPlan(Double::class.asTypeName(), WinRtDelegateValueKind.FLOAT64)
+            "String" -> scalarPlan(String::class.asTypeName(), WinRtDelegateValueKind.STRING)
             else -> {
                 if (!supportsProjectedObjectType(typeName)) {
                     null
                 } else {
                     EventSlotLambdaParameterPlan(
                         lambdaType = typeNameMapper.mapTypeName(typeName, currentNamespace, genericParameters),
-                        argumentKind = DelegateArgumentKind.OBJECT,
+                        argumentKind = WinRtDelegateValueKind.OBJECT,
                         decodeMode = EventSlotDecodeMode.PROJECTION,
                     )
                 }
@@ -114,7 +115,7 @@ internal class EventSlotDelegatePlanResolver(
         }
     }
 
-    private fun scalarPlan(typeName: TypeName, kind: DelegateArgumentKind): EventSlotLambdaParameterPlan {
+    private fun scalarPlan(typeName: TypeName, kind: WinRtDelegateValueKind): EventSlotLambdaParameterPlan {
         return EventSlotLambdaParameterPlan(
             lambdaType = typeName,
             argumentKind = kind,

@@ -3,6 +3,7 @@ package dev.winrt.winmd.parser
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asTypeName
+import dev.winrt.core.WinRtDelegateValueKind
 import dev.winrt.winmd.plugin.WinMdMethod
 
 internal sealed interface DelegateLambdaPlan {
@@ -17,21 +18,9 @@ internal sealed interface DelegateLambdaPlan {
 
 internal data class BridgeSpec(
     val factoryMethod: String,
-    val argumentKinds: List<DelegateArgumentKind>,
+    val argumentKinds: List<WinRtDelegateValueKind>,
     val returnCarrier: ReturnCarrier,
 )
-
-internal enum class DelegateArgumentKind {
-    OBJECT,
-    INT32,
-    UINT32,
-    BOOLEAN,
-    INT64,
-    UINT64,
-    FLOAT32,
-    FLOAT64,
-    STRING,
-}
 
 internal sealed interface ParameterCarrier {
     data object NoArgs : ParameterCarrier
@@ -52,11 +41,11 @@ internal enum class ReturnCarrier {
 
 private data class ScalarBridgeSpec(
     val parameterType: TypeName,
-    val argumentKind: DelegateArgumentKind,
+    val argumentKind: WinRtDelegateValueKind,
 )
 
 internal data class DelegateSignatureShape(
-    val argumentKinds: List<DelegateArgumentKind>,
+    val argumentKinds: List<WinRtDelegateValueKind>,
     val lambdaParameterTypes: List<TypeName>,
     val returnCarrier: ReturnCarrier,
     val lambdaReturnType: TypeName,
@@ -68,35 +57,35 @@ internal class DelegateLambdaPlanResolver(
     private val scalarBridgeSpecs = mapOf(
         "Int32" to ScalarBridgeSpec(
             parameterType = Int::class.asTypeName(),
-            argumentKind = DelegateArgumentKind.INT32,
+            argumentKind = WinRtDelegateValueKind.INT32,
         ),
         "String" to ScalarBridgeSpec(
             parameterType = String::class.asTypeName(),
-            argumentKind = DelegateArgumentKind.STRING,
+            argumentKind = WinRtDelegateValueKind.STRING,
         ),
         "UInt32" to ScalarBridgeSpec(
             parameterType = UInt::class.asTypeName(),
-            argumentKind = DelegateArgumentKind.UINT32,
+            argumentKind = WinRtDelegateValueKind.UINT32,
         ),
         "Boolean" to ScalarBridgeSpec(
             parameterType = Boolean::class.asTypeName(),
-            argumentKind = DelegateArgumentKind.BOOLEAN,
+            argumentKind = WinRtDelegateValueKind.BOOLEAN,
         ),
         "Int64" to ScalarBridgeSpec(
             parameterType = Long::class.asTypeName(),
-            argumentKind = DelegateArgumentKind.INT64,
+            argumentKind = WinRtDelegateValueKind.INT64,
         ),
         "UInt64" to ScalarBridgeSpec(
             parameterType = ULong::class.asTypeName(),
-            argumentKind = DelegateArgumentKind.UINT64,
+            argumentKind = WinRtDelegateValueKind.UINT64,
         ),
         "Float32" to ScalarBridgeSpec(
             parameterType = Float::class.asTypeName(),
-            argumentKind = DelegateArgumentKind.FLOAT32,
+            argumentKind = WinRtDelegateValueKind.FLOAT32,
         ),
         "Float64" to ScalarBridgeSpec(
             parameterType = Double::class.asTypeName(),
-            argumentKind = DelegateArgumentKind.FLOAT64,
+            argumentKind = WinRtDelegateValueKind.FLOAT64,
         ),
     )
 
@@ -168,7 +157,7 @@ internal class DelegateLambdaPlanResolver(
             when (it) {
                 ParameterCarrier.NoArgs -> null
                 is ParameterCarrier.Direct -> scalarBridgeSpecs.entries.firstOrNull { entry -> entry.value.parameterType == it.kotlinType }?.value?.argumentKind
-                is ParameterCarrier.ObjectWrapped -> DelegateArgumentKind.OBJECT
+                is ParameterCarrier.ObjectWrapped -> WinRtDelegateValueKind.OBJECT
             }
         }
         return DelegateSignatureShape(
