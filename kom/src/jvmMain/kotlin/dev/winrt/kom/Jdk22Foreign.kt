@@ -182,12 +182,6 @@ internal object Jdk22Foreign {
         )
     }
 
-    val unitMethodWithUInt32Handle: MethodHandle by lazy {
-        downcallHandle(
-            FunctionDescriptor.of(intLayout, addressLayout, intLayout),
-        )
-    }
-
     val coInitializeExHandle: MethodHandle by lazy {
         downcall(
             "CoInitializeEx",
@@ -268,12 +262,6 @@ internal object Jdk22Foreign {
         )
     }
 
-    val hstringMethodWithUInt32Handle: MethodHandle by lazy {
-        downcallHandle(
-            FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
-        )
-    }
-
     val hstringMethodWithInt64Handle: MethodHandle by lazy {
         downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, longLayout, addressLayout),
@@ -310,12 +298,6 @@ internal object Jdk22Foreign {
         )
     }
 
-    val int64MethodWithUInt32Handle: MethodHandle by lazy {
-        downcallHandle(
-            FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
-        )
-    }
-
     val int64MethodWithBooleanHandle: MethodHandle by lazy {
         downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
@@ -341,24 +323,6 @@ internal object Jdk22Foreign {
     }
 
     val uint64MethodWithInt32Handle: MethodHandle by lazy {
-        downcallHandle(
-            FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
-        )
-    }
-
-    val uint64MethodWithUInt32Handle: MethodHandle by lazy {
-        downcallHandle(
-            FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
-        )
-    }
-
-    val uint64MethodWithBooleanHandle: MethodHandle by lazy {
-        downcallHandle(
-            FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
-        )
-    }
-
-    val objectMethodWithUInt32Handle: MethodHandle by lazy {
         downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
         )
@@ -454,12 +418,6 @@ internal object Jdk22Foreign {
         )
     }
 
-    val int32MethodWithUInt32Handle: MethodHandle by lazy {
-        downcallHandle(
-            FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
-        )
-    }
-
     val int32MethodWithObjectHandle: MethodHandle by lazy {
         downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout),
@@ -502,12 +460,6 @@ internal object Jdk22Foreign {
         )
     }
 
-    val uint32MethodWithUInt32Handle: MethodHandle by lazy {
-        downcallHandle(
-            FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
-        )
-    }
-
     val uint32MethodWithObjectHandle: MethodHandle by lazy {
         downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout),
@@ -529,12 +481,6 @@ internal object Jdk22Foreign {
     val booleanMethodWithInputHandle: MethodHandle by lazy {
         downcallHandle(
             FunctionDescriptor.of(intLayout, addressLayout, addressLayout, addressLayout),
-        )
-    }
-
-    val booleanMethodWithUInt32Handle: MethodHandle by lazy {
-        downcallHandle(
-            FunctionDescriptor.of(intLayout, addressLayout, intLayout, addressLayout),
         )
     }
 

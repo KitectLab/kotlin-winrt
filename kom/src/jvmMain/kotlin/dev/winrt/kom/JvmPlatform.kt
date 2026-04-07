@@ -1376,14 +1376,6 @@ private object JvmPlatformComInterop : ComInterop {
         vtableIndex: Int,
         operation: String,
         handle: java.lang.invoke.MethodHandle,
-        value: UInt,
-    ): Result<Int> = invokeRawI32Result(instance, vtableIndex, operation, handle, value.toInt())
-
-    private fun invokeRawI32Result(
-        instance: ComPtr,
-        vtableIndex: Int,
-        operation: String,
-        handle: java.lang.invoke.MethodHandle,
         value: Boolean,
     ): Result<Int> = invokeRawI32Result(instance, vtableIndex, operation, handle, if (value) 1 else 0)
 
@@ -1464,14 +1456,6 @@ private object JvmPlatformComInterop : ComInterop {
         reader = { segment -> segment.get(ValueLayout.JAVA_LONG, 0L) },
         value,
     )
-
-    private fun invokeRawI64Result(
-        instance: ComPtr,
-        vtableIndex: Int,
-        operation: String,
-        handle: java.lang.invoke.MethodHandle,
-        value: UInt,
-    ): Result<Long> = invokeRawI64Result(instance, vtableIndex, operation, handle, value.toInt())
 
     private fun invokeRawI64Result(
         instance: ComPtr,
@@ -1752,14 +1736,6 @@ private object JvmPlatformComInterop : ComInterop {
         vtableIndex: Int,
         operation: String,
         handle: java.lang.invoke.MethodHandle,
-        value: UInt,
-    ): Result<MemorySegment> = invokeRawAddressResult(instance, vtableIndex, operation, handle, value.toInt())
-
-    private fun invokeRawAddressResult(
-        instance: ComPtr,
-        vtableIndex: Int,
-        operation: String,
-        handle: java.lang.invoke.MethodHandle,
         value: Boolean,
     ): Result<MemorySegment> = invokeRawAddressResult(instance, vtableIndex, operation, handle, if (value) 1 else 0)
 
@@ -1930,14 +1906,6 @@ private object JvmPlatformComInterop : ComInterop {
         handle = handle,
         value,
     )
-
-    private fun invokeRawUnit(
-        instance: ComPtr,
-        vtableIndex: Int,
-        operation: String,
-        handle: java.lang.invoke.MethodHandle,
-        value: UInt,
-    ): Result<Unit> = invokeRawUnit(instance, vtableIndex, operation, handle, value.toInt())
 
     private fun invokeRawUnit(
         instance: ComPtr,
