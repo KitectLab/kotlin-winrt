@@ -2238,10 +2238,15 @@ internal class InterfaceTypeRenderer(
                     )
                 },
             )
+            val resultDescriptor = if (signatureKey.returnKind == MethodReturnKind.OBJECT) {
+                null
+            } else {
+                comMethodResultDescriptor(method.returnType)
+            }
             val abiCall = AbiCallCatalog.resultMethodWithTwoArguments(
                 method.vtableIndex!!,
-                if (signatureKey.returnKind == MethodReturnKind.OBJECT) "OBJECT" else resultKindName(method.returnType),
-                if (signatureKey.returnKind == MethodReturnKind.OBJECT) PoetSymbols.requireObjectMember else resultExtractor(method.returnType),
+                if (signatureKey.returnKind == MethodReturnKind.OBJECT) "OBJECT" else resultDescriptor!!.kindName,
+                if (signatureKey.returnKind == MethodReturnKind.OBJECT) PoetSymbols.requireObjectMember else resultDescriptor!!.extractor,
                 parameterCategories,
                 argumentExpressions[0],
                 argumentExpressions[1],
@@ -2277,20 +2282,21 @@ internal class InterfaceTypeRenderer(
         returnType: String,
         abiArguments: List<CodeBlock>,
     ): CodeBlock {
+        val resultDescriptor = comMethodResultDescriptor(returnType)
         return CodeBlock.builder()
             .add(
                 "%T.invokeMethodWithResultKind(pointer, %L, %T.%L",
                 PoetSymbols.platformComInteropClass,
                 vtableIndex,
                 PoetSymbols.comMethodResultKindClass,
-                resultKindName(returnType),
+                resultDescriptor.kindName,
             )
             .apply {
                 abiArguments.forEach { argument ->
                     add(", %L", argument)
                 }
             }
-            .add(").getOrThrow().%M()", resultExtractor(returnType))
+            .add(").getOrThrow().%M()", resultDescriptor.extractor)
             .build()
     }
 

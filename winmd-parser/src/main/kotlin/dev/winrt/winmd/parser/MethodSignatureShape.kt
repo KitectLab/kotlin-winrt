@@ -59,38 +59,37 @@ internal data class MethodSignatureKey(
     val shape: MethodSignatureShape,
 )
 
-internal enum class MethodParameterAbiToken {
-    BOOLEAN,
-    STRING,
-    OBJECT,
-    INT32,
-    UINT32,
-    INT64,
+internal data class MethodParameterAbiDescriptor(
+    val methodNamePart: String,
+    val argumentPlaceholder: String = "%L",
+)
+
+internal data class MethodReturnAbiDescriptor(
+    val methodNamePart: String,
+)
+
+internal object MethodParameterAbiToken {
+    val BOOLEAN = MethodParameterAbiDescriptor("Boolean")
+    val STRING = MethodParameterAbiDescriptor("String", argumentPlaceholder = "%N")
+    val OBJECT = MethodParameterAbiDescriptor("Object")
+    val INT32 = MethodParameterAbiDescriptor("Int32")
+    val UINT32 = MethodParameterAbiDescriptor("UInt32")
+    val INT64 = MethodParameterAbiDescriptor("Int64")
 }
 
-internal fun MethodParameterAbiToken.callNamePart(): String =
-    when (this) {
-        MethodParameterAbiToken.BOOLEAN -> "Boolean"
-        MethodParameterAbiToken.STRING -> "String"
-        MethodParameterAbiToken.OBJECT -> "Object"
-        MethodParameterAbiToken.INT32 -> "Int32"
-        MethodParameterAbiToken.UINT32 -> "UInt32"
-        MethodParameterAbiToken.INT64 -> "Int64"
-    }
-
-internal enum class MethodAbiToken {
-    HSTRING,
-    UNIT,
-    BOOLEAN,
-    STRING,
-    OBJECT,
-    INT32,
-    UINT32,
-    INT64,
-    UINT64,
-    FLOAT32,
-    FLOAT64,
-    GUID,
+internal object MethodAbiToken {
+    val HSTRING = MethodReturnAbiDescriptor("HString")
+    val UNIT = MethodReturnAbiDescriptor("Unit")
+    val BOOLEAN = MethodReturnAbiDescriptor("Boolean")
+    val STRING = MethodReturnAbiDescriptor("String")
+    val OBJECT = MethodReturnAbiDescriptor("Object")
+    val INT32 = MethodReturnAbiDescriptor("Int32")
+    val UINT32 = MethodReturnAbiDescriptor("UInt32")
+    val INT64 = MethodReturnAbiDescriptor("Int64")
+    val UINT64 = MethodReturnAbiDescriptor("UInt64")
+    val FLOAT32 = MethodReturnAbiDescriptor("Float32")
+    val FLOAT64 = MethodReturnAbiDescriptor("Float64")
+    val GUID = MethodReturnAbiDescriptor("Guid")
 }
 
 private val int32LikeCategories = setOf(
@@ -164,7 +163,7 @@ private fun supportedTwoArgumentUnifiedReturnCategories(
     supportedTwoArgumentUnitCategories(first, second) &&
         !(first == MethodParameterCategory.STRING && second == MethodParameterCategory.STRING)
 
-internal fun MethodParameterCategory.toAbiToken(): MethodParameterAbiToken =
+internal fun MethodParameterCategory.toAbiDescriptor(): MethodParameterAbiDescriptor =
     when (this) {
         MethodParameterCategory.STRING -> MethodParameterAbiToken.STRING
         MethodParameterCategory.OBJECT -> MethodParameterAbiToken.OBJECT

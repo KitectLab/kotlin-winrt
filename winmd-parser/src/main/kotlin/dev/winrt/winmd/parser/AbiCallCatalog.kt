@@ -24,64 +24,31 @@ internal object AbiCallCatalog {
         )
 
     private fun unaryCall(
-        returnToken: MethodAbiToken,
-        parameterToken: MethodParameterAbiToken,
+        returnDescriptor: MethodReturnAbiDescriptor,
+        parameterDescriptor: MethodParameterAbiDescriptor,
         vtableIndex: Int,
         argumentExpression: Any,
         pointerExpression: String = "pointer",
     ): CodeBlock {
         val methodName = buildString {
-            append(returnToken.methodNamePart())
+            append(returnDescriptor.methodNamePart)
             append("MethodWith")
-            append(parameterToken.methodNamePart())
+            append(parameterDescriptor.methodNamePart)
             append("Arg")
         }
-        val placeholder = parameterToken.argumentPlaceholder()
+        val placeholder = parameterDescriptor.argumentPlaceholder
         return singleArgumentCall(methodName, vtableIndex, argumentExpression, pointerExpression, placeholder)
-    }
-
-    private fun MethodParameterAbiToken.methodNamePart(): String = when (this) {
-        MethodParameterAbiToken.BOOLEAN -> "Boolean"
-        MethodParameterAbiToken.STRING -> "String"
-        MethodParameterAbiToken.OBJECT -> "Object"
-        MethodParameterAbiToken.INT32 -> "Int32"
-        MethodParameterAbiToken.UINT32 -> "UInt32"
-        MethodParameterAbiToken.INT64 -> "Int64"
-    }
-
-    private fun MethodParameterAbiToken.argumentPlaceholder(): String = when (this) {
-        MethodParameterAbiToken.BOOLEAN -> "%L"
-        MethodParameterAbiToken.STRING -> "%N"
-        MethodParameterAbiToken.OBJECT,
-        MethodParameterAbiToken.INT32,
-        MethodParameterAbiToken.UINT32,
-        MethodParameterAbiToken.INT64 -> "%L"
-    }
-
-    private fun MethodAbiToken.methodNamePart(): String = when (this) {
-        MethodAbiToken.HSTRING -> "HString"
-        MethodAbiToken.UNIT -> "Unit"
-        MethodAbiToken.BOOLEAN -> "Boolean"
-        MethodAbiToken.STRING -> "String"
-        MethodAbiToken.OBJECT -> "Object"
-        MethodAbiToken.INT32 -> "Int32"
-        MethodAbiToken.UINT32 -> "UInt32"
-        MethodAbiToken.INT64 -> "Int64"
-        MethodAbiToken.UINT64 -> "UInt64"
-        MethodAbiToken.FLOAT32 -> "Float32"
-        MethodAbiToken.FLOAT64 -> "Float64"
-        MethodAbiToken.GUID -> "Guid"
     }
 
     private fun twoArgumentMethodName(prefix: String, parameterCategories: List<MethodParameterCategory>): String =
         buildString {
-            val abiTokens = parameterCategories.map(MethodParameterCategory::toAbiToken)
+            val abiDescriptors = parameterCategories.map(MethodParameterCategory::toAbiDescriptor)
             append(prefix)
             append(
-                if (abiTokens[0] == abiTokens[1]) {
-                    "Two${abiTokens[0].methodNamePart()}"
+                if (abiDescriptors[0].methodNamePart == abiDescriptors[1].methodNamePart) {
+                    "Two${abiDescriptors[0].methodNamePart}"
                 } else {
-                    abiTokens.joinToString("And") { it.methodNamePart() }
+                    abiDescriptors.joinToString("And") { it.methodNamePart }
                 },
             )
             append("Args")
@@ -94,15 +61,15 @@ internal object AbiCallCatalog {
         firstArgumentExpression: Any,
         secondArgumentExpression: Any,
     ): CodeBlock {
-        val abiTokens = parameterCategories.map(MethodParameterCategory::toAbiToken)
+        val abiDescriptors = parameterCategories.map(MethodParameterCategory::toAbiDescriptor)
         return CodeBlock.of(
             buildString {
                 append("%T.")
                 append(methodName)
                 append("(pointer, %L, ")
-                append(abiTokens[0].argumentPlaceholder())
+                append(abiDescriptors[0].argumentPlaceholder)
                 append(", ")
-                append(abiTokens[1].argumentPlaceholder())
+                append(abiDescriptors[1].argumentPlaceholder)
                 append(").getOrThrow()")
             },
             PoetSymbols.platformComInteropClass,
@@ -122,7 +89,7 @@ internal object AbiCallCatalog {
         secondArgumentExpression: Any,
         pointerExpression: String,
     ): CodeBlock {
-        val abiTokens = parameterCategories.map(MethodParameterCategory::toAbiToken)
+        val abiDescriptors = parameterCategories.map(MethodParameterCategory::toAbiDescriptor)
         return CodeBlock.of(
             buildString {
                 append("%T.")
@@ -130,9 +97,9 @@ internal object AbiCallCatalog {
                 append("(")
                 append(pointerExpression)
                 append(", %L, %T.%L, ")
-                append(abiTokens[0].argumentPlaceholder())
+                append(abiDescriptors[0].argumentPlaceholder)
                 append(", ")
-                append(abiTokens[1].argumentPlaceholder())
+                append(abiDescriptors[1].argumentPlaceholder)
                 append(").getOrThrow().%M()")
             },
             PoetSymbols.platformComInteropClass,
@@ -149,43 +116,43 @@ internal object AbiCallCatalog {
         CodeBlock.of("%T.invokeHStringMethod($pointerExpression, $vtableIndex).getOrThrow()", PoetSymbols.platformComInteropClass)
 
     fun hstringMethodWithString(vtableIndex: Int, argumentName: String, pointerExpression: String = "pointer"): CodeBlock =
-        unaryCall(MethodAbiToken.HSTRING, MethodParameterAbiToken.STRING, vtableIndex, argumentName, pointerExpression)
+        unaryCall(MethodReturnAbiDescriptor("HString"), MethodParameterAbiDescriptor("String", "%N"), vtableIndex, argumentName, pointerExpression)
 
     fun hstringMethodWithInt32(vtableIndex: Int, argumentExpression: Any, pointerExpression: String = "pointer"): CodeBlock =
-        unaryCall(MethodAbiToken.HSTRING, MethodParameterAbiToken.INT32, vtableIndex, argumentExpression, pointerExpression)
+        unaryCall(MethodReturnAbiDescriptor("HString"), MethodParameterAbiDescriptor("Int32"), vtableIndex, argumentExpression, pointerExpression)
 
     fun hstringMethodWithUInt32(vtableIndex: Int, argumentExpression: Any, pointerExpression: String = "pointer"): CodeBlock =
-        unaryCall(MethodAbiToken.HSTRING, MethodParameterAbiToken.UINT32, vtableIndex, argumentExpression, pointerExpression)
+        unaryCall(MethodReturnAbiDescriptor("HString"), MethodParameterAbiDescriptor("UInt32"), vtableIndex, argumentExpression, pointerExpression)
 
     fun hstringMethodWithBoolean(vtableIndex: Int, argumentExpression: Any, pointerExpression: String = "pointer"): CodeBlock =
-        unaryCall(MethodAbiToken.HSTRING, MethodParameterAbiToken.BOOLEAN, vtableIndex, argumentExpression, pointerExpression)
+        unaryCall(MethodReturnAbiDescriptor("HString"), MethodParameterAbiDescriptor("Boolean"), vtableIndex, argumentExpression, pointerExpression)
 
     fun hstringMethodWithObject(vtableIndex: Int, argumentExpression: Any, pointerExpression: String = "pointer"): CodeBlock =
         singleArgumentCall("invokeHStringMethodWithObjectArg", vtableIndex, argumentExpression, pointerExpression)
 
     fun hstringMethodWithInt64(vtableIndex: Int, argumentExpression: Any, pointerExpression: String = "pointer"): CodeBlock =
-        unaryCall(MethodAbiToken.HSTRING, MethodParameterAbiToken.INT64, vtableIndex, argumentExpression, pointerExpression)
+        unaryCall(MethodReturnAbiDescriptor("HString"), MethodParameterAbiDescriptor("Int64"), vtableIndex, argumentExpression, pointerExpression)
 
     fun unitMethod(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeUnitMethod(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)
 
     fun unitMethodWithInt32(vtableIndex: Int, argumentExpression: Any): CodeBlock =
-        unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.INT32, vtableIndex, argumentExpression)
+        unaryCall(MethodReturnAbiDescriptor("Unit"), MethodParameterAbiDescriptor("Int32"), vtableIndex, argumentExpression)
 
     fun unitMethodWithInt32Expression(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.INT32, vtableIndex, argumentExpression)
+        unaryCall(MethodReturnAbiDescriptor("Unit"), MethodParameterAbiDescriptor("Int32"), vtableIndex, argumentExpression)
 
     fun unitMethodWithUInt32(vtableIndex: Int, argumentExpression: String): CodeBlock =
-        unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.UINT32, vtableIndex, argumentExpression)
+        unaryCall(MethodReturnAbiDescriptor("Unit"), MethodParameterAbiDescriptor("UInt32"), vtableIndex, argumentExpression)
 
     fun unitMethodWithInt64(vtableIndex: Int, argumentName: String): CodeBlock =
-        unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.INT64, vtableIndex, "${argumentName}.value")
+        unaryCall(MethodReturnAbiDescriptor("Unit"), MethodParameterAbiDescriptor("Int64"), vtableIndex, "${argumentName}.value")
 
     fun unitMethodWithInt64Expression(vtableIndex: Int, argumentExpression: Any): CodeBlock =
-        unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.INT64, vtableIndex, argumentExpression)
+        unaryCall(MethodReturnAbiDescriptor("Unit"), MethodParameterAbiDescriptor("Int64"), vtableIndex, argumentExpression)
 
     fun unitMethodWithString(vtableIndex: Int, argumentName: String): CodeBlock =
-        unaryCall(MethodAbiToken.UNIT, MethodParameterAbiToken.STRING, vtableIndex, argumentName)
+        unaryCall(MethodReturnAbiDescriptor("Unit"), MethodParameterAbiDescriptor("String", "%N"), vtableIndex, argumentName)
 
     fun unitMethodWithTwoStrings(vtableIndex: Int, firstArgumentName: String, secondArgumentName: String): CodeBlock =
         CodeBlock.of(
@@ -711,12 +678,12 @@ internal object AbiCallCatalog {
     )
 
     fun unaryMethod(
-        returnToken: MethodAbiToken,
+        returnDescriptor: MethodReturnAbiDescriptor,
         parameterCategory: MethodParameterCategory,
         vtableIndex: Int,
         argumentExpression: Any,
         pointerExpression: String = "pointer",
-    ): CodeBlock = unaryCall(returnToken, parameterCategory.toAbiToken(), vtableIndex, argumentExpression, pointerExpression)
+    ): CodeBlock = unaryCall(returnDescriptor, parameterCategory.toAbiDescriptor(), vtableIndex, argumentExpression, pointerExpression)
 
     fun booleanMethod(vtableIndex: Int): CodeBlock =
         CodeBlock.of("%T.invokeBooleanGetter(pointer, %L).getOrThrow()", PoetSymbols.platformComInteropClass, vtableIndex)

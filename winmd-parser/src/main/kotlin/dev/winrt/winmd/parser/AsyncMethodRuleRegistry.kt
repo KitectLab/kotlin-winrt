@@ -202,8 +202,8 @@ internal class AsyncMethodRuleRegistry(
         currentNamespace: String,
         vtableIndex: Int,
     ): String? {
-        val firstToken = first.toAbiToken().callNamePart()
-        val secondToken = second.toAbiToken().callNamePart()
+        val firstToken = first.toAbiDescriptor().methodNamePart
+        val secondToken = second.toAbiDescriptor().methodNamePart
         val helperNamePart = if (firstToken == secondToken) {
             "Two${firstToken}Args"
         } else {

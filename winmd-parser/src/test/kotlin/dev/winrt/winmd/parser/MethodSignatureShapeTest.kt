@@ -83,22 +83,22 @@ class MethodSignatureShapeTest {
     }
 
     @Test
-    fun folds_parameter_categories_into_abi_tokens() {
+    fun folds_parameter_categories_into_abi_descriptors() {
         assertEquals(
             MethodParameterAbiToken.STRING,
-            MethodParameterCategory.STRING.toAbiToken(),
+            MethodParameterCategory.STRING.toAbiDescriptor(),
         )
         assertEquals(
             MethodParameterAbiToken.BOOLEAN,
-            MethodParameterCategory.BOOLEAN.toAbiToken(),
+            MethodParameterCategory.BOOLEAN.toAbiDescriptor(),
         )
         assertEquals(
             MethodParameterAbiToken.INT64,
-            MethodParameterCategory.EVENT_REGISTRATION_TOKEN.toAbiToken(),
+            MethodParameterCategory.EVENT_REGISTRATION_TOKEN.toAbiDescriptor(),
         )
         assertEquals(
             MethodParameterAbiToken.OBJECT,
-            MethodParameterCategory.OBJECT.toAbiToken(),
+            MethodParameterCategory.OBJECT.toAbiDescriptor(),
         )
     }
 

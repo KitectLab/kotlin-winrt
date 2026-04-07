@@ -135,38 +135,26 @@ internal fun twoArgumentReturnCode(returnType: String, abiCall: CodeBlock): Code
         else -> error("Unsupported two-argument return type: $returnType")
     }
 
-internal fun resultKindName(returnType: String): String =
-    when (canonicalWinRtSpecialType(returnType)) {
-        "String" -> "HSTRING"
-        "Float32" -> "FLOAT32"
-        "Float64" -> "FLOAT64"
-        "DateTime" -> "INT64"
-        "TimeSpan" -> "INT64"
-        "Boolean" -> "BOOLEAN"
-        "HResult" -> "INT32"
-        "Int32" -> "INT32"
-        "UInt32" -> "UINT32"
-        "Int64" -> "INT64"
-        "UInt64" -> "UINT64"
-        "Guid" -> "GUID"
-        else -> error("Unsupported result kind for two-argument return type: $returnType")
-    }
+internal data class ComMethodResultDescriptor(
+    val kindName: String,
+    val extractor: Any,
+)
 
-internal fun resultExtractor(returnType: String): Any =
+internal fun comMethodResultDescriptor(returnType: String): ComMethodResultDescriptor =
     when (canonicalWinRtSpecialType(returnType)) {
-        "String" -> PoetSymbols.requireHStringMember
-        "Float32" -> PoetSymbols.requireFloat32Member
-        "Float64" -> PoetSymbols.requireFloat64Member
-        "DateTime" -> PoetSymbols.requireInt64Member
-        "TimeSpan" -> PoetSymbols.requireInt64Member
-        "Boolean" -> PoetSymbols.requireBooleanMember
-        "HResult" -> PoetSymbols.requireInt32Member
-        "Int32" -> PoetSymbols.requireInt32Member
-        "UInt32" -> PoetSymbols.requireUInt32Member
-        "Int64" -> PoetSymbols.requireInt64Member
-        "UInt64" -> PoetSymbols.requireUInt64Member
-        "Guid" -> PoetSymbols.requireGuidMember
-        else -> error("Unsupported result extractor for two-argument return type: $returnType")
+        "String" -> ComMethodResultDescriptor("HSTRING", PoetSymbols.requireHStringMember)
+        "Float32" -> ComMethodResultDescriptor("FLOAT32", PoetSymbols.requireFloat32Member)
+        "Float64" -> ComMethodResultDescriptor("FLOAT64", PoetSymbols.requireFloat64Member)
+        "DateTime" -> ComMethodResultDescriptor("INT64", PoetSymbols.requireInt64Member)
+        "TimeSpan" -> ComMethodResultDescriptor("INT64", PoetSymbols.requireInt64Member)
+        "Boolean" -> ComMethodResultDescriptor("BOOLEAN", PoetSymbols.requireBooleanMember)
+        "HResult" -> ComMethodResultDescriptor("INT32", PoetSymbols.requireInt32Member)
+        "Int32" -> ComMethodResultDescriptor("INT32", PoetSymbols.requireInt32Member)
+        "UInt32" -> ComMethodResultDescriptor("UINT32", PoetSymbols.requireUInt32Member)
+        "Int64" -> ComMethodResultDescriptor("INT64", PoetSymbols.requireInt64Member)
+        "UInt64" -> ComMethodResultDescriptor("UINT64", PoetSymbols.requireUInt64Member)
+        "Guid" -> ComMethodResultDescriptor("GUID", PoetSymbols.requireGuidMember)
+        else -> error("Unsupported result descriptor for two-argument return type: $returnType")
     }
 
 internal fun supportsFillArrayResultKind(returnType: String): Boolean =

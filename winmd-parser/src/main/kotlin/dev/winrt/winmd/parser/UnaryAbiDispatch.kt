@@ -41,7 +41,7 @@ internal fun defaultUnaryAbiCall(
             parameterCategory == MethodParameterCategory.EVENT_REGISTRATION_TOKEN) ->
         error(unsupportedMessage)
     else -> AbiCallCatalog.unaryMethod(
-        returnToken = returnKind.unaryMethodAbiToken(),
+        returnDescriptor = returnKind.unaryMethodAbiDescriptor(),
         parameterCategory = parameterCategory,
         vtableIndex = vtableIndex,
         argumentExpression = unaryAbiArgument(parameterCategory, argumentName, loweredArgument),
@@ -58,7 +58,7 @@ private fun unitUnaryAbiCall(
         AbiCallCatalog.unitMethodWithInt32Expression(vtableIndex, "if ($loweredArgument) 1 else 0")
     MethodParameterCategory.OBJECT -> AbiCallCatalog.objectSetterExpression(vtableIndex, loweredArgument)
     else -> AbiCallCatalog.unaryMethod(
-        returnToken = MethodAbiToken.UNIT,
+        returnDescriptor = MethodReturnAbiDescriptor("Unit"),
         parameterCategory = parameterCategory,
         vtableIndex = vtableIndex,
         argumentExpression = unaryAbiArgument(parameterCategory, argumentName, loweredArgument),
@@ -71,19 +71,19 @@ private fun unaryAbiArgument(
     loweredArgument: Any,
 ): Any = if (parameterCategory == MethodParameterCategory.STRING) argumentName else loweredArgument
 
-internal fun MethodReturnKind.unaryMethodAbiToken(): MethodAbiToken = when (this) {
-    MethodReturnKind.STRING -> MethodAbiToken.HSTRING
-    MethodReturnKind.FLOAT32 -> MethodAbiToken.FLOAT32
-    MethodReturnKind.FLOAT64 -> MethodAbiToken.FLOAT64
+internal fun MethodReturnKind.unaryMethodAbiDescriptor(): MethodReturnAbiDescriptor = when (this) {
+    MethodReturnKind.STRING -> MethodReturnAbiDescriptor("HString")
+    MethodReturnKind.FLOAT32 -> MethodReturnAbiDescriptor("Float32")
+    MethodReturnKind.FLOAT64 -> MethodReturnAbiDescriptor("Float64")
     MethodReturnKind.DATE_TIME,
     MethodReturnKind.TIME_SPAN,
     MethodReturnKind.INT64,
-    MethodReturnKind.EVENT_REGISTRATION_TOKEN -> MethodAbiToken.INT64
-    MethodReturnKind.BOOLEAN -> MethodAbiToken.BOOLEAN
-    MethodReturnKind.INT32 -> MethodAbiToken.INT32
-    MethodReturnKind.UINT32 -> MethodAbiToken.UINT32
-    MethodReturnKind.UINT64 -> MethodAbiToken.UINT64
-    MethodReturnKind.GUID -> MethodAbiToken.GUID
-    MethodReturnKind.OBJECT -> MethodAbiToken.OBJECT
-    MethodReturnKind.UNIT -> MethodAbiToken.UNIT
+    MethodReturnKind.EVENT_REGISTRATION_TOKEN -> MethodReturnAbiDescriptor("Int64")
+    MethodReturnKind.BOOLEAN -> MethodReturnAbiDescriptor("Boolean")
+    MethodReturnKind.INT32 -> MethodReturnAbiDescriptor("Int32")
+    MethodReturnKind.UINT32 -> MethodReturnAbiDescriptor("UInt32")
+    MethodReturnKind.UINT64 -> MethodReturnAbiDescriptor("UInt64")
+    MethodReturnKind.GUID -> MethodReturnAbiDescriptor("Guid")
+    MethodReturnKind.OBJECT -> MethodReturnAbiDescriptor("Object")
+    MethodReturnKind.UNIT -> MethodReturnAbiDescriptor("Unit")
 }
