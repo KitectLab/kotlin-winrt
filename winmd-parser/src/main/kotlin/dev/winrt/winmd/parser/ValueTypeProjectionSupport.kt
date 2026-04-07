@@ -2,6 +2,7 @@ package dev.winrt.winmd.parser
 
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.TypeName
+import dev.winrt.winmd.plugin.WinMdMethod
 
 private val propertyValueScalarTypes = setOf("UInt8", "Int16", "UInt16", "Char16")
 
@@ -108,16 +109,6 @@ internal fun supportsGenericIReferenceEnumProjection(
     return typeRegistry.isEnumType(innerType, currentNamespace)
 }
 
-internal enum class ValueAwareMethodPlanKind {
-    SMALL_SCALAR,
-    STRUCT,
-    IREFERENCE_VALUE,
-    IREFERENCE_GENERIC_STRUCT,
-    IREFERENCE_GENERIC_ENUM,
-    UNIT,
-    OBJECT_RETURN,
-}
-
 internal class ValueTypeProjectionSupport(
     private val typeNameMapper: TypeNameMapper,
     private val typeRegistry: TypeRegistry,
@@ -128,6 +119,23 @@ internal class ValueTypeProjectionSupport(
         val interfaceSetterExpression: (String, String, Int, String) -> CodeBlock?,
         val runtimeGetterExpression: (String, String, Int) -> CodeBlock?,
         val runtimeSetterExpression: (String, String, Int, String) -> CodeBlock?,
+    )
+
+    data class RenderedMethodCall(
+        val statement: String,
+        val args: List<Any> = emptyList(),
+    )
+
+    data class RenderedRuntimeMethodCall(
+        val nullPointerReturn: RenderedMethodCall,
+        val statement: String,
+        val args: List<Any> = emptyList(),
+    )
+
+    data class ValueAwareMethodProjection(
+        val matches: (String, List<String>, String, (String) -> Boolean) -> Boolean,
+        val renderInterfaceCall: (WinMdMethod, String, Set<String>, List<CodeBlock>, (CodeBlock) -> CodeBlock) -> RenderedMethodCall,
+        val renderRuntimeCall: (WinMdMethod, String, List<CodeBlock>, (CodeBlock) -> CodeBlock) -> RenderedRuntimeMethodCall,
     )
 
     private val winRtSignatureMapper = WinRtSignatureMapper(typeRegistry)
@@ -244,6 +252,251 @@ internal class ValueTypeProjectionSupport(
             runtimeSetterExpression = { type, currentNamespace, setterVtableIndex, valueExpression ->
                 genericEnumReferencePointerExpression(type, currentNamespace, valueExpression)
                     ?.let { pointer -> AbiCallCatalog.objectSetterExpression(setterVtableIndex, pointer) }
+            },
+        ),
+    )
+    private val valueAwareMethodProjections = listOf(
+        ValueAwareMethodProjection(
+            matches = { returnType, _, _, _ -> supportsSmallScalarProjection(returnType) },
+            renderInterfaceCall = { method, _, _, argumentExpressions, _ ->
+                RenderedMethodCall(
+                    statement = "return %L",
+                    args = listOf(
+                        smallScalarReturnExpression(
+                            method.returnType,
+                            smallScalarAbiCall(
+                                type = method.returnType,
+                                vtableIndex = method.vtableIndex!!,
+                                arguments = argumentExpressions,
+                            ) ?: error("Unsupported small scalar projection type: ${method.returnType}"),
+                        ) ?: error("Unsupported small scalar projection type: ${method.returnType}"),
+                    ),
+                )
+            },
+            renderRuntimeCall = { method, currentNamespace, argumentExpressions, _ ->
+                RenderedRuntimeMethodCall(
+                    nullPointerReturn = RenderedMethodCall(
+                        "return %L",
+                        listOf(smallScalarDefaultValue(method.returnType, currentNamespace)),
+                    ),
+                    statement = "return %L",
+                    args = listOf(
+                        smallScalarReturnExpression(
+                            method.returnType,
+                            smallScalarAbiCall(
+                                type = method.returnType,
+                                vtableIndex = method.vtableIndex!!,
+                                arguments = argumentExpressions,
+                            ) ?: error("Unsupported small scalar projection type: ${method.returnType}"),
+                        ) ?: error("Unsupported small scalar projection type: ${method.returnType}"),
+                    ),
+                )
+            },
+        ),
+        ValueAwareMethodProjection(
+            matches = { returnType, _, currentNamespace, _ -> typeRegistry.isStructType(returnType, currentNamespace) },
+            renderInterfaceCall = { method, currentNamespace, genericParameters, argumentExpressions, _ ->
+                val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace, genericParameters)
+                RenderedMethodCall(
+                    statement = "return %T.fromAbi(%L)",
+                    args = listOf(
+                        returnType,
+                        invokeStructMethodWithArgs(
+                            vtableIndex = method.vtableIndex!!,
+                            structType = returnType,
+                            arguments = argumentExpressions,
+                        ),
+                    ),
+                )
+            },
+            renderRuntimeCall = { method, currentNamespace, argumentExpressions, _ ->
+                val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
+                RenderedRuntimeMethodCall(
+                    nullPointerReturn = RenderedMethodCall(
+                        "return %L",
+                        listOf(structDefaultValue(method.returnType, currentNamespace)),
+                    ),
+                    statement = "return %T.fromAbi(%L)",
+                    args = listOf(
+                        returnType,
+                        invokeStructMethodWithArgs(
+                            vtableIndex = method.vtableIndex!!,
+                            structType = returnType,
+                            arguments = argumentExpressions,
+                        ),
+                    ),
+                )
+            },
+        ),
+        ValueAwareMethodProjection(
+            matches = { returnType, _, currentNamespace, _ ->
+                supportsIReferenceValueProjection(returnType, currentNamespace, typeRegistry)
+            },
+            renderInterfaceCall = { method, currentNamespace, _, argumentExpressions, _ ->
+                RenderedMethodCall(
+                    statement = "return %L",
+                    args = listOf(
+                        nullableValueReturnExpression(
+                            referenceType = method.returnType,
+                            currentNamespace = currentNamespace,
+                            abiCall = invokeObjectMethodWithArgs(
+                                vtableIndex = method.vtableIndex!!,
+                                arguments = argumentExpressions,
+                            ),
+                        ) ?: error("Unsupported IReference projection type: ${method.returnType}"),
+                    ),
+                )
+            },
+            renderRuntimeCall = { method, currentNamespace, argumentExpressions, _ ->
+                RenderedRuntimeMethodCall(
+                    nullPointerReturn = RenderedMethodCall("return null"),
+                    statement = "return %L",
+                    args = listOf(
+                        nullableValueReturnExpression(
+                            referenceType = method.returnType,
+                            currentNamespace = currentNamespace,
+                            abiCall = invokeObjectMethodWithArgs(
+                                vtableIndex = method.vtableIndex!!,
+                                arguments = argumentExpressions,
+                            ),
+                        ) ?: error("Unsupported IReference projection type: ${method.returnType}"),
+                    ),
+                )
+            },
+        ),
+        ValueAwareMethodProjection(
+            matches = { returnType, _, currentNamespace, _ ->
+                supportsGenericIReferenceStructProjection(returnType, currentNamespace, typeRegistry)
+            },
+            renderInterfaceCall = { method, currentNamespace, _, argumentExpressions, _ ->
+                RenderedMethodCall(
+                    statement = "return %L",
+                    args = listOf(
+                        genericStructReferenceReturnExpression(
+                            referenceType = method.returnType,
+                            currentNamespace = currentNamespace,
+                            abiCall = invokeObjectMethodWithArgs(
+                                vtableIndex = method.vtableIndex!!,
+                                arguments = argumentExpressions,
+                            ),
+                        ) ?: error("Unsupported IReference projection type: ${method.returnType}"),
+                    ),
+                )
+            },
+            renderRuntimeCall = { method, currentNamespace, argumentExpressions, _ ->
+                RenderedRuntimeMethodCall(
+                    nullPointerReturn = RenderedMethodCall("return null"),
+                    statement = "return %L",
+                    args = listOf(
+                        genericStructReferenceReturnExpression(
+                            referenceType = method.returnType,
+                            currentNamespace = currentNamespace,
+                            abiCall = invokeObjectMethodWithArgs(
+                                vtableIndex = method.vtableIndex!!,
+                                arguments = argumentExpressions,
+                            ),
+                        ) ?: error("Unsupported IReference projection type: ${method.returnType}"),
+                    ),
+                )
+            },
+        ),
+        ValueAwareMethodProjection(
+            matches = { returnType, _, currentNamespace, _ ->
+                supportsGenericIReferenceEnumProjection(returnType, currentNamespace, typeRegistry)
+            },
+            renderInterfaceCall = { method, currentNamespace, _, argumentExpressions, _ ->
+                RenderedMethodCall(
+                    statement = "return %L",
+                    args = listOf(
+                        genericEnumReferenceReturnExpression(
+                            referenceType = method.returnType,
+                            currentNamespace = currentNamespace,
+                            abiCall = invokeObjectMethodWithArgs(
+                                vtableIndex = method.vtableIndex!!,
+                                arguments = argumentExpressions,
+                            ),
+                        ) ?: error("Unsupported IReference projection type: ${method.returnType}"),
+                    ),
+                )
+            },
+            renderRuntimeCall = { method, currentNamespace, argumentExpressions, _ ->
+                RenderedRuntimeMethodCall(
+                    nullPointerReturn = RenderedMethodCall("return null"),
+                    statement = "return %L",
+                    args = listOf(
+                        genericEnumReferenceReturnExpression(
+                            referenceType = method.returnType,
+                            currentNamespace = currentNamespace,
+                            abiCall = invokeObjectMethodWithArgs(
+                                vtableIndex = method.vtableIndex!!,
+                                arguments = argumentExpressions,
+                            ),
+                        ) ?: error("Unsupported IReference projection type: ${method.returnType}"),
+                    ),
+                )
+            },
+        ),
+        ValueAwareMethodProjection(
+            matches = { returnType, parameterTypes, currentNamespace, _ ->
+                returnType == "Unit" && parameterTypes.any { requiresValueAwareGenericAbi(it, currentNamespace) }
+            },
+            renderInterfaceCall = { method, _, _, argumentExpressions, _ ->
+                RenderedMethodCall(
+                    statement = "%L",
+                    args = listOf(
+                        invokeUnitMethodWithArgs(
+                            vtableIndex = method.vtableIndex!!,
+                            arguments = argumentExpressions,
+                        ),
+                    ),
+                )
+            },
+            renderRuntimeCall = { method, _, argumentExpressions, _ ->
+                RenderedRuntimeMethodCall(
+                    nullPointerReturn = RenderedMethodCall("return"),
+                    statement = "%L",
+                    args = listOf(
+                        invokeUnitMethodWithArgs(
+                            vtableIndex = method.vtableIndex!!,
+                            arguments = argumentExpressions,
+                        ),
+                    ),
+                )
+            },
+        ),
+        ValueAwareMethodProjection(
+            matches = { returnType, parameterTypes, currentNamespace, supportsObjectReturnType ->
+                supportsObjectReturnType(returnType) && parameterTypes.any { requiresValueAwareGenericAbi(it, currentNamespace) }
+            },
+            renderInterfaceCall = { method, _, _, argumentExpressions, objectReturnExpression ->
+                RenderedMethodCall(
+                    statement = "return %L",
+                    args = listOf(
+                        objectReturnExpression(
+                            invokeObjectMethodWithArgs(
+                                vtableIndex = method.vtableIndex!!,
+                                arguments = argumentExpressions,
+                            ),
+                        ),
+                    ),
+                )
+            },
+            renderRuntimeCall = { method, _, argumentExpressions, objectReturnExpression ->
+                RenderedRuntimeMethodCall(
+                    nullPointerReturn = RenderedMethodCall(
+                        "error(%S)",
+                        listOf("Null runtime object pointer: ${method.name}"),
+                    ),
+                    statement = "return %L",
+                    args = listOf(
+                        objectReturnExpression(
+                            invokeObjectMethodWithArgs(
+                                vtableIndex = method.vtableIndex!!,
+                                arguments = argumentExpressions,
+                            ),
+                        ),
+                    ),
+                )
             },
         ),
     )
@@ -474,24 +727,15 @@ internal class ValueTypeProjectionSupport(
             supportsIReferenceValueProjection(type, currentNamespace, typeRegistry)
     }
 
-    fun methodPlanKind(
+    fun methodProjection(
         returnType: String,
         parameterTypes: List<String>,
         currentNamespace: String,
         supportsObjectReturnType: (String) -> Boolean,
-    ): ValueAwareMethodPlanKind? {
-        val hasValueAwareParameters = parameterTypes.any { requiresValueAwareGenericAbi(it, currentNamespace) }
-        return when {
-            supportsSmallScalarProjection(returnType) -> ValueAwareMethodPlanKind.SMALL_SCALAR
-            typeRegistry.isStructType(returnType, currentNamespace) -> ValueAwareMethodPlanKind.STRUCT
-            supportsIReferenceValueProjection(returnType, currentNamespace, typeRegistry) -> ValueAwareMethodPlanKind.IREFERENCE_VALUE
-            supportsGenericIReferenceStructProjection(returnType, currentNamespace, typeRegistry) -> ValueAwareMethodPlanKind.IREFERENCE_GENERIC_STRUCT
-            supportsGenericIReferenceEnumProjection(returnType, currentNamespace, typeRegistry) -> ValueAwareMethodPlanKind.IREFERENCE_GENERIC_ENUM
-            returnType == "Unit" && hasValueAwareParameters -> ValueAwareMethodPlanKind.UNIT
-            supportsObjectReturnType(returnType) && hasValueAwareParameters -> ValueAwareMethodPlanKind.OBJECT_RETURN
-            else -> null
+    ): ValueAwareMethodProjection? =
+        valueAwareMethodProjections.firstOrNull { projection ->
+            projection.matches(returnType, parameterTypes, currentNamespace, supportsObjectReturnType)
         }
-    }
 
     fun canLowerGenericAbiArgument(
         type: String,

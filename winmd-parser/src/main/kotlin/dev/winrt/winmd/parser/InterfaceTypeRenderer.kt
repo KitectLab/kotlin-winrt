@@ -2018,118 +2018,29 @@ internal class InterfaceTypeRenderer(
                 },
             ) ?: return null
         }
-        return when (
-            valueTypeProjectionSupport.methodPlanKind(
-                returnType = method.returnType,
-                parameterTypes = method.parameters.map(WinMdParameter::type),
-                currentNamespace = currentNamespace,
-                supportsObjectReturnType = { typeName -> supportsInterfaceObjectReturnType(typeName, currentNamespace) },
-            ) ?: return null
-        ) {
-            ValueAwareMethodPlanKind.SMALL_SCALAR -> PlannedInterfaceMethod(
-                statement = "return %L",
-                args = { method, _ ->
-                    arrayOf(
-                        valueTypeProjectionSupport.smallScalarReturnExpression(
-                            method.returnType,
-                            valueTypeProjectionSupport.smallScalarAbiCall(
-                                type = method.returnType,
-                                vtableIndex = method.vtableIndex!!,
-                                arguments = argumentExpressions,
-                            ) ?: error("Unsupported small scalar projection type: ${method.returnType}"),
-                        ) ?: error("Unsupported small scalar projection type: ${method.returnType}"),
-                    )
-                },
-            )
-            ValueAwareMethodPlanKind.STRUCT -> {
-                val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace, genericParameters)
-                PlannedInterfaceMethod(
-                    statement = "return %T.fromAbi(%L)",
-                    args = { method, _ ->
-                        arrayOf(
-                            returnType,
-                            valueTypeProjectionSupport.invokeStructMethodWithArgs(
-                                vtableIndex = method.vtableIndex!!,
-                                structType = returnType,
-                                arguments = argumentExpressions,
-                            ),
-                        )
-                    },
-                )
-            }
-            ValueAwareMethodPlanKind.IREFERENCE_VALUE -> PlannedInterfaceMethod(
-                statement = "return %L",
-                args = { method, _ ->
-                    arrayOf(
-                        valueTypeProjectionSupport.nullableValueReturnExpression(
-                            referenceType = method.returnType,
-                            currentNamespace = currentNamespace,
-                            abiCall = valueTypeProjectionSupport.invokeObjectMethodWithArgs(
-                                vtableIndex = method.vtableIndex!!,
-                                arguments = argumentExpressions,
-                            ),
-                        ) ?: error("Unsupported IReference projection type: ${method.returnType}"),
-                    )
-                },
-            )
-            ValueAwareMethodPlanKind.IREFERENCE_GENERIC_STRUCT -> PlannedInterfaceMethod(
-                statement = "return %L",
-                args = { method, _ ->
-                    arrayOf(
-                        valueTypeProjectionSupport.genericStructReferenceReturnExpression(
-                            referenceType = method.returnType,
-                            currentNamespace = currentNamespace,
-                            abiCall = valueTypeProjectionSupport.invokeObjectMethodWithArgs(
-                                vtableIndex = method.vtableIndex!!,
-                                arguments = argumentExpressions,
-                            ),
-                        ) ?: error("Unsupported IReference projection type: ${method.returnType}"),
-                    )
-                },
-            )
-            ValueAwareMethodPlanKind.IREFERENCE_GENERIC_ENUM -> PlannedInterfaceMethod(
-                statement = "return %L",
-                args = { method, _ ->
-                    arrayOf(
-                        valueTypeProjectionSupport.genericEnumReferenceReturnExpression(
-                            referenceType = method.returnType,
-                            currentNamespace = currentNamespace,
-                            abiCall = valueTypeProjectionSupport.invokeObjectMethodWithArgs(
-                                vtableIndex = method.vtableIndex!!,
-                                arguments = argumentExpressions,
-                            ),
-                        ) ?: error("Unsupported IReference projection type: ${method.returnType}"),
-                    )
-                },
-            )
-            ValueAwareMethodPlanKind.UNIT -> PlannedInterfaceMethod(
-                statement = "%L",
-                args = { method, _ ->
-                    arrayOf(
-                        valueTypeProjectionSupport.invokeUnitMethodWithArgs(
-                            vtableIndex = method.vtableIndex!!,
-                            arguments = argumentExpressions,
-                        ),
-                    )
-                },
-            )
-            ValueAwareMethodPlanKind.OBJECT_RETURN -> PlannedInterfaceMethod(
-                statement = "return %L",
-                args = { method, _ ->
-                    arrayOf(
-                        objectReturnCode(
-                            method = method,
-                            namespace = currentNamespace,
-                            abiCall = valueTypeProjectionSupport.invokeObjectMethodWithArgs(
-                                vtableIndex = method.vtableIndex!!,
-                                arguments = argumentExpressions,
-                            ),
-                            genericParameters = genericParameters,
-                        ),
-                    )
-                },
+        val projection = valueTypeProjectionSupport.methodProjection(
+            returnType = method.returnType,
+            parameterTypes = method.parameters.map(WinMdParameter::type),
+            currentNamespace = currentNamespace,
+            supportsObjectReturnType = { typeName -> supportsInterfaceObjectReturnType(typeName, currentNamespace) },
+        ) ?: return null
+        val rendered = projection.renderInterfaceCall(
+            method,
+            currentNamespace,
+            genericParameters,
+            argumentExpressions,
+        ) { abiCall ->
+            objectReturnCode(
+                method = method,
+                namespace = currentNamespace,
+                abiCall = abiCall,
+                genericParameters = genericParameters,
             )
         }
+        return PlannedInterfaceMethod(
+            statement = rendered.statement,
+            args = { _, _ -> rendered.args.toTypedArray() },
+        )
     }
 
     private fun plannedInterfaceMethodForKey(

@@ -4,7 +4,6 @@ import dev.winrt.winmd.plugin.WinMdModel
 import dev.winrt.winmd.plugin.WinMdNamespace
 import dev.winrt.winmd.plugin.WinMdType
 import dev.winrt.winmd.plugin.WinMdTypeKind
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -71,42 +70,44 @@ class ValueTypeProjectionSupportTest {
     }
 
     @Test
-    fun classifies_value_aware_method_plan_kinds() {
-        assertEquals(
-            ValueAwareMethodPlanKind.SMALL_SCALAR,
-            projectionSupport.methodPlanKind("Int16", emptyList(), "Example.Contracts") { false },
+    fun resolves_descriptor_driven_method_projections() {
+        assertNotNull(projectionSupport.methodProjection("Int16", emptyList(), "Example.Contracts") { false })
+        assertNotNull(
+            projectionSupport.methodProjection("Example.Contracts.PointLike", emptyList(), "Example.Contracts") { false },
         )
-        assertEquals(
-            ValueAwareMethodPlanKind.STRUCT,
-            projectionSupport.methodPlanKind("Example.Contracts.PointLike", emptyList(), "Example.Contracts") { false },
+        assertNotNull(
+            projectionSupport.methodProjection("Windows.Foundation.IReference`1<Int16>", emptyList(), "Example.Contracts") { false },
         )
-        assertEquals(
-            ValueAwareMethodPlanKind.IREFERENCE_VALUE,
-            projectionSupport.methodPlanKind("Windows.Foundation.IReference`1<Int16>", emptyList(), "Example.Contracts") { false },
+        assertNotNull(
+            projectionSupport.methodProjection(
+                "Windows.Foundation.IReference`1<Windows.Foundation.Rect>",
+                emptyList(),
+                "Example.Contracts",
+            ) { false },
         )
-        assertEquals(
-            ValueAwareMethodPlanKind.IREFERENCE_VALUE,
-            projectionSupport.methodPlanKind("Windows.Foundation.IReference`1<Windows.Foundation.Rect>", emptyList(), "Example.Contracts") { false },
+        assertNotNull(
+            projectionSupport.methodProjection(
+                "Windows.Foundation.IReference`1<Example.Contracts.PointLike>",
+                emptyList(),
+                "Example.Contracts",
+            ) { false },
         )
-        assertEquals(
-            ValueAwareMethodPlanKind.IREFERENCE_GENERIC_STRUCT,
-            projectionSupport.methodPlanKind("Windows.Foundation.IReference`1<Example.Contracts.PointLike>", emptyList(), "Example.Contracts") { false },
+        assertNotNull(
+            projectionSupport.methodProjection(
+                "Windows.Foundation.IReference`1<Example.Contracts.Mode>",
+                emptyList(),
+                "Example.Contracts",
+            ) { false },
         )
-        assertEquals(
-            ValueAwareMethodPlanKind.IREFERENCE_GENERIC_ENUM,
-            projectionSupport.methodPlanKind("Windows.Foundation.IReference`1<Example.Contracts.Mode>", emptyList(), "Example.Contracts") { false },
-        )
-        assertEquals(
-            ValueAwareMethodPlanKind.UNIT,
-            projectionSupport.methodPlanKind(
+        assertNotNull(
+            projectionSupport.methodProjection(
                 "Unit",
                 listOf("Windows.Foundation.IReference`1<Example.Contracts.Mode>"),
                 "Example.Contracts",
             ) { false },
         )
-        assertEquals(
-            ValueAwareMethodPlanKind.OBJECT_RETURN,
-            projectionSupport.methodPlanKind(
+        assertNotNull(
+            projectionSupport.methodProjection(
                 "Example.Contracts.Widget",
                 listOf("Windows.Foundation.IReference`1<Example.Contracts.Mode>"),
                 "Example.Contracts",
@@ -115,12 +116,12 @@ class ValueTypeProjectionSupportTest {
     }
 
     @Test
-    fun skips_unit_and_object_plans_without_value_aware_parameters() {
+    fun skips_method_projections_without_value_aware_parameters() {
         assertNull(
-            projectionSupport.methodPlanKind("Unit", listOf("String"), "Example.Contracts") { false },
+            projectionSupport.methodProjection("Unit", listOf("String"), "Example.Contracts") { false },
         )
         assertNull(
-            projectionSupport.methodPlanKind("Example.Contracts.Widget", listOf("String"), "Example.Contracts") {
+            projectionSupport.methodProjection("Example.Contracts.Widget", listOf("String"), "Example.Contracts") {
                 type -> type == "Example.Contracts.Widget"
             },
         )

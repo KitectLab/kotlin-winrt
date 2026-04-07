@@ -458,136 +458,29 @@ internal class RuntimeMethodRenderer(
                 },
             ) ?: return null
         }
-        return when (
-            valueTypeProjectionSupport.methodPlanKind(
-                returnType = method.returnType,
-                parameterTypes = method.parameters.map(WinMdParameter::type),
+        val projection = valueTypeProjectionSupport.methodProjection(
+            returnType = method.returnType,
+            parameterTypes = method.parameters.map(WinMdParameter::type),
+            currentNamespace = currentNamespace,
+            supportsObjectReturnType = { typeName -> supportsRuntimeObjectReturnType(typeName, currentNamespace) },
+        ) ?: return null
+        val rendered = projection.renderRuntimeCall(method, currentNamespace, argumentExpressions) { abiCall ->
+            runtimeObjectReturnCode(
+                method = method,
                 currentNamespace = currentNamespace,
-                supportsObjectReturnType = { typeName -> supportsRuntimeObjectReturnType(typeName, currentNamespace) },
-            ) ?: return null
-        ) {
-            ValueAwareMethodPlanKind.SMALL_SCALAR -> RuntimeMethodPlan(
-                nullPointerReturn = {
-                    PlannedStatement(
-                        "return %L",
-                        arrayOf(valueTypeProjectionSupport.smallScalarDefaultValue(method.returnType, currentNamespace)),
-                    )
-                },
-                returnStatement = "return %L",
-                statementArgs = { method, _, _ ->
-                    arrayOf(
-                        valueTypeProjectionSupport.smallScalarReturnExpression(
-                            method.returnType,
-                            valueTypeProjectionSupport.smallScalarAbiCall(
-                                type = method.returnType,
-                                vtableIndex = method.vtableIndex!!,
-                                arguments = argumentExpressions,
-                            ) ?: error("Unsupported small scalar projection type: ${method.returnType}"),
-                        ) ?: error("Unsupported small scalar projection type: ${method.returnType}"),
-                    )
-                },
-            )
-            ValueAwareMethodPlanKind.STRUCT -> {
-                val returnType = typeNameMapper.mapTypeName(method.returnType, currentNamespace)
-                RuntimeMethodPlan(
-                    nullPointerReturn = {
-                        PlannedStatement(
-                            "return %L",
-                            arrayOf(valueTypeProjectionSupport.structDefaultValue(method.returnType, currentNamespace)),
-                        )
-                    },
-                    returnStatement = "return %T.fromAbi(%L)",
-                    statementArgs = { method, _, _ ->
-                        arrayOf(
-                            returnType,
-                            valueTypeProjectionSupport.invokeStructMethodWithArgs(
-                                vtableIndex = method.vtableIndex!!,
-                                structType = returnType,
-                                arguments = argumentExpressions,
-                            ),
-                        )
-                    },
-                )
-            }
-            ValueAwareMethodPlanKind.IREFERENCE_VALUE -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return null") },
-                returnStatement = "return %L",
-                statementArgs = { method, _, _ ->
-                    arrayOf(
-                        valueTypeProjectionSupport.nullableValueReturnExpression(
-                            referenceType = method.returnType,
-                            currentNamespace = currentNamespace,
-                            abiCall = valueTypeProjectionSupport.invokeObjectMethodWithArgs(
-                                vtableIndex = method.vtableIndex!!,
-                                arguments = argumentExpressions,
-                            ),
-                        ) ?: error("Unsupported IReference projection type: ${method.returnType}"),
-                    )
-                },
-            )
-            ValueAwareMethodPlanKind.IREFERENCE_GENERIC_STRUCT -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return null") },
-                returnStatement = "return %L",
-                statementArgs = { method, _, _ ->
-                    arrayOf(
-                        valueTypeProjectionSupport.genericStructReferenceReturnExpression(
-                            referenceType = method.returnType,
-                            currentNamespace = currentNamespace,
-                            abiCall = valueTypeProjectionSupport.invokeObjectMethodWithArgs(
-                                vtableIndex = method.vtableIndex!!,
-                                arguments = argumentExpressions,
-                            ),
-                        ) ?: error("Unsupported IReference projection type: ${method.returnType}"),
-                    )
-                },
-            )
-            ValueAwareMethodPlanKind.IREFERENCE_GENERIC_ENUM -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return null") },
-                returnStatement = "return %L",
-                statementArgs = { method, _, _ ->
-                    arrayOf(
-                        valueTypeProjectionSupport.genericEnumReferenceReturnExpression(
-                            referenceType = method.returnType,
-                            currentNamespace = currentNamespace,
-                            abiCall = valueTypeProjectionSupport.invokeObjectMethodWithArgs(
-                                vtableIndex = method.vtableIndex!!,
-                                arguments = argumentExpressions,
-                            ),
-                        ) ?: error("Unsupported IReference projection type: ${method.returnType}"),
-                    )
-                },
-            )
-            ValueAwareMethodPlanKind.UNIT -> RuntimeMethodPlan(
-                nullPointerReturn = { PlannedStatement("return") },
-                returnStatement = "%L",
-                statementArgs = { method, _, _ ->
-                    arrayOf(
-                        valueTypeProjectionSupport.invokeUnitMethodWithArgs(
-                            vtableIndex = method.vtableIndex!!,
-                            arguments = argumentExpressions,
-                        ),
-                    )
-                },
-            )
-            ValueAwareMethodPlanKind.OBJECT_RETURN -> RuntimeMethodPlan(
-                nullPointerReturn = { method ->
-                    PlannedStatement("error(%S)", arrayOf<Any>("Null runtime object pointer: ${method.name}"))
-                },
-                returnStatement = "return %L",
-                statementArgs = { method, _, _ ->
-                    arrayOf(
-                        runtimeObjectReturnCode(
-                            method = method,
-                            currentNamespace = currentNamespace,
-                            abiCall = valueTypeProjectionSupport.invokeObjectMethodWithArgs(
-                                vtableIndex = method.vtableIndex!!,
-                                arguments = argumentExpressions,
-                            ),
-                        ),
-                    )
-                },
+                abiCall = abiCall,
             )
         }
+        return RuntimeMethodPlan(
+            nullPointerReturn = {
+                PlannedStatement(
+                    rendered.nullPointerReturn.statement,
+                    rendered.nullPointerReturn.args.toTypedArray(),
+                )
+            },
+            returnStatement = rendered.statement,
+            statementArgs = { _, _, _ -> rendered.args.toTypedArray() },
+        )
     }
 
     private fun runtimeMethodPlanForKey(
