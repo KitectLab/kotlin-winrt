@@ -141,32 +141,12 @@ interface ComInterop {
         vtableIndex: Int,
         vararg arguments: Any,
     ): Result<ComposableMethodResult>
-    fun invokeInt64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Long>
-    fun invokeInt64Method(instance: ComPtr, vtableIndex: Int): Result<Long>
-    fun invokeInt64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Long>
-    fun invokeInt64MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Long>
-    fun invokeInt64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Long>
-    fun invokeUInt64Method(instance: ComPtr, vtableIndex: Int): Result<ULong>
-    fun invokeUInt64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<ULong>
-    fun invokeUInt64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ULong>
-    fun invokeUInt64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ULong>
-    fun invokeInt32Method(instance: ComPtr, vtableIndex: Int): Result<Int>
-    fun invokeInt32MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Int>
-    fun invokeInt32MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Int>
-    fun invokeInt32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Int>
-    fun invokeInt32MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Int>
-    fun invokeInt32MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Int>
-    fun invokeUInt32Method(instance: ComPtr, vtableIndex: Int): Result<UInt>
-    fun invokeUInt32MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<UInt>
-    fun invokeUInt32MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<UInt>
-    fun invokeUInt32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<UInt>
-    fun invokeUInt32MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<UInt>
-    fun invokeUInt32MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<UInt>
-    fun invokeBooleanGetter(instance: ComPtr, vtableIndex: Int): Result<Boolean>
-    fun invokeBooleanMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Boolean>
-    fun invokeBooleanMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Boolean>
-    fun invokeBooleanMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Boolean>
-    fun invokeBooleanMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Boolean>
+    fun invokeRawI32Method(instance: ComPtr, vtableIndex: Int): Result<Int>
+    fun invokeRawI32MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Int>
+    fun invokeRawI32MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Int>
+    fun invokeRawI32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Int>
+    fun invokeRawI32MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Int>
+    fun invokeRawI32MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Int>
     fun invokeFloat32Method(instance: ComPtr, vtableIndex: Int): Result<Float>
     fun invokeFloat32MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Float>
     fun invokeFloat32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Float>
@@ -182,7 +162,130 @@ interface ComInterop {
     fun invokeGuidMethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Guid>
     fun invokeGuidMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Guid>
     fun invokeGuidMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Guid>
-    fun invokeInt64Getter(instance: ComPtr, vtableIndex: Int): Result<Long>
+    fun invokeRawI64Method(instance: ComPtr, vtableIndex: Int): Result<Long>
+    fun invokeRawI64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Long>
+    fun invokeRawI64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Long>
+    fun invokeRawI64MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Long>
+    fun invokeRawI64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Long>
 }
 
-expect val PlatformComInterop: ComInterop
+@PublishedApi
+internal fun Result<Int>.asUIntResult(): Result<UInt> = map(Int::toUInt)
+
+@PublishedApi
+internal fun Result<Int>.asBooleanResult(): Result<Boolean> = map { it != 0 }
+
+@PublishedApi
+internal fun Result<Long>.asULongResult(): Result<ULong> = map(Long::toULong)
+
+object PlatformComInterop : ComInterop by PlatformComInteropKernel {
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeInt32Method(instance: ComPtr, vtableIndex: Int): Result<Int> =
+        invokeRawI32Method(instance, vtableIndex)
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeInt32MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Int> =
+        invokeRawI32MethodWithStringArg(instance, vtableIndex, value)
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeInt32MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Int> =
+        invokeRawI32MethodWithInt32Arg(instance, vtableIndex, value)
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeInt32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Int> =
+        invokeRawI32MethodWithUInt32Arg(instance, vtableIndex, value)
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeInt32MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Int> =
+        invokeRawI32MethodWithInt64Arg(instance, vtableIndex, value)
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeInt32MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Int> =
+        invokeRawI32MethodWithObjectArg(instance, vtableIndex, value)
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeUInt32Method(instance: ComPtr, vtableIndex: Int): Result<UInt> =
+        invokeRawI32Method(instance, vtableIndex).asUIntResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeUInt32MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<UInt> =
+        invokeRawI32MethodWithStringArg(instance, vtableIndex, value).asUIntResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeUInt32MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<UInt> =
+        invokeRawI32MethodWithInt32Arg(instance, vtableIndex, value).asUIntResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeUInt32MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<UInt> =
+        invokeRawI32MethodWithUInt32Arg(instance, vtableIndex, value).asUIntResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeUInt32MethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<UInt> =
+        invokeRawI32MethodWithInt64Arg(instance, vtableIndex, value).asUIntResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeUInt32MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<UInt> =
+        invokeRawI32MethodWithObjectArg(instance, vtableIndex, value).asUIntResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeBooleanGetter(instance: ComPtr, vtableIndex: Int): Result<Boolean> =
+        invokeRawI32Method(instance, vtableIndex).asBooleanResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeBooleanMethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Boolean> =
+        invokeRawI32MethodWithObjectArg(instance, vtableIndex, value).asBooleanResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeBooleanMethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Boolean> =
+        invokeRawI32MethodWithStringArg(instance, vtableIndex, value).asBooleanResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeBooleanMethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Boolean> =
+        invokeRawI32MethodWithUInt32Arg(instance, vtableIndex, value).asBooleanResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeBooleanMethodWithInt64Arg(instance: ComPtr, vtableIndex: Int, value: Long): Result<Boolean> =
+        invokeRawI32MethodWithInt64Arg(instance, vtableIndex, value).asBooleanResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeInt64Method(instance: ComPtr, vtableIndex: Int): Result<Long> =
+        invokeRawI64Method(instance, vtableIndex)
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeInt64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<Long> =
+        invokeRawI64MethodWithObjectArg(instance, vtableIndex, value)
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeInt64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<Long> =
+        invokeRawI64MethodWithStringArg(instance, vtableIndex, value)
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeInt64MethodWithInt32Arg(instance: ComPtr, vtableIndex: Int, value: Int): Result<Long> =
+        invokeRawI64MethodWithInt32Arg(instance, vtableIndex, value)
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeInt64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<Long> =
+        invokeRawI64MethodWithUInt32Arg(instance, vtableIndex, value)
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeUInt64Method(instance: ComPtr, vtableIndex: Int): Result<ULong> =
+        invokeRawI64Method(instance, vtableIndex).asULongResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeUInt64MethodWithObjectArg(instance: ComPtr, vtableIndex: Int, value: ComPtr): Result<ULong> =
+        invokeRawI64MethodWithObjectArg(instance, vtableIndex, value).asULongResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeUInt64MethodWithStringArg(instance: ComPtr, vtableIndex: Int, value: String): Result<ULong> =
+        invokeRawI64MethodWithStringArg(instance, vtableIndex, value).asULongResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeUInt64MethodWithUInt32Arg(instance: ComPtr, vtableIndex: Int, value: UInt): Result<ULong> =
+        invokeRawI64MethodWithUInt32Arg(instance, vtableIndex, value).asULongResult()
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun invokeInt64Getter(instance: ComPtr, vtableIndex: Int): Result<Long> =
+        invokeRawI64Method(instance, vtableIndex)
+}
+
+expect val PlatformComInteropKernel: ComInterop
