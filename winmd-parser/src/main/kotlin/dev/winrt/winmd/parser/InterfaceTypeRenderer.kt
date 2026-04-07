@@ -1773,7 +1773,9 @@ internal class InterfaceTypeRenderer(
             supportsParameterObjectType = { typeName -> supportsInterfaceObjectInput(typeName, currentNamespace) },
             supportsReturnObjectType = { typeName -> supportsInterfaceObjectReturnType(typeName, currentNamespace) },
         ) ?: return null
-        MethodRuleRegistry.sharedMethodPlan(signatureKey) ?: return null
+        if (!MethodRuleRegistry.supportsSharedMethod(signatureKey)) {
+            return null
+        }
         return plannedInterfaceMethodForKey(signatureKey, genericParameters)
     }
 

@@ -1,22 +1,5 @@
 package dev.winrt.winmd.parser
 
-internal enum class SharedMethodRuleFamily {
-    STRING,
-    FLOAT32,
-    FLOAT64,
-    DATE_TIME,
-    TIME_SPAN,
-    BOOLEAN,
-    EVENT_REGISTRATION_TOKEN,
-    GUID,
-    OBJECT,
-    UNIT,
-}
-
-internal data class SharedMethodPlan(
-    val family: SharedMethodRuleFamily,
-)
-
 internal object MethodRuleRegistry {
     private val fullUnaryShapes = setOf(
         MethodSignatureShape.EMPTY,
@@ -31,22 +14,6 @@ internal object MethodRuleRegistry {
     private val uint64UnaryShapes = fullUnaryShapes - setOf(
         methodSignatureShapeOf(MethodParameterCategory.INT64),
         methodSignatureShapeOf(MethodParameterCategory.EVENT_REGISTRATION_TOKEN),
-    )
-    private val unaryMethodRuleFamilies = mapOf(
-        MethodReturnKind.STRING to SharedMethodRuleFamily.STRING,
-        MethodReturnKind.FLOAT32 to SharedMethodRuleFamily.FLOAT32,
-        MethodReturnKind.FLOAT64 to SharedMethodRuleFamily.FLOAT64,
-        MethodReturnKind.DATE_TIME to SharedMethodRuleFamily.DATE_TIME,
-        MethodReturnKind.TIME_SPAN to SharedMethodRuleFamily.TIME_SPAN,
-        MethodReturnKind.BOOLEAN to SharedMethodRuleFamily.BOOLEAN,
-        MethodReturnKind.INT32 to SharedMethodRuleFamily.UNIT,
-        MethodReturnKind.UINT32 to SharedMethodRuleFamily.UNIT,
-        MethodReturnKind.INT64 to SharedMethodRuleFamily.OBJECT,
-        MethodReturnKind.UINT64 to SharedMethodRuleFamily.OBJECT,
-        MethodReturnKind.EVENT_REGISTRATION_TOKEN to SharedMethodRuleFamily.EVENT_REGISTRATION_TOKEN,
-        MethodReturnKind.GUID to SharedMethodRuleFamily.GUID,
-        MethodReturnKind.OBJECT to SharedMethodRuleFamily.OBJECT,
-        MethodReturnKind.UNIT to SharedMethodRuleFamily.UNIT,
     )
     private val unaryMethodShapes = mapOf(
         MethodReturnKind.STRING to fullUnaryShapes,
@@ -65,18 +32,11 @@ internal object MethodRuleRegistry {
         MethodReturnKind.UNIT to fullUnaryShapes,
     )
 
-    fun sharedMethodPlan(signatureKey: MethodSignatureKey): SharedMethodPlan? =
-        unaryMethodRuleFamilies[signatureKey.returnKind]
-            ?.takeIf { signatureKey.shape in unaryMethodShapes.getValue(signatureKey.returnKind) }
-            ?.let(::SharedMethodPlan)
-            ?: sharedTwoArgumentMethodPlan(signatureKey)
-
-    fun sharedMethodRuleFamily(signatureKey: MethodSignatureKey): SharedMethodRuleFamily? =
-        sharedMethodPlan(signatureKey)?.family
-
-    private fun sharedTwoArgumentMethodPlan(signatureKey: MethodSignatureKey): SharedMethodPlan? {
+    fun supportsSharedMethod(signatureKey: MethodSignatureKey): Boolean {
+        if (unaryMethodShapes[signatureKey.returnKind]?.contains(signatureKey.shape) == true) {
+            return true
+        }
         val parameterCategories = signatureKey.shape.toParameterCategories()
-        val family = signatureKey.returnKind.twoArgumentSharedRuleFamily(parameterCategories) ?: return null
-        return SharedMethodPlan(family)
+        return signatureKey.returnKind.supportsTwoArgumentSharedMethod(parameterCategories)
     }
 }

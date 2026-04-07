@@ -224,7 +224,9 @@ internal class RuntimeMethodRenderer(
             parameterTypes = parameterTypes.map { typeRegistry.signatureParameterType(it, currentNamespace) },
             supportsParameterObjectType = { type -> supportsRuntimeObjectType(type, currentNamespace) },
         ) ?: return null
-        MethodRuleRegistry.sharedMethodPlan(signatureKey) ?: return null
+        if (!MethodRuleRegistry.supportsSharedMethod(signatureKey)) {
+            return null
+        }
         return runtimeMethodPlanForKey(signatureKey)
     }
 

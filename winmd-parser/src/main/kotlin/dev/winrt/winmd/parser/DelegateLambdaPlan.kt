@@ -19,7 +19,6 @@ internal sealed interface DelegateLambdaPlan {
 internal data class BridgeSpec(
     val factoryMethod: String,
     val argumentKinds: List<WinRtDelegateValueKind>,
-    val returnCarrier: ReturnCarrier,
 )
 
 internal sealed interface ParameterCarrier {
@@ -34,10 +33,10 @@ internal sealed interface ParameterCarrier {
     ) : ParameterCarrier
 }
 
-internal enum class ReturnCarrier {
-    UNIT,
-    BOOLEAN,
-}
+internal data class DelegateReturnDescriptor(
+    val factoryMethod: String,
+    val lambdaReturnType: TypeName,
+)
 
 private data class ScalarBridgeSpec(
     val parameterType: TypeName,
@@ -47,8 +46,7 @@ private data class ScalarBridgeSpec(
 internal data class DelegateSignatureShape(
     val argumentKinds: List<WinRtDelegateValueKind>,
     val lambdaParameterTypes: List<TypeName>,
-    val returnCarrier: ReturnCarrier,
-    val lambdaReturnType: TypeName,
+    val returnDescriptor: DelegateReturnDescriptor,
 )
 
 internal class DelegateLambdaPlanResolver(
@@ -89,6 +87,17 @@ internal class DelegateLambdaPlanResolver(
         ),
     )
 
+    private val returnDescriptors = mapOf(
+        "Unit" to DelegateReturnDescriptor(
+            factoryMethod = "createUnitDelegate",
+            lambdaReturnType = Unit::class.asTypeName(),
+        ),
+        "Boolean" to DelegateReturnDescriptor(
+            factoryMethod = "createBooleanDelegate",
+            lambdaReturnType = Boolean::class.asTypeName(),
+        ),
+    )
+
     fun resolve(
         invokeMethod: WinMdMethod,
         currentNamespace: String,
@@ -103,21 +112,17 @@ internal class DelegateLambdaPlanResolver(
         ) ?: return null
 
         val lambdaType = when (signatureShape.lambdaParameterTypes.isEmpty()) {
-            true -> LambdaTypeName.get(returnType = signatureShape.lambdaReturnType)
+            true -> LambdaTypeName.get(returnType = signatureShape.returnDescriptor.lambdaReturnType)
             false -> LambdaTypeName.get(
                 parameters = signatureShape.lambdaParameterTypes.toTypedArray(),
-                returnType = signatureShape.lambdaReturnType,
+                returnType = signatureShape.returnDescriptor.lambdaReturnType,
             )
         }
         return DelegateLambdaPlan.PlannedBridge(
             lambdaType = lambdaType,
             bridge = BridgeSpec(
-                factoryMethod = when (signatureShape.returnCarrier) {
-                    ReturnCarrier.UNIT -> "createUnitDelegate"
-                    ReturnCarrier.BOOLEAN -> "createBooleanDelegate"
-                },
+                factoryMethod = signatureShape.returnDescriptor.factoryMethod,
                 argumentKinds = signatureShape.argumentKinds,
-                returnCarrier = signatureShape.returnCarrier,
             ),
         )
     }
@@ -128,15 +133,7 @@ internal class DelegateLambdaPlanResolver(
         genericParameters: Set<String>,
         supportsObjectType: (String) -> Boolean,
     ): DelegateSignatureShape? {
-        val returnCarrier = when (invokeMethod.returnType) {
-            "Unit" -> ReturnCarrier.UNIT
-            "Boolean" -> ReturnCarrier.BOOLEAN
-            else -> return null
-        }
-        val lambdaReturnType = when (returnCarrier) {
-            ReturnCarrier.UNIT -> Unit::class.asTypeName()
-            ReturnCarrier.BOOLEAN -> Boolean::class.asTypeName()
-        }
+        val returnDescriptor = returnDescriptors[invokeMethod.returnType] ?: return null
         val carriers = invokeMethod.parameters.map { parameter ->
             resolveParameterCarrier(
                 typeName = parameter.type,
@@ -163,8 +160,7 @@ internal class DelegateLambdaPlanResolver(
         return DelegateSignatureShape(
             argumentKinds = argumentKinds,
             lambdaParameterTypes = lambdaParameterTypes,
-            returnCarrier = returnCarrier,
-            lambdaReturnType = lambdaReturnType,
+            returnDescriptor = returnDescriptor,
         )
     }
 

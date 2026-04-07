@@ -116,31 +116,31 @@ internal fun List<MethodParameterCategory>.isSupportedTwoArgumentUnitCategories(
 internal fun List<MethodParameterCategory>.isSupportedTwoArgumentUnifiedReturnCategories(): Boolean =
     size == 2 && supportedTwoArgumentUnifiedReturnCategories(this[0], this[1])
 
-internal fun MethodReturnKind.twoArgumentSharedRuleFamily(
+internal fun MethodReturnKind.supportsTwoArgumentSharedMethod(
     parameterCategories: List<MethodParameterCategory>,
-): SharedMethodRuleFamily? = when (this) {
+): Boolean = when (this) {
     MethodReturnKind.UNIT ->
-        if (parameterCategories.isSupportedTwoArgumentUnitCategories()) SharedMethodRuleFamily.UNIT else null
+        parameterCategories.isSupportedTwoArgumentUnitCategories()
     MethodReturnKind.STRING ->
-        if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.STRING else null
+        parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()
     MethodReturnKind.FLOAT32 ->
-        if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.FLOAT32 else null
+        parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()
     MethodReturnKind.FLOAT64 ->
-        if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.FLOAT64 else null
+        parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()
     MethodReturnKind.DATE_TIME ->
-        if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.DATE_TIME else null
+        parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()
     MethodReturnKind.TIME_SPAN ->
-        if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.TIME_SPAN else null
+        parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()
     MethodReturnKind.BOOLEAN ->
-        if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.BOOLEAN else null
+        parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()
     MethodReturnKind.INT32,
     MethodReturnKind.UINT32,
     MethodReturnKind.INT64,
     MethodReturnKind.UINT64,
     MethodReturnKind.GUID,
     MethodReturnKind.OBJECT ->
-        if (parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()) SharedMethodRuleFamily.OBJECT else null
-    MethodReturnKind.EVENT_REGISTRATION_TOKEN -> null
+        parameterCategories.isSupportedTwoArgumentUnifiedReturnCategories()
+    MethodReturnKind.EVENT_REGISTRATION_TOKEN -> false
 }
 
 private fun supportedTwoArgumentUnitCategories(

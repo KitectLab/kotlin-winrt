@@ -1,56 +1,46 @@
 package dev.winrt.winmd.parser
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MethodRuleRegistryTest {
     @Test
-    fun classifies_shared_method_rule_families_for_common_runtime_shapes() {
-        assertEquals(
-            SharedMethodRuleFamily.STRING,
-            MethodRuleRegistry.sharedMethodRuleFamily(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.EMPTY)),
-        )
-        assertEquals(
-            SharedMethodRuleFamily.OBJECT,
-            MethodRuleRegistry.sharedMethodRuleFamily(
+    fun accepts_supported_shared_method_shapes() {
+        assertTrue(MethodRuleRegistry.supportsSharedMethod(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.EMPTY)))
+        assertTrue(
+            MethodRuleRegistry.supportsSharedMethod(
                 MethodSignatureKey(
                     MethodReturnKind.OBJECT,
                     methodSignatureShapeOf(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING),
                 ),
             ),
         )
-        assertEquals(
-            SharedMethodRuleFamily.UNIT,
-            MethodRuleRegistry.sharedMethodRuleFamily(
+        assertTrue(
+            MethodRuleRegistry.supportsSharedMethod(
                 MethodSignatureKey(
                     MethodReturnKind.UNIT,
                     methodSignatureShapeOf(MethodParameterCategory.OBJECT, MethodParameterCategory.INT32),
                 ),
             ),
         )
-        assertEquals(
-            SharedMethodRuleFamily.GUID,
-            MethodRuleRegistry.sharedMethodRuleFamily(
+        assertTrue(
+            MethodRuleRegistry.supportsSharedMethod(
                 MethodSignatureKey(MethodReturnKind.GUID, methodSignatureShapeOf(MethodParameterCategory.STRING)),
             ),
         )
-        assertEquals(
-            SharedMethodRuleFamily.DATE_TIME,
-            MethodRuleRegistry.sharedMethodRuleFamily(
+        assertTrue(
+            MethodRuleRegistry.supportsSharedMethod(
                 MethodSignatureKey(MethodReturnKind.DATE_TIME, methodSignatureShapeOf(MethodParameterCategory.STRING)),
             ),
         )
-        assertEquals(
-            SharedMethodRuleFamily.TIME_SPAN,
-            MethodRuleRegistry.sharedMethodRuleFamily(
+        assertTrue(
+            MethodRuleRegistry.supportsSharedMethod(
                 MethodSignatureKey(MethodReturnKind.TIME_SPAN, methodSignatureShapeOf(MethodParameterCategory.OBJECT)),
             ),
         )
-        assertEquals(
-            SharedMethodRuleFamily.EVENT_REGISTRATION_TOKEN,
-            MethodRuleRegistry.sharedMethodRuleFamily(
+        assertTrue(
+            MethodRuleRegistry.supportsSharedMethod(
                 MethodSignatureKey(
                     MethodReturnKind.EVENT_REGISTRATION_TOKEN,
                     methodSignatureShapeOf(MethodParameterCategory.STRING),
@@ -60,33 +50,12 @@ class MethodRuleRegistryTest {
     }
 
     @Test
-    fun rejects_unsupported_shared_method_rule_families() {
-        assertNull(
-            MethodRuleRegistry.sharedMethodRuleFamily(
+    fun rejects_unsupported_shared_method_shapes() {
+        assertFalse(
+            MethodRuleRegistry.supportsSharedMethod(
                 MethodSignatureKey(
                     MethodReturnKind.STRING,
                     methodSignatureShapeOf(MethodParameterCategory.STRING, MethodParameterCategory.STRING),
-                ),
-            ),
-        )
-    }
-
-    @Test
-    fun resolves_shared_method_plans_for_supported_shapes() {
-        assertNotNull(MethodRuleRegistry.sharedMethodPlan(MethodSignatureKey(MethodReturnKind.STRING, MethodSignatureShape.EMPTY)))
-        assertNotNull(
-            MethodRuleRegistry.sharedMethodPlan(
-                MethodSignatureKey(
-                    MethodReturnKind.OBJECT,
-                    methodSignatureShapeOf(MethodParameterCategory.OBJECT, MethodParameterCategory.STRING),
-                ),
-            ),
-        )
-        assertNotNull(
-            MethodRuleRegistry.sharedMethodPlan(
-                MethodSignatureKey(
-                    MethodReturnKind.UNIT,
-                    methodSignatureShapeOf(MethodParameterCategory.OBJECT, MethodParameterCategory.INT32),
                 ),
             ),
         )

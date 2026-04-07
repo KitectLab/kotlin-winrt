@@ -27,7 +27,7 @@ class DelegateLambdaPlanResolverTest {
         )
 
         requireNotNull(shape)
-        assertEquals(ReturnCarrier.BOOLEAN, shape.returnCarrier)
+        assertEquals("createBooleanDelegate", shape.returnDescriptor.factoryMethod)
         assertEquals(listOf("kotlin.Int", "kotlin.String"), shape.lambdaParameterTypes.map(TypeName::toString))
     }
 
@@ -48,7 +48,7 @@ class DelegateLambdaPlanResolverTest {
         )
 
         requireNotNull(shape)
-        assertEquals(ReturnCarrier.UNIT, shape.returnCarrier)
+        assertEquals("createUnitDelegate", shape.returnDescriptor.factoryMethod)
         assertEquals(
             listOf("example.callbacks.Payload", "kotlin.UInt"),
             shape.lambdaParameterTypes.map(TypeName::toString),
@@ -73,7 +73,7 @@ class DelegateLambdaPlanResolverTest {
         )
 
         requireNotNull(shape)
-        assertEquals(ReturnCarrier.BOOLEAN, shape.returnCarrier)
+        assertEquals("createBooleanDelegate", shape.returnDescriptor.factoryMethod)
         assertEquals(
             listOf("example.callbacks.Payload", "kotlin.Int", "kotlin.Boolean"),
             shape.lambdaParameterTypes.map(TypeName::toString),
